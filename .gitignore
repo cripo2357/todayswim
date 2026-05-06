@@ -33,3 +33,6 @@ build/
 # 임시
 upload/
 tmp/
+
+# Figma 시각 레퍼런스 (로컬 전용)
+design-refs/

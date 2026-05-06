@@ -76,15 +76,24 @@
 
 ## 3. 기술 스택
 
+> 2026-05-07 결정: **웹앱(Vite) → 네이티브 앱(Expo)** 으로 전환.
+> 디자인은 모바일 우선이고, 사용자가 외출 중 위치 기반으로 풀을 찾는 시나리오가
+> 핵심이라 네이티브가 더 적합. Figma 시안도 모바일 프레임(375×812)으로 작성됨.
+
 | 레이어 | 선택 | 이유 |
 |---|---|---|
-| 빌드 | **Vite + React 18 + TypeScript** | 빠르고 모던한 표준 |
-| 스타일 | **Tailwind CSS** + CSS 변수 | 디자인 토큰 일관성 |
-| 상태 | **Zustand** (+ persist 미들웨어) | 보일러플레이트 적음, 영속화 쉬움 |
+| 런타임 | **Expo SDK + React Native + TypeScript** | 모바일 네이티브, OTA 업데이트 가능 |
+| 스타일 | **RN StyleSheet** + 디자인 토큰(`tokens.ts`) | 표준, WellRing과 일관 |
+| 상태 | **Zustand** (+ persist via AsyncStorage) | 보일러플레이트 적음, 영속화 쉬움 |
 | 데이터 페칭 | **TanStack Query** | 캐싱·재시도·로딩상태 자동 |
-| 지도 | **Kakao Maps JavaScript API** | 한국 주소·POI 가장 정확, 무료 |
-| 라우팅 | **React Router v6** | 표준 |
-| 폰트 | Google Fonts (Pretendard, Fraunces, Noto Serif KR) | 무료, CDN |
+| 지도 | **react-native-maps + Google Maps** (`PROVIDER_GOOGLE`) | 디자인 우선 결정. 풀 데이터는 자체 DB라 검색 API 의존도 낮음 → 무료 한도 내 |
+| 라우팅 | **@react-navigation/native** (stack + bottom sheet) | RN 표준, WellRing과 일관 |
+| 아이콘 | **lucide-react-native** (stroke-width 1.5) | DESIGN.md 명시 |
+| 폰트 | **expo-font** + Pretendard(jsdelivr) + Fraunces(Google Fonts) | 정적 로딩 |
+| SVG | **react-native-svg + svg-transformer** | 일러스트 import 용 |
+| 환경변수 | **expo-constants** + `app.config.ts` | API 키 분리 |
+
+> ⚠ Custom Dev Build 필수. Expo Go에선 react-native-maps·소셜 OAuth 안 돌아감.
 
 ---
 
@@ -135,33 +144,62 @@ export interface Pool {
 
 ---
 
-## 6. 화면 구성
+## 6. 화면 구성 (네비게이션 스택)
+
+> 2026-05-07 업데이트: Figma 시안 반영. 13개 노드 = 9개 고유 화면(메인 지도 4상태 통합).
 
 ```
-/                  메인 (지도 + 리스트)
-/pool/:id          상세
-/favorites         또 가고 싶은 곳 (즐겨찾기)
-/today             오늘의 추천 (확장 시)
+Splash                         스플래시 (3:387)
+└─ Main (Bottom Tab or Stack)
+   ├─ MapMain                  메인 지도 (5:12241/12919/11479/19049의 4상태)
+   │  └─ 마커 탭 → 풀 카드(바텀 시트) 표시
+   │     ├─ "자유수영 시간표 보기" → ScheduleView
+   │     └─ "자유수영 시간표 작성하기" → ScheduleNickname
+   ├─ ScheduleView             시간표 조회 (5:14288)
+   ├─ ScheduleSubmit Flow      시간표 작성 4스텝
+   │  ├─ ScheduleNickname      닉네임 입력 (5:14808)
+   │  ├─ ScheduleWrite         시간 슬롯·요일 선택 (5:15159)
+   │  ├─ ScheduleTime          타임 작성 — 바텀 드로어 (5:15381)
+   │  └─ ScheduleDone          요청 완료 (5:19712, request-complete.svg)
+   ├─ PoolSubmit Flow          수영장 등록·수정
+   │  ├─ PoolName              이름 입력 (5:16341)
+   │  └─ PoolDone              완료 (5:18464, request-complete.svg)
+   └─ More                     부가 기능 (5:2287, more.svg)
 ```
 
-**메인 레이아웃 (데스크톱)**
-- 헤더: 로고 *오늘도 수영* (세리프) + 검색 + 즐겨찾기 + 메뉴
-- 좌측 사이드: 지역 / 실내·야외 / 정렬 필터
-- 우측 메인: 카카오 지도
-- 하단: 카드 리스트 (가로 스크롤)
+**메인 지도 화면 4상태:**
 
-**모바일:** 지도 / 리스트 탭 전환
+| 상태 | Figma | 트리거 | 하단 카드 CTA |
+|---|---|---|---|
+| A: 선택 없음 | 5:12241 | 첫 진입 | (카드 없음) |
+| B: 풀 선택, 시간표 없음 | 5:12919 | 마커 탭 + 시간표 데이터 X | "자유수영 시간표 작성하기" (펜 아이콘) |
+| C: 풀 선택, 시간표 있음 | 5:11479 | 마커 탭 + 시간표 데이터 O | "자유수영 시간표 보기" |
+| D: 풀 선택, 찜한 곳 | 5:19049 | 마커 탭 + 즐겨찾기 = 노란 마커 | "자유수영 시간표 보기" |
+
+**마커 컬러 매핑:**
+- 일반 풀: `--pool-500` (파랑)
+- 찜한 풀: `--fool-yellow` (노랑) — DESIGN.md §1-2의 "별 아이콘" 토큰 재활용
+- 주차장: `P` 마커 (별도 이모지/마커 — 디자인 노트만 있고 향후 결정)
 
 ---
 
-## 7. 기능 명세 (요청 4종)
+## 7. 기능 명세
+
+### 7-0. 시간표 크라우드소싱 (MVP 핵심)
+> 2026-05-07: Figma 디자인에 포함되어 SPEC §12 차후 확장 → MVP 핵심으로 승격.
+
+- 사용자가 자유수영 시간표를 직접 등록·수정 → 다른 사용자에 공유
+- "업데이트: 2026.10.31 - 수영맨" 같은 작성자 크레딧 표시
+- 4스텝 입력: 닉네임 → 요일/시간 슬롯 → 시간 상세 → 완료
+- 관리자 검수 후 게시되는 흐름 (스펙: "관리자가 확인 후 등록")
+- 수영장 자체도 등록·정보수정 요청 가능 (별도 2스텝 플로우)
 
 ### 7-1. 실내/야외 구분
 - `type` 필드 활용
 - UI: 칩 버튼 `전체 / 실내 / 야외`
-- 마커 색상 분기:
-  - 실내: `--mist-deep` (#6B95B0)
-  - 야외: `--coral` (#E8A598)
+- 마커 색상 분기 (DESIGN.md 컬러로 갱신):
+  - 일반 풀: `--pool-500` (#0EA5E9)
+  - 찜한 풀: `--fool-yellow` (#FCD34D)
 
 ### 7-2. 거리순 정렬
 - `navigator.geolocation` 사용자 위치
@@ -199,47 +237,62 @@ export function haversineKm(a: LatLng, b: LatLng): number {
 
 ## 8. 프로젝트 구조
 
+> Expo / React Native 기준으로 변경.
+
 ```
-onuldo/
-├── public/
-│   └── pools.json
+todayswim/
+├── App.tsx                       엔트리
+├── app.config.ts                 Expo 설정 (env로 키 주입)
+├── .env.example                  필요 환경변수 샘플
+├── babel.config.js
+├── metro.config.js               svg-transformer 등록
+├── tsconfig.json
+├── package.json
+├── assets/
+│   ├── illustrations/
+│   │   ├── request-complete.svg  (5:19712, 5:18464에서 공유)
+│   │   └── more.svg              (5:2287)
+│   └── fonts/                    Pretendard·Fraunces 정적 ttf
 ├── src/
-│   ├── api/pools.ts
+│   ├── navigation/
+│   │   ├── RootNavigator.tsx     Splash → Main 스택
+│   │   └── types.ts              네비 파라미터 타입
+│   ├── screens/
+│   │   ├── splash/SplashScreen.tsx       (3:387)
+│   │   ├── map/MapScreen.tsx             (4상태 통합)
+│   │   ├── schedule/
+│   │   │   ├── ScheduleViewScreen.tsx    (5:14288)
+│   │   │   ├── ScheduleNicknameScreen.tsx(5:14808)
+│   │   │   ├── ScheduleWriteScreen.tsx   (5:15159)
+│   │   │   ├── ScheduleTimeScreen.tsx    (5:15381)
+│   │   │   └── ScheduleDoneScreen.tsx    (5:19712)
+│   │   ├── pool-submit/
+│   │   │   ├── PoolNameScreen.tsx        (5:16341)
+│   │   │   └── PoolDoneScreen.tsx        (5:18464)
+│   │   └── more/MoreScreen.tsx           (5:2287)
 │   ├── components/
-│   │   ├── layout/
-│   │   │   ├── Header.tsx
-│   │   │   └── Sidebar.tsx
-│   │   ├── map/
-│   │   │   ├── KakaoMap.tsx
-│   │   │   └── PoolMarker.tsx
-│   │   ├── pool/
-│   │   │   ├── PoolCard.tsx
-│   │   │   ├── PoolList.tsx
-│   │   │   └── PoolDetail.tsx
-│   │   ├── filters/
-│   │   │   ├── RegionFilter.tsx
-│   │   │   ├── TypeFilter.tsx
-│   │   │   └── SortSelect.tsx
-│   │   └── ui/
+│   │   ├── ui/                   Button, Input, Chip, Badge
+│   │   ├── map/                  PoolMarker, PoolBottomCard
+│   │   ├── feedback/             RequestComplete (illustration + text + CTA)
+│   │   └── layout/               ScreenContainer, AppHeader
+│   ├── store/
+│   │   ├── pools.ts              풀 데이터 + 선택 상태
+│   │   ├── favorites.ts          persist 즐겨찾기
+│   │   └── scheduleDraft.ts      시간표 작성 4스텝 임시 상태
+│   ├── data/
+│   │   └── dummyPools.ts         프로토타입용 더미 데이터
 │   ├── hooks/
 │   │   ├── useGeolocation.ts
-│   │   ├── usePools.ts
-│   │   └── useFavorites.ts
-│   ├── store/
-│   │   ├── filters.ts
-│   │   └── favorites.ts
-│   ├── pages/
-│   │   ├── HomePage.tsx
-│   │   ├── PoolDetailPage.tsx
-│   │   └── FavoritesPage.tsx
-│   ├── types/pool.ts
-│   ├── utils/distance.ts
-│   ├── styles/tokens.css
-│   ├── App.tsx
-│   └── main.tsx
-├── .env
-├── tailwind.config.js
-└── package.json
+│   │   └── useFonts.ts
+│   ├── types/
+│   │   ├── pool.ts
+│   │   └── schedule.ts
+│   ├── utils/distance.ts         Haversine
+│   └── styles/
+│       ├── tokens.ts             DESIGN.md 토큰 (TS 버전)
+│       └── typography.ts         text-h1, text-body 등 스타일 헬퍼
+└── design-refs/                  Figma 시안 PNG (gitignored)
+    └── figma/01~13.png
 ```
 
 ---
@@ -247,55 +300,76 @@ onuldo/
 ## 9. 셋업
 
 ```bash
-npm create vite@latest onuldo -- --template react-ts
-cd onuldo
-npm install
+npx create-expo-app@latest todayswim -t blank-typescript
 
-# 핵심
-npm install zustand @tanstack/react-query react-router-dom
+cd todayswim
 
-# 스타일
-npm install -D tailwindcss postcss autoprefixer
-npx tailwindcss init -p
+# 네비게이션
+npx expo install @react-navigation/native @react-navigation/native-stack \
+                  react-native-screens react-native-safe-area-context
+
+# 지도
+npx expo install react-native-maps
+
+# 상태
+npm install zustand @tanstack/react-query
+
+# 영속화
+npx expo install @react-native-async-storage/async-storage
+
+# 폰트
+npx expo install expo-font
+
+# SVG
+npx expo install react-native-svg
+npm install -D react-native-svg-transformer
+
+# 위치
+npx expo install expo-location
+
+# 아이콘
+npm install lucide-react-native
 ```
 
-**환경 변수 `.env`**
+**환경변수** — `.env` (`app.config.ts`에서 읽음)
 ```
-VITE_KAKAO_MAP_KEY=발급받은_JS키
-```
-
-**카카오맵 SDK** — `index.html`
-```html
-<script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=%VITE_KAKAO_MAP_KEY%&autoload=false"></script>
+EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_IOS=
+EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_ANDROID=
 ```
 
-**폰트** — `index.html`
-```html
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..700&family=Noto+Serif+KR:wght@400;500;700&display=swap" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
-```
+**Google Maps 키 발급**
+1. https://console.cloud.google.com 에서 프로젝트 생성
+2. **Maps SDK for Android** 와 **Maps SDK for iOS** 활성화
+3. API 키 발급 → 패키지명·번들ID로 제한
+4. (선택) Cloud Map ID 만들어서 디자인 테마 적용
+5. `.env`에 키 입력 후 EAS Build 또는 `npx expo prebuild` 실행
 
-**카카오 키 발급**
-1. https://developers.kakao.com 가입
-2. 애플리케이션 추가 → JavaScript 키 복사
-3. 플랫폼 등록에 `localhost`, 배포 도메인 등록
+**폰트**
+- Pretendard: `assets/fonts/Pretendard-{Regular,Medium,SemiBold,Bold}.ttf`
+- Fraunces: Google Fonts에서 다운 (italic 포함)
+
+**Custom Dev Build 필수**
+- `eas build --profile development --platform ios|android` 한 번 실행 후
+- Expo Go 대신 dev client 사용
 
 ---
 
-## 10. 구현 순서 (Claude Code에 그대로 시키기)
+## 10. 구현 순서 (2026-05-07 갱신, Expo 기준)
 
-1. **셋업:** Vite + Tailwind + 라우팅 + 디자인 토큰(`tokens.css`)
-2. **레이아웃 셸:** Header(로고 *오늘도 수영* 세리프), 메인 그리드, 빈 상태 카피
-3. **타입 + 더미 데이터:** `Pool` 타입, `pools.json` 샘플 20개
-4. **카카오 지도:** `KakaoMap` 컴포넌트, 마커 + 컬러 분기
-5. **카드/리스트:** `PoolCard`(여백·세리프 강조), `PoolList`
-6. **필터:** Zustand store + 칩/체크박스 UI
-7. **위치 + 거리순:** `useGeolocation` 훅 + 거부 시 폴백 카피
-8. **즐겨찾기:** persist store + ♡ 토글, *또 가고 싶은 곳* 페이지
-9. **상세 페이지:** `/pool/:id`
-10. **마무리:** 모바일 반응형, 로딩 스켈레톤, 빈 상태 일러스트
-11. **(선택) 실데이터 교체:** CSV → JSON 변환 스크립트
+1. **토큰:** `src/styles/tokens.ts` (DESIGN.md를 TS 객체로)
+2. **Expo 셋업:** create-expo-app + 의존성 + 폴더 구조 + 폰트 로드
+3. **네비:** RootNavigator (Splash → Main 스택), 화면 자리 placeholder
+4. **타입·더미 데이터:** `Pool`, `Schedule`, `dummyPools.ts` 20개
+5. **공통 UI:** Button(primary/secondary/ghost), Input, Chip, ScreenContainer
+6. **Splash** (3:387)
+7. **MapScreen** (지도 + PoolMarker + 4상태 바텀카드)
+8. **시간표 조회/작성 플로우** (5:14288 → 14808 → 15159 → 15381 → 19712)
+9. **수영장 등록·수정** (5:16341 → 18464)
+10. **More** (5:2287 + more.svg)
+11. **즐겨찾기 persist + 마커 컬러 분기**
+12. **실데이터 교체:** 공공데이터 CSV → JSON 변환 스크립트
+
+각 단계 완료 시 커밋·푸시. Chris 자고 일어나서 PR/diff 단위로 리뷰 가능하도록.
 
 ---
 
