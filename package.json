@@ -1,0 +1,40 @@
+{
+  "name": "todayswim",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start --dev-client",
+    "android": "expo start --android --dev-client",
+    "ios": "expo start --ios --dev-client",
+    "web": "expo start --web",
+    "prebuild": "expo prebuild",
+    "lint": "expo lint"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-navigation/native": "^7.2.2",
+    "@react-navigation/native-stack": "^7.14.12",
+    "@tanstack/react-query": "^5.100.9",
+    "expo": "latest",
+    "expo-constants": "~55.0.16",
+    "expo-dev-client": "~55.0.32",
+    "expo-font": "~55.0.7",
+    "expo-location": "~55.1.9",
+    "expo-status-bar": "latest",
+    "lucide-react-native": "^1.14.0",
+    "react": "19.2.0",
+    "react-native": "0.83.6",
+    "react-native-maps": "1.27.2",
+    "react-native-safe-area-context": "~5.6.2",
+    "react-native-screens": "~4.23.0",
+    "react-native-svg": "15.15.3",
+    "zustand": "^5.0.13"
+  },
+  "devDependencies": {
+    "@types/react": "*",
+    "@types/react-native": "*",
+    "react-native-svg-transformer": "^1.5.3",
+    "typescript": "*"
+  }
+}

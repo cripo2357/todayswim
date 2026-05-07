@@ -21,14 +21,25 @@ yarn-error.log*
 .env.local
 .env.*.local
 
-# Dependency directories (스택 확정 후 보강)
+# Dependency directories
 node_modules/
 
-# Build output
-dist/
-build/
+# Expo
 .expo/
 .expo-shared/
+expo-env.d.ts
+ios/
+android/
+web-build/
+dist/
+
+# Build output
+build/
+*.jsbundle
+*.tsbuildinfo
+
+# EAS
+.easignore
 
 # 임시
 upload/
