@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { Waves, MoveHorizontal, MoveVertical, Navigation, Pencil } from 'lucide-react-native';
+import { Waves, MoveHorizontal, MoveVertical, Navigation, Pencil, Heart } from 'lucide-react-native';
 import { Button } from '@/components/ui/Button';
 import type { Pool } from '@/types/pool';
 import { tokens } from '@/styles/tokens';
@@ -11,6 +11,7 @@ interface Props {
   hasSchedule: boolean;
   /** 찜 여부 (시각적 강조) */
   favorited?: boolean;
+  onToggleFavorite?: () => void;
   onPressDirections?: () => void;
   onPressScheduleAction?: () => void;
 }
@@ -22,13 +23,30 @@ interface Props {
  * 마커 탭 시 등장.
  */
 export function PoolBottomCard({
-  pool, hasSchedule, favorited, onPressDirections, onPressScheduleAction,
+  pool, hasSchedule, favorited, onToggleFavorite, onPressDirections, onPressScheduleAction,
 }: Props) {
   return (
     <View style={[styles.card, favorited && styles.cardFavorite]}>
       <View style={styles.headerRow}>
         <View style={styles.textCol}>
-          <Text style={styles.name}>{pool.name}</Text>
+          <View style={styles.nameRow}>
+            <Text style={styles.name} numberOfLines={1}>{pool.name}</Text>
+            <Pressable
+              onPress={onToggleFavorite}
+              hitSlop={8}
+              style={({ pressed }) => [styles.heartBtn, pressed && { opacity: 0.6 }]}
+              accessibilityRole="button"
+              accessibilityLabel={favorited ? '찜 해제' : '또 가고 싶은 곳에 담기'}
+              accessibilityState={{ selected: !!favorited }}
+            >
+              <Heart
+                size={22}
+                color={favorited ? tokens.color.warmCoral : tokens.color.ink400}
+                fill={favorited ? tokens.color.warmCoral : 'transparent'}
+                strokeWidth={1.8}
+              />
+            </Pressable>
+          </View>
           <Text style={styles.addr}>{pool.address}</Text>
           {pool.phone ? <Text style={styles.phone}>{pool.phone}</Text> : null}
         </View>
@@ -100,7 +118,19 @@ const styles = StyleSheet.create({
     gap: tokens.space[3],
   },
   textCol: { flex: 1 },
-  name: { ...tokens.text.h3, color: tokens.color.ink900 },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: tokens.space[2],
+  },
+  name: { ...tokens.text.h3, color: tokens.color.ink900, flex: 1 },
+  heartBtn: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   addr: { ...tokens.text.bodySm, color: tokens.color.ink700, marginTop: tokens.space[1] },
   phone: { ...tokens.text.bodySm, color: tokens.color.ink500 },
   dirBtn: {

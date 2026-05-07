@@ -18,6 +18,7 @@ import { PoolBottomCard } from '@/components/map/PoolBottomCard';
 import { useFavorites } from '@/store/favorites';
 import { useSelection } from '@/store/selection';
 import { useScheduleDraft } from '@/store/scheduleDraft';
+import { useGeolocation } from '@/hooks/useGeolocation';
 import { tokens } from '@/styles/tokens';
 
 const INITIAL_REGION: Region = {
@@ -34,7 +35,9 @@ export function MapScreen() {
   const selectedPoolId = useSelection((s) => s.selectedPoolId);
   const select = useSelection((s) => s.select);
   const favoriteIds = useFavorites((s) => s.ids);
+  const toggleFavorite = useFavorites((s) => s.toggle);
   const initDraft = useScheduleDraft((s) => s.init);
+  const geo = useGeolocation();
 
   const selectedPool = React.useMemo(
     () => dummyPools.find((p) => p.id === selectedPoolId) ?? null,
@@ -77,6 +80,23 @@ export function MapScreen() {
       cam.zoom = Math.max(0, Math.min(20, (cam.zoom ?? 14) + delta));
       mapRef.current?.animateCamera(cam, { duration: 200 });
     });
+  };
+
+  const flyToMyLocation = async () => {
+    if (geo.status !== 'granted') {
+      await geo.request();
+    }
+    if (geo.coords) {
+      mapRef.current?.animateToRegion(
+        {
+          latitude: geo.coords.lat,
+          longitude: geo.coords.lng,
+          latitudeDelta: 0.02,
+          longitudeDelta: 0.015,
+        },
+        400,
+      );
+    }
   };
 
   return (
@@ -128,7 +148,7 @@ export function MapScreen() {
         <Pressable onPress={() => zoom(-1)} style={[styles.fabDark, styles.fabRound]}>
           <Minus size={20} color={tokens.color.white} strokeWidth={2} />
         </Pressable>
-        <Pressable style={[styles.fabDark, styles.fabRound]}>
+        <Pressable onPress={flyToMyLocation} style={[styles.fabDark, styles.fabRound]}>
           <Crosshair size={20} color={tokens.color.white} strokeWidth={2} />
         </Pressable>
       </View>
@@ -140,6 +160,7 @@ export function MapScreen() {
             pool={selectedPool}
             hasSchedule={scheduleByPool.has(selectedPool.id)}
             favorited={favoriteIds.has(selectedPool.id)}
+            onToggleFavorite={() => toggleFavorite(selectedPool.id)}
             onPressScheduleAction={onScheduleAction}
           />
         </SafeAreaView>
