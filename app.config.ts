@@ -7,7 +7,7 @@ const GOOGLE_MAPS_KEY_FALLBACK = 'AIzaSyDfBj9mzxYS4E-p-u09AWQlt3fXjRkOgYg';
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: "Pool's Day",
-  slug: 'poolsday',
+  slug: 'todayswim', // EAS 내부 식별자(슬러그)는 그대로. 표시 이름은 expo.dev에서 'poolsday'로 변경됨.
   version: '0.1.0',
   orientation: 'portrait',
   scheme: 'poolsday',
