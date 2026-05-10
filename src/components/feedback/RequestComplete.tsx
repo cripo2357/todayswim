@@ -1,8 +1,12 @@
+// Figma 5:19712 (시간표 등록 요청 완료) / 5:18464 (수영장 추가 요청 완료) / 38:766 (수영장 정보 수정 요청 완료)
+// dark backdrop + centered white card + illustration + title + desc + primary 버튼.
+
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Check } from 'lucide-react-native';
 import { Button } from '@/components/ui/Button';
+import { ModalCard } from '@/components/layout/ModalCard';
 import { tokens } from '@/styles/tokens';
-// SVG는 metro.config.js의 react-native-svg-transformer로 컴포넌트 import
 import RequestCompleteIllust from '@assets/illustrations/request-complete.svg';
 
 interface Props {
@@ -12,49 +16,54 @@ interface Props {
   onCtaPress: () => void;
 }
 
-/**
- * 요청 완료 화면 공통 레이아웃.
- * Figma 5:19712 (시간표 등록 요청 완료) + 5:18464 (수영장 등록/수정 요청 완료) 공유.
- *
- * 일러스트(request-complete.svg) + 제목 + 설명 + 1버튼.
- */
 export function RequestComplete({ title, description, ctaLabel, onCtaPress }: Props) {
   return (
-    <View style={styles.root}>
-      <View style={styles.illustWrap}>
-        <RequestCompleteIllust width={311} height={211} />
+    <ModalCard withCardPadding={false}>
+      <View style={styles.inner}>
+        <View style={styles.illustWrap}>
+          <RequestCompleteIllust width={240} height={163} />
+        </View>
+        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.desc}>{description}</Text>
+        <Button
+          label={ctaLabel}
+          onPress={onCtaPress}
+          size="lg"
+          fullWidth
+          style={styles.cta}
+          iconRight={<Check size={18} color={tokens.color.white} strokeWidth={2.4} />}
+        />
       </View>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.desc}>{description}</Text>
-      <View style={styles.spacer} />
-      <Button label={ctaLabel} onPress={onCtaPress} size="lg" fullWidth />
-    </View>
+    </ModalCard>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    paddingTop: 162, // Figma 데이터: Frame y=178, container y=16
+  inner: {
+    paddingHorizontal: tokens.space[6],
+    paddingTop: tokens.space[8],
     paddingBottom: tokens.space[6],
     alignItems: 'center',
   },
   illustWrap: {
-    width: 311,
-    height: 211,
-    marginBottom: tokens.space[8],
+    width: 240,
+    height: 163,
+    marginBottom: tokens.space[6],
   },
   title: {
-    ...tokens.text.h2,
+    ...tokens.text.h3,
+    fontFamily: tokens.font.sansBold,
     color: tokens.color.ink900,
     textAlign: 'center',
   },
   desc: {
-    ...tokens.text.body,
+    ...tokens.text.bodySm,
     color: tokens.color.ink500,
     textAlign: 'center',
     marginTop: tokens.space[3],
-    paddingHorizontal: tokens.space[4],
+    lineHeight: 22,
   },
-  spacer: { flex: 1 },
+  cta: {
+    marginTop: tokens.space[6],
+  },
 });

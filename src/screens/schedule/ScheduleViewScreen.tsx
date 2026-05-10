@@ -1,13 +1,14 @@
-// Figma: 5:14288 (시간표 조회)
+// Figma: 5:14288 (자유수영 시간표 보기) — dark backdrop + centered card.
 //
-// 풀 이름 + "업데이트: YYYY.MM.DD - 닉네임" 크레딧 + 7요일 칩 + 선택 요일의 시간 슬롯.
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import { useRoute, type RouteProp } from '@react-navigation/native';
+// 풀이름 + 업데이트 캡션 + 7일 day chip + 선택 요일 시간 슬롯 + "시간표 수정 요청" outline 버튼.
 
-import { ScreenContainer } from '@/components/layout/ScreenContainer';
-import { AppHeader } from '@/components/layout/AppHeader';
-import { Chip } from '@/components/ui/Chip';
+import React from 'react';
+import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
+import { useRoute, useNavigation, type RouteProp } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+import { ModalCard } from '@/components/layout/ModalCard';
+import { Button } from '@/components/ui/Button';
 import { dummyPools, dummySchedules } from '@/data/dummyPools';
 import type { RootStackParamList } from '@/navigation/types';
 import type { DayOfWeek } from '@/types/schedule';
@@ -16,21 +17,36 @@ import { tokens } from '@/styles/tokens';
 const DAYS: DayOfWeek[] = ['월', '화', '수', '목', '금', '토', '일'];
 
 export function ScheduleViewScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, 'ScheduleView'>>();
   const { poolId } = route.params;
 
   const pool = dummyPools.find((p) => p.id === poolId);
   const schedule = dummySchedules.find((s) => s.poolId === poolId);
 
-  const [selectedDay, setSelectedDay] = React.useState<DayOfWeek>('월');
+  const daysWithSchedule = React.useMemo(() => {
+    if (!schedule) return new Set<DayOfWeek>();
+    return new Set(
+      DAYS.filter((d) => (schedule.byDay[d]?.length ?? 0) > 0),
+    );
+  }, [schedule]);
+
+  const firstAvailable = React.useMemo<DayOfWeek>(() => {
+    return DAYS.find((d) => daysWithSchedule.has(d)) ?? '월';
+  }, [daysWithSchedule]);
+
+  const [selectedDay, setSelectedDay] = React.useState<DayOfWeek>(firstAvailable);
   const slots = schedule?.byDay[selectedDay] ?? [];
 
   return (
-    <ScreenContainer withHorizontalPadding={false}>
-      <AppHeader title="자유수영 시간표" />
-
-      <ScrollView contentContainerStyle={styles.body}>
-        {/* 크레딧 */}
+    <ModalCard
+      withCardPadding={false}
+      onBackdropPress={() => navigation.goBack()}
+    >
+      <ScrollView
+        contentContainerStyle={styles.body}
+        showsVerticalScrollIndicator={false}
+      >
         {schedule ? (
           <Text style={styles.credit}>
             업데이트: {schedule.updatedAt} - {schedule.authorNickname}
@@ -39,90 +55,183 @@ export function ScheduleViewScreen() {
 
         <Text style={styles.poolName}>{pool?.name ?? '수영장'}</Text>
 
-        <Text style={styles.notice}>실제 운영시간과 다를 수 있으니 참고만 하세요.</Text>
+        <Text style={styles.notice}>
+          실제 운영시간과 다를 수 있습니다. 꼭 문의 후 방문하세요.
+        </Text>
 
-        {/* 7요일 칩 */}
         <View style={styles.daysRow}>
-          {DAYS.map((d) => (
-            <Chip
-              key={d}
-              label={d}
-              active={d === selectedDay}
-              onPress={() => setSelectedDay(d)}
-            />
-          ))}
+          {DAYS.map((d) => {
+            const has = daysWithSchedule.has(d);
+            const selected = d === selectedDay;
+            return (
+              <DayChip
+                key={d}
+                label={d}
+                selected={selected}
+                hasSchedule={has}
+                onPress={() => setSelectedDay(d)}
+              />
+            );
+          })}
         </View>
 
-        {/* 시간 슬롯 */}
-        <View style={styles.slots}>
+        <View style={styles.slotsWrap}>
           {slots.length === 0 ? (
             <Text style={styles.empty}>이 요일은 등록된 시간이 없어요.</Text>
           ) : (
             slots.map((slot, i) => (
-              <View key={i} style={styles.slot}>
-                <Text style={styles.slotTime}>
-                  {slot.start} – {slot.end}
+              <View key={i} style={styles.slotChip}>
+                <Text style={styles.slotChipText}>
+                  {slot.start} ~ {slot.end}
                 </Text>
-                {slot.hours ? (
-                  <Text style={styles.slotHours}>{slot.hours}시간</Text>
-                ) : null}
               </View>
             ))
           )}
         </View>
+
+        <Button
+          label="시간표 수정 요청"
+          variant="outline"
+          size="lg"
+          fullWidth
+          onPress={() => navigation.navigate('ScheduleNickname', { poolId })}
+          style={styles.modifyBtn}
+        />
       </ScrollView>
-    </ScreenContainer>
+    </ModalCard>
   );
 }
 
+interface DayChipProps {
+  label: string;
+  selected: boolean;
+  hasSchedule: boolean;
+  onPress: () => void;
+}
+
+function DayChip({ label, selected, hasSchedule, onPress }: DayChipProps) {
+  // 3 states (Figma 5:14288):
+  // 1) selected: solid brandBlue + white text
+  // 2) has-schedule: white bg + brandBlue ring + brandBlue text
+  // 3) no-schedule: light blue (#EFF6FF) bg + brandBlue text (no border)
+  const containerStyle = selected
+    ? styles.dayChipSelected
+    : hasSchedule
+      ? styles.dayChipActive
+      : styles.dayChipMuted;
+  const labelStyle = selected ? styles.dayChipLabelSelected : styles.dayChipLabel;
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.dayChipBase, containerStyle, pressed && { opacity: 0.85 }]}
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+    >
+      <Text style={labelStyle}>{label}</Text>
+    </Pressable>
+  );
+}
+
+const DAY_CHIP_SIZE = 36;
+
 const styles = StyleSheet.create({
   body: {
-    paddingHorizontal: tokens.layout.pagePadMobile,
-    paddingTop: tokens.space[6],
-    paddingBottom: tokens.space[12],
+    paddingHorizontal: tokens.space[6],
+    paddingVertical: tokens.space[6],
   },
-  credit: { ...tokens.text.caption, color: tokens.color.ink500 },
+  credit: {
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: -0.2,
+    fontFamily: tokens.font.sansMedium,
+    color: tokens.color.ink500,
+    textAlign: 'right',
+  },
   poolName: {
-    ...tokens.text.h2,
+    fontSize: 22,
+    lineHeight: 30,
+    letterSpacing: -1,
+    fontFamily: tokens.font.sansBold,
     color: tokens.color.ink900,
-    marginTop: tokens.space[3],
+    marginTop: tokens.space[2],
+    textAlign: 'center',
   },
   notice: {
-    ...tokens.text.caption,
-    color: tokens.color.ink500,
+    fontSize: 12,
+    lineHeight: 18,
+    letterSpacing: -0.2,
+    fontFamily: tokens.font.sans,
+    color: tokens.color.brandBlue,
+    textAlign: 'center',
     marginTop: tokens.space[2],
   },
   daysRow: {
     flexDirection: 'row',
-    gap: tokens.space[1],
-    marginTop: tokens.space[6],
-    flexWrap: 'wrap',
-  },
-  slots: { marginTop: tokens.space[6], gap: tokens.space[2] },
-  slot: {
-    backgroundColor: tokens.color.bgPaper,
-    borderRadius: tokens.radius.md,
-    paddingVertical: tokens.space[3],
-    paddingHorizontal: tokens.space[4],
-    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: tokens.color.lineDefault,
+    marginTop: tokens.space[6],
   },
-  slotTime: {
-    ...tokens.text.h4,
-    color: tokens.color.ink900,
+  dayChipBase: {
+    width: DAY_CHIP_SIZE,
+    height: DAY_CHIP_SIZE,
+    borderRadius: DAY_CHIP_SIZE / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  slotHours: {
-    ...tokens.text.bodySm,
-    color: tokens.color.pool700,
+  dayChipSelected: {
+    backgroundColor: tokens.color.brandBlue,
+  },
+  dayChipActive: {
+    backgroundColor: tokens.color.bgPaper,
+    borderWidth: 1.5,
+    borderColor: tokens.color.brandBlue,
+  },
+  dayChipMuted: {
+    backgroundColor: '#EFF6FF',
+  },
+  dayChipLabel: {
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: -0.4,
     fontFamily: tokens.font.sansSemibold,
+    color: tokens.color.brandBlue,
+  },
+  dayChipLabelSelected: {
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: -0.4,
+    fontFamily: tokens.font.sansBold,
+    color: tokens.color.white,
+  },
+  slotsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: tokens.space[6],
+    minHeight: 48,
+  },
+  slotChip: {
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  slotChipText: {
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: -0.4,
+    fontFamily: tokens.font.sansSemibold,
+    color: tokens.color.ink700,
   },
   empty: {
-    ...tokens.text.body,
+    ...tokens.text.bodySm,
     color: tokens.color.ink500,
     textAlign: 'center',
-    paddingVertical: tokens.space[8],
+    paddingVertical: tokens.space[6],
+    width: '100%',
+  },
+  modifyBtn: {
+    marginTop: tokens.space[8],
   },
 });

@@ -13,13 +13,17 @@ export type RootStackParamList = {
   ScheduleTime: {
     poolId: string;
     nickname: string;
-    daySlot: { day: string; period: string };
+    day: string;
+    /** start: 시작시간 입력. end: 종료시간 입력 (startTime 필수) */
+    mode: 'start' | 'end';
+    /** mode='end'일 때만 — "HH:MM" */
+    startTime?: string;
   };
   ScheduleDone: undefined;
 
   // 수영장 등록·수정
   PoolName: { mode: 'create' | 'edit'; poolId?: string };
-  PoolDone: undefined;
+  PoolDone: { mode: 'create' | 'edit' };
 
   // 부가 기능
   More: undefined;

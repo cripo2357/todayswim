@@ -1,69 +1,100 @@
 // Figma: 5:2287 (부가 기능)
 //
-// more.svg 일러스트 + "무엇을 도와드릴까요?" + 2개 버튼.
+// dark backdrop + centered card + 일러스트 + "무엇을 도와드릴까요?" + 4개 outline 버튼.
 
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Linking, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import { ScreenContainer } from '@/components/layout/ScreenContainer';
-import { AppHeader } from '@/components/layout/AppHeader';
+import { ModalCard } from '@/components/layout/ModalCard';
 import { Button } from '@/components/ui/Button';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
 import MoreIllust from '@assets/illustrations/more.svg';
 
+const FEEDBACK_EMAIL = 'cripo2357@gmail.com';
+
 export function MoreScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
+  const sendMail = (subject: string) => {
+    const url = `mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent(subject)}`;
+    Linking.openURL(url).catch(() => {
+      Alert.alert('메일 앱을 열 수 없어요', `직접 ${FEEDBACK_EMAIL} 로 보내주세요.`);
+    });
+  };
+
   return (
-    <ScreenContainer withHorizontalPadding={false}>
-      <AppHeader title="부가 기능" />
+    <ModalCard
+      onBackdropPress={() => navigation.goBack()}
+      withCardPadding={false}
+    >
       <View style={styles.body}>
         <View style={styles.illustWrap}>
-          <MoreIllust width={311} height={247} />
+          <MoreIllust width={220} height={175} />
         </View>
 
         <Text style={styles.heading}>무엇을 도와드릴까요?</Text>
 
-        <View style={styles.spacer} />
-
         <View style={styles.actions}>
           <Button
-            label="수영장 등록 요청"
+            label="수영장 추가 요청"
+            variant="outline"
             size="lg"
             fullWidth
-            onPress={() => navigation.navigate('PoolName', { mode: 'create' })}
+            onPress={() => navigation.replace('PoolName', { mode: 'create' })}
           />
           <Button
             label="수영장 정보 수정 요청"
+            variant="outline"
             size="lg"
-            variant="secondary"
             fullWidth
-            onPress={() => navigation.navigate('PoolName', { mode: 'edit' })}
+            onPress={() => navigation.replace('PoolName', { mode: 'edit' })}
+          />
+          <Button
+            label="운영자에게 의견 전달"
+            variant="outline"
+            size="lg"
+            fullWidth
+            onPress={() => sendMail("[Pool's Day] 의견 전달")}
+          />
+          <Button
+            label="서비스에 광고 제안"
+            variant="outline"
+            size="lg"
+            fullWidth
+            onPress={() => sendMail("[Pool's Day] 광고 제안")}
           />
         </View>
       </View>
-    </ScreenContainer>
+    </ModalCard>
   );
 }
 
 const styles = StyleSheet.create({
   body: {
-    flex: 1,
-    paddingHorizontal: tokens.layout.pagePadMobile,
+    paddingHorizontal: tokens.space[6],
     paddingTop: tokens.space[8],
     paddingBottom: tokens.space[6],
     alignItems: 'center',
   },
-  illustWrap: { width: 311, height: 247 },
+  illustWrap: {
+    width: 220,
+    height: 175,
+  },
   heading: {
-    ...tokens.text.h3,
+    fontSize: 22,
+    lineHeight: 30,
+    letterSpacing: -1,
+    fontFamily: tokens.font.sansBold,
     color: tokens.color.ink900,
     textAlign: 'center',
     marginTop: tokens.space[6],
   },
-  spacer: { flex: 1 },
-  actions: { alignSelf: 'stretch', gap: tokens.space[2] },
+  actions: {
+    alignSelf: 'stretch',
+    marginTop: tokens.space[6],
+    gap: tokens.space[2],
+  },
 });

@@ -1,10 +1,11 @@
-// Figma: 5:16341 (수영장 등록 또는 정보 수정 - 수영장 이름 입력)
+// Figma: 38:610 (수영장 추가 요청 - 이름 입력) / 38:719 (수영장 정보 수정 요청 - 이름 입력)
 import React from 'react';
 import {
   View, Text, KeyboardAvoidingView, Platform, StyleSheet, Keyboard, TouchableWithoutFeedback,
 } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { ArrowRight } from 'lucide-react-native';
 
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { AppHeader } from '@/components/layout/AppHeader';
@@ -21,31 +22,30 @@ export function PoolNameScreen() {
   const [name, setName] = React.useState('');
   const canSubmit = name.trim().length >= 2;
 
+  const heading = isEdit
+    ? '정보를 수정하고 싶은\n수영장 이름을 입력하세요.'
+    : '추가하고 싶은\n수영장 이름을 입력하세요.';
+  const ctaLabel = isEdit ? '수영장 정보 수정 요청' : '수영장 추가 요청';
+
   const onSubmit = () => {
-    // TODO: 백엔드 등록 (지금은 더미 → 바로 완료 화면)
-    navigation.navigate('PoolDone');
+    navigation.navigate('PoolDone', { mode: isEdit ? 'edit' : 'create' });
   };
 
   return (
     <ScreenContainer withHorizontalPadding={false}>
-      <AppHeader title={isEdit ? '수영장 정보 수정' : '수영장 등록 요청'} />
+      <AppHeader />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.body}>
-            <Text style={styles.heading}>
-              어떤 수영장인가요?
-            </Text>
-            <Text style={styles.sub}>
-              정확한 시설명을 적어주시면 관리자가 확인 후 등록해드릴게요.
-            </Text>
+            <Text style={styles.heading}>{heading}</Text>
 
-            <View style={styles.inputWrap}>
+            <View style={styles.fieldWrap}>
+              <Text style={styles.fieldLabel}>수영장 이름</Text>
               <Input
-                variant="jumbo"
-                placeholder="예) 잠실종합운동장 수영장"
+                placeholder="예) 관악구민종합체육센터"
                 autoFocus
                 maxLength={40}
                 value={name}
@@ -55,15 +55,18 @@ export function PoolNameScreen() {
               />
             </View>
 
-            <View style={styles.spacer} />
-
             <Button
-              label={isEdit ? '수정 요청' : '등록 요청'}
+              label={ctaLabel}
               onPress={onSubmit}
               disabled={!canSubmit}
               size="lg"
               fullWidth
               style={styles.submitBtn}
+              iconRight={
+                canSubmit ? (
+                  <ArrowRight size={18} color={tokens.color.white} strokeWidth={2.2} />
+                ) : undefined
+              }
             />
           </View>
         </TouchableWithoutFeedback>
@@ -77,11 +80,27 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     paddingHorizontal: tokens.layout.pagePadMobile,
-    paddingTop: tokens.space[12],
+    paddingTop: tokens.space[6],
   },
-  heading: { ...tokens.text.h1, color: tokens.color.ink900 },
-  sub: { ...tokens.text.body, color: tokens.color.ink500, marginTop: tokens.space[2] },
-  inputWrap: { marginTop: tokens.space[8] },
-  spacer: { flex: 1 },
-  submitBtn: { marginBottom: tokens.space[6] },
+  heading: {
+    fontSize: 24,
+    lineHeight: 32,
+    letterSpacing: -1,
+    fontFamily: tokens.font.sansBold,
+    color: tokens.color.ink900,
+  },
+  fieldWrap: {
+    marginTop: tokens.space[8],
+    gap: tokens.space[2],
+  },
+  fieldLabel: {
+    fontSize: 13,
+    lineHeight: 18,
+    letterSpacing: -0.4,
+    fontFamily: tokens.font.sansSemibold,
+    color: tokens.color.ink700,
+  },
+  submitBtn: {
+    marginTop: tokens.space[6],
+  },
 });

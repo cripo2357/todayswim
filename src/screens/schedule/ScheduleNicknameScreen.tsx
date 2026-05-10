@@ -1,7 +1,6 @@
-// Figma: 5:14808 (시간표 작성하기 - 닉네임 입력)
+// Figma: 37:6738 (시간표 작성하기 - 닉네임 입력)
 //
-// 단일 큰 인풋 + Primary 버튼 + 키보드 회피.
-// 메모리 §feedback_keyboard_avoidance: TextInput 화면은 KeyboardAvoidingView 필수.
+// 헤딩 + 서브카피 + 닉네임 입력 + Primary "입력 완료" + Outline "표시 안해도 괜찮아요".
 
 import React from 'react';
 import {
@@ -9,6 +8,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { ArrowRight } from 'lucide-react-native';
 
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { AppHeader } from '@/components/layout/AppHeader';
@@ -18,6 +18,8 @@ import { useScheduleDraft } from '@/store/scheduleDraft';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
 
+const ANON_NICK = '익명의 수영러';
+
 export function ScheduleNicknameScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, 'ScheduleNickname'>>();
@@ -25,12 +27,12 @@ export function ScheduleNicknameScreen() {
 
   const setNickname = useScheduleDraft((s) => s.setNickname);
   const [value, setValue] = React.useState('');
-  const canSubmit = value.trim().length >= 2 && value.trim().length <= 12;
+  const trimmed = value.trim();
+  const canSubmit = trimmed.length >= 2 && trimmed.length <= 12;
 
-  const onNext = () => {
-    const trimmed = value.trim();
-    setNickname(trimmed);
-    navigation.navigate('ScheduleWrite', { poolId, nickname: trimmed });
+  const goWrite = (nick: string) => {
+    setNickname(nick);
+    navigation.navigate('ScheduleWrite', { poolId, nickname: nick });
   };
 
   return (
@@ -42,34 +44,46 @@ export function ScheduleNicknameScreen() {
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.body}>
-            <Text style={styles.heading}>닉네임을 정해주세요</Text>
+            <Text style={styles.heading}>닉네임을 입력하세요.</Text>
             <Text style={styles.sub}>
-              다른 사용자가 시간표를 볼 때 함께 표시돼요.
+              시간표 작성에 대한 감사한 마음으로{'\n'}
+              마지막 작성자 닉네임을 시간표 위에 표시해드립니다.
             </Text>
 
-            <View style={styles.inputWrap}>
+            <View style={styles.fieldWrap}>
+              <Text style={styles.fieldLabel}>닉네임</Text>
               <Input
-                variant="jumbo"
                 placeholder="예) 수영맨"
                 autoFocus
                 maxLength={12}
                 value={value}
                 onChangeText={setValue}
                 returnKeyType="done"
-                onSubmitEditing={canSubmit ? onNext : undefined}
+                onSubmitEditing={canSubmit ? () => goWrite(trimmed) : undefined}
               />
             </View>
 
-            <View style={styles.spacer} />
-
-            <Button
-              label="다음"
-              onPress={onNext}
-              disabled={!canSubmit}
-              size="lg"
-              fullWidth
-              style={styles.nextBtn}
-            />
+            <View style={styles.actions}>
+              <Button
+                label="닉네임 입력 완료"
+                onPress={() => goWrite(trimmed)}
+                disabled={!canSubmit}
+                size="lg"
+                fullWidth
+                iconRight={
+                  canSubmit ? (
+                    <ArrowRight size={18} color={tokens.color.white} strokeWidth={2.2} />
+                  ) : undefined
+                }
+              />
+              <Button
+                label="닉네임 표시 안해도 괜찮아요."
+                onPress={() => goWrite(ANON_NICK)}
+                variant="outline"
+                size="lg"
+                fullWidth
+              />
+            </View>
           </View>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
@@ -82,18 +96,36 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     paddingHorizontal: tokens.layout.pagePadMobile,
-    paddingTop: tokens.space[12],
+    paddingTop: tokens.space[6],
   },
   heading: {
-    ...tokens.text.h1,
+    fontSize: 24,
+    lineHeight: 32,
+    letterSpacing: -1,
+    fontFamily: tokens.font.sansBold,
     color: tokens.color.ink900,
   },
   sub: {
-    ...tokens.text.body,
+    fontSize: 14,
+    lineHeight: 22,
+    letterSpacing: -0.4,
+    fontFamily: tokens.font.sans,
     color: tokens.color.ink500,
     marginTop: tokens.space[2],
   },
-  inputWrap: { marginTop: tokens.space[8] },
-  spacer: { flex: 1 },
-  nextBtn: { marginBottom: tokens.space[6] },
+  fieldWrap: {
+    marginTop: tokens.space[8],
+    gap: tokens.space[2],
+  },
+  fieldLabel: {
+    fontSize: 13,
+    lineHeight: 18,
+    letterSpacing: -0.4,
+    fontFamily: tokens.font.sansSemibold,
+    color: tokens.color.ink700,
+  },
+  actions: {
+    marginTop: tokens.space[6],
+    gap: tokens.space[2],
+  },
 });

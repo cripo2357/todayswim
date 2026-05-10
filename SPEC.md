@@ -240,7 +240,7 @@ export function haversineKm(a: LatLng, b: LatLng): number {
 > Expo / React Native 기준으로 변경.
 
 ```
-todayswim/
+poolsday/
 ├── App.tsx                       엔트리
 ├── app.config.ts                 Expo 설정 (env로 키 주입)
 ├── .env.example                  필요 환경변수 샘플
@@ -300,9 +300,9 @@ todayswim/
 ## 9. 셋업
 
 ```bash
-npx create-expo-app@latest todayswim -t blank-typescript
+npx create-expo-app@latest poolsday -t blank-typescript
 
-cd todayswim
+cd poolsday
 
 # 네비게이션
 npx expo install @react-navigation/native @react-navigation/native-stack \

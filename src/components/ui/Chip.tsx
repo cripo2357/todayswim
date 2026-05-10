@@ -44,14 +44,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   active: {
-    backgroundColor: tokens.color.pool100,
-    borderColor: tokens.color.pool300,
+    backgroundColor: '#EFF6FF', // Brand/5 from Figma
+    borderColor: tokens.color.brandBlue,
   },
   inactive: {
     backgroundColor: tokens.color.bgPaper,
     borderColor: tokens.color.lineDefault,
   },
   label: { ...tokens.text.bodySm, fontFamily: tokens.font.sansSemibold },
-  activeLabel: { color: tokens.color.pool700 },
+  activeLabel: { color: tokens.color.brandBlue },
   inactiveLabel: { color: tokens.color.ink700 },
 });

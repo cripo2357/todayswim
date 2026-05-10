@@ -1,25 +1,27 @@
-// Figma: 5:18464 (수영장 등록/수정 요청 완료)
+// Figma: 5:18464 (수영장 추가 요청 완료) / 38:766 (수영장 정보 수정 요청 완료)
 import React from 'react';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import { ScreenContainer } from '@/components/layout/ScreenContainer';
-import { AppHeader } from '@/components/layout/AppHeader';
 import { RequestComplete } from '@/components/feedback/RequestComplete';
 import type { RootStackParamList } from '@/navigation/types';
 
 export function PoolDoneScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'PoolDone'>>();
+  const isEdit = route.params?.mode === 'edit';
+
+  const title = isEdit ? '수영장 정보 수정 요청 완료' : '수영장 추가 요청 완료';
+  const description = isEdit
+    ? '정보 수정 요청하신 수영장을\n관리자가 확인 후 수정할 예정입니다.'
+    : '추가 요청하신 수영장을\n관리자가 확인 후 등록할 예정입니다.';
 
   return (
-    <ScreenContainer withHorizontalPadding={false}>
-      <AppHeader showBack={false} />
-      <RequestComplete
-        title="수영장 등록/수정 요청 완료"
-        description="등록/수정을 요청해주신 수영장을 관리자가 확인 후 등록할 예정입니다."
-        ctaLabel="완료"
-        onCtaPress={() => navigation.popToTop()}
-      />
-    </ScreenContainer>
+    <RequestComplete
+      title={title}
+      description={description}
+      ctaLabel="알겠습니다"
+      onCtaPress={() => navigation.popToTop()}
+    />
   );
 }

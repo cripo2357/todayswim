@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, Text, View, StyleSheet, ActivityIndicator, StyleProp, ViewStyle } from 'react-native';
 import { tokens } from '@/styles/tokens';
 
-type Variant = 'primary' | 'secondary' | 'ghost';
+type Variant = 'primary' | 'secondary' | 'ghost' | 'outline';
 type Size = 'sm' | 'md' | 'lg';
 
 interface Props {
@@ -107,21 +107,34 @@ const SIZE = {
 
 const VARIANT = {
   primary: StyleSheet.create({
-    container: { backgroundColor: tokens.color.pool500 },
+    container: { backgroundColor: tokens.color.brandBlue },
     disabledContainer: { backgroundColor: tokens.color.pool100 },
     label: { color: tokens.color.white },
     disabledLabel: { color: tokens.color.pool300 },
   }),
   secondary: StyleSheet.create({
-    container: { backgroundColor: tokens.color.pool100 },
+    container: { backgroundColor: '#EFF6FF' }, // Brand/5
     disabledContainer: { backgroundColor: tokens.color.bgSubtle },
-    label: { color: tokens.color.pool700 },
+    label: { color: tokens.color.brandBlue },
     disabledLabel: { color: tokens.color.ink400 },
   }),
   ghost: StyleSheet.create({
     container: { backgroundColor: tokens.color.transparent },
     disabledContainer: {},
     label: { color: tokens.color.ink700 },
+    disabledLabel: { color: tokens.color.ink400 },
+  }),
+  outline: StyleSheet.create({
+    container: {
+      backgroundColor: tokens.color.bgPaper,
+      borderWidth: 1,
+      borderColor: tokens.color.brandBlue,
+    },
+    disabledContainer: {
+      backgroundColor: tokens.color.bgPaper,
+      borderColor: tokens.color.lineDefault,
+    },
+    label: { color: tokens.color.brandBlue },
     disabledLabel: { color: tokens.color.ink400 },
   }),
 };

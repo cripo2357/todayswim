@@ -26,6 +26,7 @@ export const dummyPools: Pool[] = [
     depthMax: 1.8,
     facilities: ['샤워실', '주차장', '사물함', '수영용품 대여'],
     hasSchedule: true,
+    pricePerSession: 6000,
   },
   {
     id: 'POOL_SEOUL_0002',
@@ -44,6 +45,7 @@ export const dummyPools: Pool[] = [
     depthMax: 1.8,
     facilities: ['샤워실', '사물함'],
     hasSchedule: true,
+    pricePerSession: 8000,
   },
   {
     id: 'POOL_SEOUL_0003',
@@ -59,6 +61,7 @@ export const dummyPools: Pool[] = [
     poolLength: 25,
     facilities: ['샤워실', '주차장'],
     hasSchedule: false,
+    pricePerSession: 5000,
   },
   {
     id: 'POOL_SEOUL_0004',
@@ -73,6 +76,7 @@ export const dummyPools: Pool[] = [
     laneCount: 5,
     poolLength: 25,
     hasSchedule: true,
+    pricePerSession: 5000,
   },
   {
     id: 'POOL_SEOUL_0005',
@@ -86,6 +90,7 @@ export const dummyPools: Pool[] = [
     ownership: 'public',
     facilities: ['주차장', '편의점'],
     hasSchedule: false,
+    pricePerSession: 5000,
   },
   {
     id: 'POOL_SEOUL_0006',
@@ -100,6 +105,7 @@ export const dummyPools: Pool[] = [
     laneCount: 6,
     poolLength: 25,
     hasSchedule: true,
+    pricePerSession: 5500,
   },
   {
     id: 'POOL_SEOUL_0007',
@@ -114,6 +120,7 @@ export const dummyPools: Pool[] = [
     laneCount: 5,
     poolLength: 25,
     hasSchedule: false,
+    pricePerSession: 6500,
   },
   {
     id: 'POOL_SEOUL_0008',
@@ -130,6 +137,7 @@ export const dummyPools: Pool[] = [
     depthMin: 1.0,
     depthMax: 1.5,
     hasSchedule: true,
+    pricePerSession: 6000,
   },
 ];
 

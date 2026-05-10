@@ -16,70 +16,86 @@
 | 6 | `chore: expo-doctor 18/18 통과 + babel module-resolver` | 환경 검증 |
 | 7 | `feat: 즐겨찾기 토글 + 위치 권한 + 번들 검증` | iOS 번들 4.6MB 정상 |
 
-### 결정 사항
+## 2026-05-10/11 — Figma MCP 연동 + 마커·라벨·클러스터 시안 정확화
 
-| 주제 | 결정 | 근거 |
-|---|---|---|
-| 브랜드 | **Pool's Day / 풀스데이** | DESIGN.md가 가장 최신 |
-| 코드 식별자 | `todayswim` (레포 이름) | 이미 GitHub 생성됨 |
-| 스택 | Expo SDK 55 + RN 0.85 + TS | Chris 결정 |
-| 지도 | Google Maps (`react-native-maps` PROVIDER_GOOGLE) | Chris 결정 |
-| 스타일 | RN StyleSheet (NativeWind X) | WellRing과 일관, DESIGN 토큰 매핑 깔끔 |
-| 네비 | `@react-navigation/native-stack` v7 | RN 표준 |
-| 영속화 | Zustand persist + AsyncStorage | 즐겨찾기 |
+새벽 작업 (Chris 자는 동안). 일어나면 폰 풀 리로드 후 최신 APK 받아서 확인하세요.
 
-### 화면 구현 상태
+### 새벽에 한 일
 
-모두 1차 구현 완료. Figma 시안 기반 + 더미 데이터로 흐름 동작.
+1. **Figma MCP 연동**
+   - `c:\poolsday\.mcp.json` 추가 (Figma Desktop 로컬 MCP `http://127.0.0.1:3845/mcp`)
+   - 이제 다음 세션부터 Figma 노드 직접 쿼리 가능 → 디자인 spec 정확히 가져옴
 
-- ✅ Splash (3:387)
-- ✅ Map (5:12241/12919/11479/19049 4상태) — 마커 탭, 카드, CTA 분기, 위치 권한, 즐겨찾기 토글
-- ✅ ScheduleView (5:14288) — 7요일 칩 + 슬롯 리스트
-- ✅ ScheduleNickname → Write → Time → Done (5:14808/15159/15381/19712)
-- ✅ PoolName → PoolDone (5:16341/18464)
-- ✅ More (5:2287)
+2. **마커 (38:1146 / 38:1173) — Figma spec 정확 매칭**
+   - big (50m+): 64px 노랑 + 4px 파란 보더 + blue solid shadow (offset 0/4)
+   - small (≤25m): 52px 파랑 + 4px 파란 보더 + blue tinted shadow with spread
+   - 사이즈는 풀 size에 고정 (선택 상태로 안 바뀜) → Android 비트맵 캡처 글리치 회피
+   - 다층 동심원으로 blur 근사 (RN 자체 blur 없음)
 
-### 검증 통과
+3. **클러스터 마커 (38:1078) — Figma spec 정확 매칭**
+   - 36px 검정 원 + 4px `#090909` 보더
+   - 노랑 16px Fraunces Bold 텍스트
+   - 파란 그림자 (offset 0/4, alpha 0.15)
+   - count 무관 사이즈 고정
 
-- `tsc --noEmit` 0 에러
-- `expo-doctor` 18/18
-- `expo export --platform ios` 정상 번들
+4. **마커 라벨 (Figma spec)**
+   - 흰 알약 (padding 12/6, radius 16, shadow combo)
+   - 14px Bold #1F2937 letterSpacing -0.6
+   - 핀-라벨 gap 2px
 
-### Chris 깨면 할 것 (블로커)
+5. **지도 설정**
+   - `rotateEnabled={false}` — 회전 잠금
+   - `pitchEnabled={false}` — 3D 기울이기 잠금
+   - `setMapBoundaries` — 한국 본토 + 제주 + 독도 영역 (NE 38.7/132, SW 33/124)
+   - `minZoomLevel={6}` — 너무 멀리 줌아웃 방지
+   - 커스텀 Google Maps 스타일 (회색톤 + 단순화 도로)
 
-1. **Google Maps 키 발급** — https://console.cloud.google.com
-   - 프로젝트 만들고 Maps SDK for iOS / Android 활성화
-   - API 키 2개 발급 (iOS, Android 각각, 패키지명·번들ID로 제한)
-   - `.env`에 입력 (`.env.example` 참고)
-2. **Custom Dev Build 빌드**
-   - 옵션 A (EAS): `eas build --profile development --platform ios|android`
-   - 옵션 B (로컬): `npx expo prebuild` → Xcode/Android Studio 빌드
-3. **앱 실행 후 더미 데이터로 흐름 검증**
-   - Splash → Map → 마커 탭 → 카드 표시
-   - 시간표 보기 → 7요일 슬롯
-   - 시간표 작성하기 → 닉네임 → Write → Time 모달 → Done
-   - 부가 기능 → 풀 등록/수정 → Done
+6. **하단 카드**
+   - 가격 정보 (`pricePerSession`) 추가 — "1회 X,XXX원" 전화번호 아래 (regular weight)
+   - 핀 버튼 → 외부 지도앱 길찾기 (Linking)
+   - 모든 색상이 brandBlue로 통일
 
-### 미완료·후속 (블로커 아님)
+7. **시간표 View 화면 (5:14288)**
+   - 7요일 칩 (active=brand blue) + 시간 슬롯 flex-wrap 칩 (outlined)
+   - 하단 outlined "시간표 수정 요청" 버튼
 
-- 검색 오버레이 (지도 화면 우상단 검색 FAB만 있고 누르면 동작 X)
-- "P" 주차장 마커 — 디자인엔 있지만 데이터·역할 미정
-- 실데이터 연동 — 공공데이터포털 CSV → JSON 변환 스크립트 (SPEC §10-12)
-- 토스트 (`feedback_toast_tone` 메모리 기준 정중 평서형)
-- 앱 아이콘·스플래시 이미지 (`assets/icon.png`, `assets/splash.png` 만들어야 빌드 시 자동 사용)
-- 다크모드 적용 (DESIGN.md §1-4 Phase 2)
-- Figma 4상태 픽셀 정확도 검수 (지금은 1차 추정)
+8. **시간표 Write 화면 (5:15159)**
+   - DayPart(새벽/오전/오후/저녁) 분할 제거 → 요일별 단일 flex-wrap
+   - 시간 칩 (outlined + X 삭제 아이콘) + 40x40 light blue 추가(+) 버튼
+   - 하단 "운영자에게 시간표 등록 요청하기" CTA
 
-### 알려진 한계
+9. **공통 UI 컴포넌트 브랜드 컬러 통일**
+   - Button primary: pool500 → **brandBlue** (#007AFF)
+   - Button secondary: pool100/pool700 → **#EFF6FF / brandBlue**
+   - Chip active: pool100/pool700 → **#EFF6FF / brandBlue**
+   - Input focus border: pool500 → **brandBlue**
 
-- Splash는 1.5초 timer만, 실제 폰트 로드 등의 신호와 동기화 X
-- ScheduleWrite의 새벽/오전/오후/저녁 분류는 시간 첫 두 자리로 단순 분기
-- ScheduleTime 모달은 시작시간 텍스트 입력 (DateTimePicker 미적용)
-- 풀 데이터 8개만 (모두 서울)
+10. **앱 아이콘**
+    - 새 아이콘 적용 (assets/icon.png 1024x1024)
+    - Android adaptiveIcon: foreground + brandBlue 배경
 
-### 안 한 것 (의도적으로)
+### 알려진 제약 (Figma와 100% 매칭 안 된 부분)
 
-- expo-router로 갈아타기 — react-navigation으로 충분, WellRing과 일관
-- Tailwind / NativeWind — DESIGN.md 토큰을 RN StyleSheet에 직접 매핑하는 게 더 명료
-- 로그인·소셜 인증 — Figma에 없음, 스펙엔 있어도 MVP 외
-- 앱 아이콘 자동 생성 — Chris가 디자인에서 export해 주는 흐름 (memory)
+- **선택 핀 사이즈 확대 X** — react-native-svg + Marker 비트맵 캡처 한계로 사이즈 변화 시 Android에서 우측 잘림 발생. 사이즈는 풀 size별로만 고정 (small=52, big=64). 시안의 "선택 시 더 큼" 효과는 못 구현. PNG `image` prop으로 전환 시 가능 (별도 작업).
+- **그림자 blur** — RN에 native blur 없음. 다층 동심원으로 근사. Figma의 정확한 Gaussian blur는 표현 불가.
+- **ScheduleView가 modal이 아닌 full screen** — Figma는 343x520 centered card modal이지만 네비게이션 구조 변경 위험이라 full screen 유지.
+
+### Chris 깨면 할 것
+
+1. **최신 APK 설치** — https://expo.dev/accounts/cripo/projects/poolsday/builds/5b933f54-2d14-44c2-a6a6-fe7b3631264a (빌드 #8)
+2. 화면별 검토:
+   - 스플래시
+   - 지도 (마커/클러스터/카드/라벨)
+   - 시간표 보기 (Map에서 schedule 있는 풀 선택 → "보기" 누름)
+   - 시간표 작성 (Map에서 schedule 없는 풀 선택 → "작성하기" → 닉네임 → 작성)
+   - More (지도 우측 상단 작성 FAB)
+3. 다른 점 있으면 Figma 노드 ID와 함께 알려주세요. 다음 세션에서 MCP로 정확한 spec 가져와서 픽스.
+
+### 메모리에 저장된 lessons (다음 세션 참고)
+
+- `eas_env_vars.md` — EAS 빌드는 .env 안 보임, env:create 필수
+- `build_cadence.md` — 변경마다 빌드 X, batch 후 1번
+- `asset_organization.md` — 파일 이름 정리해서 적절한 폴더에
+- `no_invented_designs.md` — Figma 시안 없이 UI 디자인 추측 X
+- `rn_map_clustering_quirk.md` — `<Marker>` 직속 자식만 클러스터링됨
+- `rn_marker_constant_size.md` — 마커 사이즈 상수 고정 (Android 잘림 회피)

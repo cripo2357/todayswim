@@ -5,13 +5,12 @@
  * 메모리 only. 시작은 init(poolId)로, 종료/취소는 reset()으로.
  */
 import { create } from 'zustand';
-import type { ScheduleDraft, DayOfWeek, DayPart, TimeSlot } from '@/types/schedule';
+import type { ScheduleDraft, DayOfWeek, TimeSlot } from '@/types/schedule';
 
 interface DraftState {
   draft: ScheduleDraft | null;
   init: (poolId: string) => void;
   setNickname: (nickname: string) => void;
-  setCurrentDaySlot: (day: DayOfWeek, part: DayPart) => void;
   addTimeSlot: (day: DayOfWeek, slot: TimeSlot) => void;
   removeTimeSlot: (day: DayOfWeek, index: number) => void;
   reset: () => void;
@@ -22,16 +21,13 @@ const empty = (poolId: string): ScheduleDraft => ({
   byDay: {},
 });
 
-export const useScheduleDraft = create<DraftState>((set, get) => ({
+export const useScheduleDraft = create<DraftState>((set) => ({
   draft: null,
 
   init: (poolId) => set({ draft: empty(poolId) }),
 
   setNickname: (nickname) =>
     set((s) => (s.draft ? { draft: { ...s.draft, nickname } } : s)),
-
-  setCurrentDaySlot: (day, part) =>
-    set((s) => (s.draft ? { draft: { ...s.draft, currentDaySlot: { day, part } } } : s)),
 
   addTimeSlot: (day, slot) =>
     set((s) => {

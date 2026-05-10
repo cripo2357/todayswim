@@ -28,4 +28,5 @@ export interface Pool {
   depthMax?: number;            // 1.8 (m)
   facilities?: string[];        // ['샤워실', '주차장', '사물함']
   hasSchedule?: boolean;        // 자유수영 시간표 등록 여부
+  pricePerSession?: number;     // 1회 자유수영 가격 (KRW)
 }

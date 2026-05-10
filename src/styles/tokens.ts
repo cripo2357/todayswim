@@ -23,6 +23,10 @@ export const color = {
   foolYellow:     '#FCD34D', // 마스코트, 한정 카피, 별 아이콘, 찜 마커
   foolYellowDeep: '#F59E0B',
 
+  // === 브랜드 (CI / 스플래시 / 아이콘) ===
+  brandBlue:   '#007AFF',
+  brandYellow: '#FFCC00',
+
   // === 감정 컬러 ===
   warmCoral:    '#FB7185', // 찜 하트
   warmCoralBg:  '#FFE4E6',

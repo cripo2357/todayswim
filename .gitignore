@@ -47,3 +47,6 @@ tmp/
 
 # Figma 시각 레퍼런스 (로컬 전용)
 design-refs/
+
+# Claude Code 로컬 설정 (EXPO_TOKEN 등 시크릿 포함)
+.claude/

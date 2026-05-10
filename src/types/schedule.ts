@@ -7,9 +7,6 @@
 
 export type DayOfWeek = '월' | '화' | '수' | '목' | '금' | '토' | '일';
 
-/** 시간 슬롯 단위 — 새벽/오전/오후/저녁 4섹션 (Figma 5:15159 Section Header 기준) */
-export type DayPart = '새벽' | '오전' | '오후' | '저녁';
-
 export interface TimeSlot {
   /** "06:00" */
   start: string;
@@ -35,7 +32,5 @@ export interface Schedule {
 export interface ScheduleDraft {
   poolId: string;
   nickname?: string;
-  /** 현재 입력 중인 (요일, 시간대) 컨텍스트 */
-  currentDaySlot?: { day: DayOfWeek; part: DayPart };
   byDay: Schedule['byDay'];
 }

@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
   },
   boxDefaultFocused: {
     borderWidth: 2,
-    borderColor: tokens.color.pool500,
+    borderColor: tokens.color.brandBlue,
     backgroundColor: tokens.color.pool50,
   },
   boxJumbo: {
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
   },
   boxJumboFocused: {
     borderWidth: 2,
-    borderColor: tokens.color.pool500,
+    borderColor: tokens.color.brandBlue,
     backgroundColor: tokens.color.pool50,
   },
   boxError: {
