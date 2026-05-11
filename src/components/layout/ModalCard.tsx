@@ -13,11 +13,13 @@ interface Props {
   onBackdropPress?: () => void;
   /** 카드 좌우 padding 적용 여부 (기본 true). false 면 카드 안에서 직접 padding 처리. */
   withCardPadding?: boolean;
+  /** true면 반투명 dim (presentation: transparentModal과 같이 쓰면 뒤 화면이 비침). 기본은 solid dark gray (Figma). */
+  dim?: boolean;
 }
 
-export function ModalCard({ children, cardStyle, onBackdropPress, withCardPadding = true }: Props) {
+export function ModalCard({ children, cardStyle, onBackdropPress, withCardPadding = true, dim = false }: Props) {
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, dim ? styles.rootDim : styles.rootSolid]}>
       <Pressable
         onPress={onBackdropPress}
         style={StyleSheet.absoluteFill}
@@ -42,9 +44,14 @@ export function ModalCard({ children, cardStyle, onBackdropPress, withCardPaddin
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#3F4754', // Figma dark gray backdrop
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  rootSolid: {
+    backgroundColor: '#3F4754', // Figma dark gray backdrop
+  },
+  rootDim: {
+    backgroundColor: 'rgba(15, 23, 42, 0.5)', // ink900 @ 50% — 뒤 화면 비춤
   },
   safeWrap: {
     flex: 1,

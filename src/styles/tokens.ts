@@ -70,6 +70,9 @@ export const font = {
   serifItalic:  'Fraunces-Italic',
   serifBold:    'Fraunces-Bold',
   serifBoldItalic: 'Fraunces-BoldItalic',
+
+  // 클러스터 카운트 (Figma 38:1078) — graffiti spray paint
+  graffiti:     'RubikSprayPaint_400Regular',
 } as const;
 
 /**

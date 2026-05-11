@@ -29,6 +29,7 @@ export function MoreScreen() {
     <ModalCard
       onBackdropPress={() => navigation.goBack()}
       withCardPadding={false}
+      dim
     >
       <View style={styles.body}>
         <View style={styles.illustWrap}>

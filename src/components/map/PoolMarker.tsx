@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, Text } from 'react-native';
+import DropShadow from 'react-native-drop-shadow';
 import { tokens } from '@/styles/tokens';
 import MarkerBig from '@assets/markers/marker-big.svg';
 import MarkerSmall from '@assets/markers/marker-small.svg';
@@ -15,47 +16,69 @@ interface Props {
   selected?: boolean;
 }
 
-// Figma 38:1173 (big = 64) / 38:1146 (small = 52). 사이즈는 풀 사이즈에 고정 — 선택 상태로 안 바뀌니
-// 비트맵 캡처 transition 글리치 없음.
-const SIZE_BIG = 64;
-const SIZE_SMALL = 52;
-// Shadow 표시용 컨테이너 padding (offset + spread 수용)
-const SHADOW_PAD = 8;
+/**
+ * Figma map 화면(5:11479/5:19049/5:12919) 기준 — 사용자가 40/36 사이즈로 재export 한 SVG 자연 좌표.
+ *   big           (38:1184): viewBox 51×51, circle 40 @ (5.374, 1.535)
+ *   small         (38:1157): viewBox 53×53, circle 36 @ (6.374, 6.544)
+ *   big-preview   (38:1119): viewBox 51×51, circle 40 @ (5.374, 1.535)
+ *   small-preview (38:1138): viewBox 44×44, circle 36 @ (4, 0)
+ *
+ * SVG 내부에 <filter> drop-shadow 정의되어 있지만 react-native-svg가 안정 렌더 못 함
+ * (특히 Android feGaussianBlur 무시). 따라서 backing View를 원 좌표에 정렬하여
+ * RN 네이티브 shadowProps + elevation 으로 별도 캐스팅.
+ *
+ * Figma shadow spec:
+ *  big     (38:1184): [0 4 4 0 #007AFF]                   solid blue
+ *  small   (38:1157): [2 2 3 4 rgba(0,122,255,0.15)]      translucent + spread 4
+ *  preview (38:1119/1138): [0 4 4 0 rgba(0,122,255,0.15)] translucent
+ */
+type Geom = { svg: number; circle: number; x: number; y: number };
+const GEOM: Record<'big' | 'small' | 'bigPreview' | 'smallPreview', Geom> = {
+  big:          { svg: 51, circle: 40, x: 5.374, y: 1.535 },
+  small:        { svg: 53, circle: 36, x: 6.374, y: 6.544 },
+  bigPreview:   { svg: 51, circle: 40, x: 5.374, y: 1.535 },
+  smallPreview: { svg: 44, circle: 36, x: 4,     y: 0 },
+};
+
 const WRAP_WIDTH = 168;
 
 /**
- * 지도 마커. Figma 38:1146 / 38:1173.
- * - big (50m+): 64px 노랑+파란보더, blue solid drop shadow
- * - small (≤25m): 52px 파랑+파란보더, blue tinted shadow with spread
- * - preview: 회색 SVG variant (사이즈는 동일)
+ * react-native-drop-shadow에 넘길 shadow style.
+ * SVG의 alpha 채널 기준으로 실제 Gaussian blur shadow를 OS-native API로 캐스팅.
+ * (RN의 shadowProps는 backgroundColor 있는 View에서만 동작하지만 DropShadow는 SVG도 OK)
+ */
+function shadowFor(isBig: boolean) {
+  return isBig
+    ? {
+        shadowColor: '#007AFF',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 1,
+        shadowRadius: 4,
+      }
+    : {
+        // RN shadowProps에 spread 없음 → radius 4(spread) + 3(blur) 흡수해서 7
+        shadowColor: '#007AFF',
+        shadowOffset: { width: 2, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 7,
+      };
+}
+
+/**
+ * 지도 마커. Figma 38:1173 (big) / 38:1146 (small).
+ * SVG는 export 원본 그대로 viewBox 크기로 렌더. 그 아래에 backing View(circle bounding box에 맞춤)가
+ * 네이티브 shadow 캐스팅. SVG가 위에서 덮어서 backing 색은 안 보이고 shadow만 SVG 원 주위로 깔림.
  */
 export function PoolMarker({ variant, name, preview }: Props) {
   if (variant === 'parking') return <ParkingMarker />;
 
   const isBig = variant === 'big';
-  const size = isBig ? SIZE_BIG : SIZE_SMALL;
-  const totalSize = size + SHADOW_PAD * 2;
+  const kind = preview ? (isBig ? 'bigPreview' : 'smallPreview') : isBig ? 'big' : 'small';
+  const g = GEOM[kind];
 
-  // Figma shadow spec
-  // big: 0px 4px 4px 0px #007AFF — solid blue, blur 4, spread 0
-  // small: 2px 2px 3px 4px rgba(0,122,255,0.15) — translucent blue, blur 3, spread 4
-  // RN에 blur 없으니 다층 동심원으로 근사 (가운데 진하고 바깥 옅게)
-  const shadowOffsetX = isBig ? 0 : 2;
-  const shadowOffsetY = isBig ? 4 : 2;
-  const shadowSpread = isBig ? 0 : 4;
-  const shadowColor = isBig ? tokens.color.brandBlue : 'rgba(0, 122, 255, 1)';
-  // extra: shadowSpread + blur 영역 안에서 분포. opacity는 Figma color 알파에 비례.
-  const shadowLayers = isBig
-    ? [
-        { extra: 0, opacity: 1 }, // 중심 (full)
-        { extra: 2, opacity: 0.5 },
-        { extra: 4, opacity: 0.18 },
-      ]
-    : [
-        { extra: 0, opacity: 0.15 }, // small은 base alpha 0.15
-        { extra: 1.5, opacity: 0.1 },
-        { extra: 3, opacity: 0.05 },
-      ];
+  // Figma 6px gap 정확히 맞추기: SVG viewBox 하단 padding(shadow 여유) 흡수해서 라벨 끌어올림.
+  // 결과: 라벨 top = 원 bottom + 6 (실제 시각 간격 6px).
+  const labelMargin = 6 - (g.svg - g.y - g.circle);
 
   const Marker = preview
     ? isBig
@@ -65,43 +88,36 @@ export function PoolMarker({ variant, name, preview }: Props) {
       ? MarkerBig
       : MarkerSmall;
 
+  // preview는 그림자 없으니 SVG만 자연 크기로.
+  if (preview) {
+    return (
+      <View style={styles.wrap}>
+        <View style={{ width: g.svg, height: g.svg }}>
+          <Marker width={g.svg} height={g.svg} />
+        </View>
+        {name ? (
+          <View style={[styles.labelPill, styles.labelPreview, { marginTop: labelMargin }]}>
+            <Text style={styles.labelText} numberOfLines={1} ellipsizeMode="tail">
+              {name}
+            </Text>
+          </View>
+        ) : null}
+      </View>
+    );
+  }
+
+  /**
+   * non-preview: DropShadow(react-native-drop-shadow)가 SVG의 alpha 채널 기준으로
+   * 실제 Gaussian blur shadow를 OS-native API로 캐스팅. iOS + Android 모두 일관된 결과.
+   */
   return (
     <View style={styles.wrap}>
-      <View style={[styles.iconBox, { width: totalSize, height: totalSize }]}>
-        {!preview && shadowLayers.map((l, idx) => {
-          const layerSize = size + (shadowSpread + l.extra) * 2;
-          return (
-            <View
-              key={idx}
-              pointerEvents="none"
-              style={{
-                position: 'absolute',
-                left: SHADOW_PAD + shadowOffsetX - (layerSize - size) / 2,
-                top: SHADOW_PAD + shadowOffsetY - (layerSize - size) / 2,
-                width: layerSize,
-                height: layerSize,
-                borderRadius: layerSize / 2,
-                backgroundColor: shadowColor,
-                opacity: l.opacity,
-              }}
-            />
-          );
-        })}
-        <View
-          style={{
-            position: 'absolute',
-            left: SHADOW_PAD,
-            top: SHADOW_PAD,
-            width: size,
-            height: size,
-          }}
-        >
-          <Marker width={size} height={size} />
-        </View>
-      </View>
+      <DropShadow style={shadowFor(isBig)}>
+        <Marker width={g.svg} height={g.svg} />
+      </DropShadow>
 
       {name ? (
-        <View style={[styles.labelPill, preview && styles.labelPreview]}>
+        <View style={[styles.labelPill, { marginTop: labelMargin }]}>
           <Text style={styles.labelText} numberOfLines={1} ellipsizeMode="tail">
             {name}
           </Text>
@@ -133,12 +149,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
   },
-  iconBox: {
-    position: 'relative',
-  },
-  // Figma label: bg white, padding 12/6, radius 16, shadow combo, gap 6px from marker
+  // Figma label: bg white, padding 12/6, radius 16, shadow combo. marginTop은 변종별 동적 계산 (SVG shadow padding 흡수).
   labelPill: {
-    marginTop: 6,
     paddingHorizontal: 12,
     paddingVertical: 6,
     backgroundColor: tokens.color.white,

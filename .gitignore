@@ -50,3 +50,6 @@ design-refs/
 
 # Claude Code 로컬 설정 (EXPO_TOKEN 등 시크릿 포함)
 .claude/
+
+# Figma MCP 디버그 캐시 (로컬에서만 사용)
+.tmp_*

@@ -14,6 +14,7 @@ import IconPencil from '@assets/icons/pencil.svg';
 import IconPlus from '@assets/icons/plus.svg';
 import IconMinus from '@assets/icons/minus.svg';
 import IconLocate from '@assets/icons/locate.svg';
+import ClusterSvg from '@assets/markers/cluster.svg';
 
 import type { RootStackParamList } from '@/navigation/types';
 import type { Pool } from '@/types/pool';
@@ -32,6 +33,22 @@ const INITIAL_REGION: Region = {
   latitudeDelta: 0.04,
   longitudeDelta: 0.03,
 };
+
+/**
+ * 한국(남한 + 제주 + 독도) 카메라 이동 범위.
+ * SW: Baekryeong/Jeju 끝, NE: Dokdo + DMZ.
+ */
+const KR_BOUNDS = {
+  ne: { latitude: 38.7,  longitude: 132.0 },
+  sw: { latitude: 32.95, longitude: 124.5 },
+} as const;
+
+function clampToKorea(r: Region): Region | null {
+  const lat = Math.min(KR_BOUNDS.ne.latitude,  Math.max(KR_BOUNDS.sw.latitude,  r.latitude));
+  const lng = Math.min(KR_BOUNDS.ne.longitude, Math.max(KR_BOUNDS.sw.longitude, r.longitude));
+  if (lat === r.latitude && lng === r.longitude) return null;
+  return { ...r, latitude: lat, longitude: lng };
+}
 
 
 export function MapScreen() {
@@ -52,12 +69,9 @@ export function MapScreen() {
    */
   const [tracking, setTracking] = React.useState(true);
 
-  /** 지도 이동 가능 범위 — 한국 본토 + 제주 + 독도 수준의 bounding box */
+  /** 지도 이동 가능 범위 — 한국 본토 + 제주 + 독도. Google Maps SDK 레벨 boundary. */
   const onMapReady = () => {
-    mapRef.current?.setMapBoundaries(
-      { latitude: 38.7, longitude: 132 }, // NE
-      { latitude: 33, longitude: 124 }, // SW
-    );
+    mapRef.current?.setMapBoundaries(KR_BOUNDS.ne, KR_BOUNDS.sw);
   };
 
   const selectedPool = React.useMemo(
@@ -92,11 +106,20 @@ export function MapScreen() {
     select(null);
   };
 
-  /** 사용자 제스처(pan/줌)로 지도가 움직이면 선택 해제 — animateToRegion 같은 프로그래매틱은 무시. */
-  const onRegionChangeComplete = (_: Region, details?: { isGesture?: boolean }) => {
-    if (details?.isGesture && selectedPoolId) {
-      select(null);
+  /**
+   * 지도 region 변경 완료 시:
+   * 1) 한국 바깥이면 다시 한국 안으로 끌어옴 (gesture 여부 무관 — setMapBoundaries 안 먹히는 환경 대비)
+   * 2) 사용자 제스처면 선택 해제
+   *    (Android에선 `details.isGesture`가 undefined이라 그냥 region 변화 = 사용자 행동으로 간주)
+   */
+  const onRegionChangeComplete = (region: Region, details?: { isGesture?: boolean }) => {
+    const clamped = clampToKorea(region);
+    if (clamped) {
+      mapRef.current?.animateToRegion(clamped, 200);
+      return; // 다음 라운드에서 한국 안 region으로 다시 fire될 거니까 여기서 select 건드리지 않음
     }
+    const isGesture = details?.isGesture !== false; // undefined도 gesture로 간주 (Android fallback)
+    if (isGesture && selectedPoolId) select(null);
   };
 
   const onScheduleAction = () => {
@@ -149,10 +172,15 @@ export function MapScreen() {
     }
   };
 
-  /** Figma 38:1078 — 36px 검정 원 + 4px 보더 + 파란 그림자, 노랑 16px 텍스트. count 무관 사이즈 고정. */
+  /** Figma 38:1078 cluster — assets/markers/cluster.svg (거친 path 베이크 + 내장 shadow filter).
+   *  SVG viewBox 47×47, 실제 원 36×36 @ (5.37, 1.54). RN 네이티브 shadow는 rough path 안쪽으로
+   *  inset된 backing(28×28)에서 캐스팅 (SVG filter 미지원 대비). 숫자 텍스트는 원 중심 overlay.
+   */
   const renderCluster = (cluster: any) => {
     const { id, geometry, onPress, properties } = cluster;
     const count: number = properties.point_count;
+    const countStr = String(count);
+    const fontSize = countStr.length >= 4 ? 12 : 16;
     return (
       <Marker
         key={`cluster-${id}`}
@@ -165,10 +193,12 @@ export function MapScreen() {
         anchor={{ x: 0.5, y: 0.5 }}
       >
         <View style={styles.clusterWrap}>
-          {/* Figma 그림자 0px 4px 4px 0px rgba(0,122,255,0.15) — RN blur 없으니 옅은 다층 */}
-          <View style={[styles.clusterShadow, { opacity: 0.15 }]} />
-          <View style={styles.cluster}>
-            <Text style={styles.clusterCount}>{count}</Text>
+          <View style={styles.clusterShadowBacking} />
+          <View style={styles.clusterSvg}>
+            <ClusterSvg width={47} height={47} />
+          </View>
+          <View style={styles.clusterTextWrap}>
+            <Text style={[styles.clusterCount, { fontSize }]}>{countStr}</Text>
           </View>
         </View>
       </Marker>
@@ -188,7 +218,7 @@ export function MapScreen() {
         onMapReady={onMapReady}
         onPress={onMapPress}
         onRegionChangeComplete={onRegionChangeComplete}
-        minZoomLevel={6}
+        minZoomLevel={7}
         showsCompass={false}
         showsMyLocationButton={false}
         rotateEnabled={false}
@@ -305,34 +335,46 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
-  // Figma 38:1078 cluster — 36x36 검정 원 + 4px 보더 + 파란 그림자
+  // Figma 38:1078 cluster — SVG asset (cluster.svg) 기반. viewBox 47x47.
   clusterWrap: {
-    width: 44,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
+    width: 47,
+    height: 47,
   },
-  clusterShadow: {
+  // 거친 SVG 안쪽으로 inset된 smooth 28x28 backing — 시야에 안 보이지만 shadow 캐스팅용
+  clusterShadowBacking: {
     position: 'absolute',
-    top: 4 + 4, // marker top + offsetY 4
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: tokens.color.brandBlue,
-  },
-  cluster: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    left: 5.37 + 4,   // SVG 원 좌표 + 4px inset
+    top: 1.54 + 4,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: tokens.color.black,
-    borderWidth: 4,
-    borderColor: '#090909',
+    shadowColor: tokens.color.brandBlue,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+  clusterSvg: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: 47,
+    height: 47,
+    elevation: 20, // Android: backing 위
+  },
+  clusterTextWrap: {
+    position: 'absolute',
+    left: 5.37,
+    top: 1.54,
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
+    elevation: 30, // Android: SVG 위
   },
   clusterCount: {
-    fontFamily: tokens.font.serifBold,
-    fontSize: 16,
+    fontFamily: tokens.font.graffiti,
     lineHeight: 24,
     color: tokens.color.brandYellow,
     textAlign: 'center',

@@ -47,7 +47,16 @@ export function RootNavigator() {
       <Stack.Screen name="PoolName" component={PoolNameScreen} />
       <Stack.Screen name="PoolDone" component={PoolDoneScreen} />
 
-      <Stack.Screen name="More" component={MoreScreen} />
+      <Stack.Screen
+        name="More"
+        component={MoreScreen}
+        options={{
+          presentation: 'transparentModal',
+          animation: 'fade',
+          // transparentModal이라도 contentStyle bg(#FAFAF7)가 깔리면 뒤가 안 비침 → 명시적으로 transparent
+          contentStyle: { backgroundColor: 'transparent' },
+        }}
+      />
     </Stack.Navigator>
   );
 }
