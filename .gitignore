@@ -53,3 +53,4 @@ design-refs/
 
 # Figma MCP 디버그 캐시 (로컬에서만 사용)
 .tmp_*
+data/raw/

@@ -30,6 +30,7 @@ export const color = {
   // === 감정 컬러 ===
   warmCoral:    '#FB7185', // 찜 하트
   warmCoralBg:  '#FFE4E6',
+  red:          '#FF3B30', // 에러/유효성 검증 텍스트 (Apple HIG destructive red, Figma "Colors/Red")
 
   // === 중성 (배경) ===
   bgCream:   '#FAFAF7', // 메인 배경 (절대 #FFFFFF 쓰지 말 것)

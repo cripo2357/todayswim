@@ -46,6 +46,7 @@ export function Button({
   const sizeStyles = SIZE[size];
   const variantStyles = VARIANT[variant];
   const isDisabled = disabled || loading;
+  const hasIcon = !!iconLeft || !!iconRight;
 
   return (
     <Pressable
@@ -66,9 +67,18 @@ export function Button({
       {loading ? (
         <ActivityIndicator size="small" color={variantStyles.label.color} />
       ) : (
-        <View style={styles.row}>
+        // 아이콘 있을 때: row content-sized로 아이콘+텍스트가 한 그룹으로 가운데 정렬 (Figma 77:722 패턴).
+        // 아이콘 없을 때: row flex:1로 stretch + label flex:1 textAlign center로 폭 가득 채움 (Figma 5:15636 패턴).
+        <View style={[styles.row, !hasIcon && styles.rowStretch]}>
           {iconLeft}
-          <Text style={[sizeStyles.label, variantStyles.label, isDisabled && variantStyles.disabledLabel]}>
+          <Text
+            style={[
+              sizeStyles.label,
+              variantStyles.label,
+              !hasIcon && styles.labelStretch,
+              isDisabled && variantStyles.disabledLabel,
+            ]}
+          >
             {label}
           </Text>
           {iconRight}
@@ -79,29 +89,44 @@ export function Button({
 }
 
 const styles = StyleSheet.create({
+  // Figma CTA 표준: radius 14, label↔icon gap 10
   base: {
-    borderRadius: tokens.radius.md,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
   },
   fullWidth: { alignSelf: 'stretch' },
   pressed: { opacity: 0.85 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: tokens.space[2] },
+  // 기본 row: content-sized — 아이콘+라벨이 한 그룹으로 Pressable의 justify-center에 의해 중앙 배치
+  row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  // 아이콘 없을 때만: row가 가로로 stretch — Pressable에 너비 제약(fullWidth/flex:1) 있을 때 폭 가득
+  rowStretch: { flex: 1 },
+  // 아이콘 없을 때만: label이 row를 가득 채우면서 textAlign center
+  labelStretch: { flex: 1 },
 });
 
 const SIZE = {
   sm: StyleSheet.create({
     container: { height: 32, paddingHorizontal: 12, minWidth: 64 },
-    label: { ...tokens.text.bodySm, fontFamily: tokens.font.sansSemibold },
+    label: { ...tokens.text.bodySm, fontFamily: tokens.font.sansSemibold, textAlign: 'center' },
   }),
   md: StyleSheet.create({
     container: { height: 40, paddingHorizontal: 16 },
-    label: { ...tokens.text.body, fontFamily: tokens.font.sansSemibold },
+    label: { ...tokens.text.body, fontFamily: tokens.font.sansSemibold, textAlign: 'center' },
   }),
   lg: StyleSheet.create({
-    container: { height: 48, paddingHorizontal: 20 },
-    label: { ...tokens.text.body, fontFamily: tokens.font.sansSemibold, fontSize: 17 },
+    // Figma 74:1003 / 5:15636 (text-only, 0 padding) / 77:722 (icon+text, px-20 py-12).
+    // height 48 고정. 패딩은 아이콘 유무와 무관하게 둘 다 시각적 동일하므로 기본 0.
+    container: { height: 48 },
+    // Figma "Text md SemiBold" — 16/22 tracking -0.112. flex:1은 아이콘 없을 때만 적용 (row 참고).
+    label: {
+      fontFamily: tokens.font.sansSemibold,
+      fontSize: 16,
+      lineHeight: 22,
+      letterSpacing: -0.112,
+      textAlign: 'center',
+    },
   }),
 };
 

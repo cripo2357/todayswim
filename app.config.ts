@@ -1,8 +1,17 @@
 import { ExpoConfig, ConfigContext } from 'expo/config';
 
-// 테스트용 무제한 키. 보안 제한은 Dev Build 후 SHA-1 받아 Google Cloud 콘솔에서 추가.
-// EAS 클라우드 빌드 prebuild 단계에서 process.env가 비어있는 케이스가 있어 fallback 박아둠.
-const GOOGLE_MAPS_KEY_FALLBACK = 'AIzaSyDfBj9mzxYS4E-p-u09AWQlt3fXjRkOgYg';
+// Naver Cloud Platform Maps Client ID. 모바일 SDK 인증 키.
+// 번들 ID(com.cripo.poolsday)로 Naver 콘솔에서 제한돼 있어 코드 공개돼도 타 앱에서 사용 불가.
+// Client Secret은 서버 API용 — 모바일 번들에 절대 포함 안 함.
+//   → Geocoding 등 Secret 필요한 호출은 별도 백엔드(Supabase Edge Function 등)로 분리.
+// .env의 EXPO_PUBLIC_NAVER_MAP_CLIENT_ID에서 읽고, EAS 빌드는 eas env로 동일 변수 주입.
+const NAVER_MAPS_CLIENT_ID = process.env.EXPO_PUBLIC_NAVER_MAP_CLIENT_ID;
+if (!NAVER_MAPS_CLIENT_ID) {
+  throw new Error(
+    'EXPO_PUBLIC_NAVER_MAP_CLIENT_ID is not set. ' +
+    '.env에 추가하거나 EAS env로 등록하세요.'
+  );
+}
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
@@ -12,6 +21,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   orientation: 'portrait',
   scheme: 'poolsday',
   userInterfaceStyle: 'light', // DESIGN.md §1-4 다크모드는 Phase 2
+  // @mj-studio/react-native-naver-map 2.x는 New Architecture 필수.
+  // 비활성화 상태면 NaverMapView ViewManager가 등록 안 돼서 com.facebook.react.uimanager 에러 발생.
+  newArchEnabled: true,
 
   icon: './assets/icon.png',
 
@@ -22,10 +34,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       NSLocationWhenInUseUsageDescription:
         '근처 수영장을 거리순으로 보여드리려면 위치 권한이 필요해요.',
     },
-    config: {
-      googleMapsApiKey:
-        process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_IOS || GOOGLE_MAPS_KEY_FALLBACK,
-    },
   },
 
   android: {
@@ -33,13 +41,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     permissions: ['ACCESS_FINE_LOCATION', 'ACCESS_COARSE_LOCATION'],
     adaptiveIcon: {
       foregroundImage: './assets/icon.png',
-      backgroundColor: '#007AFF',
-    },
-    config: {
-      googleMaps: {
-        apiKey:
-          process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_ANDROID || GOOGLE_MAPS_KEY_FALLBACK,
-      },
+      // 아이콘 배경 cyan과 매치 (Android 시스템 마스크 모서리 잘림 영역도 같은 색).
+      // assets/icon.png에서 직접 sample한 값.
+      backgroundColor: '#63CBE8',
     },
   },
 
@@ -66,5 +70,19 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     'expo-location',
+    // Naver Maps SDK 플러그인 — Client ID 전달, Android 빌드 시 네이티브 SDK 자동 통합
+    [
+      '@mj-studio/react-native-naver-map',
+      { client_id: NAVER_MAPS_CLIENT_ID },
+    ],
+    // Naver Maps Android SDK가 Naver 자체 Maven repo에 호스팅돼 있어서 추가 필요
+    [
+      'expo-build-properties',
+      {
+        android: {
+          extraMavenRepos: ['https://repository.map.naver.com/archive/maven'],
+        },
+      },
+    ],
   ],
 });

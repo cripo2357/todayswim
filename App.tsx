@@ -6,6 +6,8 @@ import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { RootNavigator } from '@/navigation/RootNavigator';
+// import { OfflineGate } from '@/components/network/OfflineGate';
+//   ↑ expo-network 네이티브 모듈 — EAS dev 빌드 새로 한 후에 활성화. 그 전엔 runtime not ready 에러.
 import { useFonts } from '@/hooks/useFonts';
 import { tokens } from '@/styles/tokens';
 

@@ -13,13 +13,15 @@ interface Props {
   onBackdropPress?: () => void;
   /** 카드 좌우 padding 적용 여부 (기본 true). false 면 카드 안에서 직접 padding 처리. */
   withCardPadding?: boolean;
-  /** true면 반투명 dim (presentation: transparentModal과 같이 쓰면 뒤 화면이 비침). 기본은 solid dark gray (Figma). */
-  dim?: boolean;
 }
 
-export function ModalCard({ children, cardStyle, onBackdropPress, withCardPadding = true, dim = false }: Props) {
+/**
+ * 모달 카드. 항상 반투명 dim 백드롭 — `presentation: transparentModal` +
+ * Stack.Screen `contentStyle: { backgroundColor: 'transparent' }` 와 같이 써야 뒤 화면이 비침.
+ */
+export function ModalCard({ children, cardStyle, onBackdropPress, withCardPadding = true }: Props) {
   return (
-    <View style={[styles.root, dim ? styles.rootDim : styles.rootSolid]}>
+    <View style={styles.root}>
       <Pressable
         onPress={onBackdropPress}
         style={StyleSheet.absoluteFill}
@@ -46,11 +48,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  rootSolid: {
-    backgroundColor: '#3F4754', // Figma dark gray backdrop
-  },
-  rootDim: {
     backgroundColor: 'rgba(15, 23, 42, 0.5)', // ink900 @ 50% — 뒤 화면 비춤
   },
   safeWrap: {
@@ -58,7 +55,7 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: tokens.layout.pagePadMobile,
+    paddingHorizontal: 16, // Figma 모달 카드는 화면 양쪽 16 — 카드 너비 343 (on 375 screen)
   },
   card: {
     width: '100%',

@@ -7,6 +7,12 @@
 
 export type DayOfWeek = '월' | '화' | '수' | '목' | '금' | '토' | '일';
 
+/** 닉네임 표시 안하기 옵션 선택 시 저장되는 값. credit 표시에서 빼는 기준. */
+export const ANON_NICKNAME = '익명의 수영러';
+export function isAnonNickname(nick?: string | null): boolean {
+  return !nick || nick.trim() === '' || nick === ANON_NICKNAME;
+}
+
 export interface TimeSlot {
   /** "06:00" */
   start: string;

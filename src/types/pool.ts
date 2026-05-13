@@ -28,5 +28,9 @@ export interface Pool {
   depthMax?: number;            // 1.8 (m)
   facilities?: string[];        // ['샤워실', '주차장', '사물함']
   hasSchedule?: boolean;        // 자유수영 시간표 등록 여부
+  freeSwimAvailable?: boolean;  // 자유수영 자체가 가능한 풀인지 (false면 PoolBottomCard에서 "자유수영 불가능" 표시)
   pricePerSession?: number;     // 1회 자유수영 가격 (KRW)
+  // 수영장 건물 사진 (1:1, 정사각). 없으면 카드에서 미노출.
+  // 로컬 require()는 number, 원격은 { uri: string } 형태.
+  photoUrl?: number | { uri: string };
 }

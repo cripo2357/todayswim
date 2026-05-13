@@ -44,28 +44,43 @@ export function AppHeader({ title, showBack = true, rightSlot }: Props) {
       ) : (
         <View />
       )}
-      <View style={styles.right}>{rightSlot}</View>
+      <View style={styles.right}>
+        {rightSlot ?? (
+          // Figma 75:1538 — 우측에 빈 24x24 spacer를 둬서 title이 시각적으로 가운데 정렬되게 함.
+          // (좌측 back button과 대칭 — backBtn width 40 + marginLeft -8 = rightSpacer 같은 dim)
+          title && canGoBack ? <View style={styles.spacer} /> : null
+        )}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  // Figma top nav (38:612/55:1298 등): min-h-48, no bottom border, px-16 (outer frame 기준)
   root: {
-    height: tokens.layout.headerHeight,
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: tokens.color.lineSubtle,
+    paddingLeft: 16,
     backgroundColor: tokens.color.bgCream,
   },
-  left: { width: 44, alignItems: 'flex-start' },
-  right: { width: 44, alignItems: 'flex-end' },
+  // 백 버튼 영역 — width 0 면 시각상 백 화살표만, 더 큰 tap target 위해 40 padding (negative margin으로 16 padding 안에 정렬)
+  left: { alignItems: 'flex-start', justifyContent: 'center' },
+  // 우측 슬롯: 컨텐츠가 길어질 수 있게 가변 너비 + 우측 정렬. title 없을 때 비대칭 OK.
+  right: { paddingRight: 16, alignItems: 'flex-end', justifyContent: 'center' },
   backBtn: {
-    width: tokens.layout.touchTargetMin,
-    height: tokens.layout.touchTargetMin,
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
+    marginLeft: -8, // icon 24가 padding 16 안에 깔끔히 정렬되도록 tap area를 좌측으로 살짝
+  },
+  // backBtn 미러 — title 가운데 정렬용 (rightSlot 없을 때만 렌더)
+  spacer: {
+    width: 40,
+    height: 40,
+    marginRight: -8,
   },
   title: {
     ...tokens.text.h4,

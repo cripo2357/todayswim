@@ -43,7 +43,8 @@ export function Input({
       >
         <TextInput
           {...rest}
-          placeholderTextColor={tokens.color.ink400}
+          // Figma jumbo placeholder #4b5563, default ink400
+          placeholderTextColor={isJumbo ? '#4B5563' : tokens.color.ink400}
           style={[isJumbo ? styles.inputJumbo : styles.inputDefault, style]}
           onFocus={(e) => { setFocused(true); onFocus?.(e); }}
           onBlur={(e) => { setFocused(false); onBlur?.(e); }}
@@ -72,13 +73,14 @@ const styles = StyleSheet.create({
     borderColor: tokens.color.brandBlue,
     backgroundColor: tokens.color.pool50,
   },
+  // Figma 37:6933 (Input Text Jumbo) — h 64, border 1px #CBD5E1, radius 16, p 16
   boxJumbo: {
     height: 64,
-    borderRadius: tokens.radius.lg,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: tokens.color.lineDefault,
+    borderColor: '#CBD5E1',
     backgroundColor: tokens.color.bgPaper,
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
     justifyContent: 'center',
   },
   boxJumboFocused: {
@@ -94,11 +96,14 @@ const styles = StyleSheet.create({
     color: tokens.color.ink900,
     padding: 0, // RN 안드로이드 기본 padding 제거
   },
+  // Figma I38:619;10400:4982 — Plus Jakarta Regular 24/32 tracking -0.288 center
   inputJumbo: {
-    fontFamily: tokens.font.sansSemibold,
-    fontSize: 22,
-    lineHeight: 28,
+    fontFamily: tokens.font.sans,
+    fontSize: 24,
+    lineHeight: 32,
+    letterSpacing: -0.288,
     color: tokens.color.ink900,
+    textAlign: 'center',
     padding: 0,
   },
   errorText: {

@@ -1,4 +1,6 @@
-// Figma: 3:387 (스플래시) — 브랜드 블루 배경 + 워드마크 + 태그라인 + 진행바 + 카피라이트
+// Figma: 90:3143 (스플래시) — 민트 cyan bg + 워드마크 + 태그라인 + 진행바 + 카피라이트.
+// + 우측에 쉼표 모양 물방울이 아래에서 위로 떠오르는 애니메이션 (Pool's day 컨셉 — 물).
+
 import React from 'react';
 import {
   View,
@@ -13,41 +15,166 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
-import BrandWordmark from '@assets/illustrations/brand-wordmark.svg';
+import BrandWordmark from '@assets/illustrations/wordmark-poolsday.svg';
+import DropletComma from '@assets/illustrations/droplet-comma.svg';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const WORDMARK_WIDTH = Math.round(SCREEN_WIDTH * 0.7);
-const WORDMARK_HEIGHT = Math.round((WORDMARK_WIDTH * 108) / 288);
-const PROGRESS_WIDTH = Math.round(SCREEN_WIDTH * 0.7);
-const TOP_OFFSET = Math.round(SCREEN_HEIGHT * 0.32); // 워드마크 윗변이 화면 32% 지점
+
+// Figma 90:9715 — 워드마크 155x92. 화면 비율로 약간 여유 있게.
+const WORDMARK_WIDTH = 220;
+const WORDMARK_HEIGHT = Math.round((WORDMARK_WIDTH * 92) / 155);
+
+// Figma 90:3156 — 진행바 240px 폭, 8px 높이, radius 8.
+const PROGRESS_WIDTH = 240;
+const PROGRESS_HEIGHT = 8;
+
 const SPLASH_DURATION = 2500;
 
+// Figma 90:3143 배경 = 앱 아이콘과 동일 cyan
+const BG_CYAN = '#63CBE8';
+
+// 진행바 아래 표시할 재밌는 로딩 문구. mount 시 1회 랜덤 픽.
+const LOADING_MESSAGES = [
+  '수경에 안티포그액 바르는 중...',
+  '수영복 챙기는 중...',
+  '간식 바나나 챙기는 중...',
+  '수영전 스트레칭 중',
+  '오늘 사용할 수모 고르는 중...',
+  '오리발 챙기는 중...',
+  '수영전 샤워하는 중...',
+  '수영 입장권 구매하는 중...',
+  '스마트워치 착용 중...',
+];
+
+// === 떠오르는 쉼표 물방울 ===
+// "Pool's" apostrophe 위치에서 동일한 크기의 쉼표가 일정 간격으로 솟아올라 화면 위로 사라짐.
+// 사이즈/위치 변주 X — 같은 자리에서 같은 크기로 stream 형태.
+// useNativeDriver: true 로 60fps.
+const DROPLET_COUNT = 8;
+
+// Pool's apostrophe 위치 계산 — 원본 SVG (156x93)에서 apostrophe path는 x≈119, 폭 ≈10
+// → 중심 x = 124. 화면 표시 wordmark는 220 wide, 화면 가운데 정렬.
+// → apostrophe center x = SCREEN_WIDTH/2 - (220/2) + (124/156)*220 ≈ SCREEN_WIDTH/2 + 65
+// 시각 보정: 원본 SVG의 apostrophe x가 실제로는 약간 왼쪽 → -6px 미세조정.
+// View.left는 왼쪽 가장자리 기준이라 droplet 폭의 절반(7)만큼 빼서 중심 정렬.
+const APOSTROPHE_CENTER_X = SCREEN_WIDTH / 2 + 59;
+
+// Apostrophe Y 위치 — 워드마크 top: SH/2 - 200, 워드마크 height ≈ 130.
+// apostrophe 위치는 워드마크 상단 약 7% 지점 (path y=6.4 of 93).
+// → SH/2 - 200 + (6/93)*130 ≈ SH/2 - 192
+// 시작은 apostrophe 정중앙에서 살짝 아래(완전히 가려져서 솟아나는 느낌).
+const APOSTROPHE_Y_BASE = SCREEN_HEIGHT / 2 - 185;
+const RISE_TO = -30; // 화면 위로 사라짐
+
+// Apostrophe 자체 크기 매치 — 원본 10x15, wordmark 표시 배율 220/156=1.41 → 14x21
+const DROPLET_W = 14;
+const DROPLET_H = 21;
+
+interface Droplet {
+  id: number;
+  delay: number;
+  y: Animated.Value;
+  opacity: Animated.Value;
+}
+
+const RISE_DURATION = 2400; // 모든 droplet 동일 — 같은 속도로 솟아오름
+
+function createDroplets(): Droplet[] {
+  // 시간을 고르게 분할해서 일정 간격으로 발사 (DROPLET_COUNT 개가 RISE_DURATION 안에 stream 형성)
+  const interval = RISE_DURATION / DROPLET_COUNT;
+  return Array.from({ length: DROPLET_COUNT }, (_, i) => ({
+    id: i,
+    delay: Math.round(interval * i),
+    y: new Animated.Value(APOSTROPHE_Y_BASE),
+    opacity: new Animated.Value(0),
+  }));
+}
+
 export function SplashScreen() {
-  const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
   const progress = React.useRef(new Animated.Value(0)).current;
-  const [percent, setPercent] = React.useState(0);
 
+  // mount 시 1회 랜덤 픽 — 매 실행마다 다른 문구가 노출되도록.
+  const loadingMessage = React.useMemo(
+    () => LOADING_MESSAGES[Math.floor(Math.random() * LOADING_MESSAGES.length)],
+    [],
+  );
+
+  // droplets는 mount 시 1회만 생성 (Animated.Value는 ref로 유지)
+  const dropletsRef = React.useRef<Droplet[]>(createDroplets());
+  const droplets = dropletsRef.current;
+
+  // 진행바 애니메이션
   React.useEffect(() => {
-    const animation = Animated.timing(progress, {
+    const anim = Animated.timing(progress, {
       toValue: 1,
       duration: SPLASH_DURATION,
       easing: Easing.out(Easing.quad),
-      useNativeDriver: false, // width 보간은 네이티브 드라이버 미지원
+      useNativeDriver: false, // width 보간은 네이티브 X
     });
-    animation.start(({ finished }) => {
+    anim.start(({ finished }) => {
       if (finished) navigation.replace('MapMain');
     });
-
-    const listenerId = progress.addListener(({ value }) => {
-      setPercent(Math.round(value * 100));
-    });
     return () => {
-      progress.removeListener(listenerId);
-      animation.stop();
+      anim.stop();
     };
   }, [navigation, progress]);
+
+  // 물방울 무한 루프 — 모든 droplet이 같은 위치/속도, delay만 다름.
+  // apostrophe 위치에서 출발 → 화면 위로 일정한 속도로 상승.
+  React.useEffect(() => {
+    const animations = droplets.map((d) => {
+      const rise = Animated.parallel([
+        Animated.timing(d.y, {
+          toValue: RISE_TO,
+          duration: RISE_DURATION,
+          easing: Easing.linear, // 일정한 속도로 위로 (자연스러운 stream)
+          useNativeDriver: true,
+        }),
+        // opacity: 0 → 0.95 → 0 (apostrophe 위치 부근에선 fade in, 화면 위에선 fade out)
+        Animated.sequence([
+          Animated.timing(d.opacity, {
+            toValue: 0.95,
+            duration: RISE_DURATION * 0.2,
+            useNativeDriver: true,
+          }),
+          Animated.timing(d.opacity, {
+            toValue: 0.95,
+            duration: RISE_DURATION * 0.5,
+            useNativeDriver: true,
+          }),
+          Animated.timing(d.opacity, {
+            toValue: 0,
+            duration: RISE_DURATION * 0.3,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]);
+      // reset to apostrophe (opacity 0이라 visual jump 안 보임)
+      const reset = Animated.parallel([
+        Animated.timing(d.y, {
+          toValue: APOSTROPHE_Y_BASE,
+          duration: 0,
+          useNativeDriver: true,
+        }),
+        Animated.timing(d.opacity, {
+          toValue: 0,
+          duration: 0,
+          useNativeDriver: true,
+        }),
+      ]);
+      return Animated.loop(
+        Animated.sequence([
+          Animated.delay(d.delay),
+          rise,
+          reset,
+        ]),
+      );
+    });
+    animations.forEach((a) => a.start());
+    return () => animations.forEach((a) => a.stop());
+  }, [droplets]);
 
   const fillWidth = progress.interpolate({
     inputRange: [0, 1],
@@ -56,21 +183,41 @@ export function SplashScreen() {
 
   return (
     <View style={styles.root}>
-      <View style={styles.topGroup}>
+      {/* 떠오르는 쉼표 물방울 — 모두 동일 위치/크기, apostrophe에서 솟아오름. */}
+      {droplets.map((d) => (
+        <Animated.View
+          key={d.id}
+          pointerEvents="none"
+          style={[
+            styles.droplet,
+            {
+              opacity: d.opacity,
+              transform: [{ translateY: d.y }],
+            },
+          ]}
+        >
+          <DropletComma width={DROPLET_W} height={DROPLET_H} />
+        </Animated.View>
+      ))}
+
+      {/* 중앙 워드마크 + 태그라인 */}
+      <View style={styles.center} pointerEvents="none">
         <BrandWordmark width={WORDMARK_WIDTH} height={WORDMARK_HEIGHT} />
-        <Text style={styles.tagline}>수영 바보들을 위한 수영장 지도</Text>
+        <Text style={styles.tagline}>같이 수영할래?</Text>
       </View>
 
+      {/* 하단 진행바 + 카피라이트 */}
       <View
         style={[
           styles.bottomGroup,
-          { paddingBottom: Math.max(insets.bottom, 16) + 16 },
+          { paddingBottom: Math.max(insets.bottom, 16) + 24 },
         ]}
+        pointerEvents="none"
       >
         <View style={styles.progressTrack}>
           <Animated.View style={[styles.progressFill, { width: fillWidth }]} />
         </View>
-        <Text style={styles.percent}>{percent}%</Text>
+        <Text style={styles.loadingMessage}>{loadingMessage}</Text>
         <Text style={styles.copyright}>© 2026 CRIPO. All right reserved</Text>
       </View>
     </View>
@@ -80,41 +227,78 @@ export function SplashScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: tokens.color.brandBlue,
-    justifyContent: 'space-between',
+    backgroundColor: BG_CYAN,
   },
-  topGroup: {
+  // Figma 90:3146 — 화면 중앙 약간 위. 워드마크 + 20gap + 태그라인.
+  center: {
+    position: 'absolute',
+    top: SCREEN_HEIGHT / 2 - 200,
+    left: 0,
+    right: 0,
     alignItems: 'center',
-    paddingTop: TOP_OFFSET, // 화면 높이의 32% 지점에서 워드마크 시작
+    gap: 20,
+    zIndex: 2,
   },
+  // Figma 90:3154 — Regular 19/19 tracking -0.228 색상 #F2F2F7
   tagline: {
-    ...tokens.text.body,
-    color: tokens.color.white,
-    marginTop: tokens.space[5],
+    fontSize: 19,
+    lineHeight: 19,
+    letterSpacing: -0.228,
+    fontFamily: tokens.font.sans,
+    color: '#F2F2F7',
+    textAlign: 'center',
   },
+  // Figma 90:3155 — 화면 하단 (top calc(50% + 266px)에서 위치 ≈ 화면 80%).
   bottomGroup: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     alignItems: 'center',
+    gap: 12,
+    zIndex: 2,
   },
+  // Figma 90:3156 — width 240, h 8, radius 8, bg #E2E8F0
   progressTrack: {
     width: PROGRESS_WIDTH,
-    height: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: tokens.radius.pill,
+    height: PROGRESS_HEIGHT,
+    backgroundColor: '#E2E8F0',
+    borderRadius: 8,
     overflow: 'hidden',
   },
+  // Figma 90:3156 fill — bg pd-byellow #EAFF00, radius 1234 (full)
   progressFill: {
     height: '100%',
-    backgroundColor: tokens.color.brandYellow,
-    borderRadius: tokens.radius.pill,
+    backgroundColor: '#EAFF00',
+    borderRadius: 9999,
   },
-  percent: {
-    ...tokens.text.bodyBold,
-    color: tokens.color.white,
-    marginTop: tokens.space[3],
+  // Figma 90:3143 — 진행바 아래 로딩 문구. 톤 살짝 낮춰서 카피라이트와 위계 구분.
+  loadingMessage: {
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: -0.084,
+    fontFamily: tokens.font.sans,
+    color: '#F2F2F7',
+    textAlign: 'center',
+    marginTop: 8,
   },
   copyright: {
-    ...tokens.text.bodySm,
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: -0.084,
+    fontFamily: tokens.font.sans,
     color: tokens.color.white,
-    marginTop: tokens.space[4],
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  // 떠오르는 쉼표 droplet — 모두 같은 위치(x), 같은 크기. apostrophe에서 일정 속도로 위로.
+  // left = apostrophe 중심 x - droplet 폭의 절반 → droplet 중심이 apostrophe 중심과 일치.
+  // y와 opacity만 Animated로 조정.
+  droplet: {
+    position: 'absolute',
+    left: APOSTROPHE_CENTER_X - DROPLET_W / 2,
+    width: DROPLET_W,
+    height: DROPLET_H,
+    zIndex: 1,
   },
 });
