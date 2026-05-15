@@ -42,6 +42,7 @@ const MARKER_BIG           = require('@assets/markers/marker-big.png');
 const MARKER_SMALL         = require('@assets/markers/marker-small.png');
 const MARKER_HOTEL         = require('@assets/markers/marker-hotel.png');
 const MARKER_LOCATION      = require('@assets/markers/marker-location.png');
+const MARKER_ME            = require('@assets/markers/marker-me.png'); // 내 위치 노란 링
 const MARKER_CLUSTER       = require('@assets/markers/cluster.png');
 
 const INITIAL_CAMERA: Camera = {
@@ -83,15 +84,21 @@ function ProfileFabContent({ photoUri }: { photoUri?: string }) {
   return <Image source={{ uri: photoUri }} style={styles.fabAvatarImg} />;
 }
 
-/** 내 위치 마커 — 원형 프로필 + byellow 링 (Figma 130:3622). */
+/** 내 위치 마커 — 업로드한 노란 링 PNG 안에 프로필 사진 (Figma 130:3622). */
 function LocationProfileMarker({ photoUri }: { photoUri: string }) {
   return (
     <View style={styles.locMarker}>
-      {isBundleAvatar(photoUri) ? (
-        React.createElement(BUNDLE_AVATARS[photoUri], { width: 40, height: 40 })
-      ) : (
-        <Image source={{ uri: photoUri }} style={styles.locMarkerImg} />
-      )}
+      <Image source={MARKER_ME} style={styles.locRing} resizeMode="contain" />
+      <View style={styles.locInner}>
+        {isBundleAvatar(photoUri) ? (
+          React.createElement(BUNDLE_AVATARS[photoUri], {
+            width: 40,
+            height: 40,
+          })
+        ) : (
+          <Image source={{ uri: photoUri }} style={styles.locInnerImg} />
+        )}
+      </View>
     </View>
   );
 }
@@ -575,21 +582,25 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
   },
-  // 내 위치 마커 (Figma 130:3622) — 원형 사진 + byellow 글로우(테두리 X)
+  // 내 위치 마커 (Figma 130:3622) — 노란 링 PNG + 안쪽 프로필 사진
   locMarker: {
     width: 47,
     height: 47,
-    borderRadius: 23.5,
-    backgroundColor: tokens.color.white,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: tokens.color.pdByellow,
-    shadowOffset: { width: 0.8, height: 1.6 },
-    shadowOpacity: 1,
-    shadowRadius: 5.6,
-    elevation: 6,
   },
-  locMarkerImg: { width: 47, height: 47, borderRadius: 23.5 },
+  locRing: { ...StyleSheet.absoluteFillObject, width: 47, height: 47 },
+  // 링 두께만큼 안쪽으로 — 사진이 링 안에 원형으로 들어감
+  locInner: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: tokens.color.white,
+  },
+  locInnerImg: { width: 40, height: 40 },
   // 필터 적용중 — 좌측 X(초기화) + 우측 텍스트+아이콘(설정), 하나의 알약처럼 보이는 통합 View
   fabFilterPill: {
     height: 40,
