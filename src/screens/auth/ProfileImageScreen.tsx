@@ -276,8 +276,14 @@ const styles = StyleSheet.create({
     ...tokens.shadow.pop,
   },
 
-  // uploading (110:3327) / error (110:3337) 공통 중앙 정렬
-  centerWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 32 },
+  // uploading (110:3327) / error (110:3337) — idle과 동일: gap 64, 중앙보다 위쪽
+  centerWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 64,
+    transform: [{ translateY: -120 }],
+  },
   ringWrap: {
     width: AVATAR_SIZE + 16,
     height: AVATAR_SIZE + 16,
