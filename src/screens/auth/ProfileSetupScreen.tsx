@@ -60,7 +60,7 @@ export function ProfileSetupScreen() {
   // 사용자가 그대로 두고 바로 진행해도 canSubmit('ok' 필요)이 풀리도록.
   React.useEffect(() => {
     const initial = (authUser?.nickname ?? '').trim();
-    if (initial.length < 1) return;
+    if (initial.length < 2) return;
     nameRef.current = authUser?.nickname ?? '';
     setNickStatus('checking');
     (async () => {
@@ -77,7 +77,7 @@ export function ProfileSetupScreen() {
     if (nickTimerRef.current) clearTimeout(nickTimerRef.current);
 
     const trimmed = v.trim();
-    if (trimmed.length < 1) {
+    if (trimmed.length < 2) {
       setNickStatus('idle');
       return;
     }
@@ -92,7 +92,7 @@ export function ProfileSetupScreen() {
 
   // 필수 — 닉네임(중복 아님) + 성별 + 생년월일.
   const canSubmit =
-    name.trim().length >= 1 && nickStatus === 'ok' && !!gender && !!birthDate;
+    name.trim().length >= 2 && nickStatus === 'ok' && !!gender && !!birthDate;
 
   const toggleStroke = (s: Stroke) => {
     setStrokes((prev) => {
@@ -150,7 +150,7 @@ export function ProfileSetupScreen() {
                 placeholder="수영러버"
                 placeholderTextColor={tokens.color.ink400}
                 style={styles.inputText}
-                maxLength={10}
+                maxLength={6}
                 autoCapitalize="none"
               />
               {nickStatus === 'taken' ? (

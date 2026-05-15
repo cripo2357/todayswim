@@ -127,13 +127,23 @@ function ProfileTab({
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [bio, setBio] = React.useState(profile.bio ?? '');
+  const bioInputRef = React.useRef<TextInput>(null);
+  const bioChanged = bio.trim() !== (profile.bio ?? '').trim();
+  const onBioConfirm = () => {
+    if (!bioChanged) return;
+    patch({ bio: bio.trim() });
+    bioInputRef.current?.blur();
+  };
   const [showCalendar, setShowCalendar] = React.useState(false);
 
   // 닉네임 인라인 변경 (Figma 120:3030 / 129:6307 / 129:6296)
+  const nickInputRef = React.useRef<TextInput>(null);
   const [nick, setNick] = React.useState(profile.name);
   const [nickErr, setNickErr] = React.useState(false);
   const nickChanged =
-    nick.trim() !== profile.name && nick.trim().length >= 1;
+    nick.trim() !== profile.name &&
+    nick.trim().length >= 2 &&
+    nick.trim().length <= 6;
 
   const onChangeNick = (v: string) => {
     setNick(v);
@@ -141,7 +151,7 @@ function ProfileTab({
   };
   const onChangeNickConfirm = async () => {
     const next = nick.trim();
-    if (next === profile.name || next.length < 1) return;
+    if (next === profile.name || next.length < 2 || next.length > 6) return;
     if (await isNicknameTaken(next)) {
       setNickErr(true);
       return;
@@ -149,6 +159,8 @@ function ProfileTab({
     patch({ name: next });
     await claimNickname(next);
     setNickErr(false);
+    // 변경 완료 → 입력영역 포커스 아웃.
+    nickInputRef.current?.blur();
   };
 
   const toggleStroke = (s: Stroke) => {
@@ -211,12 +223,13 @@ function ProfileTab({
           <View style={styles.nickInputLeft}>
             <IconUser width={20} height={20} />
             <TextInput
+              ref={nickInputRef}
               value={nick}
               onChangeText={onChangeNick}
               placeholder="닉네임"
               placeholderTextColor={tokens.color.ink400}
               style={styles.nickText}
-              maxLength={10}
+              maxLength={6}
               autoCapitalize="none"
             />
           </View>
@@ -248,35 +261,50 @@ function ProfileTab({
           <Text style={styles.nickHintError}>
             이미 사용중인 닉네임입니다.
           </Text>
-        ) : nickChanged ? (
+        ) : nick.trim() !== profile.name ? (
           <Text style={styles.nickHint}>
-            닉네임을 입력한 후 변경 버튼을 선택하세요.
+            닉네임(2~6자)을 입력한 후 변경 버튼을 선택하세요.
           </Text>
         ) : null}
       </Field>
 
       <Field label="한 줄 자기소개">
-        <View style={styles.inputBox}>
-          <IconIntro width={20} height={20} />
-          <TextInput
-            value={bio}
-            onChangeText={(v) => setBio(v.slice(0, BIO_MAX))}
-            onBlur={() => patch({ bio: bio.trim() })}
-            placeholder="간단하게 자신을 소개해보세요."
-            placeholderTextColor={tokens.color.ink400}
+        <View style={styles.nickRow}>
+          <View style={styles.nickInputLeft}>
+            <IconIntro width={20} height={20} />
+            <TextInput
+              ref={bioInputRef}
+              value={bio}
+              onChangeText={(v) => setBio(v.slice(0, BIO_MAX))}
+              placeholder="간단하게 자신을 소개해보세요."
+              placeholderTextColor={tokens.color.ink400}
+              style={styles.nickText}
+              maxLength={BIO_MAX}
+            />
+          </View>
+          <Pressable
+            onPress={onBioConfirm}
+            disabled={!bioChanged}
             style={[
-              styles.inputText,
-              // TextInput은 Text와 달리 Android includeFontPadding/기본 패딩으로
-              // 더 높아짐 → 제거해서 다른 입력영역(48)과 높이 통일.
-              {
-                color: tokens.color.ink900,
-                padding: 0,
-                includeFontPadding: false,
-                textAlignVertical: 'center',
-              },
+              styles.nickChangeBtn,
+              bioChanged && styles.nickChangeBtnActive,
             ]}
-            maxLength={BIO_MAX}
-          />
+            accessibilityLabel="자기소개 변경"
+          >
+            <Text
+              style={[
+                styles.nickChangeLabel,
+                bioChanged && styles.nickChangeLabelActive,
+              ]}
+            >
+              변경
+            </Text>
+            <Pencil
+              size={16}
+              color={bioChanged ? tokens.color.white : tokens.color.ink500}
+              strokeWidth={2}
+            />
+          </Pressable>
         </View>
       </Field>
 
