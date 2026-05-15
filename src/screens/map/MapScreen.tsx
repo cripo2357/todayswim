@@ -83,6 +83,19 @@ function ProfileFabContent({ photoUri }: { photoUri?: string }) {
   return <Image source={{ uri: photoUri }} style={styles.fabAvatarImg} />;
 }
 
+/** 내 위치 마커 — 원형 프로필 + byellow 링 (Figma 130:3622). */
+function LocationProfileMarker({ photoUri }: { photoUri: string }) {
+  return (
+    <View style={styles.locMarker}>
+      {isBundleAvatar(photoUri) ? (
+        React.createElement(BUNDLE_AVATARS[photoUri], { width: 40, height: 40 })
+      ) : (
+        <Image source={{ uri: photoUri }} style={styles.locMarkerImg} />
+      )}
+    </View>
+  );
+}
+
 export function MapScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const profile = useProfile((s) => s.profile);
@@ -312,12 +325,13 @@ export function MapScreen() {
         // 스타일 수정/재발행은 https://console.ncloud.com/maps/styles 에서.
         customStyleId="c52a2948-bdea-4a26-8a59-92a5cf711f42"
       >
-        {/* 내 위치 마커 — Naver caption으로 "내 위치" 라벨 네이티브 렌더 */}
+        {/* 내 위치 마커 — 로그인(프로필 있음)이면 프로필 사진 원형+노란링
+            (Figma 130:3622, children 커스텀 마커), 아니면 기본 PNG */}
         {geo.status === 'granted' && geo.coords ? (
           <NaverMapMarkerOverlay
             latitude={geo.coords.lat}
             longitude={geo.coords.lng}
-            image={MARKER_LOCATION}
+            {...(profile?.photoUri ? {} : { image: MARKER_LOCATION })}
             width={47}
             height={47}
             anchor={{ x: 0.5, y: 0.5 }}
@@ -330,7 +344,11 @@ export function MapScreen() {
               minZoom: 10,
             }}
             onTap={flyToMyLocation}
-          />
+          >
+            {profile?.photoUri ? (
+              <LocationProfileMarker photoUri={profile.photoUri} />
+            ) : null}
+          </NaverMapMarkerOverlay>
         ) : null}
 
         {visibleClusters.map((c) => {
@@ -557,6 +575,19 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
   },
+  // 내 위치 마커 (Figma 130:3622) — 원형 사진 + byellow 링
+  locMarker: {
+    width: 47,
+    height: 47,
+    borderRadius: 23.5,
+    borderWidth: 3,
+    borderColor: tokens.color.pdByellow,
+    backgroundColor: tokens.color.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  locMarkerImg: { width: 41, height: 41, borderRadius: 20.5 },
   // 필터 적용중 — 좌측 X(초기화) + 우측 텍스트+아이콘(설정), 하나의 알약처럼 보이는 통합 View
   fabFilterPill: {
     height: 40,
