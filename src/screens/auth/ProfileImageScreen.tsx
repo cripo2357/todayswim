@@ -15,12 +15,13 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Flag } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { useProfile } from '@/store/profile';
+import { useAuth } from '@/store/auth';
 import {
   BUNDLE_AVATARS,
   defaultAvatarForGender,
   isBundleAvatar,
-  type AvatarId,
 } from '@/lib/avatars';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
@@ -35,14 +36,16 @@ export function ProfileImageScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const profile = useProfile((s) => s.profile);
   const saveProfile = useProfile((s) => s.save);
+  const authUser = useAuth((s) => s.user);
 
-  // 성별 기반 기본 번들 아바타 — mount 시 1회 픽.
-  const initialAvatar = React.useMemo<AvatarId>(
-    () => defaultAvatarForGender(profile?.gender ?? 'male'),
-    [profile?.gender],
+  // 기본값 — 소셜 로그인 프로필 사진이 있으면 그걸, 없으면 성별 기반 번들 아바타.
+  const initialPhoto = React.useMemo<string>(
+    () =>
+      authUser?.photoUrl ?? defaultAvatarForGender(profile?.gender ?? 'male'),
+    [authUser?.photoUrl, profile?.gender],
   );
-  // 현재 선택된 사진 — 번들 AvatarId 또는 업로드 URI.
-  const [photo, setPhoto] = React.useState<string>(initialAvatar);
+  // 현재 선택된 사진 — 번들 AvatarId / 소셜 URL / 업로드 URI.
+  const [photo, setPhoto] = React.useState<string>(initialPhoto);
   const [state, setState] = React.useState<State>('idle');
   const uploadTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -52,7 +55,7 @@ export function ProfileImageScreen() {
     };
   }, []);
 
-  // 갤러리에서 사진 선택 → 1:1 크롭. Phase 1은 로컬 URI를 그대로 photoUri로 사용.
+  // 갤러리에서 사진 선택 → 1:1 크롭 → 512px 리사이즈 + JPEG 압축으로 용량 축소.
   // (Phase 2에서 uploading 단계에 Supabase Storage 업로드 추가 예정.)
   const pickImage = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -78,13 +81,22 @@ export function ProfileImageScreen() {
       return;
     }
 
-    // 짧은 uploading 표시 후 반영 (Figma 110:3327 — Phase 2 실제 Storage 업로드 자리).
     setState('uploading');
-    uploadTimerRef.current = setTimeout(() => {
-      uploadTimerRef.current = null;
-      setPhoto(asset.uri);
-      setState('idle');
-    }, 800);
+    try {
+      // 원본이 수 MB일 수 있어 프로필용 512px / JPEG 압축으로 축소 후 저장.
+      const resized = await manipulateAsync(
+        asset.uri,
+        [{ resize: { width: 512 } }],
+        { compress: 0.7, format: SaveFormat.JPEG },
+      );
+      uploadTimerRef.current = setTimeout(() => {
+        uploadTimerRef.current = null;
+        setPhoto(resized.uri);
+        setState('idle');
+      }, 400);
+    } catch {
+      setState('error');
+    }
   };
 
   const onComplete = async () => {

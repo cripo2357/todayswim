@@ -28,6 +28,8 @@ export interface AuthUser {
   provider: SocialProvider;
   nickname: string;
   email?: string;
+  /** 소셜 프로필 사진 URL — 가입 시 ProfileImage 기본값으로 사용 */
+  photoUrl?: string;
 }
 
 interface AuthState {
@@ -64,6 +66,7 @@ function userFromSession(session: Session | null): AuthUser | null {
     provider,
     nickname: meta.name ?? meta.full_name ?? meta.nickname ?? '',
     email: u.email ?? undefined,
+    photoUrl: meta.avatar_url ?? meta.picture ?? undefined,
   };
 }
 

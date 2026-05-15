@@ -15,6 +15,7 @@ import {
 } from 'lucide-react-native';
 
 import { useProfile, type Gender, type Stroke } from '@/store/profile';
+import { useAuth } from '@/store/auth';
 import { isNicknameTaken, claimNickname } from '@/lib/nicknames';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
@@ -31,8 +32,10 @@ const EXP_MAX = 30;
 export function ProfileSetupScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const saveProfile = useProfile((s) => s.save);
+  const authUser = useAuth((s) => s.user);
 
-  const [name, setName] = React.useState('');
+  // 소셜 로그인에서 받아온 닉네임을 기본값으로.
+  const [name, setName] = React.useState(() => authUser?.nickname ?? '');
   const [gender, setGender] = React.useState<Gender | null>(null);
   const [birthDate, setBirthDate] = React.useState(''); // YYYY-MM-DD
   const [exp, setExp] = React.useState(10);
@@ -50,6 +53,21 @@ export function ProfileSetupScreen() {
     return () => {
       if (nickTimerRef.current) clearTimeout(nickTimerRef.current);
     };
+  }, []);
+
+  // 소셜 닉네임이 기본값으로 채워진 경우 mount 시 1회 중복 확인 —
+  // 사용자가 그대로 두고 바로 진행해도 canSubmit('ok' 필요)이 풀리도록.
+  React.useEffect(() => {
+    const initial = (authUser?.nickname ?? '').trim();
+    if (initial.length < 1) return;
+    nameRef.current = authUser?.nickname ?? '';
+    setNickStatus('checking');
+    (async () => {
+      const taken = await isNicknameTaken(initial);
+      if (nameRef.current.trim() !== initial) return;
+      setNickStatus(taken ? 'taken' : 'ok');
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const onChangeName = (v: string) => {
