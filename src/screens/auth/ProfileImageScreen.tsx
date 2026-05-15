@@ -236,8 +236,15 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: tokens.color.bgPaper },
   body: { flex: 1, paddingHorizontal: 16 },
 
-  // idle (110:3316) — 제목/아바타/CTA 중앙 묶음
-  idleWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 32 },
+  // idle (110:3316) — 제목/아바타/CTA 묶음. gap 64, 화면 정중앙이 아니라
+  // 중앙보다 위쪽(디자인 top calc(50%-175))이라 translateY로 올림.
+  idleWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 64,
+    transform: [{ translateY: -120 }],
+  },
   title: {
     fontSize: 30,
     lineHeight: 38,
