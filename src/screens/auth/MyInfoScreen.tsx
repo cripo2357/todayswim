@@ -136,6 +136,47 @@ function ProfileTab({
   };
   const [showCalendar, setShowCalendar] = React.useState(false);
 
+  // 2그룹(수영기간/영법/자격증/IM100) — 변경 즉시 저장하지 않고 로컬 state로
+  // 보관하다가 화면 이탈(탭 변경/뒤로가기 = ProfileTab unmount) 시 일괄 저장.
+  const [exp, setExp] = React.useState(profile.experienceYears);
+  const [strokes, setStrokes] = React.useState<Stroke[]>(profile.strokes);
+  const [certs, setCerts] = React.useState<Certification[]>(
+    profile.certifications ?? ['없음'],
+  );
+  const [im100, setIm100] = React.useState<IM100Record | undefined>(
+    profile.im100Record,
+  );
+  const swimRef = React.useRef({ exp, strokes, certs, im100, dirty: false });
+  React.useEffect(() => {
+    swimRef.current = {
+      exp,
+      strokes,
+      certs,
+      im100,
+      dirty: swimRef.current.dirty,
+    };
+  }, [exp, strokes, certs, im100]);
+  const markSwimDirty = () => {
+    swimRef.current.dirty = true;
+  };
+  // unmount(탭 변경·뒤로가기) 시 변경분 있으면 일괄 저장.
+  React.useEffect(
+    () => () => {
+      const s = swimRef.current;
+      if (!s.dirty) return;
+      const cur = useProfile.getState().profile;
+      if (!cur) return;
+      useProfile.getState().save({
+        ...cur,
+        experienceYears: s.exp,
+        strokes: s.strokes,
+        certifications: s.certs,
+        im100Record: s.im100,
+      });
+    },
+    [],
+  );
+
   // 닉네임 인라인 변경 (Figma 120:3030 / 129:6307 / 129:6296)
   const nickInputRef = React.useRef<TextInput>(null);
   const [nick, setNick] = React.useState(profile.name);
@@ -164,26 +205,23 @@ function ProfileTab({
   };
 
   const toggleStroke = (s: Stroke) => {
-    const has = profile.strokes.includes(s);
-    patch({
-      strokes: has
-        ? profile.strokes.filter((x) => x !== s)
-        : [...profile.strokes, s],
-    });
+    setStrokes((prev) =>
+      prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s],
+    );
+    markSwimDirty();
   };
 
   const toggleCert = (c: Certification) => {
-    const cur = profile.certifications ?? [];
-    if (c === '없음') {
-      patch({ certifications: ['없음'] });
-      return;
-    }
-    const withoutNone = cur.filter((x) => x !== '없음');
-    const next = withoutNone.includes(c)
-      ? withoutNone.filter((x) => x !== c)
-      : [...withoutNone, c];
-    // 모든 자격증이 해제되면 '없음'이 자동 선택 (Figma 120:3054).
-    patch({ certifications: next.length === 0 ? ['없음'] : next });
+    setCerts((prev) => {
+      if (c === '없음') return ['없음'];
+      const withoutNone = prev.filter((x) => x !== '없음');
+      const next = withoutNone.includes(c)
+        ? withoutNone.filter((x) => x !== c)
+        : [...withoutNone, c];
+      // 모든 자격증이 해제되면 '없음'이 자동 선택 (Figma 120:3054).
+      return next.length === 0 ? ['없음'] : next;
+    });
+    markSwimDirty();
   };
 
   return (
@@ -345,8 +383,11 @@ function ProfileTab({
 
       <Text style={styles.subLabel}>수영 기간</Text>
       <ExperienceSlider
-        value={profile.experienceYears}
-        onChange={(v) => patch({ experienceYears: v })}
+        value={exp}
+        onChange={(v) => {
+          setExp(v);
+          markSwimDirty();
+        }}
         max={EXP_MAX}
       />
 
@@ -356,7 +397,7 @@ function ProfileTab({
           <Chip
             key={s}
             label={s}
-            selected={profile.strokes.includes(s)}
+            selected={strokes.includes(s)}
             onPress={() => toggleStroke(s)}
           />
         ))}
@@ -368,7 +409,7 @@ function ProfileTab({
           <Chip
             key={c}
             label={c}
-            selected={(profile.certifications ?? []).includes(c)}
+            selected={certs.includes(c)}
             onPress={() => toggleCert(c)}
           />
         ))}
@@ -380,8 +421,11 @@ function ProfileTab({
           <Chip
             key={r}
             label={r}
-            selected={profile.im100Record === r}
-            onPress={() => patch({ im100Record: r as IM100Record })}
+            selected={im100 === r}
+            onPress={() => {
+              setIm100(r as IM100Record);
+              markSwimDirty();
+            }}
           />
         ))}
       </ChipRow>
