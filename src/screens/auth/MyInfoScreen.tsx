@@ -11,9 +11,10 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, Calendar as LucideCalendar } from 'lucide-react-native';
+import { ChevronLeft, Pencil, Calendar as LucideCalendar } from 'lucide-react-native';
 import IconChevronDown from '@assets/icons/chevron-down.svg';
 import IconIntro from '@assets/icons/intro.svg';
+import { isNicknameTaken, claimNickname } from '@/lib/nicknames';
 
 import {
   useProfile,
@@ -128,6 +129,28 @@ function ProfileTab({
   const [bio, setBio] = React.useState(profile.bio ?? '');
   const [showCalendar, setShowCalendar] = React.useState(false);
 
+  // 닉네임 인라인 변경 (Figma 120:3030 / 129:6307 / 129:6296)
+  const [nick, setNick] = React.useState(profile.name);
+  const [nickErr, setNickErr] = React.useState(false);
+  const nickChanged =
+    nick.trim() !== profile.name && nick.trim().length >= 1;
+
+  const onChangeNick = (v: string) => {
+    setNick(v);
+    setNickErr(false);
+  };
+  const onChangeNickConfirm = async () => {
+    const next = nick.trim();
+    if (next === profile.name || next.length < 1) return;
+    if (await isNicknameTaken(next)) {
+      setNickErr(true);
+      return;
+    }
+    patch({ name: next });
+    await claimNickname(next);
+    setNickErr(false);
+  };
+
   const toggleStroke = (s: Stroke) => {
     const has = profile.strokes.includes(s);
     patch({
@@ -184,17 +207,52 @@ function ProfileTab({
       <SectionHeader icon={<IconSectionBasic width={22} height={22} />} label="자기 소개" />
 
       <Field label="닉네임">
-        <View style={styles.nickRow}>
+        <View style={[styles.nickRow, nickErr && styles.nickRowError]}>
           <View style={styles.nickInputLeft}>
             <IconUser width={20} height={20} />
-            <Text style={styles.nickText} numberOfLines={1}>
-              {profile.name}
-            </Text>
+            <TextInput
+              value={nick}
+              onChangeText={onChangeNick}
+              placeholder="닉네임"
+              placeholderTextColor={tokens.color.ink400}
+              style={styles.nickText}
+              maxLength={10}
+              autoCapitalize="none"
+            />
           </View>
-          <Pressable style={styles.nickChangeBtn} accessibilityLabel="닉네임 변경">
-            <Text style={styles.nickChangeLabel}>닉네임 변경</Text>
+          <Pressable
+            onPress={onChangeNickConfirm}
+            disabled={!nickChanged}
+            style={[
+              styles.nickChangeBtn,
+              nickChanged && styles.nickChangeBtnActive,
+            ]}
+            accessibilityLabel="닉네임 변경"
+          >
+            <Text
+              style={[
+                styles.nickChangeLabel,
+                nickChanged && styles.nickChangeLabelActive,
+              ]}
+            >
+              변경
+            </Text>
+            <Pencil
+              size={16}
+              color={nickChanged ? tokens.color.white : tokens.color.ink500}
+              strokeWidth={2}
+            />
           </Pressable>
         </View>
+        {nickErr ? (
+          <Text style={styles.nickHintError}>
+            이미 사용중인 닉네임입니다.
+          </Text>
+        ) : nickChanged ? (
+          <Text style={styles.nickHint}>
+            닉네임을 입력한 후 변경 버튼을 선택하세요.
+          </Text>
+        ) : null}
       </Field>
 
       <Field label="한 줄 자기소개">
@@ -594,6 +652,7 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.color.white,
     overflow: 'hidden',
   },
+  nickRowError: { borderColor: tokens.color.red },
   nickInputLeft: {
     flex: 1,
     flexDirection: 'row',
@@ -607,14 +666,24 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     letterSpacing: -0.112,
     fontFamily: tokens.font.sans,
-    color: tokens.color.ink500,
+    color: tokens.color.ink900,
+    padding: 0,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   nickChangeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     backgroundColor: '#F8FAFC',
     borderLeftWidth: 1,
     borderLeftColor: '#CBD5E1',
     paddingHorizontal: 12,
     justifyContent: 'center',
+  },
+  nickChangeBtnActive: {
+    backgroundColor: tokens.color.pdMint,
+    borderLeftColor: tokens.color.pdMint,
   },
   nickChangeLabel: {
     fontSize: 16,
@@ -622,6 +691,21 @@ const styles = StyleSheet.create({
     letterSpacing: -0.112,
     fontFamily: tokens.font.sans,
     color: '#4B5563',
+  },
+  nickChangeLabelActive: { color: tokens.color.white },
+  nickHint: {
+    marginTop: 6,
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: tokens.font.sans,
+    color: tokens.color.ink500,
+  },
+  nickHintError: {
+    marginTop: 6,
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: tokens.font.sans,
+    color: tokens.color.red,
   },
 
   divider: {
