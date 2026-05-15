@@ -323,15 +323,23 @@ function ProfileTab({
         <View style={styles.nickRow}>
           <View style={styles.nickInputLeft}>
             <IconIntro width={20} height={20} />
-            <TextInput
-              ref={bioInputRef}
-              value={bio}
-              onChangeText={(v) => setBio(v.slice(0, BIO_MAX))}
-              placeholder="간단하게 자신을 소개해보세요."
-              placeholderTextColor={tokens.color.ink400}
-              style={styles.nickText}
-              maxLength={BIO_MAX}
-            />
+            <View style={styles.nickTextWrap}>
+              <TextInput
+                ref={bioInputRef}
+                value={bio}
+                onChangeText={(v) => setBio(v.slice(0, BIO_MAX))}
+                placeholderTextColor={tokens.color.ink400}
+                style={styles.nickText}
+                maxLength={BIO_MAX}
+              />
+              {/* RN Android는 TextInput placeholder에 커스텀 폰트 미적용 →
+                  빈 값일 때 Text 오버레이로 Pretendard 일관 표시 */}
+              {bio.length === 0 ? (
+                <Text style={styles.nickPlaceholder} pointerEvents="none">
+                  간단하게 자신을 소개해보세요.
+                </Text>
+              ) : null}
+            </View>
           </View>
           <Pressable
             onPress={onBioConfirm}
@@ -768,6 +776,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     padding: 12,
+  },
+  nickTextWrap: { flex: 1, justifyContent: 'center' },
+  nickPlaceholder: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    textAlignVertical: 'center',
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sans,
+    color: tokens.color.ink400,
+    includeFontPadding: false,
   },
   nickText: {
     flex: 1,
