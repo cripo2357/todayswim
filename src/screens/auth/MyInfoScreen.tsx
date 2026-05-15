@@ -206,7 +206,17 @@ function ProfileTab({
             onBlur={() => patch({ bio: bio.trim() })}
             placeholder="간단하게 자신을 소개해보세요."
             placeholderTextColor={tokens.color.ink400}
-            style={[styles.inputText, { color: tokens.color.ink900 }]}
+            style={[
+              styles.inputText,
+              // TextInput은 Text와 달리 Android includeFontPadding/기본 패딩으로
+              // 더 높아짐 → 제거해서 다른 입력영역(48)과 높이 통일.
+              {
+                color: tokens.color.ink900,
+                padding: 0,
+                includeFontPadding: false,
+                textAlignVertical: 'center',
+              },
+            ]}
             maxLength={BIO_MAX}
           />
         </View>
