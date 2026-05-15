@@ -15,6 +15,9 @@ export type RootStackParamList = {
   ProfileImage: undefined;
   Welcome: undefined;
 
+  // 내 정보 (로그인 계정) — 3탭: 프로필 / 달력 / 사람들
+  MyInfo: undefined;
+
   // 시간표 조회·작성
   // 흐름: Map → Write(시간표 작성) → Time(modal/요일별) → Nickname(마지막) → Done
   ScheduleView: { poolId: string };

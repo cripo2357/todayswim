@@ -488,9 +488,8 @@ export function MapScreen() {
         </Pressable>
         <Pressable
           onPress={() => {
-            // 부분 폐쇄형 — 비로그인이면 Login, 로그인됐으면 Profile 화면 (Phase 2).
-            // Phase 1: 둘 다 Login으로 보내고, 추후 ProfileScreen 추가 시 분기.
-            navigation.navigate('Login');
+            // 로그인(프로필 있음) → 내 정보, 비로그인 → Login.
+            navigation.navigate(profile ? 'MyInfo' : 'Login');
           }}
           style={[
             styles.fab,
