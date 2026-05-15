@@ -483,7 +483,6 @@ const styles = StyleSheet.create({
   },
 
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 16, marginBottom: 12 },
-  sectionHeaderIcon: { fontSize: 16, color: tokens.color.ink900 },
   sectionHeaderLabel: {
     fontSize: 16,
     lineHeight: 22,

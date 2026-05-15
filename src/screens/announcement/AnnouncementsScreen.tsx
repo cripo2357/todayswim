@@ -241,6 +241,7 @@ const styles = StyleSheet.create({
   bulletDot: {
     fontSize: 14,
     lineHeight: 22,
+    fontFamily: tokens.font.sans,
     color: '#4B5563',
     width: 14,
   },

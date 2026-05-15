@@ -450,6 +450,7 @@ const styles = StyleSheet.create({
   empty: {
     fontSize: 14,
     lineHeight: 20,
+    fontFamily: tokens.font.sans,
     color: tokens.color.ink500,
     textAlign: 'center',
     marginTop: 48,
