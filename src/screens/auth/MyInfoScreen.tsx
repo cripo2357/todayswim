@@ -45,6 +45,13 @@ const BIO_MAX = 10;
 const TABS = ['프로필', '달력', '사람들'] as const;
 type Tab = (typeof TABS)[number];
 
+/** 가입일 → "YYYY년 M월 D일부터 풀스데이와 수영중" */
+function formatSince(createdAt?: string): string {
+  const d = createdAt ? new Date(createdAt) : null;
+  if (!d || Number.isNaN(d.getTime())) return '풀스데이와 수영중';
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일부터 풀스데이와 수영중`;
+}
+
 export function MyInfoScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const profile = useProfile((s) => s.profile);
@@ -251,6 +258,12 @@ function ProfileTab({
         >
           <IconArrowUpload width={20} height={20} />
         </Pressable>
+      </View>
+
+      {/* 닉네임 + 가입일 (Figma 117:2880) */}
+      <View style={styles.profileHeadText}>
+        <Text style={styles.profileName}>{profile.name}</Text>
+        <Text style={styles.profileSince}>{formatSince(profile.createdAt)}</Text>
       </View>
 
       {/* 자기 소개 */}
@@ -637,7 +650,26 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     alignSelf: 'center',
+    marginBottom: 12,
+  },
+  // Figma 117:2880 — 아바타 아래 닉네임 + 가입일
+  profileHeadText: {
+    alignItems: 'center',
+    gap: 4,
     marginBottom: 32,
+  },
+  profileName: {
+    fontSize: 24,
+    lineHeight: 32,
+    letterSpacing: -0.24,
+    fontFamily: tokens.font.sansBold,
+    color: tokens.color.ink900,
+  },
+  profileSince: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: tokens.font.sans,
+    color: '#4B5563',
   },
   // Figma 117:2986 — 아바타 원에 byellow 외곽선
   avatar: {
