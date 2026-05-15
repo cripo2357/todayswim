@@ -645,7 +645,9 @@ const styles = StyleSheet.create({
   nickRow: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    minHeight: 48,
+    // 다른 입력영역(inputBox minHeight 48)과 동일하게 48 고정 —
+    // TextInput 폰트 메트릭이 minHeight를 초과해 커지던 문제 해결.
+    height: 48,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     borderRadius: 14,
