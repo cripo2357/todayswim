@@ -11,7 +11,8 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, Pencil, Plus, Calendar as LucideCalendar } from 'lucide-react-native';
+import { ChevronLeft, Pencil, Calendar as LucideCalendar } from 'lucide-react-native';
+import IconArrowUpload from '@assets/icons/arrow-upload.svg';
 import IconChevronDown from '@assets/icons/chevron-down.svg';
 import IconIntro from '@assets/icons/intro.svg';
 import { isNicknameTaken, claimNickname } from '@/lib/nicknames';
@@ -255,7 +256,7 @@ function ProfileTab({
           style={styles.avatarUploadBtn}
           accessibilityLabel="사진 변경"
         >
-          <Plus size={20} color={tokens.color.white} strokeWidth={2.5} />
+          <IconArrowUpload width={18} height={18} color={tokens.color.white} />
         </Pressable>
       </View>
 

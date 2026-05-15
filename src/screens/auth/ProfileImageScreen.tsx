@@ -30,7 +30,15 @@ import IconEmotionOverjoyed from '@assets/icons/emotion-overjoyed.svg';
 
 type State = 'idle' | 'uploading' | 'error';
 
-const AVATAR_SIZE = 120;
+const AVATAR_SIZE = 120; // uploading 링용
+const IDLE_AVATAR = 80; // idle 아바타 (Figma 110:3316 / 130:3599 통일)
+
+/** 가입일 → "YYYY년 M월 D일부터 풀스데이와 수영중" */
+function formatSince(createdAt?: string): string {
+  const d = createdAt ? new Date(createdAt) : null;
+  if (!d || Number.isNaN(d.getTime())) return '풀스데이와 수영중';
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일부터 풀스데이와 수영중`;
+}
 
 export function ProfileImageScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -115,7 +123,13 @@ export function ProfileImageScreen() {
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
       <View style={styles.body}>
         {state === 'idle' && (
-          <IdleView photo={photo} onUpload={pickImage} onComplete={onComplete} />
+          <IdleView
+            photo={photo}
+            name={profile?.name ?? ''}
+            since={formatSince(profile?.createdAt)}
+            onUpload={pickImage}
+            onComplete={onComplete}
+          />
         )}
         {state === 'uploading' && <UploadingView photo={photo} />}
         {state === 'error' && <ErrorView onRetry={pickImage} />}
@@ -148,9 +162,11 @@ function AvatarCircle({ photo, size }: { photo: string; size: number }) {
 }
 
 function IdleView({
-  photo, onUpload, onComplete,
+  photo, name, since, onUpload, onComplete,
 }: {
   photo: string;
+  name: string;
+  since: string;
   onUpload: () => void;
   onComplete: () => void;
 }) {
@@ -158,16 +174,26 @@ function IdleView({
     <View style={styles.idleWrap}>
       <Text style={styles.title}>프로필 이미지</Text>
 
-      <View style={styles.avatarWrap}>
-        <AvatarCircle photo={photo} size={AVATAR_SIZE} />
-        <Pressable
-          onPress={onUpload}
-          style={({ pressed }) => [styles.uploadBtn, pressed && { opacity: 0.85 }]}
-          accessibilityRole="button"
-          accessibilityLabel="사진 업로드"
-        >
-          <IconArrowUpload width={18} height={18} />
-        </Pressable>
+      {/* 아바타 블록 (Figma 110:3316 / 130:3599 — 아바타80 + 닉네임 + 가입일) */}
+      <View style={styles.avatarBlock}>
+        <View style={styles.avatarWrap}>
+          <AvatarCircle photo={photo} size={IDLE_AVATAR} />
+          <Pressable
+            onPress={onUpload}
+            style={({ pressed }) => [
+              styles.uploadBtn,
+              pressed && { opacity: 0.85 },
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="사진 업로드"
+          >
+            <IconArrowUpload width={18} height={18} color={tokens.color.white} />
+          </Pressable>
+        </View>
+        <View style={styles.headText}>
+          <Text style={styles.profileName}>{name}</Text>
+          <Text style={styles.profileSince}>{since}</Text>
+        </View>
       </View>
 
       <Pressable
@@ -226,7 +252,7 @@ function ErrorView({ onRetry }: { onRetry: () => void }) {
         accessibilityRole="button"
       >
         <Text style={styles.ctaLabel}>내 사진 다시 업로드</Text>
-        <IconArrowUpload width={20} height={20} />
+        <IconArrowUpload width={20} height={20} color={tokens.color.black} />
       </Pressable>
     </View>
   );
@@ -253,27 +279,44 @@ const styles = StyleSheet.create({
     color: tokens.color.ink900,
     textAlign: 'center',
   },
-  avatarWrap: { position: 'relative' },
-  // Figma 110:3316 — 아바타 원 byellow 외곽선 (MyInfo 117:2986과 동일)
+  // Figma 110:3316 — 아바타 블록(아바타+업로드) + 닉네임/가입일, gap 10
+  avatarBlock: { alignItems: 'center', gap: 10 },
+  avatarWrap: { position: 'relative', width: IDLE_AVATAR, height: IDLE_AVATAR },
+  // 외곽선 없음 (border-0)
   avatar: {
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: tokens.color.pdByellow,
   },
-  // Figma — 아바타 우하단 흰 원 + Shadow/md + 업로드 아이콘
+  // Figma 130:3640 — 우하단 검정(ink900) 32 원 + 흰 업로드 아이콘
   uploadBtn: {
     position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: tokens.color.white,
+    bottom: 0,
+    right: 0,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: tokens.color.ink900,
     alignItems: 'center',
     justifyContent: 'center',
-    ...tokens.shadow.pop,
+  },
+  // Figma 130:3644/3646 — 닉네임 24 Bold + 가입일 14, gap 8
+  headText: { alignItems: 'center', gap: 8 },
+  profileName: {
+    fontSize: 24,
+    lineHeight: 32,
+    letterSpacing: -0.288,
+    fontFamily: tokens.font.sansBold,
+    color: tokens.color.ink900,
+    textAlign: 'center',
+  },
+  profileSince: {
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: -0.084,
+    fontFamily: tokens.font.sans,
+    color: '#4B5563',
+    textAlign: 'center',
   },
 
   // uploading (110:3327) / error (110:3337) — idle과 동일: gap 64, 중앙보다 위쪽
