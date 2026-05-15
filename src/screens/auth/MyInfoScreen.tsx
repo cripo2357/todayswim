@@ -237,7 +237,7 @@ function ProfileTab({
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
-      {/* 아바타 + 업로드 (Figma 130:3599 — 80px, 외곽선 없음, 검정 32 버튼) */}
+      {/* 아바타 + 업로드 (Figma 130:3599 — 80px, byellow 외곽선, 검정 32 버튼) */}
       <View style={styles.avatarWrap}>
         <View style={styles.avatar}>
           {isBundleAvatar(profile.photoUri) ? (
@@ -679,12 +679,14 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sans,
     color: '#4B5563',
   },
-  // Figma 130:3599 — 80px, 외곽선 없음
+  // Figma 130:3599 — 80px, byellow 외곽선 (디자인 border-color=byellow 의도)
   avatar: {
     width: 80,
     height: 80,
     borderRadius: 40,
     backgroundColor: '#EBEBEB',
+    borderWidth: 2,
+    borderColor: tokens.color.pdByellow,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
