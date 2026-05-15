@@ -135,10 +135,16 @@ function ProfileTab({
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [bio, setBio] = React.useState(profile.bio ?? '');
   const bioInputRef = React.useRef<TextInput>(null);
-  const bioChanged = bio.trim() !== (profile.bio ?? '').trim();
-  const onBioConfirm = () => {
-    if (!bioChanged) return;
+  const [bioEditing, setBioEditing] = React.useState(false);
+  // "변경" 버튼: 비활성 → 편집 시작 / 편집 중 → 저장.
+  const onBioButton = () => {
+    if (!bioEditing) {
+      setBioEditing(true);
+      setTimeout(() => bioInputRef.current?.focus(), 0);
+      return;
+    }
     patch({ bio: bio.trim() });
+    setBioEditing(false);
     bioInputRef.current?.blur();
   };
   const [showCalendar, setShowCalendar] = React.useState(false);
@@ -188,18 +194,27 @@ function ProfileTab({
   const nickInputRef = React.useRef<TextInput>(null);
   const [nick, setNick] = React.useState(profile.name);
   const [nickErr, setNickErr] = React.useState(false);
-  const nickChanged =
-    nick.trim() !== profile.name &&
-    nick.trim().length >= 2 &&
-    nick.trim().length <= 6;
+  // 기본 비활성(읽기). "변경" 누르면 편집 활성, 다시 누르면 검증·저장.
+  const [nickEditing, setNickEditing] = React.useState(false);
 
   const onChangeNick = (v: string) => {
     setNick(v);
     setNickErr(false);
   };
-  const onChangeNickConfirm = async () => {
+  // "변경" 버튼: 비활성 → 편집 시작 / 편집 중 → 검증·저장.
+  const onNickButton = async () => {
+    if (!nickEditing) {
+      setNickEditing(true);
+      setTimeout(() => nickInputRef.current?.focus(), 0);
+      return;
+    }
     const next = nick.trim();
-    if (next === profile.name || next.length < 2 || next.length > 6) return;
+    if (next === profile.name) {
+      setNickEditing(false);
+      nickInputRef.current?.blur();
+      return;
+    }
+    if (next.length < 2 || next.length > 6) return; // 안내문이 가이드
     if (await isNicknameTaken(next)) {
       setNickErr(true);
       return;
@@ -207,7 +222,7 @@ function ProfileTab({
     patch({ name: next });
     await claimNickname(next);
     setNickErr(false);
-    // 변경 완료 → 입력영역 포커스 아웃.
+    setNickEditing(false);
     nickInputRef.current?.blur();
   };
 
@@ -279,7 +294,7 @@ function ProfileTab({
               ref={nickInputRef}
               value={nick}
               onChangeText={onChangeNick}
-              placeholder="닉네임"
+              editable={nickEditing}
               placeholderTextColor={tokens.color.ink400}
               style={styles.nickText}
               maxLength={6}
@@ -287,34 +302,21 @@ function ProfileTab({
             />
           </View>
           <Pressable
-            onPress={onChangeNickConfirm}
-            disabled={!nickChanged}
-            style={[
-              styles.nickChangeBtn,
-              nickChanged && styles.nickChangeBtnActive,
-            ]}
+            onPress={onNickButton}
+            style={[styles.nickChangeBtn, styles.nickChangeBtnActive]}
             accessibilityLabel="닉네임 변경"
           >
-            <Text
-              style={[
-                styles.nickChangeLabel,
-                nickChanged && styles.nickChangeLabelActive,
-              ]}
-            >
+            <Text style={[styles.nickChangeLabel, styles.nickChangeLabelActive]}>
               변경
             </Text>
-            <Pencil
-              size={16}
-              color={nickChanged ? tokens.color.white : tokens.color.ink500}
-              strokeWidth={2}
-            />
+            <Pencil size={16} color={tokens.color.white} strokeWidth={2} />
           </Pressable>
         </View>
         {nickErr ? (
           <Text style={styles.nickHintError}>
             이미 사용중인 닉네임입니다.
           </Text>
-        ) : nick.trim() !== profile.name ? (
+        ) : nickEditing ? (
           <Text style={styles.nickHint}>
             닉네임(2~6자)을 입력한 후 변경 버튼을 선택하세요.
           </Text>
@@ -330,6 +332,7 @@ function ProfileTab({
                 ref={bioInputRef}
                 value={bio}
                 onChangeText={(v) => setBio(v.slice(0, BIO_MAX))}
+                editable={bioEditing}
                 placeholderTextColor={tokens.color.ink400}
                 style={styles.nickText}
                 maxLength={BIO_MAX}
@@ -344,30 +347,17 @@ function ProfileTab({
             </View>
           </View>
           <Pressable
-            onPress={onBioConfirm}
-            disabled={!bioChanged}
-            style={[
-              styles.nickChangeBtn,
-              bioChanged && styles.nickChangeBtnActive,
-            ]}
+            onPress={onBioButton}
+            style={[styles.nickChangeBtn, styles.nickChangeBtnActive]}
             accessibilityLabel="자기소개 변경"
           >
-            <Text
-              style={[
-                styles.nickChangeLabel,
-                bioChanged && styles.nickChangeLabelActive,
-              ]}
-            >
+            <Text style={[styles.nickChangeLabel, styles.nickChangeLabelActive]}>
               변경
             </Text>
-            <Pencil
-              size={16}
-              color={bioChanged ? tokens.color.white : tokens.color.ink500}
-              strokeWidth={2}
-            />
+            <Pencil size={16} color={tokens.color.white} strokeWidth={2} />
           </Pressable>
         </View>
-        {bioChanged ? (
+        {bioEditing ? (
           <Text style={styles.nickHint}>
             자기소개(최대 10자)를 입력한 후 변경 버튼을 선택하세요.
           </Text>
