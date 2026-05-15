@@ -240,16 +240,18 @@ function ProfileTab({
       {/* 아바타 + 업로드 (Figma 130:3599 — 80px, byellow 외곽선, 검정 32 버튼) */}
       <View style={styles.avatarWrap}>
         <View style={styles.avatar}>
-          {isBundleAvatar(profile.photoUri) ? (
-            React.createElement(BUNDLE_AVATARS[profile.photoUri], {
-              width: 80,
-              height: 80,
-            })
-          ) : profile.photoUri ? (
-            <Image source={{ uri: profile.photoUri }} style={styles.avatarImg} />
-          ) : (
-            <IconUser width={36} height={36} />
-          )}
+          <View style={styles.avatarInner}>
+            {isBundleAvatar(profile.photoUri) ? (
+              React.createElement(BUNDLE_AVATARS[profile.photoUri], {
+                width: 76,
+                height: 76,
+              })
+            ) : profile.photoUri ? (
+              <Image source={{ uri: profile.photoUri }} style={styles.avatarImg} />
+            ) : (
+              <IconUser width={36} height={36} />
+            )}
+          </View>
         </View>
         <Pressable
           onPress={() => navigation.navigate('ProfileImage', { mode: 'edit' })}
@@ -679,19 +681,26 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sans,
     color: '#4B5563',
   },
-  // Figma 130:3599 — 80px, byellow 외곽선 (디자인 border-color=byellow 의도)
+  // Figma 130:3572 — byellow 외곽선. RN border+overflow 함정 회피 위해
+  // byellow 배경 80 원 + 안쪽 76 원(2px ring) 구조.
   avatar: {
     width: 80,
     height: 80,
     borderRadius: 40,
+    backgroundColor: tokens.color.pdByellow,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInner: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
     backgroundColor: '#EBEBEB',
-    borderWidth: 2,
-    borderColor: tokens.color.pdByellow,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  avatarImg: { width: 80, height: 80 },
+  avatarImg: { width: 76, height: 76 },
   // 우하단 검정(ink900) 32 원 + 흰 + 아이콘
   avatarUploadBtn: {
     position: 'absolute',
