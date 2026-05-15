@@ -24,5 +24,6 @@ export const supabase = createClient(url, anonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false, // RN은 URL 기반 세션 감지 X (네이티브 딥링크는 별도 처리)
+    flowType: 'pkce', // Kakao signInWithOAuth → exchangeCodeForSession 용
   },
 });

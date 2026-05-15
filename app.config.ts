@@ -78,6 +78,17 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
           '프로필 사진을 등록하려면 사진 보관함 접근 권한이 필요해요.',
       },
     ],
+    // Google 로그인 (네이티브 SDK). iOS는 Google Cloud iOS client의
+    // "iOS URL scheme"(reversed client ID)을 받은 뒤 iosUrlScheme에 채워야 함.
+    // Android는 EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID(웹 클라이언트 ID)로 idToken 발급.
+    [
+      '@react-native-google-signin/google-signin',
+      process.env.GOOGLE_IOS_URL_SCHEME
+        ? { iosUrlScheme: process.env.GOOGLE_IOS_URL_SCHEME }
+        : {},
+    ],
+    // Kakao 로그인 OAuth 리다이렉트용 인앱 브라우저.
+    'expo-web-browser',
     // Naver Maps SDK 플러그인 — Client ID 전달, Android 빌드 시 네이티브 SDK 자동 통합
     [
       '@mj-studio/react-native-naver-map',

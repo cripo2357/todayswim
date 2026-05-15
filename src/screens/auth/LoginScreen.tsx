@@ -20,10 +20,22 @@ import IconApple from '@assets/icons/social-apple.svg';
 export function LoginScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const signInMock = useAuth((s) => s.signInMock);
+  const signInWithGoogle = useAuth((s) => s.signInWithGoogle);
+  const signInWithKakao = useAuth((s) => s.signInWithKakao);
+
+  // 로그인 성공 후 공통 게이트 — 약관 → 프로필 → 지도.
+  const goAfterLogin = async () => {
+    const terms = await getTermsState();
+    if (!isFullyAgreed(terms)) {
+      navigation.replace('TermsAgreement');
+      return;
+    }
+    const profile = useProfile.getState().profile;
+    navigation.replace(profile ? 'MapMain' : 'ProfileSetup');
+  };
 
   const onSocial = async (provider: SocialProvider) => {
     // [TEST MODE] Apple 로그인을 가입 프로세스 강제 진입점으로 사용 — 매번 약관·프로필 리셋 후 처음부터.
-    // Google/Kakao는 정상 게이트 (약관·프로필 저장돼 있으면 MapMain 직진).
     // 원복: Apple 분기 블록 + iOS 플랫폼 체크 복구.
     if (provider === 'apple') {
       try {
@@ -38,15 +50,14 @@ export function LoginScreen() {
     }
 
     try {
-      await signInMock(provider);
-      // Splash 게이트와 동일한 로직 — 약관 → 프로필 → 지도.
-      const terms = await getTermsState();
-      if (!isFullyAgreed(terms)) {
-        navigation.replace('TermsAgreement');
-        return;
+      if (provider === 'google') {
+        await signInWithGoogle();
+        if (!useAuth.getState().user) return; // 사용자가 취소
+      } else {
+        await signInWithKakao();
+        if (!useAuth.getState().user) return; // 사용자가 취소
       }
-      const profile = useProfile.getState().profile;
-      navigation.replace(profile ? 'MapMain' : 'ProfileSetup');
+      await goAfterLogin();
     } catch (e) {
       Alert.alert('로그인 실패', String(e));
     }
