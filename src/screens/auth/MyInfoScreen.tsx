@@ -12,7 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  ChevronLeft, ChevronDown, Calendar as LucideCalendar,
+  ChevronLeft, ChevronDown, MessageSquare, Calendar as LucideCalendar,
 } from 'lucide-react-native';
 
 import {
@@ -123,6 +123,8 @@ function ProfileTab({
   profile: UserProfile;
   patch: (p: Partial<UserProfile>) => void;
 }) {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [bio, setBio] = React.useState(profile.bio ?? '');
   const [showCalendar, setShowCalendar] = React.useState(false);
 
@@ -142,11 +144,11 @@ function ProfileTab({
       return;
     }
     const withoutNone = cur.filter((x) => x !== '없음');
-    patch({
-      certifications: withoutNone.includes(c)
-        ? withoutNone.filter((x) => x !== c)
-        : [...withoutNone, c],
-    });
+    const next = withoutNone.includes(c)
+      ? withoutNone.filter((x) => x !== c)
+      : [...withoutNone, c];
+    // 모든 자격증이 해제되면 '없음'이 자동 선택 (Figma 120:3054).
+    patch({ certifications: next.length === 0 ? ['없음'] : next });
   };
 
   return (
@@ -169,7 +171,11 @@ function ProfileTab({
             <IconUser width={40} height={40} />
           )}
         </View>
-        <Pressable style={styles.avatarUploadBtn} accessibilityLabel="사진 변경">
+        <Pressable
+          onPress={() => navigation.navigate('ProfileImage', { mode: 'edit' })}
+          style={styles.avatarUploadBtn}
+          accessibilityLabel="사진 변경"
+        >
           <IconArrowUpload width={20} height={20} />
         </Pressable>
       </View>
@@ -191,24 +197,20 @@ function ProfileTab({
         </View>
       </Field>
 
-      <View style={styles.fieldGap}>
-        <Text style={styles.fieldLabel}>내 소개</Text>
-        <View style={styles.bioBox}>
+      <Field label="한 줄 자기소개">
+        <View style={styles.inputBox}>
+          <MessageSquare size={20} color={tokens.color.ink900} strokeWidth={2} />
           <TextInput
             value={bio}
             onChangeText={(v) => setBio(v.slice(0, BIO_MAX))}
             onBlur={() => patch({ bio: bio.trim() })}
             placeholder="간단하게 자신을 소개해보세요."
             placeholderTextColor={tokens.color.ink400}
-            style={styles.bioInput}
-            multiline
+            style={[styles.inputText, { color: tokens.color.ink900 }]}
             maxLength={BIO_MAX}
           />
-          <Text style={styles.bioCount}>
-            {bio.length}/{BIO_MAX}
-          </Text>
         </View>
-      </View>
+      </Field>
 
       <Field label="성별">
         <View style={styles.inputBox}>
@@ -492,11 +494,14 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginBottom: 32,
   },
+  // Figma 117:2986 — 아바타 원에 byellow 외곽선
   avatar: {
     width: 96,
     height: 96,
     borderRadius: 48,
     backgroundColor: '#EBEBEB',
+    borderWidth: 2,
+    borderColor: tokens.color.pdByellow,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -607,33 +612,6 @@ const styles = StyleSheet.create({
     letterSpacing: -0.112,
     fontFamily: tokens.font.sans,
     color: '#4B5563',
-  },
-
-  // 내 소개 textarea
-  bioBox: {
-    minHeight: 172,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 24,
-    backgroundColor: tokens.color.white,
-    padding: 12,
-  },
-  bioInput: {
-    flex: 1,
-    fontSize: 16,
-    lineHeight: 26,
-    fontFamily: tokens.font.sans,
-    color: tokens.color.ink900,
-    textAlignVertical: 'top',
-    padding: 0,
-  },
-  bioCount: {
-    alignSelf: 'flex-end',
-    fontSize: 12,
-    lineHeight: 16,
-    letterSpacing: -0.06,
-    fontFamily: tokens.font.sans,
-    color: '#94A3B8',
   },
 
   divider: {

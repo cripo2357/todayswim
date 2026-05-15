@@ -12,7 +12,8 @@ export type RootStackParamList = {
   TermsService: undefined;
   TermsPrivacy: undefined;
   ProfileSetup: undefined;
-  ProfileImage: undefined;
+  // signup: 가입 흐름(완료→Welcome) / edit: 내 정보에서 사진만 변경(완료→뒤로)
+  ProfileImage: { mode: 'signup' | 'edit' } | undefined;
   Welcome: undefined;
 
   // 내 정보 (로그인 계정) — 3탭: 프로필 / 달력 / 사람들

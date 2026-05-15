@@ -10,7 +10,7 @@ import React from 'react';
 import {
   View, Text, StyleSheet, Pressable, Animated, Alert, Image,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Flag } from 'lucide-react-native';
@@ -34,15 +34,19 @@ const AVATAR_SIZE = 120;
 
 export function ProfileImageScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'ProfileImage'>>();
+  const mode = route.params?.mode ?? 'signup';
   const profile = useProfile((s) => s.profile);
   const saveProfile = useProfile((s) => s.save);
   const authUser = useAuth((s) => s.user);
 
-  // 기본값 — 소셜 로그인 프로필 사진이 있으면 그걸, 없으면 성별 기반 번들 아바타.
+  // 기본값 — 이미 등록된 사진(내 정보 수정) > 소셜 사진 > 성별 기반 번들 아바타.
   const initialPhoto = React.useMemo<string>(
     () =>
-      authUser?.photoUrl ?? defaultAvatarForGender(profile?.gender ?? 'male'),
-    [authUser?.photoUrl, profile?.gender],
+      profile?.photoUri ??
+      authUser?.photoUrl ??
+      defaultAvatarForGender(profile?.gender ?? 'male'),
+    [profile?.photoUri, authUser?.photoUrl, profile?.gender],
   );
   // 현재 선택된 사진 — 번들 AvatarId / 소셜 URL / 업로드 URI.
   const [photo, setPhoto] = React.useState<string>(initialPhoto);
@@ -102,7 +106,9 @@ export function ProfileImageScreen() {
   const onComplete = async () => {
     if (!profile) return;
     await saveProfile({ ...profile, photoUri: photo });
-    navigation.replace('Welcome');
+    // 가입 흐름은 Welcome으로, 내 정보 수정은 이전 화면(내 정보)으로 복귀.
+    if (mode === 'edit') navigation.goBack();
+    else navigation.replace('Welcome');
   };
 
   return (
