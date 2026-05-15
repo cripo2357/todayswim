@@ -19,7 +19,6 @@ import Supercluster from 'supercluster';
 
 import IconFilter from '@assets/icons/filter.svg';
 import IconCloseCircle from '@assets/icons/close-circle.svg';
-import IconSettings from '@assets/icons/settings.svg';
 import IconLocate from '@assets/icons/locate.svg';
 import IconProfile from '@assets/icons/profile.svg';
 import IconLifeBuoy from '@assets/icons/life-buoy.svg';
@@ -467,17 +466,6 @@ export function MapScreen() {
             <IconFilter width={20} height={20} color={tokens.color.white} />
           </Pressable>
         )}
-        <Pressable
-          onPress={() => {
-            select(null); // 다른 기능 사용 → deselect 정책
-            navigation.navigate('More');
-          }}
-          style={[styles.fab, styles.fabRound]}
-          accessibilityRole="button"
-          accessibilityLabel="부가 기능"
-        >
-          <IconSettings width={20} height={20} color={tokens.color.white} />
-        </Pressable>
         <Pressable
           onPress={flyToMyLocation}
           style={[styles.fab, styles.fabRound]}
