@@ -9,6 +9,8 @@ interface Props {
   /** 뒤로가기 버튼 표시 — 기본 true (네비 가능 시 자동 렌더) */
   showBack?: boolean;
   rightSlot?: React.ReactNode;
+  /** 헤더 배경색 — 기본 bgCream. 흰 bg 화면(필터 등)에서는 bgPaper로 override. */
+  background?: string;
 }
 
 /**
@@ -18,12 +20,12 @@ interface Props {
  * - 우측 액션
  * - 하단 1px line-subtle
  */
-export function AppHeader({ title, showBack = true, rightSlot }: Props) {
+export function AppHeader({ title, showBack = true, rightSlot, background }: Props) {
   const navigation = useNavigation();
   const canGoBack = showBack && navigation.canGoBack();
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, background ? { backgroundColor: background } : null]}>
       <View style={styles.left}>
         {canGoBack ? (
           <Pressable

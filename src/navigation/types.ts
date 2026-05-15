@@ -6,6 +6,15 @@ export type RootStackParamList = {
   Splash: undefined;
   MapMain: undefined;
 
+  // 인증·약관·프로필 흐름 (Splash 직후 게이트)
+  Login: undefined;
+  TermsAgreement: undefined;
+  TermsService: undefined;
+  TermsPrivacy: undefined;
+  ProfileSetup: undefined;
+  ProfileImage: undefined;
+  Welcome: undefined;
+
   // 시간표 조회·작성
   // 흐름: Map → Write(시간표 작성) → Time(modal/요일별) → Nickname(마지막) → Done
   ScheduleView: { poolId: string };
@@ -24,6 +33,9 @@ export type RootStackParamList = {
 
   // 수영장 검색 필터
   PoolFilter: undefined;
+
+  // 수영장 목록 (지도에 보이는 풀 + 필터 적용분, 거리/이름 정렬)
+  PoolList: undefined;
 
   // 상태 / 오류 / 점검 / 강제 업데이트 화면 (Figma 77:1064/77:1388/77:1462/77:1636).
   // Maintenance/AppUpdateRequired는 라우터/AppGate에서 트리거 — 일반 navigation 흐름엔 잘 안 들어감.

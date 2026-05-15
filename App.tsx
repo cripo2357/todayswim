@@ -9,6 +9,10 @@ import { RootNavigator } from '@/navigation/RootNavigator';
 // import { OfflineGate } from '@/components/network/OfflineGate';
 //   ↑ expo-network 네이티브 모듈 — EAS dev 빌드 새로 한 후에 활성화. 그 전엔 runtime not ready 에러.
 import { useFonts } from '@/hooks/useFonts';
+import { usePoolFilter } from '@/store/poolFilter';
+import { useSelection } from '@/store/selection';
+import { useAuth } from '@/store/auth';
+import { useProfile } from '@/store/profile';
 import { tokens } from '@/styles/tokens';
 
 const queryClient = new QueryClient({
@@ -17,6 +21,15 @@ const queryClient = new QueryClient({
 
 export default function App() {
   const [fontsLoaded, fontError] = useFonts();
+
+  // 앱 (재)시동 시 필터·선택 상태 초기화 + 인증 세션 복원.
+  React.useEffect(() => {
+    usePoolFilter.getState().clearAll();
+    useSelection.getState().select(null);
+    // AsyncStorage에 저장된 mock 세션 복원 — Splash에서 분기 처리.
+    useAuth.getState().hydrate();
+    useProfile.getState().hydrate();
+  }, []);
 
   if (!fontsLoaded && !fontError) {
     return (

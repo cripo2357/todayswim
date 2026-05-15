@@ -70,6 +70,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     'expo-location',
+    // 프로필 이미지 등록 — 갤러리 픽. iOS 사진 보관함 권한 문구 주입.
+    [
+      'expo-image-picker',
+      {
+        photosPermission:
+          '프로필 사진을 등록하려면 사진 보관함 접근 권한이 필요해요.',
+      },
+    ],
     // Naver Maps SDK 플러그인 — Client ID 전달, Android 빌드 시 네이티브 SDK 자동 통합
     [
       '@mj-studio/react-native-naver-map',

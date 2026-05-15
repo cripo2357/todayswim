@@ -29,9 +29,10 @@ export function RequestComplete({ title, description, ctaLabel, onCtaPress }: Pr
           label={ctaLabel}
           onPress={onCtaPress}
           size="lg"
+          variant="pdYellow"
           fullWidth
           style={styles.cta}
-          iconRight={<Check size={18} color={tokens.color.white} strokeWidth={2.4} />}
+          iconRight={<Check size={18} color={tokens.color.black} strokeWidth={2.4} />}
         />
       </View>
     </ModalCard>

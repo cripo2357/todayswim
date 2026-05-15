@@ -14,6 +14,14 @@ import { PoolDoneScreen } from '@/screens/pool-submit/PoolDoneScreen';
 import { MoreScreen } from '@/screens/more/MoreScreen';
 import { AnnouncementsScreen } from '@/screens/announcement/AnnouncementsScreen';
 import { PoolFilterScreen } from '@/screens/filter/PoolFilterScreen';
+import { PoolListScreen } from '@/screens/pool-list/PoolListScreen';
+import { LoginScreen } from '@/screens/auth/LoginScreen';
+import { TermsAgreementScreen } from '@/screens/auth/TermsAgreementScreen';
+import { TermsServiceScreen } from '@/screens/auth/TermsServiceScreen';
+import { TermsPrivacyScreen } from '@/screens/auth/TermsPrivacyScreen';
+import { ProfileSetupScreen } from '@/screens/auth/ProfileSetupScreen';
+import { ProfileImageScreen } from '@/screens/auth/ProfileImageScreen';
+import { WelcomeScreen } from '@/screens/auth/WelcomeScreen';
 import { ErrorNotFoundScreen } from '@/screens/status/ErrorNotFoundScreen';
 import { ErrorNoInternetScreen } from '@/screens/status/ErrorNoInternetScreen';
 import { MaintenanceScreen } from '@/screens/status/MaintenanceScreen';
@@ -98,6 +106,17 @@ export function RootNavigator() {
       <Stack.Screen name="Announcements" component={AnnouncementsScreen} />
 
       <Stack.Screen name="PoolFilter" component={PoolFilterScreen} />
+
+      <Stack.Screen name="PoolList" component={PoolListScreen} />
+
+      {/* 인증 / 약관 */}
+      <Stack.Screen name="Login" component={LoginScreen} options={{ animation: 'fade' }} />
+      <Stack.Screen name="TermsAgreement" component={TermsAgreementScreen} />
+      <Stack.Screen name="TermsService" component={TermsServiceScreen} />
+      <Stack.Screen name="TermsPrivacy" component={TermsPrivacyScreen} />
+      <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
+      <Stack.Screen name="ProfileImage" component={ProfileImageScreen} />
+      <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ animation: 'fade' }} />
 
       {/* 상태/오류/점검/강제 업데이트 — gestureEnabled 차단(블로킹 화면) */}
       <Stack.Screen name="ErrorNotFound" component={ErrorNotFoundScreen} />

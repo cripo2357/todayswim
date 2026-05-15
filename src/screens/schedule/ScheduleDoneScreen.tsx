@@ -12,7 +12,7 @@ export function ScheduleDoneScreen() {
   return (
     <RequestComplete
       title="자유수영 시간표 등록 요청 완료"
-      description={'시간표를 작성해주셔서 감사합니다.\n관리자가 확인 후 등록할 예정입니다.'}
+      description={'자유수영 시간표를 관리자가 확인 후\n업데이트할 예정입니다.'}
       ctaLabel="알겠습니다"
       onCtaPress={() => navigation.popToTop()}
     />

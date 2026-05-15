@@ -18,8 +18,11 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Supercluster from 'supercluster';
 
 import IconFilter from '@assets/icons/filter.svg';
+import IconCloseCircle from '@assets/icons/close-circle.svg';
 import IconSettings from '@assets/icons/settings.svg';
 import IconLocate from '@assets/icons/locate.svg';
+import IconProfile from '@assets/icons/profile.svg';
+import IconLifeBuoy from '@assets/icons/life-buoy.svg';
 
 import type { RootStackParamList } from '@/navigation/types';
 import type { Pool } from '@/types/pool';
@@ -36,6 +39,7 @@ import { tokens } from '@/styles/tokens';
 // preview/dim 변종은 폐기 (디자인 정책 변경: 다른 풀 선택 중에도 마커 외형 동일).
 const MARKER_BIG           = require('@assets/markers/marker-big.png');
 const MARKER_SMALL         = require('@assets/markers/marker-small.png');
+const MARKER_HOTEL         = require('@assets/markers/marker-hotel.png');
 const MARKER_LOCATION      = require('@assets/markers/marker-location.png');
 const MARKER_CLUSTER       = require('@assets/markers/cluster.png');
 
@@ -79,6 +83,7 @@ export function MapScreen() {
 
   const filter = usePoolFilter();
   const filterActive = isFilterActive(filter);
+  const clearAllFilter = usePoolFilter((s) => s.clearAll);
   // Supabase에서 풀/시간표 fetch — react-query 캐시. 로딩 중에는 빈 배열로 fallback.
   const { data: poolsData } = usePools();
   const { data: schedulesData } = useSchedules();
@@ -108,10 +113,20 @@ export function MapScreen() {
   // Gesture 이벤트는 이 값과의 누적 diff로 deselect 판정.
   const baselineZoomRef = React.useRef(INITIAL_CAMERA.zoom);
 
+  // 목록 화면에서 풀 선택 후 복귀 시 — pendingFocus 소비해서 카메라 이동.
+  const pendingFocusPoolId = useSelection((s) => s.pendingFocusPoolId);
+  const clearPendingFocus = useSelection((s) => s.clearPendingFocus);
+
   const flewToUserOnce = React.useRef(false);
   React.useEffect(() => {
     if (flewToUserOnce.current) return;
     if (geo.status !== 'granted' || !geo.coords) return;
+    // 외부 포커스 요청(목록 → 지도에서 보기) 있으면 auto-fly 스킵하고
+    // pendingFocus effect가 카메라 이동을 담당하게 함.
+    if (useSelection.getState().pendingFocusPoolId) {
+      flewToUserOnce.current = true;
+      return;
+    }
     flewToUserOnce.current = true;
     setTimeout(() => {
       mapRef.current?.animateCameraTo({
@@ -122,6 +137,24 @@ export function MapScreen() {
       });
     }, 300);
   }, [geo.status, geo.coords]);
+
+  React.useEffect(() => {
+    if (!pendingFocusPoolId) return;
+    const target = pools.find((p) => p.id === pendingFocusPoolId);
+    if (!target) return;
+    // auto-fly보다 우선 동작하도록 flag 선점.
+    flewToUserOnce.current = true;
+    // 풀 데이터 fetch 후 호출되도록 setTimeout으로 살짝 지연.
+    setTimeout(() => {
+      mapRef.current?.animateCameraTo({
+        latitude: target.lat,
+        longitude: target.lng,
+        zoom: Math.max(cameraRef.current.zoom, 15),
+        duration: 400,
+      });
+      clearPendingFocus();
+    }, 100);
+  }, [pendingFocusPoolId, pools, clearPendingFocus]);
 
   const selectedPool = React.useMemo(
     () => pools.find((p) => p.id === selectedPoolId) ?? null,
@@ -284,6 +317,7 @@ export function MapScreen() {
               haloColor: tokens.color.white,
               minZoom: 10,
             }}
+            onTap={flyToMyLocation}
           />
         ) : null}
 
@@ -308,25 +342,29 @@ export function MapScreen() {
             }
             if (visibleCount === 0) return null;
             const countStr = String(visibleCount);
-            const captionSize = countStr.length >= 3 ? 12 : 16;
+            // Figma 91:9872 — 클러스터 카운트 텍스트: Plus Jakarta Bold 14/20 -0.084 #EAFF00.
+            // Naver caption은 fontFamily/letterSpacing 미지원 — fontSize·color만 매칭.
+            // 4자리(9999) 기준으로 34×34 원 안에 들어가도록 14 고정.
+            const captionSize = 14;
             return (
               <NaverMapMarkerOverlay
                 key={`cluster-${props.cluster_id}`}
                 latitude={lat}
                 longitude={lng}
                 image={MARKER_CLUSTER}
-                width={47}
-                height={47}
+                width={34}
+                height={34}
                 anchor={{ x: 0.5, y: 0.5 }}
                 caption={{
                   text: countStr,
                   textSize: captionSize,
-                  color: tokens.color.brandYellow,
+                  color: tokens.color.pdByellow,
                   haloColor: tokens.color.ink900,
-                  // cluster.png가 위쪽에 원 + 아래쪽 halo로 비대칭이라 'Center'는 원 아래로 쏠림.
-                  // 'Top' 기준 offset: 양수=마커 위로 멀어짐, 음수=마커 안으로 침투.
+                  // 'Center' align은 offset 무시 — 'Top' + 음수 offset으로 캡션을 마커 안 아래로 끌어내림.
+                  // (양수=마커 위로 멀어짐, 음수=마커 안으로 내려옴)
+                  // 시각 보정 -24.
                   align: 'Top',
-                  offset: -28,
+                  offset: -24,
                 }}
                 onTap={() => onClusterPress(props.cluster_id, lat, lng)}
               />
@@ -339,9 +377,11 @@ export function MapScreen() {
           if (!included) return null; // 필터 제외된 풀은 unmount (Naver는 잔존 핀 이슈 없음)
 
           const isSelected = p.id === selectedPoolId;
+          const isHotel = !!p.isHotelPool;
           const isBig = (p.poolLength ?? 0) >= 50;
-          const img = isBig ? MARKER_BIG : MARKER_SMALL;
-          const size = isBig ? 50 : 47;
+          // 호텔 우선 → 50m 큰 풀 → 25m 작은 풀
+          const img = isHotel ? MARKER_HOTEL : isBig ? MARKER_BIG : MARKER_SMALL;
+          const size = isBig && !isHotel ? 50 : 47;
           return (
             <NaverMapMarkerOverlay
               key={p.id}
@@ -370,30 +410,50 @@ export function MapScreen() {
         style={[styles.controls, { top: insets.top + 80 }]}
         pointerEvents="box-none"
       >
-        {/* Figma 57:4623 — 필터 적용중일 땐 알약 형태로 노랑 텍스트 + 노랑 아이콘 */}
-        <Pressable
-          onPress={() => {
-            select(null); // 다른 기능 사용 → deselect 정책
-            navigation.navigate('PoolFilter');
-          }}
-          style={[
-            styles.fab,
-            filterActive ? styles.fabFilterActive : styles.fabRound,
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel="수영장 검색 필터"
-        >
-          {filterActive ? (
-            <Text style={styles.fabFilterActiveLabel}>
-              필터 적용중 ({filteredPools.length})
-            </Text>
-          ) : null}
-          <IconFilter
-            width={20}
-            height={20}
-            color={filterActive ? tokens.color.brandYellow : tokens.color.white}
-          />
-        </Pressable>
+        {/* Figma 90:5957 — 필터 적용중 알약: 좌측 X(초기화, 지도 유지) + 우측 텍스트+아이콘(필터 화면으로) */}
+        {filterActive ? (
+          <View style={[styles.fab, styles.fabFilterPill]}>
+            <Pressable
+              onPress={() => clearAllFilter()}
+              style={({ pressed }) => [
+                styles.fabFilterReset,
+                pressed && { opacity: 0.6 },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="필터 해제"
+              hitSlop={4}
+            >
+              <IconCloseCircle width={20} height={20} />
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                select(null);
+                navigation.navigate('PoolFilter');
+              }}
+              style={({ pressed }) => [
+                styles.fabFilterMain,
+                pressed && { opacity: 0.85 },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="필터 설정 열기"
+            >
+              <Text style={styles.fabFilterActiveLabel}>필터 적용중</Text>
+              <IconFilter width={20} height={20} color={tokens.color.pdByellow} />
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable
+            onPress={() => {
+              select(null);
+              navigation.navigate('PoolFilter');
+            }}
+            style={[styles.fab, styles.fabRound]}
+            accessibilityRole="button"
+            accessibilityLabel="수영장 검색 필터"
+          >
+            <IconFilter width={20} height={20} color={tokens.color.white} />
+          </Pressable>
+        )}
         <Pressable
           onPress={() => {
             select(null); // 다른 기능 사용 → deselect 정책
@@ -413,11 +473,23 @@ export function MapScreen() {
         >
           <IconLocate width={20} height={20} />
         </Pressable>
+        <Pressable
+          onPress={() => {
+            // 부분 폐쇄형 — 비로그인이면 Login, 로그인됐으면 Profile 화면 (Phase 2).
+            // Phase 1: 둘 다 Login으로 보내고, 추후 ProfileScreen 추가 시 분기.
+            navigation.navigate('Login');
+          }}
+          style={[styles.fab, styles.fabRound]}
+          accessibilityRole="button"
+          accessibilityLabel="프로필 / 로그인"
+        >
+          <IconProfile width={20} height={20} />
+        </Pressable>
       </View>
 
-      {/* 하단 카드 */}
-      {selectedPool ? (
-        <SafeAreaView style={styles.bottomWrap} edges={['bottom']} pointerEvents="box-none">
+      {/* 하단 영역 — 풀 선택 시 카드, 선택 X면 "수영장 목록" 버튼 (Figma 101:1943) */}
+      <SafeAreaView style={styles.bottomWrap} edges={['bottom']} pointerEvents="box-none">
+        {selectedPool ? (
           <PoolBottomCard
             pool={selectedPool}
             // 자유수영 가능 여부 우선 → false면 'impossible'.
@@ -432,8 +504,18 @@ export function MapScreen() {
             }
             onPressScheduleAction={onScheduleAction}
           />
-        </SafeAreaView>
-      ) : null}
+        ) : (
+          <Pressable
+            onPress={() => navigation.navigate('PoolList')}
+            style={({ pressed }) => [styles.poolListBtn, pressed && { opacity: 0.85 }]}
+            accessibilityRole="button"
+            accessibilityLabel="수영장 목록 보기"
+          >
+            <Text style={styles.poolListLabel}>수영장 목록 ({filteredPools.length})</Text>
+            <IconLifeBuoy width={20} height={20} />
+          </Pressable>
+        )}
+      </SafeAreaView>
     </View>
   );
 }
@@ -447,7 +529,8 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   fab: {
-    backgroundColor: tokens.color.black,
+    // Figma 90:6560 — bg #1F2937 (ink900, 순흑 X)
+    backgroundColor: tokens.color.ink900,
   },
   fabRound: {
     width: 44,
@@ -457,27 +540,66 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...(Platform.OS === 'ios' ? tokens.shadow.md : { elevation: 4 }),
   },
-  fabFilterActive: {
+  // 필터 적용중 — 좌측 X(초기화) + 우측 텍스트+아이콘(설정), 하나의 알약처럼 보이는 통합 View
+  fabFilterPill: {
     height: 40,
-    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 9999,
+    overflow: 'hidden',
+    ...(Platform.OS === 'ios' ? tokens.shadow.md : { elevation: 4 }),
+  },
+  // 좌측 X — 클릭 시 필터 초기화 (지도 유지)
+  fabFilterReset: {
+    height: '100%',
+    paddingLeft: 12,
+    paddingRight: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // 우측 메인 — 클릭 시 필터 화면으로
+  fabFilterMain: {
+    height: '100%',
+    paddingLeft: 4,
+    paddingRight: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 9999,
-    gap: 10,
-    ...(Platform.OS === 'ios' ? tokens.shadow.md : { elevation: 4 }),
+    gap: 8,
   },
   fabFilterActiveLabel: {
     fontSize: 14,
     lineHeight: 20,
     letterSpacing: -0.084,
     fontFamily: tokens.font.sans,
-    color: tokens.color.brandYellow,
+    color: tokens.color.pdByellow,
   },
   bottomWrap: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
+  },
+  // Figma 101:1943 — pd-byellow bg, radius 14, px 20 py 12, gap 10, content-sized 가운데
+  poolListBtn: {
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    minHeight: 48,
+    borderRadius: 14,
+    backgroundColor: tokens.color.pdByellow,
+    marginBottom: tokens.space[4],
+    ...(Platform.OS === 'ios' ? tokens.shadow.md : { elevation: 4 }),
+  },
+  poolListLabel: {
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sansSemibold,
+    color: tokens.color.black,
   },
 });

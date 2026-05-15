@@ -6,11 +6,12 @@ import React from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { useRoute, useNavigation, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Calendar } from 'lucide-react-native';
+import IconWrench from '@assets/icons/wrench.svg';
 
 import { ModalCard } from '@/components/layout/ModalCard';
 import { useSchedules } from '@/hooks/useSchedules';
 import { usePools } from '@/hooks/usePools';
+import { useScheduleDraft } from '@/store/scheduleDraft';
 import type { RootStackParamList } from '@/navigation/types';
 import { isAnonNickname, type DayOfWeek } from '@/types/schedule';
 import { tokens } from '@/styles/tokens';
@@ -26,6 +27,7 @@ export function ScheduleViewScreen() {
   const { data: schedulesData } = useSchedules();
   const pool = poolsData?.find((p) => p.id === poolId);
   const schedule = schedulesData?.find((s) => s.poolId === poolId);
+  const initFromSchedule = useScheduleDraft((s) => s.initFromSchedule);
 
   const daysWithSchedule = React.useMemo(() => {
     if (!schedule) return new Set<DayOfWeek>();
@@ -40,6 +42,7 @@ export function ScheduleViewScreen() {
 
   const [selectedDay, setSelectedDay] = React.useState<DayOfWeek>(firstAvailable);
   const slots = schedule?.byDay[selectedDay] ?? [];
+  const dayNote = schedule?.dayNotes?.[selectedDay];
 
   return (
     <ModalCard
@@ -64,7 +67,14 @@ export function ScheduleViewScreen() {
           ) : null}
 
           <View style={styles.titleBlock}>
-            <Text style={styles.poolName}>{pool?.name ?? '수영장'}</Text>
+            <Text
+              style={styles.poolName}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.6}
+            >
+              {pool?.name ?? '수영장'}
+            </Text>
             <Text style={styles.notice}>
               실제 운영시간과 다를 수 있습니다. 꼭 문의 후 방문하세요.
             </Text>
@@ -90,6 +100,11 @@ export function ScheduleViewScreen() {
           </View>
         </View>
 
+        {/* 요일별 안내 문구 — 슬롯 있는 요일에만 노출 (제약 강제, 외부에서 데이터 깨져도 방어) */}
+        {dayNote && slots.length > 0 ? (
+          <Text style={styles.dayNote}>{dayNote}</Text>
+        ) : null}
+
         {/* 슬롯 영역 — 많으면 스크롤, 비어있어도 영역 유지 */}
         <ScrollView
           style={styles.slotsScroll}
@@ -99,7 +114,7 @@ export function ScheduleViewScreen() {
           showsVerticalScrollIndicator={false}
         >
           {slots.length === 0 ? (
-            <Text style={styles.empty}>자유수영 없는 요일</Text>
+            <Text style={styles.empty}>{selectedDay}요일에는 자유수영이 없습니다.</Text>
           ) : (
             slots.map((slot, i) => (
               <View key={i} style={styles.slotChip}>
@@ -111,15 +126,24 @@ export function ScheduleViewScreen() {
           )}
         </ScrollView>
 
-        {/* Figma 76:3079 — border/bg 없는 inline 링크 (calendar 아이콘 + 파란 텍스트) */}
+        {/* Figma 101:5902 — pd-blue 텍스트 + 렌치 아이콘, 보더/bg 없음 */}
         <Pressable
-          onPress={() => navigation.navigate('ScheduleWrite', { poolId })}
+          onPress={() => {
+            // 기존 시간표를 base로 draft 초기화 → 사용자가 수정 시작점으로
+            if (schedule) {
+              initFromSchedule(poolId, {
+                byDay: schedule.byDay,
+                dayNotes: schedule.dayNotes,
+              });
+            }
+            navigation.navigate('ScheduleWrite', { poolId });
+          }}
           style={({ pressed }) => [styles.editBtn, pressed && { opacity: 0.6 }]}
           accessibilityRole="button"
-          accessibilityLabel="시간표 수정하고 싶어요"
+          accessibilityLabel="자유수영 시간표 수정 제안하기"
         >
-          <Calendar size={20} color={tokens.color.brandBlue} strokeWidth={2} />
-          <Text style={styles.editLabel}>시간표 수정하고 싶어요.</Text>
+          <IconWrench width={20} height={20} />
+          <Text style={styles.editLabel}>자유수영 시간표 수정 제안하기</Text>
         </Pressable>
       </View>
     </ModalCard>
@@ -137,20 +161,21 @@ interface DayChipProps {
 }
 
 function DayChip({ label, selected, hasSchedule, onPress }: DayChipProps) {
-  // Figma 5:14288 3-state:
-  // 1) selected (목): bg #007AFF, white text Medium
-  // 2) has-schedule 비선택 (월/수): bg #EFF6FF, border #007AFF, blue text Medium
-  // 3) no-schedule (화/금/토/일): bg #DBEAFE, gray text Medium
-  const containerStyle = selected
-    ? styles.dayChipSelected
-    : hasSchedule
-      ? styles.dayChipActive
-      : styles.dayChipMuted;
-  const labelStyle = selected
-    ? styles.dayChipLabelSelected
-    : hasSchedule
-      ? styles.dayChipLabelActive
-      : styles.dayChipLabelMuted;
+  // Figma 90:3396 4-state:
+  // 1) no-schedule 비선택 (월/금/일): bg pd-blue 40%, pd-blue 글자, 보더 X
+  // 2) no-schedule + selected (토): bg pd-blue 40%, pd-blue 글자, 1px pd-blue 보더
+  // 3) has-schedule 비선택 (화/수): bg pd-mint, 흰 글자, 보더 X
+  // 4) has-schedule + selected (목): bg pd-mint, pd-byellow 글자, 1px pd-blue 보더
+  const containerStyle = [
+    styles.dayChipBase,
+    hasSchedule ? styles.dayChipActive : styles.dayChipMuted,
+    selected && styles.dayChipSelectedRing,
+  ];
+  const labelStyle = !hasSchedule
+    ? styles.dayChipLabelMuted
+    : selected
+      ? styles.dayChipLabelSelected
+      : styles.dayChipLabelActive;
   return (
     <Pressable
       onPress={onPress}
@@ -236,29 +261,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Figma 5:15649 — selected: bg #007AFF + border #007AFF
-  dayChipSelected: {
-    backgroundColor: tokens.color.brandBlue,
-    borderWidth: 1,
-    borderColor: tokens.color.brandBlue,
-  },
-  // Figma 5:15643 — has-schedule but not selected: bg #EFF6FF + border #007AFF
+  // Figma 100:11384 — has-schedule: bg pd-mint
   dayChipActive: {
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: tokens.color.brandBlue,
+    backgroundColor: tokens.color.pdMint,
   },
-  // Figma 5:15645 — no-schedule: bg #DBEAFE
+  // Figma 100:11382 — no-schedule: bg pd-blue 40%
   dayChipMuted: {
-    backgroundColor: '#DBEAFE',
+    backgroundColor: 'rgba(104, 144, 203, 0.4)',
   },
-  // Figma I5:15643;...5644 — Medium 16/22 tracking -0.112
+  // Figma 100:11388/11392 — selected overlay: 1px pd-blue 보더 (bg는 hasSchedule 따라 다름)
+  dayChipSelectedRing: {
+    borderWidth: 1,
+    borderColor: tokens.color.pdBlue,
+  },
+  // Medium 16/22 -0.112
   dayChipLabelSelected: {
     fontSize: 16,
     lineHeight: 22,
     letterSpacing: -0.112,
     fontFamily: tokens.font.sansMedium,
-    color: tokens.color.white,
+    color: tokens.color.pdByellow,
     textAlign: 'center',
   },
   dayChipLabelActive: {
@@ -266,7 +288,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     letterSpacing: -0.112,
     fontFamily: tokens.font.sansMedium,
-    color: tokens.color.brandBlue,
+    color: tokens.color.white,
     textAlign: 'center',
   },
   dayChipLabelMuted: {
@@ -274,7 +296,16 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     letterSpacing: -0.112,
     fontFamily: tokens.font.sansMedium,
-    color: 'rgba(128, 128, 128, 0.55)',
+    color: tokens.color.pdBlue,
+    textAlign: 'center',
+  },
+  // 요일별 안내 문구 — Figma 90:3387, 가운데 정렬 작은 회색 텍스트
+  dayNote: {
+    fontSize: 13,
+    lineHeight: 18,
+    letterSpacing: -0.06,
+    fontFamily: tokens.font.sans,
+    color: tokens.color.ink500,
     textAlign: 'center',
   },
   slotsScroll: {
@@ -291,13 +322,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Figma 5:15658 — border #cbd5e1 radius 12 px-16 py-10
+  // Figma 90:3413 — 126×40 고정. border #cbd5e1 radius 12. 가운데 정렬.
   slotChip: {
+    width: 126,
+    height: 40,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   // Figma I5:15658;5588:20562 — SemiBold 14/20 tracking -0.084 #4b5563
   slotChipText: {
@@ -312,7 +345,7 @@ const styles = StyleSheet.create({
     color: tokens.color.ink500,
     textAlign: 'center',
   },
-  // Figma 76:3079 — gap-10, items-center, no border/bg, content-sized
+  // Figma 101:5902 — gap-10, items-center, no border/bg, content-sized 가운데
   editBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -320,12 +353,12 @@ const styles = StyleSheet.create({
     gap: 10,
     alignSelf: 'center',
   },
-  // Figma I76:3079;...17335 — SemiBold 16/22 -0.112 #007AFF
+  // SemiBold 16/22 -0.112 pd-blue
   editLabel: {
     fontSize: 16,
     lineHeight: 22,
     letterSpacing: -0.112,
     fontFamily: tokens.font.sansSemibold,
-    color: tokens.color.brandBlue,
+    color: tokens.color.pdBlue,
   },
 });

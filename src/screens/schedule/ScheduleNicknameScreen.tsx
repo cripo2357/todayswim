@@ -50,6 +50,7 @@ export function ScheduleNicknameScreen() {
         poolId: draft.poolId,
         nickname: nick,
         byDay: draft.byDay,
+        dayNotes: draft.dayNotes,
       });
       reset();
       navigation.navigate('ScheduleDone');

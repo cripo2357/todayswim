@@ -14,15 +14,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
+import { useAuth } from '@/store/auth';
 import { tokens } from '@/styles/tokens';
 import BrandWordmark from '@assets/illustrations/wordmark-poolsday.svg';
 import DropletComma from '@assets/illustrations/droplet-comma.svg';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// Figma 90:9715 — 워드마크 155x92. 화면 비율로 약간 여유 있게.
-const WORDMARK_WIDTH = 220;
-const WORDMARK_HEIGHT = Math.round((WORDMARK_WIDTH * 92) / 155);
+// 새 워드마크 257x153. 화면 비율로 약간 여유 있게.
+const WORDMARK_WIDTH = 240;
+const WORDMARK_HEIGHT = Math.round((WORDMARK_WIDTH * 153) / 257);
 
 // Figma 90:3156 — 진행바 240px 폭, 8px 높이, radius 8.
 const PROGRESS_WIDTH = 240;
@@ -52,12 +53,11 @@ const LOADING_MESSAGES = [
 // useNativeDriver: true 로 60fps.
 const DROPLET_COUNT = 8;
 
-// Pool's apostrophe 위치 계산 — 원본 SVG (156x93)에서 apostrophe path는 x≈119, 폭 ≈10
-// → 중심 x = 124. 화면 표시 wordmark는 220 wide, 화면 가운데 정렬.
-// → apostrophe center x = SCREEN_WIDTH/2 - (220/2) + (124/156)*220 ≈ SCREEN_WIDTH/2 + 65
-// 시각 보정: 원본 SVG의 apostrophe x가 실제로는 약간 왼쪽 → -6px 미세조정.
+// 새 워드마크(257x153)의 apostrophe 위치에 맞춰 droplet 정렬.
+// 화면 표시 wordmark 240 wide, 화면 가운데 정렬.
+// 사용자 시각 보정 누적값으로 SCREEN_WIDTH/2 + 67 사용.
 // View.left는 왼쪽 가장자리 기준이라 droplet 폭의 절반(7)만큼 빼서 중심 정렬.
-const APOSTROPHE_CENTER_X = SCREEN_WIDTH / 2 + 59;
+const APOSTROPHE_CENTER_X = SCREEN_WIDTH / 2 + 64;
 
 // Apostrophe Y 위치 — 워드마크 top: SH/2 - 200, 워드마크 height ≈ 130.
 // apostrophe 위치는 워드마크 상단 약 7% 지점 (path y=6.4 of 93).
@@ -105,7 +105,7 @@ export function SplashScreen() {
   const dropletsRef = React.useRef<Droplet[]>(createDroplets());
   const droplets = dropletsRef.current;
 
-  // 진행바 애니메이션
+  // 진행바 애니메이션 + 인증/약관 게이트
   React.useEffect(() => {
     const anim = Animated.timing(progress, {
       toValue: 1,
@@ -113,8 +113,15 @@ export function SplashScreen() {
       easing: Easing.out(Easing.quad),
       useNativeDriver: false, // width 보간은 네이티브 X
     });
-    anim.start(({ finished }) => {
-      if (finished) navigation.replace('MapMain');
+    anim.start(async ({ finished }) => {
+      if (!finished) return;
+      // 부분 폐쇄형 — 스플래시는 토큰 hydration만 기다리고 무조건 지도로 진입.
+      // 토큰 유효 → 로그인 상태로 입장 / 무효 → 게스트로 입장.
+      // 약관·프로필 등록은 사용자가 맵에서 로그인 버튼을 누른 뒤에만 강제.
+      while (!useAuth.getState().hydrated) {
+        await new Promise((r) => setTimeout(r, 50));
+      }
+      navigation.replace('MapMain');
     });
     return () => {
       anim.stop();

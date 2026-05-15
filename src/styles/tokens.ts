@@ -27,6 +27,17 @@ export const color = {
   brandBlue:   '#007AFF',
   brandYellow: '#FFCC00',
 
+  // pd-byellow — 새 브랜드 lime yellow (스플래시 progressFill, 마커 50m+, 클러스터 카운터)
+  pdByellow:   '#EAFF00',
+  // pd-mint — 새 브랜드 cyan (아이콘 배경, stat 아이콘 fill, 칩 bg)
+  pdMint:      '#63CBE8',
+  // pd-blue — 새 브랜드 indigo blue (필터 footer 텍스트, 칩 보더/체크 원, 요일 비선택 칩)
+  pdBlue:      '#6890CB',
+  // pd-bgray — 새 브랜드 light gray (시간표 작성 화면 + 버튼 배경)
+  pdBgray:     '#EBEBEB',
+  // pd-gray — 새 브랜드 medium gray (disabled 텍스트/아이콘)
+  pdGray:      '#C8C8C8',
+
   // === 감정 컬러 ===
   warmCoral:    '#FB7185', // 찜 하트
   warmCoralBg:  '#FFE4E6',

@@ -4,18 +4,19 @@
 // 닉네임은 마지막 단계에서 받으므로 이 화면엔 닉네임 정보 없음 (credit 표시 X).
 
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
+import { View, Text, TextInput, ScrollView, StyleSheet, Pressable, Alert } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Check } from 'lucide-react-native';
+import { CalendarCheck, Calendar } from 'lucide-react-native';
 
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { Button } from '@/components/ui/Button';
 import { useScheduleDraft } from '@/store/scheduleDraft';
+import { useSubmitSchedule } from '@/hooks/useSubmitSchedule';
 import { usePools } from '@/hooks/usePools';
 import type { RootStackParamList } from '@/navigation/types';
-import { type DayOfWeek } from '@/types/schedule';
+import { ANON_NICKNAME, type DayOfWeek } from '@/types/schedule';
 import { tokens } from '@/styles/tokens';
 import IconAddBlue from '@assets/icons/add-blue.svg';
 import IconSlotRemove from '@assets/icons/slot-remove.svg';
@@ -39,6 +40,9 @@ export function ScheduleWriteScreen() {
   const draft = useScheduleDraft((s) => s.draft);
   const initDraft = useScheduleDraft((s) => s.init);
   const removeTimeSlot = useScheduleDraft((s) => s.removeTimeSlot);
+  const setDayNote = useScheduleDraft((s) => s.setDayNote);
+  const resetDraft = useScheduleDraft((s) => s.reset);
+  const submitMutation = useSubmitSchedule();
 
   // 다른 경로(수정 요청 등)로 진입 시 draft 자동 초기화 — addTimeSlot이 silent no-op 되는 거 방지
   React.useEffect(() => {
@@ -60,9 +64,25 @@ export function ScheduleWriteScreen() {
     navigation.navigate('ScheduleTime', { poolId, day });
   };
 
-  // 시간표 입력 후 → 닉네임 화면으로 이동 (마지막 단계). draft는 Nickname 화면에서 reset.
-  const onSubmit = () => {
-    navigation.navigate('ScheduleNickname', { poolId });
+  /**
+   * Phase 1: 로그인 X → 익명 닉네임으로 직접 제출 → Done 화면.
+   * Phase 2(로그인 도입 후): 로그인한 계정의 닉네임이 들어감.
+   * 닉네임 입력 단계(ScheduleNicknameScreen)는 코드에 유지하지만 흐름에선 빠짐.
+   */
+  const onSubmit = async () => {
+    if (!draft) return;
+    try {
+      await submitMutation.mutateAsync({
+        poolId: draft.poolId,
+        nickname: ANON_NICKNAME,
+        byDay: draft.byDay,
+        dayNotes: draft.dayNotes,
+      });
+      resetDraft();
+      navigation.navigate('ScheduleDone');
+    } catch (e) {
+      Alert.alert('등록 요청에 실패했어요', '잠시 후 다시 시도해주세요.');
+    }
   };
 
   return (
@@ -78,10 +98,27 @@ export function ScheduleWriteScreen() {
       >
         <View style={styles.dayList}>
           {DAYS.map((day) => {
+            // store의 addTimeSlot이 항상 start 오름차순으로 유지.
             const slots = draft?.byDay[day] ?? [];
+            const note = draft?.dayNotes?.[day] ?? '';
+            const showNoteInput = slots.length > 0;
             return (
               <View key={day} style={styles.daySection}>
                 <Text style={styles.dayTitle}>{DAY_LABEL[day]}</Text>
+                {/* 안내 문구 입력 — 슬롯 1개 이상 등록될 때만 노출 (Figma 90:6622) */}
+                {showNoteInput ? (
+                  <View style={styles.noteInputWrap}>
+                    <Calendar size={18} color={tokens.color.ink500} strokeWidth={2} />
+                    <TextInput
+                      value={note}
+                      onChangeText={(t) => setDayNote(day, t)}
+                      placeholder={`${DAY_LABEL[day]} 안내문구 (예: 매월 첫째주에만 운영)`}
+                      placeholderTextColor={tokens.color.ink400}
+                      style={styles.noteInput}
+                      maxLength={60}
+                    />
+                  </View>
+                ) : null}
                 <View style={styles.chipRow}>
                   {slots.map((s, i) => (
                     <Pressable
@@ -110,17 +147,19 @@ export function ScheduleWriteScreen() {
 
       <View style={styles.footer}>
         <Button
-          label="운영자에게 시간표 등록 요청"
+          label="자유수영 시간표 등록"
           size="lg"
+          variant="pdYellow"
           fullWidth
-          disabled={totalSlots === 0}
+          disabled={totalSlots === 0 || submitMutation.isPending}
+          loading={submitMutation.isPending}
           onPress={onSubmit}
           style={styles.submitBtn}
           iconRight={
-            <Check
-              size={18}
-              color={totalSlots > 0 ? tokens.color.white : tokens.color.pool300}
-              strokeWidth={2.4}
+            <CalendarCheck
+              size={20}
+              color={totalSlots > 0 ? tokens.color.black : tokens.color.ink400}
+              strokeWidth={2}
             />
           }
         />
@@ -156,21 +195,44 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sansBold,
     color: tokens.color.ink900,
   },
+  // Figma 90:6622 — 요일별 note 입력. radius 14, padding 12, gap 8, min-h 48.
+  noteInputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    minHeight: 48,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 14,
+    backgroundColor: tokens.color.bgPaper,
+  },
+  noteInput: {
+    flex: 1,
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sans,
+    color: tokens.color.ink900,
+    padding: 0, // RN TextInput 기본 패딩 제거
+  },
   chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
   },
-  // Figma 5:15703 — border #cbd5e1 1px, radius 12, px-16 py-10, gap-8
+  // Figma 90:6640 — 156×40 고정, border #cbd5e1 1px, radius 12, gap-8, 가운데 정렬
   slotChip: {
+    width: 156,
+    height: 40,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
   },
   // Figma 5:15705 — SemiBold 14/20, tracking -0.084, color #4b5563
   slotChipText: {
@@ -180,12 +242,12 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sansSemibold,
     color: '#4B5563',
   },
-  // Figma 5:15765 — bg #DBEAFE, size 40, radius 10
+  // Figma 90:6645 — bg pd-bgray #EBEBEB, size 40, radius 10
   addBtn: {
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: '#DBEAFE',
+    backgroundColor: tokens.color.pdBgray,
     alignItems: 'center',
     justifyContent: 'center',
   },

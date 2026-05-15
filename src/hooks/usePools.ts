@@ -24,6 +24,9 @@ interface PoolRow {
   depth_min: number | null;
   depth_max: number | null;
   facilities: string[] | null;
+  has_kids_pool: boolean | null;
+  has_diving_pool: boolean | null;
+  is_hotel_pool: boolean | null;
   has_schedule: boolean | null;
   free_swim_available: boolean | null;
   price_per_session: number | null;
@@ -48,6 +51,9 @@ function rowToPool(row: PoolRow): Pool {
     depthMin: row.depth_min ?? undefined,
     depthMax: row.depth_max ?? undefined,
     facilities: row.facilities ?? undefined,
+    hasKidsPool: row.has_kids_pool ?? undefined,
+    hasDivingPool: row.has_diving_pool ?? undefined,
+    isHotelPool: row.is_hotel_pool ?? undefined,
     hasSchedule: row.has_schedule ?? undefined,
     freeSwimAvailable: row.free_swim_available ?? undefined,
     pricePerSession: row.price_per_session ?? undefined,

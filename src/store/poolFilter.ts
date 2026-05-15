@@ -13,13 +13,13 @@ import type { Pool } from '@/types/pool';
 export type LaneOption = '전체' | '25m' | '50m';
 /** 자유수영 요금 — 라디오 단일선택. '전체'면 미적용. Figma 85:3129 — 오천원 이하 추가. */
 export type FeeOption = '전체' | '오천원 이하' | '만원 이하';
-export type FacilityOption = '유아풀' | '다이빙';
+export type FacilityOption = '유아풀' | '다이빙' | '호텔';
 
 /** 각 카테고리 전체 옵션. */
 export const ALL_DAYS: DayOfWeek[] = ['월', '화', '수', '목', '금', '토', '일'];
 export const ALL_LANES: LaneOption[] = ['전체', '25m', '50m'];
 export const ALL_FEES: FeeOption[] = ['전체', '오천원 이하', '만원 이하'];
-export const ALL_FACILITIES: FacilityOption[] = ['유아풀', '다이빙'];
+export const ALL_FACILITIES: FacilityOption[] = ['유아풀', '다이빙', '호텔'];
 
 interface FilterState {
   days: DayOfWeek[];
@@ -33,17 +33,26 @@ interface FilterState {
     fee: FeeOption;
     facilities: FacilityOption[];
   }) => void;
+  /** 기본값(DEFAULT_DAYS, 전체)으로 복귀 — 필터 화면의 "초기화" 버튼용. */
   reset: () => void;
+  /** 모든 필터 해제 → isFilterActive=false. 지도 pill X 버튼용. */
+  clearAll: () => void;
 }
 
+// 기본값: 주말(토/일) 자유수영 위주 사용 패턴에 맞춰 토·일만 선택. 레인/요금/시설은 전체.
+export const DEFAULT_DAYS: DayOfWeek[] = ['토', '일'];
+
 export const usePoolFilter = create<FilterState>((set) => ({
+  // 초기 store는 빈 상태(필터 미적용) — App.tsx mount 시 clearAll()로 한 번 더 보장.
+  // 사용자 편의 기본(토/일)은 PoolFilterScreen 진입 시 fallback으로 적용.
   days: [],
   lane: '전체',
   fee: '전체',
   facilities: [],
 
   apply: ({ days, lane, fee, facilities }) => set({ days, lane, fee, facilities }),
-  reset: () => set({ days: [], lane: '전체', fee: '전체', facilities: [] }),
+  reset: () => set({ days: DEFAULT_DAYS, lane: '전체', fee: '전체', facilities: [] }),
+  clearAll: () => set({ days: [], lane: '전체', fee: '전체', facilities: [] }),
 }));
 
 export function isFilterActive(s: FilterState): boolean {
@@ -95,8 +104,12 @@ export function filterPools(
       if (s.fee === '만원 이하' && price > 10000) return false;
     }
     if (facActive) {
-      const allOwned = s.facilities.every((f) => p.facilities?.includes(f));
-      if (!allOwned) return false;
+      // 옵션 칩(유아풀/다이빙/호텔)은 boolean flag — 선택한 옵션 모두 보유해야 통과 (AND).
+      for (const f of s.facilities) {
+        if (f === '유아풀' && !p.hasKidsPool) return false;
+        if (f === '다이빙' && !p.hasDivingPool) return false;
+        if (f === '호텔' && !p.isHotelPool) return false;
+      }
     }
     return true;
   });

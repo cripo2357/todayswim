@@ -32,6 +32,14 @@ export interface Schedule {
   byDay: {
     [day in DayOfWeek]?: TimeSlot[];
   };
+  /**
+   * 요일별 안내 문구 — 격주·특정 주차 운영 등 예외 케이스.
+   * 예: { "토": "매월 첫째 주에만 운영합니다." }
+   * Schedule 카드에서 선택된 요일에 대한 note만 표시.
+   */
+  dayNotes?: {
+    [day in DayOfWeek]?: string;
+  };
 }
 
 /** 작성 4스텝 임시 상태 — Zustand store에 보관 */
@@ -39,4 +47,6 @@ export interface ScheduleDraft {
   poolId: string;
   nickname?: string;
   byDay: Schedule['byDay'];
+  /** 요일별 안내 문구 — 해당 요일에 슬롯 1개 이상 등록될 때만 입력 가능. */
+  dayNotes?: Schedule['dayNotes'];
 }

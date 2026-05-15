@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, Text, View, StyleSheet, ActivityIndicator, StyleProp, ViewStyle } from 'react-native';
 import { tokens } from '@/styles/tokens';
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'outline';
+type Variant = 'primary' | 'secondary' | 'ghost' | 'outline' | 'pdYellow';
 type Size = 'sm' | 'md' | 'lg';
 
 interface Props {
@@ -160,6 +160,13 @@ const VARIANT = {
       borderColor: tokens.color.lineDefault,
     },
     label: { color: tokens.color.brandBlue },
+    disabledLabel: { color: tokens.color.ink400 },
+  }),
+  // 새 브랜드 lime yellow CTA — PoolBottomCard "자유수영 시간표 보기" (Figma 93:10597)
+  pdYellow: StyleSheet.create({
+    container: { backgroundColor: tokens.color.pdByellow },
+    disabledContainer: { backgroundColor: tokens.color.bgSubtle },
+    label: { color: tokens.color.ink900 },
     disabledLabel: { color: tokens.color.ink400 },
   }),
 };

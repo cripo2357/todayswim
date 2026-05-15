@@ -9,7 +9,8 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Check, X } from 'lucide-react-native';
+import { X } from 'lucide-react-native';
+import IconChevronDownCircle from '@assets/icons/chevron-down-circle.svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useScheduleDraft } from '@/store/scheduleDraft';
@@ -142,7 +143,7 @@ export function ScheduleTimeScreen() {
         <View style={styles.sheet}>
           {/* 헤더 */}
           <View style={styles.titleRow}>
-            <Text style={styles.title}>자유수영 타임 입력</Text>
+            <Text style={styles.title}>{day}요일 자유수영 타임</Text>
             <Pressable
               onPress={onClose}
               hitSlop={8}
@@ -182,7 +183,7 @@ export function ScheduleTimeScreen() {
             accessibilityRole="button"
           >
             <Text style={styles.ctaLabel}>타임 등록</Text>
-            <Check size={18} color={tokens.color.white} strokeWidth={2.4} />
+            <IconChevronDownCircle width={20} height={20} />
           </Pressable>
         </View>
         </SafeAreaView>
@@ -433,7 +434,7 @@ const styles = StyleSheet.create({
     height: PICKER_HEIGHT,
     position: 'relative',
   },
-  // Figma 35:464 — bg #EFF6FF, border #2563EB 1px, radius 16, h 52
+  // Figma 35:454 — bg pd-mint, 보더 없음, radius 16, h 52
   selectionPill: {
     position: 'absolute',
     top: PICKER_PAD,
@@ -441,51 +442,49 @@ const styles = StyleSheet.create({
     right: 0,
     height: ROW_HEIGHT,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#2563EB',
-    backgroundColor: '#EFF6FF',
+    backgroundColor: tokens.color.pdMint,
   },
   row: {
     height: ROW_HEIGHT,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Figma I35:462 — Regular 24/32 tracking -0.288 ink400 (unselected)
+  // Figma — Regular 24/32 -0.288, unselected: pd-blue 40%
   rowText: {
     fontSize: 24,
     lineHeight: 32,
     letterSpacing: -0.288,
     fontFamily: tokens.font.sans,
-    color: '#94A3B8',
+    color: 'rgba(104, 144, 203, 0.4)',
     textAlign: 'center',
   },
-  // Figma I35:464 — selected: #2563EB
+  // Figma — selected: white
   rowTextSelected: {
-    color: '#2563EB',
+    color: tokens.color.white,
   },
   // Figma 57:619 — 구분선
   divider: {
     height: 1,
     backgroundColor: tokens.color.lineDefault,
   },
-  // Figma 35:529 — #007AFF, radius 14, min-h 48, px-20 py-12, gap 10
+  // Figma 90:7336 — pd-byellow bg, radius 14, min-h 48, px-20 py-12, gap 10
   cta: {
     minHeight: 48,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 14,
-    backgroundColor: tokens.color.brandBlue,
+    backgroundColor: tokens.color.pdByellow,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 10,
   },
-  // Figma 35:531 — SemiBold 16/22 tracking -0.112 white
+  // Figma — Bold 16/22 -0.112 black (한글 Bold 폴백)
   ctaLabel: {
     fontSize: 16,
     lineHeight: 22,
     letterSpacing: -0.112,
-    fontFamily: tokens.font.sansSemibold,
-    color: tokens.color.white,
+    fontFamily: tokens.font.sansBold,
+    color: tokens.color.black,
   },
 });
