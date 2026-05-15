@@ -41,7 +41,7 @@ import { Image } from 'react-native';
 
 const ALL_STROKES: Stroke[] = ['자유형', '배영', '접영', '평영'];
 const EXP_MAX = 30;
-const BIO_MAX = 20;
+const BIO_MAX = 10;
 const TABS = ['프로필', '달력', '사람들'] as const;
 type Tab = (typeof TABS)[number];
 
@@ -306,6 +306,11 @@ function ProfileTab({
             />
           </Pressable>
         </View>
+        {bioChanged ? (
+          <Text style={styles.nickHint}>
+            자기소개(최대 10자)를 입력한 후 변경 버튼을 선택하세요.
+          </Text>
+        ) : null}
       </Field>
 
       <Field label="성별">
