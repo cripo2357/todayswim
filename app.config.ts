@@ -83,9 +83,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // Android는 EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID(웹 클라이언트 ID)로 idToken 발급.
     [
       '@react-native-google-signin/google-signin',
-      process.env.GOOGLE_IOS_URL_SCHEME
-        ? { iosUrlScheme: process.env.GOOGLE_IOS_URL_SCHEME }
-        : {},
+      {
+        // Android는 EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID로 동작 — iosUrlScheme는 무관.
+        // iOS 빌드 전 Google Cloud iOS client의 "iOS URL scheme"을
+        // GOOGLE_IOS_URL_SCHEME env에 채워야 실제 iOS 로그인 가능.
+        iosUrlScheme:
+          process.env.GOOGLE_IOS_URL_SCHEME ??
+          'com.googleusercontent.apps.PLACEHOLDER-IOS-NOT-CONFIGURED',
+      },
     ],
     // Kakao 로그인 OAuth 리다이렉트용 인앱 브라우저.
     'expo-web-browser',
