@@ -1,7 +1,7 @@
 // Figma 110:3316 / 110:3327 / 110:3337 — 프로필 이미지 등록 (가입 마지막 단계).
 //
 // 진입 시 성별에 맞는 번들 아바타가 기본 셋팅된다. 사용자는 그대로 두거나
-// 우하단 업로드 버튼으로 자기 사진을 올릴 수 있다. "프로필 등록 완료" → Welcome.
+// 우하단 업로드 버튼으로 자기 사진을 올릴 수 있다. "프로필 사용" → 가입은 Welcome / 수정은 뒤로.
 //
 // 3-state: idle(110:3316) / uploading(110:3327) / error(110:3337).
 // Phase 1: expo-image-picker 미도입 — 업로드는 mock. Phase 2에서 실제 픽+Storage 업로드.
@@ -13,7 +13,6 @@ import {
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Flag } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { useProfile } from '@/store/profile';
@@ -27,6 +26,7 @@ import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
 import IconArrowUpload from '@assets/icons/arrow-upload.svg';
 import IconAlertTriangle from '@assets/icons/alert-triangle.svg';
+import IconEmotionOverjoyed from '@assets/icons/emotion-overjoyed.svg';
 
 type State = 'idle' | 'uploading' | 'error';
 
@@ -175,8 +175,8 @@ function IdleView({
         style={({ pressed }) => [styles.cta, pressed && { opacity: 0.85 }]}
         accessibilityRole="button"
       >
-        <Text style={styles.ctaLabel}>프로필 등록 완료</Text>
-        <Flag size={20} color={tokens.color.black} strokeWidth={2.4} />
+        <Text style={styles.ctaLabel}>프로필 사용</Text>
+        <IconEmotionOverjoyed width={20} height={20} />
       </Pressable>
     </View>
   );
