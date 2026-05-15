@@ -5,7 +5,7 @@
 // 클러스터링은 supercluster JS로 처리 (Naver native clustering은 caption 미지원이라 직접 관리).
 
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Platform, Image } from 'react-native';
 import {
   NaverMapView,
   NaverMapMarkerOverlay,
@@ -33,6 +33,8 @@ import { useSelection } from '@/store/selection';
 import { useScheduleDraft } from '@/store/scheduleDraft';
 import { usePoolFilter, isFilterActive, filterPools } from '@/store/poolFilter';
 import { useGeolocation } from '@/hooks/useGeolocation';
+import { useProfile } from '@/store/profile';
+import { BUNDLE_AVATARS, isBundleAvatar } from '@/lib/avatars';
 import { tokens } from '@/styles/tokens';
 
 // 마커 PNG — Naver SDK가 BitmapDescriptor로 직접 변환, 캡처 없음.
@@ -72,8 +74,19 @@ type ClusterFeature =
   | Supercluster.PointFeature<PoolProps>
   | Supercluster.ClusterFeature<Supercluster.AnyProps>;
 
+/** 프로필 FAB 내용 — 로그인(프로필 있음)이면 아바타, 아니면 기본 아이콘. */
+function ProfileFabContent({ photoUri }: { photoUri?: string }) {
+  if (!photoUri) return <IconProfile width={20} height={20} />;
+  if (isBundleAvatar(photoUri)) {
+    const Svg = BUNDLE_AVATARS[photoUri];
+    return <Svg width={44} height={44} />;
+  }
+  return <Image source={{ uri: photoUri }} style={styles.fabAvatarImg} />;
+}
+
 export function MapScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const profile = useProfile((s) => s.profile);
   const mapRef = React.useRef<NaverMapViewRef | null>(null);
   const insets = useSafeAreaInsets();
 
@@ -479,11 +492,15 @@ export function MapScreen() {
             // Phase 1: 둘 다 Login으로 보내고, 추후 ProfileScreen 추가 시 분기.
             navigation.navigate('Login');
           }}
-          style={[styles.fab, styles.fabRound]}
+          style={[
+            styles.fab,
+            styles.fabRound,
+            profile?.photoUri ? styles.fabAvatar : null,
+          ]}
           accessibilityRole="button"
-          accessibilityLabel="프로필 / 로그인"
+          accessibilityLabel={profile ? '내 프로필' : '프로필 / 로그인'}
         >
-          <IconProfile width={20} height={20} />
+          <ProfileFabContent photoUri={profile?.photoUri} />
         </Pressable>
       </View>
 
@@ -539,6 +556,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...(Platform.OS === 'ios' ? tokens.shadow.md : { elevation: 4 }),
+  },
+  // 로그인 시 — 아바타가 44원을 꽉 채우고 ink900 배경이 비치지 않게.
+  fabAvatar: {
+    overflow: 'hidden',
+    backgroundColor: tokens.color.white,
+  },
+  fabAvatarImg: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
   },
   // 필터 적용중 — 좌측 X(초기화) + 우측 텍스트+아이콘(설정), 하나의 알약처럼 보이는 통합 View
   fabFilterPill: {

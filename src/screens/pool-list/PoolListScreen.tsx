@@ -357,10 +357,10 @@ function PoolListCard({
                   style={styles.chip}
                   onPress={showTip('hotel')}
                   accessibilityRole="button"
-                  accessibilityLabel="호텔수영장"
+                  accessibilityLabel="호텔"
                   hitSlop={4}
                 >
-                  {activeTip === 'hotel' ? <Tooltip label="호텔수영장" /> : null}
+                  {activeTip === 'hotel' ? <Tooltip label="호텔" /> : null}
                   <IconHotel width={16} height={16} />
                 </Pressable>
               ) : null}
