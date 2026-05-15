@@ -11,7 +11,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, Pencil, Calendar as LucideCalendar } from 'lucide-react-native';
+import { ChevronLeft, Pencil, Plus, Calendar as LucideCalendar } from 'lucide-react-native';
 import IconChevronDown from '@assets/icons/chevron-down.svg';
 import IconIntro from '@assets/icons/intro.svg';
 import { isNicknameTaken, claimNickname } from '@/lib/nicknames';
@@ -36,7 +36,6 @@ import IconLock from '@assets/icons/lock-secure.svg';
 import IconSettings from '@assets/icons/settings.svg';
 import IconSectionBasic from '@assets/icons/section-basic.svg';
 import IconLaneCount from '@assets/icons/lane-count.svg';
-import IconArrowUpload from '@assets/icons/arrow-upload.svg';
 import { Image } from 'react-native';
 
 const ALL_STROKES: Stroke[] = ['자유형', '배영', '접영', '평영'];
@@ -237,18 +236,18 @@ function ProfileTab({
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
-      {/* 아바타 + 업로드 */}
+      {/* 아바타 + 업로드 (Figma 130:3599 — 80px, 외곽선 없음, 검정 32 버튼) */}
       <View style={styles.avatarWrap}>
         <View style={styles.avatar}>
           {isBundleAvatar(profile.photoUri) ? (
             React.createElement(BUNDLE_AVATARS[profile.photoUri], {
-              width: 96,
-              height: 96,
+              width: 80,
+              height: 80,
             })
           ) : profile.photoUri ? (
             <Image source={{ uri: profile.photoUri }} style={styles.avatarImg} />
           ) : (
-            <IconUser width={40} height={40} />
+            <IconUser width={36} height={36} />
           )}
         </View>
         <Pressable
@@ -256,7 +255,7 @@ function ProfileTab({
           style={styles.avatarUploadBtn}
           accessibilityLabel="사진 변경"
         >
-          <IconArrowUpload width={20} height={20} />
+          <Plus size={20} color={tokens.color.white} strokeWidth={2.5} />
         </Pressable>
       </View>
 
@@ -645,10 +644,10 @@ const styles = StyleSheet.create({
   // 스크롤 컨텐츠
   scroll: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32 },
 
-  // 아바타
+  // 아바타 (Figma 130:3599 — 80px)
   avatarWrap: {
-    width: 96,
-    height: 96,
+    width: 80,
+    height: 80,
     alignSelf: 'center',
     marginBottom: 12,
   },
@@ -671,30 +670,28 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sans,
     color: '#4B5563',
   },
-  // Figma 117:2986 — 아바타 원에 byellow 외곽선
+  // Figma 130:3599 — 80px, 외곽선 없음
   avatar: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: '#EBEBEB',
-    borderWidth: 2,
-    borderColor: tokens.color.pdByellow,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  avatarImg: { width: 96, height: 96 },
+  avatarImg: { width: 80, height: 80 },
+  // 우하단 검정(ink900) 32 원 + 흰 + 아이콘
   avatarUploadBtn: {
     position: 'absolute',
-    bottom: -20,
-    alignSelf: 'center',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: tokens.color.white,
+    bottom: 0,
+    right: 0,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: tokens.color.ink900,
     alignItems: 'center',
     justifyContent: 'center',
-    ...(Platform.OS === 'ios' ? tokens.shadow.md : { elevation: 4 }),
   },
 
   sectionHeader: {
