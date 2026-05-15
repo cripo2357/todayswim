@@ -591,7 +591,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   locRing: { ...StyleSheet.absoluteFillObject, width: 50, height: 50 },
-  // 34 원형 — 노란 가장자리 (50-34)/2 = 8px 보임
+  // 34 원형 — 노란 가장자리 (50-34)/2 = 8px 보임.
+  // marker-me.png 시각 중심 보정: 프로필을 좌·상 1px씩 이동.
   locInner: {
     width: 34,
     height: 34,
@@ -599,6 +600,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
+    transform: [{ translateX: -1 }, { translateY: -1 }],
   },
   locInnerImg: { width: 34, height: 34 },
   // 필터 적용중 — 좌측 X(초기화) + 우측 텍스트+아이콘(설정), 하나의 알약처럼 보이는 통합 View
