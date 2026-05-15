@@ -13,6 +13,7 @@ import { usePoolFilter } from '@/store/poolFilter';
 import { useSelection } from '@/store/selection';
 import { useAuth } from '@/store/auth';
 import { useProfile } from '@/store/profile';
+import { useSwimSchedules } from '@/store/swimSchedule';
 import { tokens } from '@/styles/tokens';
 
 const queryClient = new QueryClient({
@@ -29,6 +30,7 @@ export default function App() {
     // AsyncStorage에 저장된 mock 세션 복원 — Splash에서 분기 처리.
     useAuth.getState().hydrate();
     useProfile.getState().hydrate();
+    useSwimSchedules.getState().hydrate();
   }, []);
 
   if (!fontsLoaded && !fontError) {

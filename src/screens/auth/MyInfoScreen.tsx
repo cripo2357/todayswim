@@ -28,6 +28,7 @@ import { isBundleAvatar, BUNDLE_AVATARS } from '@/lib/avatars';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
 import { CalendarSheet } from '@/components/auth/CalendarSheet';
+import { CalendarTab } from '@/components/calendar/CalendarTab';
 import IconUser from '@assets/icons/user-profile.svg';
 import IconGenderMale from '@assets/icons/gender-male.svg';
 import IconLock from '@assets/icons/lock-secure.svg';
@@ -97,18 +98,18 @@ export function MyInfoScreen() {
         </View>
       </View>
 
-      {tab === '프로필' ? (
+      {tab === '프로필' && (
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.flex}
         >
           <ProfileTab profile={profile} patch={patch} />
         </KeyboardAvoidingView>
-      ) : (
+      )}
+      {tab === '달력' && <CalendarTab />}
+      {tab === '사람들' && (
         <View style={styles.placeholder}>
-          <Text style={styles.placeholderText}>
-            {tab} 탭은 준비 중이에요.
-          </Text>
+          <Text style={styles.placeholderText}>사람들 탭은 준비 중이에요.</Text>
         </View>
       )}
     </SafeAreaView>
