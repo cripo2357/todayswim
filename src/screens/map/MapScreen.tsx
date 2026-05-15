@@ -575,19 +575,21 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
   },
-  // 내 위치 마커 (Figma 130:3622) — 원형 사진 + byellow 링
+  // 내 위치 마커 (Figma 130:3622) — 원형 사진 + byellow 글로우(테두리 X)
   locMarker: {
     width: 47,
     height: 47,
     borderRadius: 23.5,
-    borderWidth: 3,
-    borderColor: tokens.color.pdByellow,
     backgroundColor: tokens.color.white,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
+    shadowColor: tokens.color.pdByellow,
+    shadowOffset: { width: 0.8, height: 1.6 },
+    shadowOpacity: 1,
+    shadowRadius: 5.6,
+    elevation: 6,
   },
-  locMarkerImg: { width: 41, height: 41, borderRadius: 20.5 },
+  locMarkerImg: { width: 47, height: 47, borderRadius: 23.5 },
   // 필터 적용중 — 좌측 X(초기화) + 우측 텍스트+아이콘(설정), 하나의 알약처럼 보이는 통합 View
   fabFilterPill: {
     height: 40,
