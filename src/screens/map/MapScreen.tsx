@@ -557,9 +557,12 @@ const styles = StyleSheet.create({
     ...(Platform.OS === 'ios' ? tokens.shadow.md : { elevation: 4 }),
   },
   // 로그인 시 — 아바타가 44원을 꽉 채우고 ink900 배경이 비치지 않게.
+  // Figma 116:2822 — 아바타들과 동일하게 byellow 외곽선.
   fabAvatar: {
     overflow: 'hidden',
     backgroundColor: tokens.color.white,
+    borderWidth: 2,
+    borderColor: tokens.color.pdByellow,
   },
   fabAvatarImg: {
     width: 44,

@@ -198,7 +198,7 @@ function ProfileTab({
       </Field>
 
       <Field label="한 줄 자기소개">
-        <View style={styles.inputBox}>
+        <View style={[styles.inputBox, styles.bioInputBox]}>
           <MessageSquare size={20} color={tokens.color.ink900} strokeWidth={2} />
           <TextInput
             value={bio}
@@ -564,6 +564,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: tokens.color.white,
   },
+  // Figma 129:3424 — 한 줄 자기소개: padding 12(전방향), gap 8 (높이 ≈ 50)
+  bioInputBox: { paddingVertical: 12, gap: 8 },
   inputText: {
     flex: 1,
     fontSize: 16,
