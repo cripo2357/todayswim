@@ -9,9 +9,13 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowRight, ChevronDown, X, Check, Calendar as LucideCalendar } from 'lucide-react-native';
+import {
+  ArrowRight, ChevronDown, X, Check, HelpCircle,
+  Calendar as LucideCalendar,
+} from 'lucide-react-native';
 
 import { useProfile, type Gender, type Stroke } from '@/store/profile';
+import { isNicknameTaken, claimNickname } from '@/lib/nicknames';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
 import IconUser from '@assets/icons/user-profile.svg';
@@ -36,8 +40,40 @@ export function ProfileSetupScreen() {
   const [showGenderSheet, setShowGenderSheet] = React.useState(false);
   const [showCalendarSheet, setShowCalendarSheet] = React.useState(false);
 
-  // 필수 — 닉네임 + 성별 + 생년월일.
-  const canSubmit = name.trim().length >= 1 && !!gender && !!birthDate;
+  // 닉네임 중복 자동 확인 — 입력 디바운스(500ms) 후 서버 조회.
+  type NickStatus = 'idle' | 'checking' | 'ok' | 'taken';
+  const [nickStatus, setNickStatus] = React.useState<NickStatus>('idle');
+  const nickTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nameRef = React.useRef('');
+
+  React.useEffect(() => {
+    return () => {
+      if (nickTimerRef.current) clearTimeout(nickTimerRef.current);
+    };
+  }, []);
+
+  const onChangeName = (v: string) => {
+    setName(v);
+    nameRef.current = v;
+    if (nickTimerRef.current) clearTimeout(nickTimerRef.current);
+
+    const trimmed = v.trim();
+    if (trimmed.length < 1) {
+      setNickStatus('idle');
+      return;
+    }
+    setNickStatus('checking');
+    nickTimerRef.current = setTimeout(async () => {
+      const taken = await isNicknameTaken(trimmed);
+      // await 동안 입력이 더 바뀌었으면 결과 폐기 (stale).
+      if (nameRef.current.trim() !== trimmed) return;
+      setNickStatus(taken ? 'taken' : 'ok');
+    }, 500);
+  };
+
+  // 필수 — 닉네임(중복 아님) + 성별 + 생년월일.
+  const canSubmit =
+    name.trim().length >= 1 && nickStatus === 'ok' && !!gender && !!birthDate;
 
   const toggleStroke = (s: Stroke) => {
     setStrokes((prev) => {
@@ -50,8 +86,9 @@ export function ProfileSetupScreen() {
 
   const onStart = async () => {
     if (!canSubmit) return;
+    const trimmedName = name.trim();
     await saveProfile({
-      name: name.trim(),
+      name: trimmedName,
       gender: gender!,
       birthDate,
       experienceYears: exp,
@@ -59,6 +96,8 @@ export function ProfileSetupScreen() {
       // 이미지는 다음 단계(ProfileImage 화면)에서 추가.
       createdAt: new Date().toISOString(),
     });
+    // 닉네임 선점 (중복 insert는 PK 충돌로 무시).
+    await claimNickname(trimmedName);
     // 프로필 저장 → 이미지 등록 단계 → Welcome.
     navigation.replace('ProfileImage');
   };
@@ -76,20 +115,32 @@ export function ProfileSetupScreen() {
         >
           <Text style={styles.title}>프로필 등록</Text>
 
-          {/* 기본 정보 */}
-          <SectionHeader label="기본 정보" icon={<IconSectionBasic width={20} height={20} />} />
+          {/* 필수 */}
+          <SectionHeader label="필수" icon={<IconSectionBasic width={20} height={20} />} />
           <Field label="닉네임">
-            <View style={styles.inputBox}>
+            <View
+              style={[
+                styles.inputBox,
+                nickStatus === 'taken' && styles.inputBoxError,
+              ]}
+            >
               <IconUser width={20} height={20} />
               <TextInput
                 value={name}
-                onChangeText={setName}
+                onChangeText={onChangeName}
                 placeholder="수영러버"
                 placeholderTextColor={tokens.color.ink400}
                 style={styles.inputText}
                 maxLength={20}
+                autoCapitalize="none"
               />
+              {nickStatus === 'taken' ? (
+                <HelpCircle size={18} color={tokens.color.red} strokeWidth={2} />
+              ) : null}
             </View>
+            {nickStatus === 'taken' ? (
+              <Text style={styles.nickError}>이미 사용하고 있는 닉네임입니다.</Text>
+            ) : null}
           </Field>
 
           <Field label="성별">
@@ -131,8 +182,8 @@ export function ProfileSetupScreen() {
 
           <View style={styles.divider} />
 
-          {/* 수영 실력 */}
-          <SectionHeader label="수영 실력" icon={<IconLaneCount width={20} height={20} />} />
+          {/* 수영 */}
+          <SectionHeader label="수영" icon={<IconLaneCount width={20} height={20} />} />
 
           <Text style={styles.subLabel}>수영 경력</Text>
           <ExperienceSlider value={exp} onChange={setExp} max={EXP_MAX} />
@@ -447,6 +498,17 @@ const styles = StyleSheet.create({
     borderColor: '#CBD5E1',
     borderRadius: 14,
     backgroundColor: tokens.color.bgPaper,
+  },
+  // 닉네임 중복 에러 — 빨강 테두리 (SH asklepios 20436:58550)
+  inputBoxError: {
+    borderColor: tokens.color.red,
+  },
+  nickError: {
+    marginTop: 6,
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: tokens.font.sans,
+    color: tokens.color.red,
   },
   inputIconText: {
     fontSize: 16,
