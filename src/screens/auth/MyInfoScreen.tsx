@@ -11,9 +11,9 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import {
-  ChevronLeft, ChevronDown, MessageSquare, Calendar as LucideCalendar,
-} from 'lucide-react-native';
+import { ChevronLeft, Calendar as LucideCalendar } from 'lucide-react-native';
+import IconChevronDown from '@assets/icons/chevron-down.svg';
+import IconIntro from '@assets/icons/intro.svg';
 
 import {
   useProfile,
@@ -198,8 +198,8 @@ function ProfileTab({
       </Field>
 
       <Field label="한 줄 자기소개">
-        <View style={[styles.inputBox, styles.bioInputBox]}>
-          <MessageSquare size={20} color={tokens.color.ink900} strokeWidth={2} />
+        <View style={styles.inputBox}>
+          <IconIntro width={20} height={20} />
           <TextInput
             value={bio}
             onChangeText={(v) => setBio(v.slice(0, BIO_MAX))}
@@ -222,7 +222,7 @@ function ProfileTab({
                 ? '여성'
                 : '성별'}
           </Text>
-          <ChevronDown size={20} color={tokens.color.ink500} />
+          <IconChevronDown width={20} height={20} />
         </View>
       </Field>
 
@@ -564,8 +564,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: tokens.color.white,
   },
-  // Figma 129:3424 — 한 줄 자기소개: padding 12(전방향), gap 8 (높이 ≈ 50)
-  bioInputBox: { paddingVertical: 12, gap: 8 },
   inputText: {
     flex: 1,
     fontSize: 16,

@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ChevronDown } from 'lucide-react-native';
+import IconChevronDown from '@assets/icons/chevron-down.svg';
 
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { AppHeader } from '@/components/layout/AppHeader';
@@ -136,7 +136,7 @@ function CreateForm() {
               >
                 {laneCount !== null ? `${laneCount}레인` : '레인 개수'}
               </Text>
-              <ChevronDown size={18} color={tokens.color.ink500} />
+              <IconChevronDown width={18} height={18} />
             </Pressable>
           </Field>
 
@@ -169,7 +169,7 @@ function CreateForm() {
                 >
                   {depthMin !== null ? `${depthMin.toFixed(1)}m` : '1.2m'}
                 </Text>
-                <ChevronDown size={18} color={tokens.color.ink500} />
+                <IconChevronDown width={18} height={18} />
               </Pressable>
             </Field>
             <Field label="깊은 수심" style={styles.flex1}>
@@ -183,7 +183,7 @@ function CreateForm() {
                 >
                   {depthMax !== null ? `${depthMax.toFixed(1)}m` : '1.2m'}
                 </Text>
-                <ChevronDown size={18} color={tokens.color.ink500} />
+                <IconChevronDown width={18} height={18} />
               </Pressable>
             </Field>
           </View>

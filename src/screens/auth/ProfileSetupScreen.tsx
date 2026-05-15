@@ -10,9 +10,10 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  ArrowRight, ChevronDown, X, Check, HelpCircle,
+  ArrowRight, X, Check, HelpCircle,
   Calendar as LucideCalendar,
 } from 'lucide-react-native';
+import IconChevronDown from '@assets/icons/chevron-down.svg';
 
 import { useProfile, type Gender, type Stroke } from '@/store/profile';
 import { useAuth } from '@/store/auth';
@@ -175,7 +176,7 @@ export function ProfileSetupScreen() {
               >
                 {gender === 'male' ? '남성' : gender === 'female' ? '여성' : '성별'}
               </Text>
-              <ChevronDown size={18} color={tokens.color.ink500} />
+              <IconChevronDown width={18} height={18} />
             </Pressable>
           </Field>
 

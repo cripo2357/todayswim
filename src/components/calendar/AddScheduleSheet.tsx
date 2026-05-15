@@ -10,7 +10,8 @@ import {
   Dimensions, ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { X, ChevronDown, Search, Check, Calendar as LucideCalendar } from 'lucide-react-native';
+import { X, Search, Check, Calendar as LucideCalendar } from 'lucide-react-native';
+import IconChevronDown from '@assets/icons/chevron-down.svg';
 import { usePools } from '@/hooks/usePools';
 import { useSchedules } from '@/hooks/useSchedules';
 import {
@@ -152,7 +153,7 @@ export function AddScheduleSheet({
                     >
                       {selectedPool ? selectedPool.name : '수영장 이름'}
                     </Text>
-                    <ChevronDown size={20} color={tokens.color.ink500} />
+                    <IconChevronDown width={20} height={20} />
                   </Pressable>
 
                   {poolOpen && (
