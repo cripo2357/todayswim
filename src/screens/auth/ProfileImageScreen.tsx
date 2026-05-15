@@ -247,10 +247,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   avatarWrap: { position: 'relative' },
+  // Figma 110:3316 — 아바타 원 byellow 외곽선 (MyInfo 117:2986과 동일)
   avatar: {
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: tokens.color.pdByellow,
   },
   // Figma — 아바타 우하단 흰 원 + Shadow/md + 업로드 아이콘
   uploadBtn: {
