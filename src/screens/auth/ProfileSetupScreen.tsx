@@ -131,7 +131,7 @@ export function ProfileSetupScreen() {
                 placeholder="수영러버"
                 placeholderTextColor={tokens.color.ink400}
                 style={styles.inputText}
-                maxLength={20}
+                maxLength={10}
                 autoCapitalize="none"
               />
               {nickStatus === 'taken' ? (
