@@ -71,7 +71,7 @@ export function MyInfoScreen() {
           <ChevronLeft size={24} color={tokens.color.ink900} strokeWidth={1.5} />
         </Pressable>
         <Text style={styles.headerTitle} numberOfLines={1}>
-          {profile.name}
+          내 정보
         </Text>
         <Pressable hitSlop={8} style={styles.headerBtn} accessibilityLabel="설정">
           <IconSettings width={24} height={24} color={tokens.color.ink900} />
