@@ -84,16 +84,17 @@ function ProfileFabContent({ photoUri }: { photoUri?: string }) {
   return <Image source={{ uri: photoUri }} style={styles.fabAvatarImg} />;
 }
 
-/** 내 위치 마커 — 업로드한 노란 링 PNG 안에 프로필 사진 (Figma 130:3622). */
+/** 내 위치 마커 — marker-me.png(50, 노란 원+halo) 위에 34 프로필.
+ *  가장자리 (50-34)/2 = 8px 노란 테두리가 보임 (Figma 130:3622). */
 function LocationProfileMarker({ photoUri }: { photoUri: string }) {
   return (
     <View style={styles.locMarker}>
-      <Image source={MARKER_ME} style={styles.locRing} resizeMode="contain" />
+      <Image source={MARKER_ME} style={styles.locRing} />
       <View style={styles.locInner}>
         {isBundleAvatar(photoUri) ? (
           React.createElement(BUNDLE_AVATARS[photoUri], {
-            width: 40,
-            height: 40,
+            width: 34,
+            height: 34,
           })
         ) : (
           <Image source={{ uri: photoUri }} style={styles.locInnerImg} />
@@ -339,8 +340,8 @@ export function MapScreen() {
             latitude={geo.coords.lat}
             longitude={geo.coords.lng}
             {...(profile?.photoUri ? {} : { image: MARKER_LOCATION })}
-            width={47}
-            height={47}
+            width={profile?.photoUri ? 50 : 47}
+            height={profile?.photoUri ? 50 : 47}
             anchor={{ x: 0.5, y: 0.5 }}
             zIndex={5}
             caption={{
@@ -582,25 +583,24 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
   },
-  // 내 위치 마커 (Figma 130:3622) — 노란 링 PNG + 안쪽 프로필 사진
+  // 내 위치 마커 (Figma 130:3622) — marker-me.png 50 + 안쪽 34 프로필
   locMarker: {
-    width: 47,
-    height: 47,
+    width: 50,
+    height: 50,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  locRing: { ...StyleSheet.absoluteFillObject, width: 47, height: 47 },
-  // 링 두께만큼 안쪽으로 — 사진이 링 안에 원형으로 들어감
+  locRing: { ...StyleSheet.absoluteFillObject, width: 50, height: 50 },
+  // 34 원형 — 노란 가장자리 (50-34)/2 = 8px 보임
   locInner: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: tokens.color.white,
   },
-  locInnerImg: { width: 40, height: 40 },
+  locInnerImg: { width: 34, height: 34 },
   // 필터 적용중 — 좌측 X(초기화) + 우측 텍스트+아이콘(설정), 하나의 알약처럼 보이는 통합 View
   fabFilterPill: {
     height: 40,
