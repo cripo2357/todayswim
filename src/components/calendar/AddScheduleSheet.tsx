@@ -6,12 +6,11 @@
 
 import React from 'react';
 import {
-  View, Text, TextInput, StyleSheet, Pressable, Modal, Animated,
+  View, Text, StyleSheet, Pressable, Modal, Animated,
   Dimensions, ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Check, Calendar as LucideCalendar, Mail } from 'lucide-react-native';
-import IconChevronDown from '@assets/icons/chevron-down.svg';
 import { usePools } from '@/hooks/usePools';
 import { useSchedules } from '@/hooks/useSchedules';
 import {
@@ -35,7 +34,7 @@ import { MOCK_FRIENDS } from '@/lib/mockData';
 import ScheduleCompleteIllust from '@assets/illustrations/schedule-complete.svg';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { SheetCloseButton } from '@/components/ui/SheetCloseButton';
-import { SearchInput } from '@/components/ui/SearchInput';
+import { SearchSelect } from '@/components/ui/SearchSelect';
 import { WeekCalendar } from './WeekCalendar';
 
 const SCREEN_H = Dimensions.get('window').height;
@@ -98,15 +97,9 @@ export function AddScheduleSheet({
 
   const slideY = React.useRef(new Animated.Value(SCREEN_H)).current;
   const [phase, setPhase] = React.useState<'form' | 'done'>('form');
-  const [poolOpen, setPoolOpen] = React.useState(false);
-  const [poolQuery, setPoolQuery] = React.useState('');
-  // 수영장 검색창 ref — 열릴 때 자동 포커스(in-flow라 키보드까지 안정적).
-  const searchInputRef = React.useRef<TextInput>(null);
-  React.useEffect(() => {
-    if (!poolOpen) return;
-    const t = setTimeout(() => searchInputRef.current?.focus(), 60);
-    return () => clearTimeout(t);
-  }, [poolOpen]);
+  // 수영장 콤보박스(SearchSelect)는 자체적으로 열림/검색 상태 보유 —
+  // 시트가 닫힘→열림 전환될 때 key를 바꿔 remount(닫힘·검색어 초기화).
+  const [comboKey, setComboKey] = React.useState(0);
   const [poolId, setPoolId] = React.useState<string | null>(null);
   const [date, setDate] = React.useState(new Date());
   const [slotIdx, setSlotIdx] = React.useState<number | null>(null);
@@ -140,8 +133,7 @@ export function AddScheduleSheet({
     if (visible && !openedRef.current) {
       openedRef.current = true;
       setPhase('form');
-      setPoolOpen(false);
-      setPoolQuery('');
+      setComboKey((k) => k + 1);
       const pid = initialPoolId ?? null;
       const dt = initialDate ?? new Date();
       setPoolId(pid);
@@ -222,10 +214,6 @@ export function AddScheduleSheet({
     close();
   };
 
-  // 수영장 선택을 강조: 검색 열렸을 땐 다른 곳을 눌러도 포커스를 풀지
-  // 않는다(아래 ScrollView keyboardShouldPersistTaps="always"). 포커스는
-  // 리스트에서 풀을 "선택"했을 때만 풀림(선택 시 poolOpen=false → 입력 unmount).
-
   // 등록 가능 날짜 범위: 오늘 ~ +90일 (과거·먼 미래 차단).
   const calMin = React.useMemo(() => {
     const d = new Date();
@@ -249,16 +237,6 @@ export function AddScheduleSheet({
     resolveSeasonSlots(schedule, dow, date),
     date,
   );
-
-  // 수영장 목록: 가나다순 정렬 + 대소문자 무시 like 검색(KBS/kbs 동일).
-  const sortedPools = React.useMemo(
-    () => [...pools].sort((a, b) => a.name.localeCompare(b.name, 'ko')),
-    [pools],
-  );
-  const q = poolQuery.trim().toLowerCase();
-  const filteredPools = q
-    ? sortedPools.filter((p) => p.name.toLowerCase().includes(q))
-    : sortedPools;
 
   const canAdd = !!selectedPool && slotIdx !== null;
 
@@ -352,67 +330,21 @@ export function AddScheduleSheet({
                   keyboardShouldPersistTaps="always"
                   style={styles.body}
                 >
-                  {/* 수영장 드롭다운 */}
+                  {/* 수영장 드롭다운 — 공통 SearchSelect(검색+float 리스트).
+                      시트 닫힘→열림 시 comboKey 변경으로 remount(상태 초기화). */}
                   <Text style={styles.fieldLabel}>수영장</Text>
-                  {/* Figma 122:7490 — 트리거는 항상 in-flow(48px 자리 고정).
-                      열림 시 검색+리스트 카드는 그 위에 absolute로 "떠서"
-                      아래 콘텐츠(시간표·슬롯)를 밀지 않음 → 시트 높이 불변.
-                      같은 Modal 내 absolute(중첩 Modal 아님)라 키보드 정상. */}
-                  <View style={styles.dropdownAnchor}>
-                    <Pressable
-                      onPress={() => setPoolOpen(true)}
-                      style={styles.dropdown}
-                    >
-                      <Text
-                        style={[
-                          styles.dropdownText,
-                          !selectedPool && styles.dropdownPlaceholder,
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {selectedPool ? selectedPool.name : '수영장 이름'}
-                      </Text>
-                      <IconChevronDown width={20} height={20} />
-                    </Pressable>
-                    {poolOpen ? (
-                      <View style={[styles.dropdownList, styles.dropdownFloat]}>
-                        <SearchInput
-                          ref={searchInputRef}
-                          value={poolQuery}
-                          onChangeText={setPoolQuery}
-                          placeholder="수영장 이름"
-                          autoFocus
-                        />
-                        <ScrollView
-                          style={styles.optionScroll}
-                          contentContainerStyle={styles.optionListContent}
-                          nestedScrollEnabled
-                          keyboardShouldPersistTaps="always"
-                        >
-                          {filteredPools.map((p) => (
-                            <Pressable
-                              key={p.id}
-                              onPress={() => {
-                                setPoolId(p.id);
-                                setSlotIdx(null);
-                                setPoolOpen(false);
-                              }}
-                              style={styles.optionItem}
-                            >
-                              <Text style={styles.optionText} numberOfLines={1}>
-                                {p.name}
-                              </Text>
-                            </Pressable>
-                          ))}
-                          {filteredPools.length === 0 && (
-                            <Text style={styles.emptyText}>
-                              검색 결과가 없어요.
-                            </Text>
-                          )}
-                        </ScrollView>
-                      </View>
-                    ) : null}
-                  </View>
+                  <SearchSelect
+                    key={comboKey}
+                    items={pools}
+                    value={selectedPool}
+                    onChange={(p) => {
+                      setPoolId(p.id);
+                      setSlotIdx(null);
+                    }}
+                    keyOf={(p) => p.id}
+                    labelOf={(p) => p.name}
+                    placeholder="수영장 이름"
+                  />
 
                   {/* Figma 122:8031 — 캘린더 위 "시간표" 섹션 라벨 */}
                   <Text style={[styles.fieldLabel, { marginTop: 24 }]}>
@@ -605,69 +537,7 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     marginBottom: 8,
   },
-  // 트리거 자리 고정용 relative 컨테이너 — 열림 카드는 이 안에서 absolute로 뜸.
-  dropdownAnchor: { position: 'relative', zIndex: 20 },
-  // 열림 카드: 트리거 위(top:0)에 겹쳐 떠서 아래 콘텐츠를 밀지 않음.
-  // Android는 elevation이 있어야 뒤따르는 형제(캘린더) 위로 올라온다.
-  dropdownFloat: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 30,
-    elevation: 24,
-  },
-  dropdown: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 48,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 14,
-    backgroundColor: tokens.color.white,
-  },
-  dropdownText: {
-    flex: 1,
-    fontSize: 16,
-    lineHeight: 22,
-    letterSpacing: -0.112,
-    fontFamily: tokens.font.sans,
-    color: tokens.color.ink900,
-  },
-  dropdownPlaceholder: { color: tokens.color.ink400 },
-  // Figma I122:7490;5626:22412 — 흰 카드, border #E2E8F0, r14, p8, gap4, Shadow/lg.
-  // 라벨↔드롭다운 간격은 fieldLabel marginBottom 8이 담당(Figma gap-8) —
-  // 여기 marginTop을 또 주면 열린 상태만 16px로 벌어져서 제거.
-  dropdownList: {
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 14,
-    backgroundColor: tokens.color.white,
-    padding: 8,
-    gap: 4,
-    ...tokens.shadow.lg,
-  },
-  // 결과 수와 무관하게 카드 높이 일정 — maxHeight면 1개일 때 높이가
-  // 틀어져서 고정 height 사용(0/1/N개 모두 동일).
-  // 5개 노출(아이템 minH40 + gap4 → 5*40 + 4*4 = 216, 살짝 여유 220).
-  optionScroll: { height: 220 },
-  optionListContent: { gap: 4 },
-  // Figma 5626:22473 — 아이템: 알약, minH40, p8 (선택 시 강조는 Phase 2)
-  optionItem: {
-    minHeight: 40,
-    padding: 8,
-    borderRadius: 9999,
-    justifyContent: 'center',
-  },
-  // Figma 5544:288 — Medium 16/22 -0.112 #4B5563
-  optionText: {
-    fontSize: 16,
-    lineHeight: 22,
-    letterSpacing: -0.112,
-    fontFamily: tokens.font.sansMedium,
-    color: '#4B5563',
-  },
+  // 슬롯 안내 문구(수영장/날짜 미선택 등) — Figma 5544:288 톤.
   emptyText: {
     fontSize: 14,
     lineHeight: 20,
