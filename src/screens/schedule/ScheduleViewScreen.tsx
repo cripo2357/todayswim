@@ -12,6 +12,8 @@ import { ModalCard } from '@/components/layout/ModalCard';
 import { useSchedules } from '@/hooks/useSchedules';
 import { usePools } from '@/hooks/usePools';
 import { useScheduleDraft } from '@/store/scheduleDraft';
+import { dateKey } from '@/store/swimSchedule';
+import { useAddScheduleIntent } from '@/store/addScheduleIntent';
 import type { RootStackParamList } from '@/navigation/types';
 import { isAnonNickname, type DayOfWeek } from '@/types/schedule';
 import { tokens } from '@/styles/tokens';
@@ -45,6 +47,42 @@ export function ScheduleViewScreen() {
   const dayNote = schedule?.dayNotes?.[selectedDay];
   const groups = schedule?.slotGroups?.[selectedDay];
   const hasGroups = !!groups && groups.length > 0;
+
+  const setIntent = useAddScheduleIntent((s) => s.setIntent);
+  const lastTapRef = React.useRef<{ key: string; t: number } | null>(null);
+
+  // 요일 → 다음 발생일(오늘이 그 요일이면 오늘). JS getDay: 일=0..토=6.
+  const nextDateForWeekday = (day: DayOfWeek): Date => {
+    const idx: Record<DayOfWeek, number> = {
+      일: 0, 월: 1, 화: 2, 수: 3, 목: 4, 금: 5, 토: 6,
+    };
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + ((idx[day] - d.getDay() + 7) % 7));
+    return d;
+  };
+
+  // 더블탭 → 풀+날짜만 잡아 등록 플로우로 넘긴다. 타임은 등록 시트에서
+  // 그 날짜(시즌)에 맞춰 다시 고름 — KBS 같은 하절기 변동 풀까지 일관 처리.
+  const openRegister = () => {
+    if (!pool) return;
+    const d = nextDateForWeekday(selectedDay);
+    setIntent({ poolId, date: dateKey(d) });
+    navigation.goBack(); // 시간표 모달 닫고
+    navigation.navigate('MyInfo'); // 내 정보(달력) → 시트 자동 오픈
+  };
+
+  // 빠르게 두 번 탭(같은 슬롯, 300ms 내) → 등록 플로우 진입.
+  const onSlotTap = (key: string) => {
+    const now = Date.now();
+    const last = lastTapRef.current;
+    if (last && last.key === key && now - last.t < 300) {
+      lastTapRef.current = null;
+      openRegister();
+    } else {
+      lastTapRef.current = { key, t: now };
+    }
+  };
 
   return (
     <ModalCard
@@ -81,7 +119,7 @@ export function ScheduleViewScreen() {
               {pool?.name ?? '수영장'}
             </Text>
             <Text style={styles.notice}>
-              {'타임을 빠르게 두 번 터치하면 일정으로 등록할 수 있습니다.\n자유수영 시간표는 실제와 다를 수 있습니다. 문의 후 방문하세요.'}
+              {'타임을 빠르게 두 번 터치하면 일정으로 등록할 수 있습니다.\n자유수영 시간표는 참고용이니, 꼭 문의 후 방문하세요.'}
             </Text>
           </View>
         </View>
@@ -132,22 +170,36 @@ export function ScheduleViewScreen() {
                 ) : null}
                 <View style={styles.slotsWrap}>
                   {g.slots.map((slot, i) => (
-                    <View key={i} style={styles.slotChip}>
+                    <Pressable
+                      key={i}
+                      onPress={() => onSlotTap(`${selectedDay}-g${gi}-${i}`)}
+                      style={({ pressed }) => [
+                        styles.slotChip,
+                        pressed && styles.slotChipPressed,
+                      ]}
+                    >
                       <Text style={styles.slotChipText} numberOfLines={1}>
                         {slot.start} ~ {slot.end}
                       </Text>
-                    </View>
+                    </Pressable>
                   ))}
                 </View>
               </View>
             ))
           ) : (
             slots.map((slot, i) => (
-              <View key={i} style={styles.slotChip}>
+              <Pressable
+                key={i}
+                onPress={() => onSlotTap(`${selectedDay}-${i}`)}
+                style={({ pressed }) => [
+                  styles.slotChip,
+                  pressed && styles.slotChipPressed,
+                ]}
+              >
                 <Text style={styles.slotChipText} numberOfLines={1}>
                   {slot.start} ~ {slot.end}
                 </Text>
-              </View>
+              </Pressable>
             ))
           )}
         </ScrollView>
@@ -369,6 +421,7 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sansSemibold,
     color: '#4B5563',
   },
+  slotChipPressed: { opacity: 0.6 },
   // Figma 144:3796 — 계절/변형 그룹 간 세로 gap 20
   slotGroupsWrap: {
     gap: 20,

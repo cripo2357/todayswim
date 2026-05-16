@@ -17,6 +17,7 @@ import {
   dateKey,
   type ScheduleVisibility,
 } from '@/store/swimSchedule';
+import { useAddScheduleIntent } from '@/store/addScheduleIntent';
 import { isBundleAvatar, BUNDLE_AVATARS } from '@/lib/avatars';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
@@ -42,8 +43,26 @@ export function CalendarTab() {
   const profile = useProfile((s) => s.profile);
   const schedules = useSwimSchedules((s) => s.schedules);
   const remove = useSwimSchedules((s) => s.remove);
+  const intent = useAddScheduleIntent((s) => s.intent);
+  const clearIntent = useAddScheduleIntent((s) => s.clearIntent);
   const [date, setDate] = React.useState(new Date());
   const [sheetOpen, setSheetOpen] = React.useState(false);
+  // 시간표 더블탭 진입 시 프리필(풀+날짜). 수동 추가는 null로 비운다.
+  const [prefill, setPrefill] = React.useState<{
+    poolId: string;
+    date: Date;
+  } | null>(null);
+
+  // ScheduleView 더블탭이 남긴 의도 소비 → 해당 날짜로 점프 + 시트 프리필 오픈.
+  React.useEffect(() => {
+    if (!intent) return;
+    const [y, m, d] = intent.date.split('-').map(Number);
+    const target = new Date(y, m - 1, d);
+    setDate(target);
+    setPrefill({ poolId: intent.poolId, date: target });
+    setSheetOpen(true);
+    clearIntent();
+  }, [intent, clearIntent]);
 
   const markedKeys = React.useMemo(
     () => new Set(schedules.map((s) => s.date)),
@@ -161,7 +180,10 @@ export function CalendarTab() {
 
       <View style={styles.footer}>
         <Pressable
-          onPress={() => setSheetOpen(true)}
+          onPress={() => {
+            setPrefill(null); // 수동 추가는 빈 상태
+            setSheetOpen(true);
+          }}
           style={({ pressed }) => [styles.addBtn, pressed && { opacity: 0.85 }]}
         >
           <Text style={styles.addLabel}>수영 일정 추가</Text>
@@ -171,7 +193,12 @@ export function CalendarTab() {
 
       <AddScheduleSheet
         visible={sheetOpen}
-        onClose={() => setSheetOpen(false)}
+        onClose={() => {
+          setSheetOpen(false);
+          setPrefill(null);
+        }}
+        initialPoolId={prefill?.poolId}
+        initialDate={prefill?.date}
       />
     </View>
   );

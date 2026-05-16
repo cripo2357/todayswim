@@ -19,13 +19,35 @@ import {
   dateKey,
   type ScheduleVisibility,
 } from '@/store/swimSchedule';
-import type { DayOfWeek, TimeSlot } from '@/types/schedule';
+import type { DayOfWeek, TimeSlot, Schedule } from '@/types/schedule';
 import { tokens } from '@/styles/tokens';
 import RequestCompleteIllust from '@assets/illustrations/request-complete.svg';
 import { WeekCalendar } from './WeekCalendar';
 
 const SCREEN_H = Dimensions.get('window').height;
 const DOW: DayOfWeek[] = ['일', '월', '화', '수', '목', '금', '토'];
+
+/**
+ * 선택 날짜에 맞는 슬롯 해석 — slotGroups(계절/변형)가 있으면 그 달(1~12)을
+ * 포함하는 그룹의 슬롯, 없으면 by_day flat(하위호환). months 없는 그룹은 기본 취급.
+ */
+function resolveSeasonSlots(
+  schedule: Schedule | undefined,
+  dow: DayOfWeek,
+  date: Date,
+): TimeSlot[] {
+  if (!schedule) return [];
+  const groups = schedule.slotGroups?.[dow];
+  if (groups && groups.length > 0) {
+    const m = date.getMonth() + 1;
+    const matched =
+      groups.find((g) => g.months?.includes(m)) ??
+      groups.find((g) => !g.months || g.months.length === 0) ??
+      groups[0];
+    return matched.slots;
+  }
+  return schedule.byDay[dow] ?? [];
+}
 
 const VIS_OPTIONS: { value: ScheduleVisibility; label: string }[] = [
   { value: 'private', label: '비공개' },
@@ -36,9 +58,14 @@ const VIS_OPTIONS: { value: ScheduleVisibility; label: string }[] = [
 export function AddScheduleSheet({
   visible,
   onClose,
+  initialPoolId,
+  initialDate,
 }: {
   visible: boolean;
   onClose: () => void;
+  /** 시간표 더블탭 진입 시 프리필 — 없으면 빈 상태(수동 추가). */
+  initialPoolId?: string;
+  initialDate?: Date;
 }) {
   const { data: pools = [] } = usePools();
   const { data: schedules = [] } = useSchedules();
@@ -58,8 +85,8 @@ export function AddScheduleSheet({
       setPhase('form');
       setPoolOpen(false);
       setPoolQuery('');
-      setPoolId(null);
-      setDate(new Date());
+      setPoolId(initialPoolId ?? null);
+      setDate(initialDate ?? new Date());
       setSlotIdx(null);
       setVisibility('private');
       Animated.timing(slideY, {
@@ -70,7 +97,7 @@ export function AddScheduleSheet({
     } else {
       slideY.setValue(SCREEN_H);
     }
-  }, [visible, slideY]);
+  }, [visible, slideY, initialPoolId, initialDate]);
 
   const close = () => {
     Animated.timing(slideY, {
@@ -82,8 +109,10 @@ export function AddScheduleSheet({
 
   const selectedPool = pools.find((p) => p.id === poolId) ?? null;
   const dow = DOW[date.getDay()];
-  const slots: TimeSlot[] =
-    (poolId && schedules.find((s) => s.poolId === poolId)?.byDay[dow]) || [];
+  const schedule = poolId
+    ? schedules.find((s) => s.poolId === poolId)
+    : undefined;
+  const slots: TimeSlot[] = resolveSeasonSlots(schedule, dow, date);
 
   const filteredPools = poolQuery.trim()
     ? pools.filter((p) => p.name.includes(poolQuery.trim()))

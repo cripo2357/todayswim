@@ -42,13 +42,15 @@ export interface Schedule {
   };
   /**
    * 계절/변형 운영 — 요일 슬롯을 라벨 붙은 그룹으로 분할 (Figma 144:3716).
-   * 예: { "일": [{ label: "기본 운영 (매월 2,4주차 일요일은 쉽니다.)", slots: [...] },
-   *              { label: "6~9월 운영 (하절기는 휴장일이 없습니다.)", slots: [...] }] }
+   * 예: { "일": [{ label: "기본 운영 (매월 2,4주차 일요일은 쉽니다.)", months:[1,2,3,4,5,10,11,12], slots: [...] },
+   *              { label: "6~9월 운영 (하절기는 매주 일요일 운영합니다.)", months:[6,7,8,9], slots: [...] }] }
    * 있으면 ScheduleView가 그룹 렌더, 없으면 byDay flat 그대로(하위호환).
    * byDay[요일]은 여전히 채워둠(요일칩 활성·dayNote 게이팅 기준).
+   * months: 그 그룹이 적용되는 달(1~12). 더블탭→등록 시트가 선택 날짜의 월로
+   *   시즌 그룹을 골라 타임표를 보여줌(없으면 ScheduleView 표시엔 영향 없음).
    */
   slotGroups?: {
-    [day in DayOfWeek]?: { label?: string; slots: TimeSlot[] }[];
+    [day in DayOfWeek]?: { label?: string; months?: number[]; slots: TimeSlot[] }[];
   };
 }
 
