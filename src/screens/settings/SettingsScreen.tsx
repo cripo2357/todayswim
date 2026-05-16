@@ -46,11 +46,11 @@ const FEEDBACK_EMAIL = 'cripo2357@gmail.com';
 // 다른 사람 수영 일정 보기 — OptionSheet 옵션 + 행 우측 표시값
 const VIEW_OPTIONS: Option<OthersScheduleView>[] = [
   { value: 'friends', label: '친구 일정만 보기' },
-  { value: 'public', label: '다른 사람 일정 보기' },
+  { value: 'public', label: '다른 사람 일정도 보기' },
 ];
 const VIEW_VALUE: Record<OthersScheduleView, string> = {
-  friends: '친구 일정만',
-  public: '다른 사람 일정',
+  friends: '친구만',
+  public: '모든 사람',
 };
 // 수영 일정 초대
 const INVITE_OPTIONS: Option<ScheduleInvite>[] = [
