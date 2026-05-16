@@ -10,6 +10,9 @@ import { create } from 'zustand';
 export interface AddScheduleIntent {
   poolId: string;
   date: string; // YYYY-MM-DD
+  // 더블탭한 슬롯 타임 — 등록 시트에서 해당 타임을 기본 선택(있을 때만).
+  start?: string;
+  end?: string;
 }
 
 interface AddScheduleIntentState {

@@ -15,7 +15,7 @@ import { useScheduleDraft } from '@/store/scheduleDraft';
 import { dateKey } from '@/store/swimSchedule';
 import { useAddScheduleIntent } from '@/store/addScheduleIntent';
 import type { RootStackParamList } from '@/navigation/types';
-import { isAnonNickname, type DayOfWeek } from '@/types/schedule';
+import { isAnonNickname, type DayOfWeek, type TimeSlot } from '@/types/schedule';
 import { tokens } from '@/styles/tokens';
 
 const DAYS: DayOfWeek[] = ['월', '화', '수', '목', '금', '토', '일'];
@@ -99,20 +99,25 @@ export function ScheduleViewScreen() {
   // 더블탭 → 풀+날짜만 잡아 의도 set 후 시간표 모달만 닫는다.
   // 화면 이동 없음 — 루트의 GlobalAddScheduleSheet가 의도를 소비해 그 자리에서
   // 등록 시트를 띄움. 타임은 시트에서 날짜(시즌)에 맞춰 다시 고름(KBS 등 일관).
-  const openRegister = () => {
+  const openRegister = (slot: TimeSlot) => {
     if (!pool) return;
     const d = nextDateForWeekday(selectedDay);
-    setIntent({ poolId, date: dateKey(d) });
+    setIntent({
+      poolId,
+      date: dateKey(d),
+      start: slot.start,
+      end: slot.end,
+    });
     navigation.goBack(); // 시간표 모달만 닫음 (지도 등 현재 화면 유지)
   };
 
-  // 빠르게 두 번 탭(같은 슬롯, 300ms 내) → 등록 플로우 진입.
-  const onSlotTap = (key: string) => {
+  // 빠르게 두 번 탭(같은 슬롯, 300ms 내) → 등록 플로우 진입(그 타임 프리필).
+  const onSlotTap = (key: string, slot: TimeSlot) => {
     const now = Date.now();
     const last = lastTapRef.current;
     if (last && last.key === key && now - last.t < 300) {
       lastTapRef.current = null;
-      openRegister();
+      openRegister(slot);
     } else {
       lastTapRef.current = { key, t: now };
     }
@@ -212,7 +217,9 @@ export function ScheduleViewScreen() {
                   {g.slots.map((slot, i) => (
                     <Pressable
                       key={i}
-                      onPress={() => onSlotTap(`${selectedDay}-g${gi}-${i}`)}
+                      onPress={() =>
+                        onSlotTap(`${selectedDay}-g${gi}-${i}`, slot)
+                      }
                       style={({ pressed }) => [
                         styles.slotChip,
                         { width: chipW },
@@ -231,7 +238,7 @@ export function ScheduleViewScreen() {
             slots.map((slot, i) => (
               <Pressable
                 key={i}
-                onPress={() => onSlotTap(`${selectedDay}-${i}`)}
+                onPress={() => onSlotTap(`${selectedDay}-${i}`, slot)}
                 style={({ pressed }) => [
                   styles.slotChip,
                   { width: chipW },

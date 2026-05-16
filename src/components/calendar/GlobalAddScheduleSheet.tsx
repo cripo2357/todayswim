@@ -13,13 +13,20 @@ export function GlobalAddScheduleSheet() {
   const [prefill, setPrefill] = React.useState<{
     poolId: string;
     date: Date;
+    start?: string;
+    end?: string;
   } | null>(null);
 
-  // 더블탭이 남긴 의도 소비 → 풀+날짜 프리필로 시트 오픈, 즉시 clear.
+  // 더블탭이 남긴 의도 소비 → 풀+날짜(+더블탭한 타임) 프리필로 시트 오픈, 즉시 clear.
   React.useEffect(() => {
     if (!intent) return;
     const [y, m, d] = intent.date.split('-').map(Number);
-    setPrefill({ poolId: intent.poolId, date: new Date(y, m - 1, d) });
+    setPrefill({
+      poolId: intent.poolId,
+      date: new Date(y, m - 1, d),
+      start: intent.start,
+      end: intent.end,
+    });
     setOpen(true);
     clearIntent();
   }, [intent, clearIntent]);
@@ -33,6 +40,8 @@ export function GlobalAddScheduleSheet() {
       }}
       initialPoolId={prefill?.poolId}
       initialDate={prefill?.date}
+      initialStart={prefill?.start}
+      initialEnd={prefill?.end}
     />
   );
 }

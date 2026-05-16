@@ -60,16 +60,30 @@ export function AddScheduleSheet({
   onClose,
   initialPoolId,
   initialDate,
+  initialStart,
+  initialEnd,
 }: {
   visible: boolean;
   onClose: () => void;
   /** 시간표 더블탭 진입 시 프리필 — 없으면 빈 상태(수동 추가). */
   initialPoolId?: string;
   initialDate?: Date;
+  /** 더블탭한 슬롯 타임 — 해당 타임을 기본 선택(시즌/날짜 해석 후 일치 시). */
+  initialStart?: string;
+  initialEnd?: string;
 }) {
   const { data: pools = [] } = usePools();
   const { data: schedules = [] } = useSchedules();
   const addSchedule = useSwimSchedules((s) => s.add);
+  const mySchedules = useSwimSchedules((s) => s.schedules);
+
+  // 일정 공유 기본값 = 가장 최근 등록 일정의 공개범위(없으면 비공개).
+  const defaultVisibility = React.useMemo<ScheduleVisibility>(() => {
+    if (mySchedules.length === 0) return 'private';
+    return mySchedules.reduce((a, b) =>
+      a.createdAt >= b.createdAt ? a : b,
+    ).visibility;
+  }, [mySchedules]);
 
   const slideY = React.useRef(new Animated.Value(SCREEN_H)).current;
   const [phase, setPhase] = React.useState<'form' | 'done'>('form');
@@ -80,24 +94,51 @@ export function AddScheduleSheet({
   const [slotIdx, setSlotIdx] = React.useState<number | null>(null);
   const [visibility, setVisibility] = React.useState<ScheduleVisibility>('private');
 
+  // 시트가 닫힘→열림으로 "전환될 때만" 1회 초기화. openedRef 가드로
+  // 열린 상태에서 prefill/schedules 등이 바뀌어도 사용자 입력을 안 덮어씀.
+  const openedRef = React.useRef(false);
   React.useEffect(() => {
-    if (visible) {
+    if (visible && !openedRef.current) {
+      openedRef.current = true;
       setPhase('form');
       setPoolOpen(false);
       setPoolQuery('');
-      setPoolId(initialPoolId ?? null);
-      setDate(initialDate ?? new Date());
-      setSlotIdx(null);
-      setVisibility('private');
+      const pid = initialPoolId ?? null;
+      const dt = initialDate ?? new Date();
+      setPoolId(pid);
+      setDate(dt);
+      // 더블탭으로 넘어온 타임이면 그 날짜의 시즌 해석된 슬롯 목록에서
+      // start·end 일치 항목을 기본 선택. 없으면 미선택(수동 추가 포함).
+      let idx: number | null = null;
+      if (pid && initialStart && initialEnd) {
+        const sch = schedules.find((s) => s.poolId === pid);
+        const resolved = resolveSeasonSlots(sch, DOW[dt.getDay()], dt);
+        const i = resolved.findIndex(
+          (s) => s.start === initialStart && s.end === initialEnd,
+        );
+        idx = i >= 0 ? i : null;
+      }
+      setSlotIdx(idx);
+      setVisibility(defaultVisibility);
       Animated.timing(slideY, {
         toValue: 0,
         duration: 280,
         useNativeDriver: true,
       }).start();
-    } else {
+    } else if (!visible && openedRef.current) {
+      openedRef.current = false;
       slideY.setValue(SCREEN_H);
     }
-  }, [visible, slideY, initialPoolId, initialDate]);
+  }, [
+    visible,
+    slideY,
+    initialPoolId,
+    initialDate,
+    initialStart,
+    initialEnd,
+    schedules,
+    defaultVisibility,
+  ]);
 
   const close = () => {
     Animated.timing(slideY, {
