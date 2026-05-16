@@ -169,8 +169,9 @@ export function CalendarSheet({ visible, initial, onConfirm, onClose }: Props) {
                     key={d}
                     style={[
                       styles.weekHeaderLabel,
-                      i === 5 && { color: tokens.color.brandBlue },
-                      i === 6 && { color: tokens.color.red },
+                      // Figma 120:3565 — 토 Brand/50, 일 Destructive/50 (전 캘린더 공통)
+                      i === 5 && { color: '#3B82F6' },
+                      i === 6 && { color: '#F43F5E' },
                     ]}
                   >
                     {d}

@@ -164,8 +164,7 @@ export function WeekCalendar({
                 <Text
                   style={[
                     styles.dayNum,
-                    i === 5 && !selected && styles.sat,
-                    i === 6 && !selected && styles.sun,
+                    // 날짜 숫자는 요일 무관 동일 색 (토/일 틴트 제거).
                     selected && !outOfRange && styles.dayNumSelected,
                     isToday && !selected && styles.dayToday,
                   ]}
@@ -215,8 +214,9 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sansMedium,
     color: tokens.color.ink500,
   },
-  sat: { color: tokens.color.pdMint },
-  sun: { color: tokens.color.red },
+  // 요일 헤더 토/일만 색 다름 (Figma 120:3565 — Brand/50 / Destructive/50)
+  sat: { color: '#3B82F6' },
+  sun: { color: '#F43F5E' },
   dayCell: { flex: 1, alignItems: 'center', gap: 4, paddingVertical: 4 },
   // 선택 범위(오늘~+90일) 밖 날짜 — 비활성 표시
   dayDisabled: { opacity: 0.3 },
