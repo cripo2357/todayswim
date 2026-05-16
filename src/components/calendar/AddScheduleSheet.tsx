@@ -612,12 +612,12 @@ const styles = StyleSheet.create({
     color: tokens.color.ink900,
   },
   dropdownPlaceholder: { color: tokens.color.ink400 },
-  // Figma I122:7490;5626:22412 — 흰 카드, border #E2E8F0, r24, p8, gap4, Shadow/lg
+  // Figma I122:7490;5626:22412 — 흰 카드, border #E2E8F0, r14, p8, gap4, Shadow/lg
   dropdownList: {
     marginTop: 8,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 24,
+    borderRadius: 14,
     backgroundColor: tokens.color.white,
     padding: 8,
     gap: 4,
