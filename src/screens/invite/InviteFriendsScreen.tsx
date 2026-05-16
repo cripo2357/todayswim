@@ -3,9 +3,7 @@
 // 일정 선택 단계 없음(이미 확정). 백엔드 미연동 — 친구 풀은 mockData.
 
 import React from 'react';
-import {
-  View, Text, Image, ScrollView, StyleSheet, Dimensions,
-} from 'react-native';
+import { View, Text, Image, StyleSheet, Dimensions } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Mail } from 'lucide-react-native';
@@ -55,13 +53,10 @@ export function InviteFriendsScreen() {
       title="친구 초대"
       contentStyle={styles.sheet}
     >
-      {/* 본문은 고정 높이 — 멀티선택 펼쳐도 시트 총높이 불변(내부 스크롤) */}
-      <ScrollView
-        style={styles.body}
-        contentContainerStyle={styles.bodyContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="always"
-      >
+      {/* 본문 고정 높이 View — 시트 총높이 불변. 스크롤은 자동완성 목록(float
+          내부 ScrollView)만 담당(여기를 ScrollView로 두면 중첩돼 목록이 안
+          스크롤됨). 자동완성은 absolute float이라 레이아웃을 안 밀어 OK. */}
+      <View style={[styles.body, styles.bodyContent]}>
         {/* 초대 일정 — 확정된 일정 카드(읽기 전용) */}
         <View style={styles.section}>
           <Text style={styles.label}>초대 일정</Text>
@@ -101,7 +96,7 @@ export function InviteFriendsScreen() {
             placeholder="닉네임"
           />
         </View>
-      </ScrollView>
+      </View>
 
       <SheetCtaButton
         label="초대장 보내기"
