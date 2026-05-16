@@ -205,10 +205,12 @@ export function AddScheduleSheet({
                 >
                   {/* 수영장 드롭다운 */}
                   <Text style={styles.fieldLabel}>수영장</Text>
-                  {/* Figma 122:7490 — 닫힘: 트리거 / 열림: 알약형 검색+리스트 카드 */}
-                  {!poolOpen ? (
+                  {/* Figma 122:7490 — 트리거는 항상 흐름에 고정,
+                      검색+리스트 카드는 absolute float로 위에 겹쳐 노출
+                      (자동완성이 레이아웃을 밀지 않음 → 시트 높이 불변). */}
+                  <View style={styles.dropdownAnchor}>
                     <Pressable
-                      onPress={() => setPoolOpen(true)}
+                      onPress={() => setPoolOpen((v) => !v)}
                       style={styles.dropdown}
                     >
                       <Text
@@ -222,67 +224,78 @@ export function AddScheduleSheet({
                       </Text>
                       <IconChevronDown width={20} height={20} />
                     </Pressable>
-                  ) : (
-                    <View style={styles.dropdownList}>
-                      <View style={styles.searchBox}>
-                        {/* RN Android는 TextInput placeholder에 커스텀 폰트
-                            미적용 → 빈 값일 때 Text 오버레이로 Pretendard 고정 */}
-                        <View style={styles.searchInputWrap}>
-                          <TextInput
-                            value={poolQuery}
-                            onChangeText={setPoolQuery}
-                            style={styles.searchInput}
-                          />
-                          {poolQuery.length === 0 ? (
-                            <Text
-                              style={styles.searchPlaceholder}
-                              pointerEvents="none"
-                            >
-                              수영장 이름
-                            </Text>
-                          ) : null}
+
+                    {poolOpen ? (
+                      <View style={styles.dropdownFloat}>
+                        <View style={styles.dropdownList}>
+                          <View style={styles.searchBox}>
+                            {/* RN Android는 TextInput placeholder에 커스텀
+                                폰트 미적용 → 빈 값일 때 Text 오버레이로 고정 */}
+                            <View style={styles.searchInputWrap}>
+                              <TextInput
+                                value={poolQuery}
+                                onChangeText={setPoolQuery}
+                                style={styles.searchInput}
+                              />
+                              {poolQuery.length === 0 ? (
+                                <Text
+                                  style={styles.searchPlaceholder}
+                                  pointerEvents="none"
+                                >
+                                  수영장 이름
+                                </Text>
+                              ) : null}
+                            </View>
+                            {/* Figma 147:5413 — 입력값 있을 때만 clear 노출 */}
+                            {poolQuery.length > 0 ? (
+                              <Pressable
+                                onPress={() => setPoolQuery('')}
+                                hitSlop={8}
+                                accessibilityRole="button"
+                                accessibilityLabel="검색어 지우기"
+                              >
+                                <XCircle
+                                  size={20}
+                                  color="#94A3B8"
+                                  strokeWidth={2}
+                                />
+                              </Pressable>
+                            ) : null}
+                          </View>
+                          <ScrollView
+                            style={styles.optionScroll}
+                            contentContainerStyle={styles.optionListContent}
+                            nestedScrollEnabled
+                            keyboardShouldPersistTaps="always"
+                          >
+                            {filteredPools.map((p) => (
+                              <Pressable
+                                key={p.id}
+                                onPress={() => {
+                                  setPoolId(p.id);
+                                  setSlotIdx(null);
+                                  setPoolOpen(false);
+                                }}
+                                style={styles.optionItem}
+                              >
+                                <Text
+                                  style={styles.optionText}
+                                  numberOfLines={1}
+                                >
+                                  {p.name}
+                                </Text>
+                              </Pressable>
+                            ))}
+                            {filteredPools.length === 0 && (
+                              <Text style={styles.emptyText}>
+                                검색 결과가 없어요.
+                              </Text>
+                            )}
+                          </ScrollView>
                         </View>
-                        {/* Figma 147:5413 — 입력값 있을 때만 clear(circle-x) 노출 */}
-                        {poolQuery.length > 0 ? (
-                          <Pressable
-                            onPress={() => setPoolQuery('')}
-                            hitSlop={8}
-                            accessibilityRole="button"
-                            accessibilityLabel="검색어 지우기"
-                          >
-                            <XCircle size={20} color="#94A3B8" strokeWidth={2} />
-                          </Pressable>
-                        ) : null}
                       </View>
-                      <ScrollView
-                        style={styles.optionScroll}
-                        contentContainerStyle={styles.optionListContent}
-                        nestedScrollEnabled
-                        keyboardShouldPersistTaps="always"
-                      >
-                        {filteredPools.map((p) => (
-                          <Pressable
-                            key={p.id}
-                            onPress={() => {
-                              setPoolId(p.id);
-                              setSlotIdx(null);
-                              setPoolOpen(false);
-                            }}
-                            style={styles.optionItem}
-                          >
-                            <Text style={styles.optionText} numberOfLines={1}>
-                              {p.name}
-                            </Text>
-                          </Pressable>
-                        ))}
-                        {filteredPools.length === 0 && (
-                          <Text style={styles.emptyText}>
-                            검색 결과가 없어요.
-                          </Text>
-                        )}
-                      </ScrollView>
-                    </View>
-                  )}
+                    ) : null}
+                  </View>
 
                   <View style={styles.calSpacer} />
                   <WeekCalendar
@@ -293,10 +306,22 @@ export function AddScheduleSheet({
                     }}
                   />
 
-                  {/* 시간 슬롯 */}
-                  {selectedPool && (
-                    <View style={styles.slotSection}>
-                      {slots.length > 0 ? (
+                  {/* 시간 슬롯 — 영역 높이 고정(슬롯 수·풀 선택 여부와 무관)
+                      → 시트 전체 높이 불변. 넘치면 내부 스크롤, 비면 중앙 안내. */}
+                  <View style={styles.slotSection}>
+                    {!selectedPool ? (
+                      <View style={styles.slotHintWrap}>
+                        <Text style={styles.emptyText}>
+                          수영장을 선택하면 시간표가 표시됩니다.
+                        </Text>
+                      </View>
+                    ) : slots.length > 0 ? (
+                      <ScrollView
+                        style={styles.slotScroll}
+                        showsVerticalScrollIndicator={false}
+                        nestedScrollEnabled
+                        keyboardShouldPersistTaps="always"
+                      >
                         <View style={styles.slotGrid}>
                           {slots.map((s, i) => {
                             const sel = i === slotIdx;
@@ -321,13 +346,15 @@ export function AddScheduleSheet({
                             );
                           })}
                         </View>
-                      ) : (
+                      </ScrollView>
+                    ) : (
+                      <View style={styles.slotHintWrap}>
                         <Text style={styles.emptyText}>
                           선택한 날짜에 등록된 자유수영 시간표가 없어요.
                         </Text>
-                      )}
-                    </View>
-                  )}
+                      </View>
+                    )}
+                  </View>
 
                   {/* 일정 공유 */}
                   <Text style={[styles.fieldLabel, { marginTop: 24 }]}>
@@ -462,6 +489,17 @@ const styles = StyleSheet.create({
     color: tokens.color.ink900,
   },
   dropdownPlaceholder: { color: tokens.color.ink400 },
+  // 트리거를 감싸는 relative 앵커. zIndex로 이후 형제(캘린더/슬롯) 위.
+  dropdownAnchor: { position: 'relative', zIndex: 20 },
+  // 검색+리스트 카드: 트리거 바로 아래 absolute float (레이아웃 미점유 → 시트 높이 불변).
+  dropdownFloat: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    zIndex: 30,
+    elevation: 30,
+  },
   // Figma I122:7490;5626:22412 — 흰 카드, border #E2E8F0, r24, p8, gap4, Shadow/lg
   dropdownList: {
     marginTop: 8,
@@ -537,7 +575,10 @@ const styles = StyleSheet.create({
 
   calSpacer: { height: 16 },
 
-  slotSection: { marginTop: 16 },
+  // 높이 고정(슬롯 ~3행 기준) → 시트 전체 높이 불변. 넘치면 내부 스크롤.
+  slotSection: { marginTop: 16, height: 156 },
+  slotScroll: { flex: 1 },
+  slotHintWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   slotGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   slot: {
     width: '48%',
