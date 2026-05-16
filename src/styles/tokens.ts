@@ -194,12 +194,15 @@ export const shadow = {
     shadowRadius: 12,
     elevation: 3,
   },
+  // Figma Shadow/lg = 아주 옅은 2겹(#0F172A @~0.03 / ~0.08, blur 6/16,
+  // spread -2/-4). RN은 2겹·spread 미지원 → 지배 레이어를 축소 근사:
+  // 진하고 크지 않게(살짝) opacity 0.08 / radius 12 / offset 6.
   lg: {
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
   pop: {
     shadowColor: '#0F172A',
