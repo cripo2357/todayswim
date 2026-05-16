@@ -23,6 +23,7 @@ import { usePrefs } from '@/store/prefs';
 import { resolveParticipants } from '@/lib/scheduleParticipants';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
+import IconSwim from '@assets/icons/swim.svg';
 import { WeekCalendar } from './WeekCalendar';
 import { AddScheduleSheet } from './AddScheduleSheet';
 import { OptionSheet, type Option } from '@/components/ui/OptionSheet';
@@ -140,26 +141,29 @@ export function CalendarTab() {
                   </Text>
                   {(() => {
                     const past = isSchedulePast(s);
+                    // 지난 일정 — Figma 120:3706: "수영 완료" 상태 배지
+                    // (border·텍스트 #4B5563 + 수영 아이콘, 비대화형).
+                    if (past) {
+                      return (
+                        <View style={styles.doneChip}>
+                          <Text style={styles.doneChipLabel}>수영 완료</Text>
+                          <IconSwim width={12} height={12} />
+                        </View>
+                      );
+                    }
                     return (
                       <Pressable
-                        onPress={() => !past && setVisEditId(s.id)}
-                        disabled={past}
-                        style={[styles.visChip, past && styles.visChipDisabled]}
+                        onPress={() => setVisEditId(s.id)}
+                        style={styles.visChip}
                         accessibilityRole="button"
                         accessibilityLabel="일정 공개여부 변경"
-                        accessibilityState={{ disabled: past }}
                       >
-                        <Text
-                          style={[
-                            styles.visChipLabel,
-                            past && styles.visChipLabelDisabled,
-                          ]}
-                        >
+                        <Text style={styles.visChipLabel}>
                           {VIS_LABEL[s.visibility]}
                         </Text>
                         <ChevronDown
                           size={12}
-                          color={past ? tokens.color.ink400 : tokens.color.pdBlue}
+                          color={tokens.color.pdBlue}
                           strokeWidth={2}
                         />
                       </Pressable>
@@ -172,9 +176,8 @@ export function CalendarTab() {
                 ) : null}
               </View>
 
-              <View style={styles.divider} />
-
-              {/* 참여자 — Figma 120:3156. 같은 슬롯 참여자를 공개여부·관계·
+              {/* 참여자 — Figma 133:3885: "내" 위에는 구분선 없음.
+                  Figma 120:3156. 같은 슬롯 참여자를 공개여부·관계·
                   내 설정으로 필터. 비공개=나만 / 친구공개=나+친구+초대 /
                   전체공개=+다른사람(설정 '다른 사람 일정 보기' 시) */}
               {(() => {
@@ -393,8 +396,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  // 지난 일정 — 공개여부 변경 불가(톤다운, chevron 아이콘은 유지)
-  visChipDisabled: { borderColor: tokens.color.ink400 },
   visChipLabel: {
     fontSize: 12,
     lineHeight: 16,
@@ -402,7 +403,25 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sansMedium,
     color: tokens.color.pdBlue,
   },
-  visChipLabelDisabled: { color: tokens.color.ink400 },
+  // Figma 120:3706 — 지난 일정 "수영 완료" 상태 배지(비대화형, #4B5563)
+  doneChip: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderColor: '#4B5563',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  doneChipLabel: {
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: -0.06,
+    fontFamily: tokens.font.sansMedium,
+    color: '#4B5563',
+  },
   thumb: { width: 80, height: 80, borderRadius: 6, backgroundColor: '#E2E8F0' },
 
   divider: { height: 1, backgroundColor: tokens.color.lineDefault },
