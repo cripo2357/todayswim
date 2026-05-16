@@ -612,9 +612,10 @@ const styles = StyleSheet.create({
     color: tokens.color.ink900,
   },
   dropdownPlaceholder: { color: tokens.color.ink400 },
-  // Figma I122:7490;5626:22412 — 흰 카드, border #E2E8F0, r14, p8, gap4, Shadow/lg
+  // Figma I122:7490;5626:22412 — 흰 카드, border #E2E8F0, r14, p8, gap4, Shadow/lg.
+  // 라벨↔드롭다운 간격은 fieldLabel marginBottom 8이 담당(Figma gap-8) —
+  // 여기 marginTop을 또 주면 열린 상태만 16px로 벌어져서 제거.
   dropdownList: {
-    marginTop: 8,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     borderRadius: 14,
