@@ -20,6 +20,11 @@ import { tokens } from '@/styles/tokens';
 
 const DAYS: DayOfWeek[] = ['월', '화', '수', '목', '금', '토', '일'];
 
+// JS Date.getDay(): 0=일 … 6=토
+const JS_DOW: Record<DayOfWeek, number> = {
+  일: 0, 월: 1, 화: 2, 수: 3, 목: 4, 금: 5, 토: 6,
+};
+
 export function ScheduleViewScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, 'ScheduleView'>>();
@@ -38,11 +43,26 @@ export function ScheduleViewScreen() {
     );
   }, [schedule]);
 
-  const firstAvailable = React.useMemo<DayOfWeek>(() => {
-    return DAYS.find((d) => daysWithSchedule.has(d)) ?? '월';
-  }, [daysWithSchedule]);
+  // 기본 선택 요일: 슬롯 있는 요일 중 "오늘 기준 가장 가깝게 다가올" 요일
+  // (오늘 그 요일이면 거리 0 → 오늘). 슬롯 요일이 없으면 '월'.
+  const todayJs = new Date().getDay();
+  const preferredDay = React.useMemo<DayOfWeek>(() => {
+    const avail = DAYS.filter((d) => daysWithSchedule.has(d));
+    if (avail.length === 0) return '월';
+    return avail.reduce((best, d) =>
+      (JS_DOW[d] - todayJs + 7) % 7 < (JS_DOW[best] - todayJs + 7) % 7
+        ? d
+        : best,
+    );
+  }, [daysWithSchedule, todayJs]);
 
-  const [selectedDay, setSelectedDay] = React.useState<DayOfWeek>(firstAvailable);
+  const [selectedDay, setSelectedDay] = React.useState<DayOfWeek>(preferredDay);
+  // 데이터가 늦게 와도(콜드로드) 기본값 재적용. 단 사용자가 직접 요일을
+  // 누른 뒤엔 자동 변경 안 함(의도 존중).
+  const userPickedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!userPickedRef.current) setSelectedDay(preferredDay);
+  }, [preferredDay]);
   const slots = schedule?.byDay[selectedDay] ?? [];
   const dayNote = schedule?.dayNotes?.[selectedDay];
   const groups = schedule?.slotGroups?.[selectedDay];
@@ -59,14 +79,11 @@ export function ScheduleViewScreen() {
   const setIntent = useAddScheduleIntent((s) => s.setIntent);
   const lastTapRef = React.useRef<{ key: string; t: number } | null>(null);
 
-  // 요일 → 다음 발생일(오늘이 그 요일이면 오늘). JS getDay: 일=0..토=6.
+  // 요일 → 다음 발생일(오늘이 그 요일이면 오늘).
   const nextDateForWeekday = (day: DayOfWeek): Date => {
-    const idx: Record<DayOfWeek, number> = {
-      일: 0, 월: 1, 화: 2, 수: 3, 목: 4, 금: 5, 토: 6,
-    };
     const d = new Date();
     d.setHours(0, 0, 0, 0);
-    d.setDate(d.getDate() + ((idx[day] - d.getDay() + 7) % 7));
+    d.setDate(d.getDate() + ((JS_DOW[day] - d.getDay() + 7) % 7));
     return d;
   };
 
@@ -144,7 +161,10 @@ export function ScheduleViewScreen() {
                   label={d}
                   selected={selected}
                   hasSchedule={has}
-                  onPress={() => setSelectedDay(d)}
+                  onPress={() => {
+                    userPickedRef.current = true;
+                    setSelectedDay(d);
+                  }}
                 />
               );
             })}
