@@ -497,8 +497,8 @@ export function AddScheduleSheet({
                     )}
                   </View>
 
-                  {/* 일정 공유 */}
-                  <Text style={[styles.fieldLabel, { marginTop: 24 }]}>
+                  {/* 일정 공유 — Figma 125:3802: Bold #1F2937 (수영장/시간표보다 진함) */}
+                  <Text style={[styles.shareLabel, { marginTop: 24 }]}>
                     일정 공유
                   </Text>
                   <View style={styles.radioRow}>
@@ -585,12 +585,22 @@ const styles = StyleSheet.create({
   },
   body: { maxHeight: SCREEN_H * 0.62 },
 
+  // Figma 122:7490/122:8031 — 수영장·시간표 라벨: SemiBold 14/20 -0.084 #4B5563
   fieldLabel: {
     fontSize: 14,
     lineHeight: 20,
     letterSpacing: -0.084,
     fontFamily: tokens.font.sansSemibold,
-    color: tokens.color.ink900,
+    color: '#4B5563',
+    marginBottom: 8,
+  },
+  // Figma 125:3802 — 일정 공유 라벨만 Bold 14/20 -0.084 #1F2937 (더 진함)
+  shareLabel: {
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: -0.084,
+    fontFamily: tokens.font.sansBold,
+    color: '#1F2937',
     marginBottom: 8,
   },
   dropdown: {
