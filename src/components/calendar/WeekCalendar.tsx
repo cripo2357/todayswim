@@ -172,12 +172,10 @@ export function WeekCalendar({
                 >
                   {d.getDate()}
                 </Text>
+                {/* 내 일정 있는 날 — 숫자 바로 아래, 선택 원 "안쪽" 하단에
+                    겹치도록 원 기준 absolute 배치 (Figma 120:4701). */}
+                {markedKeys?.has(k) ? <View style={styles.dot} /> : null}
               </View>
-              {markedKeys?.has(k) ? (
-                <View style={styles.dot} />
-              ) : (
-                <View style={styles.dotPlaceholder} />
-              )}
             </Pressable>
           );
         })}
@@ -248,12 +246,16 @@ const styles = StyleSheet.create({
   dayNumSelected: { color: tokens.color.white, fontFamily: tokens.font.sans },
   dayToday: { color: tokens.color.pdMint, fontFamily: tokens.font.sansBold },
   // Figma 120:4701 — 내 일정 있는 날: 숫자 바로 아래 6px 빨간 점.
+  // dayCircle 기준 absolute → 선택 원 안쪽 하단에 겹쳐 위치.
   // 선택일에도 동일 빨강(일관) — 색 토글 안 함.
   dot: {
+    position: 'absolute',
+    bottom: 2,
+    left: '50%',
+    marginLeft: -3,
     width: 6,
     height: 6,
     borderRadius: 3,
     backgroundColor: tokens.color.red,
   },
-  dotPlaceholder: { width: 6, height: 6 },
 });
