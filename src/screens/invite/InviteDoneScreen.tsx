@@ -36,7 +36,7 @@ export function InviteDoneScreen() {
 
       {/* Figma 129:4066 — pd-byellow r14 minH48, 라벨 + calendar-check */}
       <Pressable
-        onPress={() => navigation.navigate('MyInfo')}
+        onPress={() => navigation.goBack()}
         style={({ pressed }) => [styles.cta, pressed && { opacity: 0.85 }]}
         accessibilityRole="button"
       >
