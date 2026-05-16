@@ -174,9 +174,7 @@ export function WeekCalendar({
                 </Text>
               </View>
               {markedKeys?.has(k) ? (
-                <View
-                  style={[styles.dot, selected && styles.dotOnSelected]}
-                />
+                <View style={styles.dot} />
               ) : (
                 <View style={styles.dotPlaceholder} />
               )}
@@ -249,12 +247,13 @@ const styles = StyleSheet.create({
   // Figma 123:8265 — 선택 숫자는 Regular(흰색), Bold 아님
   dayNumSelected: { color: tokens.color.white, fontFamily: tokens.font.sans },
   dayToday: { color: tokens.color.pdMint, fontFamily: tokens.font.sansBold },
+  // Figma 120:4701 — 내 일정 있는 날: 숫자 바로 아래 6px 빨간 점.
+  // 선택일에도 동일 빨강(일관) — 색 토글 안 함.
   dot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: tokens.color.pdBlue,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: tokens.color.red,
   },
-  dotOnSelected: { backgroundColor: tokens.color.pdMint },
-  dotPlaceholder: { width: 5, height: 5 },
+  dotPlaceholder: { width: 6, height: 6 },
 });
