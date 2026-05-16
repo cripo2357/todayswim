@@ -94,3 +94,92 @@ export const MOCK_SCHEDULES: MySwimSchedule[] = Array.from({ length: 50 }, (_, i
     createdAt: new Date().toISOString(),
   };
 });
+
+// ── 다른 사용자의 슬롯 참여(테스트용) ───────────────────────────
+// 소유 개념 아님 — 각 사용자가 슬롯(풀+날짜+시작/끝)에 독립 참여.
+// 참여자 조회는 가시성/관계/내 설정으로 필터만 함(resolveParticipants).
+export interface OtherSchedule {
+  id: string;
+  userId: string;
+  name: string;
+  avatar: AvatarId;
+  isFriend: boolean;
+  poolId: string;
+  poolName: string;
+  date: string; // YYYY-MM-DD
+  start: string;
+  end: string;
+  visibility: ScheduleVisibility;
+}
+
+// 관악구민종합체육센터 (POOL_SEOUL_0005) — 자유수영 by_day (마이그레이션 0021).
+// JS Date.getDay(): 0=일 … 6=토
+const GWANAK = { id: 'POOL_SEOUL_0005', name: '관악구민종합체육센터' };
+const GWANAK_SLOTS: Record<number, { start: string; end: string }[]> = {
+  1: [{ start: '12:00', end: '12:50' }], // 월
+  3: [{ start: '12:00', end: '12:50' }], // 수
+  5: [{ start: '12:00', end: '12:50' }], // 금
+  6: [
+    { start: '06:00', end: '07:50' },
+    { start: '09:00', end: '10:50' },
+    { start: '16:00', end: '17:50' },
+    { start: '19:00', end: '20:50' },
+  ], // 토
+  0: [
+    { start: '09:00', end: '10:50' },
+    { start: '12:00', end: '13:50' },
+    { start: '15:00', end: '16:50' },
+  ], // 일
+};
+
+// 오늘부터 35일 내, 관악구민 슬롯이 있는 날짜만 수집
+const GWANAK_DATES: { date: string; slots: { start: string; end: string }[] }[] =
+  (() => {
+    const out: { date: string; slots: { start: string; end: string }[] }[] = [];
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    for (let i = 0; i < 35; i++) {
+      const slots = GWANAK_SLOTS[d.getDay()];
+      if (slots) out.push({ date: ymd(d), slots });
+      d.setDate(d.getDate() + 1);
+    }
+    return out;
+  })();
+
+const OTHER_USERS = [
+  ...MOCK_FRIENDS.map((u) => ({ ...u, isFriend: true })),
+  ...MOCK_NON_FRIENDS.map((u) => ({ ...u, isFriend: false })),
+];
+
+// 친구·비친구 각각 가시성 분포 (필터 테스트용 — friends/private 섞음)
+const FRIEND_VIS: ScheduleVisibility[] = [
+  'public', 'friends', 'public', 'friends', 'private',
+];
+const NONFRIEND_VIS: ScheduleVisibility[] = [
+  'public', 'public', 'public', 'friends', 'private',
+];
+
+// 20명 × 10 = 200. 같은 (날짜·슬롯)에 몰리도록 인덱스 분산 → 참여자 풍부.
+export const MOCK_OTHER_SCHEDULES: OtherSchedule[] = OTHER_USERS.flatMap(
+  (u, ui) =>
+    Array.from({ length: 10 }, (_, j) => {
+      const vd = GWANAK_DATES[(ui * 2 + j * 3) % GWANAK_DATES.length];
+      const slot = vd.slots[(ui + j) % vd.slots.length];
+      const visibility = (u.isFriend ? FRIEND_VIS : NONFRIEND_VIS)[
+        (ui + j) % 5
+      ];
+      return {
+        id: `oth-${u.id}-${j + 1}`,
+        userId: u.id,
+        name: u.name,
+        avatar: u.avatar,
+        isFriend: u.isFriend,
+        poolId: GWANAK.id,
+        poolName: GWANAK.name,
+        date: vd.date,
+        start: slot.start,
+        end: slot.end,
+        visibility,
+      };
+    }),
+);

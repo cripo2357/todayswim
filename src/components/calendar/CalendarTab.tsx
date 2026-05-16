@@ -19,6 +19,8 @@ import {
   type ScheduleVisibility,
 } from '@/store/swimSchedule';
 import { isBundleAvatar, BUNDLE_AVATARS } from '@/lib/avatars';
+import { usePrefs } from '@/store/prefs';
+import { resolveParticipants } from '@/lib/scheduleParticipants';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
 import { WeekCalendar } from './WeekCalendar';
@@ -53,6 +55,7 @@ export function CalendarTab() {
   const schedules = useSwimSchedules((s) => s.schedules);
   const remove = useSwimSchedules((s) => s.remove);
   const setVisibility = useSwimSchedules((s) => s.setVisibility);
+  const viewPref = usePrefs((s) => s.othersScheduleView);
   const [date, setDate] = React.useState(new Date());
   const [sheetOpen, setSheetOpen] = React.useState(false);
   // 공개여부 변경 시트 대상 일정 id (null = 닫힘)
@@ -167,41 +170,107 @@ export function CalendarTab() {
 
               <View style={styles.divider} />
 
-              {/* 참여자 — 본인 + 친구 초대 (친구 목록은 Phase 2) */}
-              <View style={styles.people}>
-                <View style={styles.miniRow}>
-                  <View style={[styles.miniAvatar, styles.miniMine]}>
-                    {isBundleAvatar(profile?.photoUri) ? (
-                      React.createElement(BUNDLE_AVATARS[profile.photoUri], {
-                        width: 22,
-                        height: 22,
-                      })
-                    ) : profile?.photoUri ? (
-                      <Image
-                        source={{ uri: profile.photoUri }}
-                        style={styles.miniAvatarImg}
-                      />
-                    ) : (
-                      <User
-                        size={12}
-                        color={tokens.color.ink400}
-                        strokeWidth={2}
-                      />
-                    )}
-                  </View>
-                  <Text style={styles.miniName} numberOfLines={1}>
-                    {myName}
-                  </Text>
-                </View>
+              {/* 참여자 — Figma 120:3156. 같은 슬롯 참여자를 공개여부·관계·
+                  내 설정으로 필터. 비공개=나만 / 친구공개=나+친구+초대 /
+                  전체공개=+다른사람(설정 '다른 사람 일정 보기' 시) */}
+              {(() => {
+                const pg = resolveParticipants(s, viewPref);
+                return (
+                  <View style={styles.participants}>
+                    {/* 나 */}
+                    <View style={styles.ptCell}>
+                      <View style={[styles.ptAvatar, styles.ptAvatarMine]}>
+                        {isBundleAvatar(profile?.photoUri) ? (
+                          React.createElement(
+                            BUNDLE_AVATARS[profile.photoUri],
+                            { width: 24, height: 24 },
+                          )
+                        ) : profile?.photoUri ? (
+                          <Image
+                            source={{ uri: profile.photoUri }}
+                            style={styles.ptAvatarImg}
+                          />
+                        ) : (
+                          <User
+                            size={12}
+                            color={tokens.color.ink400}
+                            strokeWidth={2}
+                          />
+                        )}
+                      </View>
+                      <Text style={styles.ptName} numberOfLines={1}>
+                        {myName}
+                      </Text>
+                    </View>
 
-                <Pressable
-                  onPress={() => navigation.navigate('InviteScheduleSelect')}
-                  style={styles.inviteChip}
-                >
-                  <Plus size={14} color={tokens.color.pdMint} strokeWidth={2.4} />
-                  <Text style={styles.inviteChipLabel}>친구 초대</Text>
-                </Pressable>
-              </View>
+                    {/* 친구 섹션 (비공개 아니면) — 친구 + 친구초대(마지막) */}
+                    {pg.showInvite ? (
+                      <>
+                        <View style={styles.divider} />
+                        <View style={styles.ptGrid}>
+                          {pg.friends.map((o) => (
+                            <View key={o.id} style={styles.ptCell}>
+                              <View style={styles.ptAvatar}>
+                                {React.createElement(
+                                  BUNDLE_AVATARS[o.avatar],
+                                  { width: 24, height: 24 },
+                                )}
+                              </View>
+                              <Text style={styles.ptName} numberOfLines={1}>
+                                {o.name}
+                              </Text>
+                            </View>
+                          ))}
+                          <Pressable
+                            onPress={() =>
+                              navigation.navigate('InviteScheduleSelect')
+                            }
+                            style={styles.ptCell}
+                            accessibilityRole="button"
+                            accessibilityLabel="친구 초대"
+                          >
+                            <View style={styles.ptInviteAvatar}>
+                              <Plus
+                                size={13}
+                                color={tokens.color.pdMint}
+                                strokeWidth={2.4}
+                              />
+                            </View>
+                            <Text
+                              style={styles.ptInviteName}
+                              numberOfLines={1}
+                            >
+                              친구 초대
+                            </Text>
+                          </Pressable>
+                        </View>
+                      </>
+                    ) : null}
+
+                    {/* 다른 사람 섹션 (전체공개 + 설정 '다른 사람 일정 보기') */}
+                    {pg.others.length > 0 ? (
+                      <>
+                        <View style={styles.divider} />
+                        <View style={styles.ptGrid}>
+                          {pg.others.map((o) => (
+                            <View key={o.id} style={styles.ptCell}>
+                              <View style={styles.ptAvatar}>
+                                {React.createElement(
+                                  BUNDLE_AVATARS[o.avatar],
+                                  { width: 24, height: 24 },
+                                )}
+                              </View>
+                              <Text style={styles.ptName} numberOfLines={1}>
+                                {o.name}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      </>
+                    ) : null}
+                  </View>
+                );
+              })()}
             </Pressable>
           ))
         )}
@@ -312,6 +381,60 @@ const styles = StyleSheet.create({
   thumbEmpty: { backgroundColor: '#E2E8F0' },
 
   divider: { height: 1, backgroundColor: tokens.color.lineDefault },
+
+  // Figma 120:3156 — 참여자 영역(나 / 친구그리드+초대 / 다른사람그리드)
+  participants: { gap: 12 },
+  ptGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    rowGap: 8,
+    columnGap: 8,
+  },
+  ptCell: {
+    width: 96,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  ptAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ptAvatarMine: {
+    borderWidth: 1,
+    borderColor: tokens.color.pdByellow,
+  },
+  ptAvatarImg: { width: 24, height: 24 },
+  ptName: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: -0.06,
+    fontFamily: tokens.font.sansMedium,
+    color: '#1F2937',
+  },
+  // 친구 초대 칸 — 참여자 칩과 동일 형태(원형 + ⊕ + 라벨)
+  ptInviteAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ptInviteName: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: -0.06,
+    fontFamily: tokens.font.sansMedium,
+    color: tokens.color.pdMint,
+  },
 
   people: {
     flexDirection: 'row',
