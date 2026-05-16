@@ -3,7 +3,9 @@
 // 일정 선택 단계 없음(이미 확정). 백엔드 미연동 — 친구 풀은 mockData.
 
 import React from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import {
+  View, Text, Image, ScrollView, StyleSheet, Dimensions,
+} from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Mail } from 'lucide-react-native';
@@ -14,6 +16,11 @@ import { SearchMultiSelect } from '@/components/ui/SearchMultiSelect';
 import { MOCK_FRIENDS, type MockAccount } from '@/lib/mockData';
 import { BUNDLE_AVATARS } from '@/lib/avatars';
 import { tokens } from '@/styles/tokens';
+
+const SCREEN_H = Dimensions.get('window').height;
+// 시트 본문 고정 높이 — 멀티선택 열림/닫힘과 무관하게 시트 총높이 일정.
+// 넘치면 내부 스크롤(AddScheduleSheet body와 동일 비율 0.62).
+const BODY_H = Math.round(SCREEN_H * 0.62);
 
 const DOW_KR = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -48,45 +55,53 @@ export function InviteFriendsScreen() {
       title="친구 초대"
       contentStyle={styles.sheet}
     >
-      {/* 초대 일정 — 확정된 일정 카드(읽기 전용) */}
-      <View style={styles.section}>
-        <Text style={styles.label}>초대 일정</Text>
-        <View style={styles.scheduleCard}>
-          <View style={styles.scheduleInfo}>
-            <Text style={styles.poolName} numberOfLines={1}>
-              {poolName}
-            </Text>
-            <Text style={styles.when} numberOfLines={1}>
-              {formatScheduleLine(date, start)}
-            </Text>
+      {/* 본문은 고정 높이 — 멀티선택 펼쳐도 시트 총높이 불변(내부 스크롤) */}
+      <ScrollView
+        style={styles.body}
+        contentContainerStyle={styles.bodyContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="always"
+      >
+        {/* 초대 일정 — 확정된 일정 카드(읽기 전용) */}
+        <View style={styles.section}>
+          <Text style={styles.label}>초대 일정</Text>
+          <View style={styles.scheduleCard}>
+            <View style={styles.scheduleInfo}>
+              <Text style={styles.poolName} numberOfLines={1}>
+                {poolName}
+              </Text>
+              <Text style={styles.when} numberOfLines={1}>
+                {formatScheduleLine(date, start)}
+              </Text>
+            </View>
+            {poolPhotoUrl ? (
+              <Image source={{ uri: poolPhotoUrl }} style={styles.thumb} />
+            ) : null}
           </View>
-          {poolPhotoUrl ? (
-            <Image source={{ uri: poolPhotoUrl }} style={styles.thumb} />
-          ) : null}
         </View>
-      </View>
 
-      {/* 초대 친구 — 멀티선택 (공통 SearchMultiSelect) */}
-      <View style={styles.section}>
-        <Text style={styles.label}>
-          초대 친구{selected.length > 0 ? ` (${selected.length})` : ''}
-        </Text>
-        <SearchMultiSelect
-          items={MOCK_FRIENDS}
-          selected={selected}
-          onChange={setSelected}
-          keyOf={(f) => f.id}
-          labelOf={(f) => f.name}
-          subLabelOf={(f) => f.status}
-          renderAvatar={(f, size) =>
-            React.createElement(BUNDLE_AVATARS[f.avatar], {
-              width: size,
-              height: size,
-            })
-          }
-          placeholder="닉네임"
-        />
-      </View>
+        {/* 초대 친구 — 멀티선택 (공통 SearchMultiSelect) */}
+        <View style={styles.section}>
+          <Text style={styles.label}>
+            초대 친구{selected.length > 0 ? ` (${selected.length})` : ''}
+          </Text>
+          <SearchMultiSelect
+            items={MOCK_FRIENDS}
+            selected={selected}
+            onChange={setSelected}
+            keyOf={(f) => f.id}
+            labelOf={(f) => f.name}
+            subLabelOf={(f) => f.status}
+            renderAvatar={(f, size) =>
+              React.createElement(BUNDLE_AVATARS[f.avatar], {
+                width: size,
+                height: size,
+              })
+            }
+            placeholder="닉네임"
+          />
+        </View>
+      </ScrollView>
 
       <SheetCtaButton
         label="초대장 보내기"
@@ -99,8 +114,11 @@ export function InviteFriendsScreen() {
 }
 
 const styles = StyleSheet.create({
-  // BottomSheet 기본 gap 24 유지(섹션 간격)
+  // BottomSheet 기본 gap 24 유지(타이틀 ↔ 본문 ↔ CTA)
   sheet: { gap: 24 },
+  // 고정 높이 본문 — 시트 총높이 일정, 넘치면 내부 스크롤
+  body: { height: BODY_H },
+  bodyContent: { gap: 24 },
   section: { gap: 8 },
   // Figma 150:9110 — SemiBold 14/20 -0.084 #4B5563
   label: {
