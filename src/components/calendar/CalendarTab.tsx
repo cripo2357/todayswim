@@ -204,6 +204,7 @@ export function CalendarTab() {
       <AddScheduleSheet
         visible={sheetOpen}
         onClose={() => setSheetOpen(false)}
+        initialDate={date}
       />
 
       {/* 일정 관리 — 지난 일정은 칩 자체가 비활성이라 여기 안 열림.
