@@ -593,7 +593,8 @@ const styles = StyleSheet.create({
   },
   handleWrap: { paddingTop: 12, alignItems: 'center' },
   handle: { width: 64, height: 5, borderRadius: 1234, backgroundColor: '#E2E8F0' },
-  sheet: { paddingHorizontal: 16, paddingTop: 24, paddingBottom: 16, gap: 16 },
+  // 하단 버튼 ~ 시트 하단: DS 원칙 24px(+ safe-area). BottomSheet 공통과 일치.
+  sheet: { paddingHorizontal: 16, paddingTop: 24, paddingBottom: 24, gap: 16 },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
