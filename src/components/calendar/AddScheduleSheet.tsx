@@ -437,7 +437,10 @@ export function AddScheduleSheet({
                     </View>
                   )}
 
-                  <View style={styles.calSpacer} />
+                  {/* Figma 122:8031 — 캘린더 위 "시간표" 섹션 라벨 */}
+                  <Text style={[styles.fieldLabel, { marginTop: 24 }]}>
+                    시간표
+                  </Text>
                   <WeekCalendar
                     selectedDate={date}
                     onSelectDate={(d) => {
@@ -707,7 +710,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
 
-  calSpacer: { height: 16 },
 
   // 높이 고정(슬롯 ~3행 기준) → 시트 전체 높이 불변. 넘치면 내부 스크롤.
   slotSection: { marginTop: 16, height: 156 },
