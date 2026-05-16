@@ -605,7 +605,8 @@ const styles = StyleSheet.create({
   locInnerImg: { width: 34, height: 34 },
   // 필터 적용중 — 좌측 X(초기화) + 우측 텍스트+아이콘(설정), 하나의 알약처럼 보이는 통합 View
   fabFilterPill: {
-    height: 40,
+    // 둥근 FAB(44)와 동일 높이 — 필터 적용/미적용 시 컬럼 y 어긋남 방지
+    height: 44,
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 9999,
