@@ -96,27 +96,8 @@ export function AddScheduleSheet({
   const [phase, setPhase] = React.useState<'form' | 'done'>('form');
   const [poolOpen, setPoolOpen] = React.useState(false);
   const [poolQuery, setPoolQuery] = React.useState('');
-  // 자동완성 float — 트리거 위치 측정해 Modal 오버레이로 띄움(레이아웃
-  // 안 밀림 + 터치 정상). 검색창은 열릴 때 자동 포커스.
-  const triggerRef = React.useRef<View>(null);
+  // 수영장 검색창 ref — 열릴 때 자동 포커스(in-flow라 키보드까지 안정적).
   const searchInputRef = React.useRef<TextInput>(null);
-  const [anchor, setAnchor] = React.useState<{
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-  } | null>(null);
-  const openPoolSearch = React.useCallback(() => {
-    const node = triggerRef.current;
-    if (!node) {
-      setPoolOpen(true);
-      return;
-    }
-    node.measureInWindow((x, y, w, h) => {
-      setAnchor({ x, y, w, h });
-      setPoolOpen(true);
-    });
-  }, []);
   React.useEffect(() => {
     if (!poolOpen) return;
     const t = setTimeout(() => searchInputRef.current?.focus(), 60);
@@ -340,124 +321,88 @@ export function AddScheduleSheet({
                 >
                   {/* 수영장 드롭다운 */}
                   <Text style={styles.fieldLabel}>수영장</Text>
-                  {/* 트리거는 항상 흐름에 고정 — 검색+리스트는 트리거 좌표를
-                      측정해 Modal 오버레이로 float(레이아웃 안 밀림, 터치 정상,
-                      클리핑 없음). 검색창은 열릴 때 자동 포커스. */}
-                  <Pressable
-                    ref={triggerRef}
-                    onPress={openPoolSearch}
-                    style={styles.dropdown}
-                  >
-                    <Text
-                      style={[
-                        styles.dropdownText,
-                        !selectedPool && styles.dropdownPlaceholder,
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {selectedPool ? selectedPool.name : '수영장 이름'}
-                    </Text>
-                    <IconChevronDown width={20} height={20} />
-                  </Pressable>
-
-                  <Modal
-                    visible={poolOpen}
-                    transparent
-                    animationType="fade"
-                    onRequestClose={() => setPoolOpen(false)}
-                    onShow={() => {
-                      // 모달이 실제 표시된 뒤 포커스해야 키보드까지 올라옴
-                      // (Android Modal 내 TextInput은 mount 직후 focus만으론
-                      // 소프트키보드가 안 뜨는 경우가 있어 onShow에서 재포커스).
-                      setTimeout(() => searchInputRef.current?.focus(), 50);
-                    }}
-                  >
+                  {/* Figma 122:7490 — 닫힘: 트리거 / 열림: 검색+리스트 카드.
+                      인-플로우 렌더(중첩 Modal float은 Android에서 위치·키보드
+                      깨져 폐기). 시트 높이는 슬롯 영역 고정으로 안정. */}
+                  {!poolOpen ? (
                     <Pressable
-                      style={styles.poolOverlay}
-                      onPress={() => setPoolOpen(false)}
-                    />
-                    <View
-                      style={[
-                        styles.poolFloat,
-                        anchor
-                          ? {
-                              top: anchor.y + anchor.h,
-                              left: anchor.x,
-                              width: anchor.w,
-                            }
-                          : { top: 140, left: 16, right: 16 },
-                      ]}
+                      onPress={() => setPoolOpen(true)}
+                      style={styles.dropdown}
                     >
-                      <View style={styles.dropdownList}>
-                        <View style={styles.searchBox}>
-                          {/* RN Android는 placeholder 커스텀폰트 미적용 →
-                              빈 값일 때 Text 오버레이로 고정 */}
-                          <View style={styles.searchInputWrap}>
-                            <TextInput
-                              ref={searchInputRef}
-                              autoFocus
-                              value={poolQuery}
-                              onChangeText={setPoolQuery}
-                              style={styles.searchInput}
-                            />
-                            {poolQuery.length === 0 ? (
-                              <Text
-                                style={styles.searchPlaceholder}
-                                pointerEvents="none"
-                              >
-                                수영장 이름
-                              </Text>
-                            ) : null}
-                          </View>
-                          {/* Figma 147:5413 — 입력값 있을 때만 clear 노출 */}
-                          {poolQuery.length > 0 ? (
-                            <Pressable
-                              onPress={() => setPoolQuery('')}
-                              hitSlop={8}
-                              accessibilityRole="button"
-                              accessibilityLabel="검색어 지우기"
+                      <Text
+                        style={[
+                          styles.dropdownText,
+                          !selectedPool && styles.dropdownPlaceholder,
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {selectedPool ? selectedPool.name : '수영장 이름'}
+                      </Text>
+                      <IconChevronDown width={20} height={20} />
+                    </Pressable>
+                  ) : (
+                    <View style={styles.dropdownList}>
+                      <View style={styles.searchBox}>
+                        {/* RN Android placeholder 커스텀폰트 미적용 →
+                            빈 값일 때 Text 오버레이로 고정 */}
+                        <View style={styles.searchInputWrap}>
+                          <TextInput
+                            ref={searchInputRef}
+                            autoFocus
+                            value={poolQuery}
+                            onChangeText={setPoolQuery}
+                            style={styles.searchInput}
+                          />
+                          {poolQuery.length === 0 ? (
+                            <Text
+                              style={styles.searchPlaceholder}
+                              pointerEvents="none"
                             >
-                              <XCircle
-                                size={20}
-                                color="#94A3B8"
-                                strokeWidth={2}
-                              />
-                            </Pressable>
+                              수영장 이름
+                            </Text>
                           ) : null}
                         </View>
-                        <ScrollView
-                          style={styles.optionScroll}
-                          contentContainerStyle={styles.optionListContent}
-                          nestedScrollEnabled
-                          keyboardShouldPersistTaps="always"
-                        >
-                          {filteredPools.map((p) => (
-                            <Pressable
-                              key={p.id}
-                              onPress={() => {
-                                setPoolId(p.id);
-                                setSlotIdx(null);
-                                setPoolOpen(false);
-                              }}
-                              style={styles.optionItem}
-                            >
-                              <Text
-                                style={styles.optionText}
-                                numberOfLines={1}
-                              >
-                                {p.name}
-                              </Text>
-                            </Pressable>
-                          ))}
-                          {filteredPools.length === 0 && (
-                            <Text style={styles.emptyText}>
-                              검색 결과가 없어요.
-                            </Text>
-                          )}
-                        </ScrollView>
+                        {/* Figma 147:5413 — 입력값 있을 때만 clear 노출 */}
+                        {poolQuery.length > 0 ? (
+                          <Pressable
+                            onPress={() => setPoolQuery('')}
+                            hitSlop={8}
+                            accessibilityRole="button"
+                            accessibilityLabel="검색어 지우기"
+                          >
+                            <XCircle size={20} color="#94A3B8" strokeWidth={2} />
+                          </Pressable>
+                        ) : null}
                       </View>
+                      <ScrollView
+                        style={styles.optionScroll}
+                        contentContainerStyle={styles.optionListContent}
+                        nestedScrollEnabled
+                        keyboardShouldPersistTaps="always"
+                      >
+                        {filteredPools.map((p) => (
+                          <Pressable
+                            key={p.id}
+                            onPress={() => {
+                              setPoolId(p.id);
+                              setSlotIdx(null);
+                              setPoolOpen(false);
+                            }}
+                            style={styles.optionItem}
+                          >
+                            <Text style={styles.optionText} numberOfLines={1}>
+                              {p.name}
+                            </Text>
+                          </Pressable>
+                        ))}
+                        {filteredPools.length === 0 && (
+                          <Text style={styles.emptyText}>
+                            검색 결과가 없어요.
+                          </Text>
+                        )}
+                      </ScrollView>
                     </View>
-                  </Modal>
+                  )}
 
                   <View style={styles.calSpacer} />
                   <WeekCalendar
@@ -701,9 +646,6 @@ const styles = StyleSheet.create({
     color: '#4B5563',
     includeFontPadding: false,
   },
-  // 자동완성 float (Modal 오버레이) — 트리거 좌표 기준 absolute 배치.
-  poolOverlay: { ...StyleSheet.absoluteFillObject },
-  poolFloat: { position: 'absolute' },
   // 결과 수와 무관하게 카드 높이 일정 — maxHeight면 1개일 때 높이가
   // 틀어져서 고정 height 사용(0/1/N개 모두 동일).
   optionScroll: { height: 220 },
