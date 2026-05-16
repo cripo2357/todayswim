@@ -68,6 +68,23 @@ export function ScheduleViewScreen() {
   const groups = schedule?.slotGroups?.[selectedDay];
   const hasGroups = !!groups && groups.length > 0;
 
+  // 시즌 노출 규칙: 그 달 적용 그룹 ≠ 다음 달 적용 그룹이면 "전환 직전 달"
+  // (KBS=5월·9월) → 두 시즌 다 노출(미리보기). 그 외 달은 해당 시즌 그룹만.
+  // months 정보가 불완전하면(한 그룹이라도 없음) 판별 불가 → 안전하게 전체 노출.
+  const visibleGroups = React.useMemo(() => {
+    if (!groups || groups.length === 0) return groups;
+    const allHaveMonths = groups.every(
+      (g) => Array.isArray(g.months) && g.months.length > 0,
+    );
+    if (!allHaveMonths) return groups;
+    const m = new Date().getMonth() + 1;
+    const next = (m % 12) + 1;
+    const cur = groups.find((g) => g.months?.includes(m));
+    const nxt = groups.find((g) => g.months?.includes(next));
+    if (!cur) return groups; // 현재 월 커버 그룹 없음 → 전체
+    return cur === nxt ? [cur] : groups; // 같으면 현재 시즌만, 다르면(전환달) 둘 다
+  }, [groups]);
+
   // 풀 전체에 시즌제(slot_groups) 운영이 한 요일이라도 있으면 = 시즌제 풀.
   // 수정 제안 플로우(ScheduleWrite/draft)는 slot_groups 미지원 →
   // 시즌제 풀에서는 "수정 제안하기" 버튼 미노출(잘못 덮어쓰기 방지).
@@ -205,7 +222,7 @@ export function ScheduleViewScreen() {
           {slots.length === 0 && !hasGroups ? (
             <Text style={styles.empty}>{selectedDay}요일에는 자유수영이 없습니다.</Text>
           ) : hasGroups ? (
-            (groups ?? []).map((g, gi) => (
+            (visibleGroups ?? []).map((g, gi) => (
               <View key={gi} style={styles.slotGroup}>
                 {g.label ? (
                   <Text style={styles.groupLabel}>{g.label}</Text>
