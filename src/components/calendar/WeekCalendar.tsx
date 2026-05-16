@@ -33,6 +33,7 @@ export function WeekCalendar({
   markedKeys,
   minDate,
   maxDate,
+  headerDivider,
 }: {
   selectedDate: Date;
   onSelectDate: (d: Date) => void;
@@ -41,6 +42,8 @@ export function WeekCalendar({
   /** 선택 가능 최소/최대 날짜 (없으면 무제한). 등록 캘린더에서만 사용. */
   minDate?: Date;
   maxDate?: Date;
+  /** 헤더(오늘·월·화살표) 위아래 구분선 + 패딩. 등록 시트 전용 (Figma 122:8139). */
+  headerDivider?: boolean;
 }) {
   const minMs = minDate ? floorDay(minDate).getTime() : undefined;
   const maxMs = maxDate ? floorDay(maxDate).getTime() : undefined;
@@ -93,7 +96,7 @@ export function WeekCalendar({
 
   return (
     <View style={styles.wrap}>
-      <View style={styles.headerRow}>
+      <View style={[styles.headerRow, headerDivider && styles.headerDivider]}>
         <Pressable onPress={goToday} hitSlop={8} style={styles.todayBtn}>
           <Text style={styles.todayLabel}>오늘</Text>
         </Pressable>
@@ -187,6 +190,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  // Figma 122:8139 — 등록 시트: 헤더 위아래 #E2E8F0 구분선 + px8 py16
+  headerDivider: {
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 8,
+    paddingVertical: 16,
   },
   todayBtn: { minWidth: 36 },
   todayLabel: {

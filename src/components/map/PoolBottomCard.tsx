@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { Button } from '@/components/ui/Button';
+import { Tooltip } from '@/components/ui/Tooltip';
 import type { Pool } from '@/types/pool';
 import { tokens } from '@/styles/tokens';
 import Swimmer from '@assets/icons/swimmer.svg';
@@ -27,22 +28,8 @@ interface Props {
 
 type TipId = 'lane' | 'length' | 'depth' | 'kids' | 'diving' | 'hotel';
 
-/**
- * Figma 93:10597 풀 카드. 5초 자동 숨김 툴팁 + 라벨은 stat/chip 위에 떠 있는 형태.
- * Stat과 chip의 라벨은 카드에 평소엔 숨겨져 있고, 탭하면 흰 배경 툴팁으로 5초간 표시.
- */
-function Tooltip({ label }: { label: string }) {
-  return (
-    <View style={styles.tooltip} pointerEvents="none">
-      <View style={styles.tooltipBody}>
-        <Text style={styles.tooltipText} numberOfLines={1}>
-          {label}
-        </Text>
-      </View>
-      <View style={styles.tooltipTail} />
-    </View>
-  );
-}
+// Figma 93:10597 풀 카드. stat/chip 라벨은 평소 숨김, 탭하면 공통 Tooltip(147:5763)
+// 으로 5초간 표시. styles.tooltip = 아이콘 위 절대 위치만 담당(말풍선은 공통 컴포넌트).
 
 export function PoolBottomCard({
   pool,
@@ -97,7 +84,7 @@ export function PoolBottomCard({
               accessibilityLabel="레인수"
               hitSlop={4}
             >
-              {activeTip === 'lane' ? <Tooltip label="레인수" /> : null}
+              {activeTip === 'lane' ? <Tooltip label="레인수" style={styles.tooltip} /> : null}
               <Swimmer width={20} height={20} />
               <Text style={styles.statValue}>{pool.laneCount}레인</Text>
             </Pressable>
@@ -110,7 +97,7 @@ export function PoolBottomCard({
               accessibilityLabel="레인 길이"
               hitSlop={4}
             >
-              {activeTip === 'length' ? <Tooltip label="레인 길이" /> : null}
+              {activeTip === 'length' ? <Tooltip label="레인 길이" style={styles.tooltip} /> : null}
               <ArrowH width={20} height={20} />
               <Text style={styles.statValue}>{pool.poolLength}m</Text>
             </Pressable>
@@ -123,7 +110,7 @@ export function PoolBottomCard({
               accessibilityLabel="수심"
               hitSlop={4}
             >
-              {activeTip === 'depth' ? <Tooltip label="수심" /> : null}
+              {activeTip === 'depth' ? <Tooltip label="수심" style={styles.tooltip} /> : null}
               <IconDepth width={20} height={20} />
               <Text style={styles.statValue}>
                 {pool.depthMin === pool.depthMax
@@ -143,7 +130,7 @@ export function PoolBottomCard({
                   accessibilityLabel="유아풀"
                   hitSlop={4}
                 >
-                  {activeTip === 'kids' ? <Tooltip label="유아풀" /> : null}
+                  {activeTip === 'kids' ? <Tooltip label="유아풀" style={styles.tooltip} /> : null}
                   <IconKids width={16} height={16} />
                 </Pressable>
               ) : null}
@@ -155,7 +142,7 @@ export function PoolBottomCard({
                   accessibilityLabel="다이빙풀"
                   hitSlop={4}
                 >
-                  {activeTip === 'diving' ? <Tooltip label="다이빙풀" /> : null}
+                  {activeTip === 'diving' ? <Tooltip label="다이빙풀" style={styles.tooltip} /> : null}
                   <IconDiving width={16} height={16} />
                 </Pressable>
               ) : null}
@@ -167,7 +154,7 @@ export function PoolBottomCard({
                   accessibilityLabel="호텔"
                   hitSlop={4}
                 >
-                  {activeTip === 'hotel' ? <Tooltip label="호텔" /> : null}
+                  {activeTip === 'hotel' ? <Tooltip label="호텔" style={styles.tooltip} /> : null}
                   <IconHotel width={16} height={16} />
                 </Pressable>
               ) : null}
@@ -298,7 +285,8 @@ const styles = StyleSheet.create({
     ...tokens.shadow.lg,
   },
 
-  // 툴팁 — stat/chip 위에 떠 있음. wrapper width 200 + ml -100으로 가운데 정렬.
+  // 공통 Tooltip 위치만 지정 — stat/chip 위 가운데(wrapper width 200 + ml -100).
+  // 말풍선 시각은 @/components/ui/Tooltip (Figma 147:5763).
   tooltip: {
     position: 'absolute',
     bottom: '100%',
@@ -306,37 +294,7 @@ const styles = StyleSheet.create({
     left: 10,         // icon center (icon width 20 → center=10)
     marginLeft: -100, // wrapper width 절반
     width: 200,
-    alignItems: 'center',
     zIndex: 10,
-  },
-  tooltipBody: {
-    backgroundColor: tokens.color.white,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  tooltipText: {
-    fontSize: 11,
-    lineHeight: 14,
-    letterSpacing: -0.04,
-    fontFamily: tokens.font.sansBold,
-    color: '#1F2937',
-    textAlign: 'center',
-  },
-  tooltipTail: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 6,
-    borderRightWidth: 6,
-    borderTopWidth: 6,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderTopColor: tokens.color.white,
   },
 
   // 'impossible' / 'no_schedule' 공통 disabled CTA

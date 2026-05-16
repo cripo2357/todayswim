@@ -18,9 +18,9 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import { X } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { tokens } from '@/styles/tokens';
+import { SheetCloseButton } from './SheetCloseButton';
 
 const SCREEN_H = Dimensions.get('window').height;
 
@@ -80,14 +80,7 @@ export function BottomSheet({
               {title != null ? (
                 <View style={styles.titleRow}>
                   <Text style={styles.title}>{title}</Text>
-                  <Pressable
-                    onPress={onClose}
-                    hitSlop={8}
-                    accessibilityRole="button"
-                    accessibilityLabel="닫기"
-                  >
-                    <X size={24} color={tokens.color.ink900} strokeWidth={1.5} />
-                  </Pressable>
+                  <SheetCloseButton onPress={onClose} />
                 </View>
               ) : null}
               {children}

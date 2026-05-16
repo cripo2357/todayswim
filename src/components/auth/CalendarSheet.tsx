@@ -6,11 +6,12 @@ import {
   View, Text, StyleSheet, Pressable, Modal, Animated, Dimensions,
   ScrollView, NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import IconCalendar from '@assets/icons/calendar-form.svg';
 import IconMoon from '@assets/icons/moon.svg';
 import { tokens } from '@/styles/tokens';
+import { SheetCloseButton } from '@/components/ui/SheetCloseButton';
 
 interface Props {
   visible: boolean;
@@ -138,9 +139,7 @@ export function CalendarSheet({ visible, initial, onConfirm, onClose }: Props) {
             <View style={styles.sheet}>
               <View style={styles.titleRow}>
                 <Text style={styles.title}>달력</Text>
-                <Pressable onPress={close} hitSlop={8}>
-                  <X size={24} color={tokens.color.ink900} strokeWidth={1.5} />
-                </Pressable>
+                <SheetCloseButton onPress={close} />
               </View>
 
               <View style={styles.divider} />
@@ -311,9 +310,7 @@ function YearMonthSheet({
             <View style={styles.sheet}>
               <View style={styles.titleRow}>
                 <Text style={styles.title}>연도와 월</Text>
-                <Pressable onPress={close} hitSlop={8}>
-                  <X size={24} color={tokens.color.ink900} strokeWidth={1.5} />
-                </Pressable>
+                <SheetCloseButton onPress={close} />
               </View>
 
               <View style={styles.ymRow}>

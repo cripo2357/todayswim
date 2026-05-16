@@ -10,7 +10,7 @@ import {
   Dimensions, ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { X, Check, Calendar as LucideCalendar, XCircle, Mail } from 'lucide-react-native';
+import { Check, Calendar as LucideCalendar, Mail } from 'lucide-react-native';
 import IconChevronDown from '@assets/icons/chevron-down.svg';
 import { usePools } from '@/hooks/usePools';
 import { useSchedules } from '@/hooks/useSchedules';
@@ -33,8 +33,10 @@ import { tokens } from '@/styles/tokens';
 import { navigationRef } from '@/navigation/navigationRef';
 import { MOCK_FRIENDS } from '@/lib/mockData';
 import ScheduleCompleteIllust from '@assets/illustrations/schedule-complete.svg';
+import { Tooltip } from '@/components/ui/Tooltip';
+import { SheetCloseButton } from '@/components/ui/SheetCloseButton';
+import { SearchInput } from '@/components/ui/SearchInput';
 import { WeekCalendar } from './WeekCalendar';
-import { ConflictTooltip } from './ConflictTooltip';
 
 const SCREEN_H = Dimensions.get('window').height;
 const DOW: DayOfWeek[] = ['일', '월', '화', '수', '목', '금', '토'];
@@ -342,9 +344,7 @@ export function AddScheduleSheet({
               <View style={styles.sheet}>
                 <View style={styles.titleRow}>
                   <Text style={styles.title}>수영 일정 추가</Text>
-                  <Pressable onPress={close} hitSlop={8}>
-                    <X size={24} color={tokens.color.ink900} strokeWidth={1.5} />
-                  </Pressable>
+                  <SheetCloseButton onPress={close} />
                 </View>
 
                 <ScrollView
@@ -375,38 +375,13 @@ export function AddScheduleSheet({
                     </Pressable>
                   ) : (
                     <View style={styles.dropdownList}>
-                      <View style={styles.searchBox}>
-                        {/* RN Android placeholder 커스텀폰트 미적용 →
-                            빈 값일 때 Text 오버레이로 고정 */}
-                        <View style={styles.searchInputWrap}>
-                          <TextInput
-                            ref={searchInputRef}
-                            autoFocus
-                            value={poolQuery}
-                            onChangeText={setPoolQuery}
-                            style={styles.searchInput}
-                          />
-                          {poolQuery.length === 0 ? (
-                            <Text
-                              style={styles.searchPlaceholder}
-                              pointerEvents="none"
-                            >
-                              수영장 이름
-                            </Text>
-                          ) : null}
-                        </View>
-                        {/* Figma 147:5413 — 입력값 있을 때만 clear 노출 */}
-                        {poolQuery.length > 0 ? (
-                          <Pressable
-                            onPress={() => setPoolQuery('')}
-                            hitSlop={8}
-                            accessibilityRole="button"
-                            accessibilityLabel="검색어 지우기"
-                          >
-                            <XCircle size={20} color="#94A3B8" strokeWidth={2} />
-                          </Pressable>
-                        ) : null}
-                      </View>
+                      <SearchInput
+                        ref={searchInputRef}
+                        value={poolQuery}
+                        onChangeText={setPoolQuery}
+                        placeholder="수영장 이름"
+                        autoFocus
+                      />
                       <ScrollView
                         style={styles.optionScroll}
                         contentContainerStyle={styles.optionListContent}
@@ -450,6 +425,7 @@ export function AddScheduleSheet({
                     }}
                     minDate={calMin}
                     maxDate={calMax}
+                    headerDivider
                   />
 
                   {/* 시간 슬롯 — 영역 높이 고정(슬롯 수·풀 선택 여부와 무관)
@@ -494,7 +470,7 @@ export function AddScheduleSheet({
                               ]}
                             >
                               {tipIdx === i ? (
-                                <ConflictTooltip
+                                <Tooltip
                                   label={tipText}
                                   style={styles.slotTip}
                                 />
@@ -647,45 +623,10 @@ const styles = StyleSheet.create({
     gap: 4,
     ...tokens.shadow.lg,
   },
-  // Figma 5626:22413 — 검색칸: bg #F8FAFC, 알약(rounded-full), minH40, p8, 아이콘 없음
-  searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    minHeight: 40,
-    padding: 8,
-    borderRadius: 9999,
-    backgroundColor: '#F8FAFC',
-  },
-  searchInputWrap: { flex: 1, justifyContent: 'center' },
-  // Figma 5626:21974 — Medium 16/22 -0.112 #4B5563
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    lineHeight: 22,
-    letterSpacing: -0.112,
-    fontFamily: tokens.font.sansMedium,
-    color: '#4B5563',
-    padding: 0,
-  },
-  // RN Android placeholder 커스텀 폰트 미적용 회피 — 빈 값 시 Text 오버레이.
-  searchPlaceholder: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    textAlignVertical: 'center',
-    fontSize: 16,
-    lineHeight: 22,
-    letterSpacing: -0.112,
-    fontFamily: tokens.font.sansMedium,
-    color: '#4B5563',
-    includeFontPadding: false,
-  },
   // 결과 수와 무관하게 카드 높이 일정 — maxHeight면 1개일 때 높이가
   // 틀어져서 고정 height 사용(0/1/N개 모두 동일).
-  optionScroll: { height: 220 },
+  // 4개 노출(아이템 minH40 + gap4 → 4*40 + 3*4 ≈ 172, 살짝 여유 176).
+  optionScroll: { height: 176 },
   optionListContent: { gap: 4 },
   // Figma 5626:22473 — 아이템: 알약, minH40, p8 (선택 시 강조는 Phase 2)
   optionItem: {

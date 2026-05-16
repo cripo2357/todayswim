@@ -6,9 +6,9 @@ import {
   View, Text, StyleSheet, Pressable, Modal, ScrollView, Animated, Dimensions,
   NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
-import { X } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { tokens } from '@/styles/tokens';
+import { SheetCloseButton } from '@/components/ui/SheetCloseButton';
 import IconChevronDownCircle from '@assets/icons/chevron-down-circle.svg';
 
 const ROW_HEIGHT = 52;
@@ -63,9 +63,7 @@ export function SingleWheelSheet({
             <View style={styles.sheet}>
               <View style={styles.titleRow}>
                 <Text style={styles.title}>{title}</Text>
-                <Pressable onPress={close} hitSlop={8} style={styles.closeBtn}>
-                  <X size={24} color={tokens.color.ink900} strokeWidth={1.5} />
-                </Pressable>
+                <SheetCloseButton onPress={close} style={styles.closeBtn} />
               </View>
 
               <View style={styles.singleWheelRow}>
@@ -148,9 +146,7 @@ export function DualWheelSheet({
             <View style={styles.sheet}>
               <View style={styles.titleRow}>
                 <Text style={styles.title}>{title}</Text>
-                <Pressable onPress={close} hitSlop={8} style={styles.closeBtn}>
-                  <X size={24} color={tokens.color.ink900} strokeWidth={1.5} />
-                </Pressable>
+                <SheetCloseButton onPress={close} style={styles.closeBtn} />
               </View>
 
               <View style={styles.dualWheelRow}>

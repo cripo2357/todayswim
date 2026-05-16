@@ -1,6 +1,10 @@
-// 충돌 슬롯 안내 툴팁 — Figma 147:5763. 흰 버블(Bold 10/14 #1F2937,
-// rounded 8, Shadow/lg) + 아래쪽 화살표. 슬롯 위에 absolute로 띄워 사용.
-// pointerEvents none — 아래 슬롯 탭을 가리지 않음.
+// 공통 툴팁 디자인시스템 — Figma 147:5763.
+// 흰 버블(Bold 10/14 #1F2937, rounded 8, Shadow/lg) + 아래쪽 16x8 화살표.
+// 대상 위에 띄워 사용 — 위치(position:absolute 등)는 호출부에서 style prop으로.
+// pointerEvents none → 아래 요소 탭을 가리지 않음.
+//
+// 사용: <Tooltip label="..." style={styles.포지셔닝} />
+// 풀 카드 stat/chip 라벨, 일정 충돌 안내 등 "어디서든 말풍선" 시 재사용.
 
 import React from 'react';
 import {
@@ -12,11 +16,12 @@ import {
 } from 'react-native';
 import { tokens } from '@/styles/tokens';
 
-export function ConflictTooltip({
+export function Tooltip({
   label,
   style,
 }: {
   label: string;
+  /** 위치 지정 등 래퍼 추가 스타일 (보통 position:absolute) */
   style?: StyleProp<ViewStyle>;
 }) {
   return (
@@ -31,6 +36,7 @@ export function ConflictTooltip({
 
 const styles = StyleSheet.create({
   wrap: { alignItems: 'center' },
+  // Figma I147:5763;1270:15177 — 흰 버블 r8 px8 py6 + Shadow/lg
   bubble: {
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
@@ -38,6 +44,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     ...tokens.shadow.lg,
   },
+  // Figma I147:5763;1270:15179 — Bold 10/14 tracking -0.04 #1F2937 center
   text: {
     fontSize: 10,
     lineHeight: 14,
@@ -46,7 +53,7 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     textAlign: 'center',
   },
-  // 아래로 향하는 16x8 흰 삼각형 (Figma I147:5763;5567:11060 화살표 대체)
+  // Figma I147:5763;5567:11060 — 아래로 향하는 16x8 흰 삼각형
   arrow: {
     width: 0,
     height: 0,

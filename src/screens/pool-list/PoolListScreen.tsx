@@ -14,6 +14,7 @@ import IconFilter from '@assets/icons/filter.svg';
 
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { AppHeader } from '@/components/layout/AppHeader';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { usePools } from '@/hooks/usePools';
 import { useSchedules } from '@/hooks/useSchedules';
 import { useGeolocation } from '@/hooks/useGeolocation';
@@ -219,19 +220,8 @@ function formatDistance(km: number): string {
 
 type TipId = 'lane' | 'length' | 'depth' | 'kids' | 'diving' | 'hotel';
 
-/** 5초 자동 숨김 툴팁 — PoolBottomCard와 동일 디자인. */
-function Tooltip({ label }: { label: string }) {
-  return (
-    <View style={styles.tooltip} pointerEvents="none">
-      <View style={styles.tooltipBody}>
-        <Text style={styles.tooltipText} numberOfLines={1}>
-          {label}
-        </Text>
-      </View>
-      <View style={styles.tooltipTail} />
-    </View>
-  );
-}
+// stat/chip 라벨 툴팁은 공통 @/components/ui/Tooltip(Figma 147:5763) 사용.
+// styles.tooltip = 아이콘 위 절대 위치만 담당.
 
 /** 풀 목록 카드 — PoolBottomCard와 유사 레이아웃 + 2개 CTA (시간표 + 지도에서 보기). */
 function PoolListCard({
@@ -294,7 +284,7 @@ function PoolListCard({
               accessibilityLabel="레인수"
               hitSlop={4}
             >
-              {activeTip === 'lane' ? <Tooltip label="레인수" /> : null}
+              {activeTip === 'lane' ? <Tooltip label="레인수" style={styles.tooltip} /> : null}
               <Swimmer width={20} height={20} />
               <Text style={styles.statValue}>{pool.laneCount}레인</Text>
             </Pressable>
@@ -307,7 +297,7 @@ function PoolListCard({
               accessibilityLabel="레인 길이"
               hitSlop={4}
             >
-              {activeTip === 'length' ? <Tooltip label="레인 길이" /> : null}
+              {activeTip === 'length' ? <Tooltip label="레인 길이" style={styles.tooltip} /> : null}
               <ArrowH width={20} height={20} />
               <Text style={styles.statValue}>{pool.poolLength}m</Text>
             </Pressable>
@@ -320,7 +310,7 @@ function PoolListCard({
               accessibilityLabel="수심"
               hitSlop={4}
             >
-              {activeTip === 'depth' ? <Tooltip label="수심" /> : null}
+              {activeTip === 'depth' ? <Tooltip label="수심" style={styles.tooltip} /> : null}
               <IconDepth width={20} height={20} />
               <Text style={styles.statValue}>
                 {pool.depthMin === pool.depthMax
@@ -340,7 +330,7 @@ function PoolListCard({
                   accessibilityLabel="유아풀"
                   hitSlop={4}
                 >
-                  {activeTip === 'kids' ? <Tooltip label="유아풀" /> : null}
+                  {activeTip === 'kids' ? <Tooltip label="유아풀" style={styles.tooltip} /> : null}
                   <IconKids width={16} height={16} />
                 </Pressable>
               ) : null}
@@ -352,7 +342,7 @@ function PoolListCard({
                   accessibilityLabel="다이빙풀"
                   hitSlop={4}
                 >
-                  {activeTip === 'diving' ? <Tooltip label="다이빙풀" /> : null}
+                  {activeTip === 'diving' ? <Tooltip label="다이빙풀" style={styles.tooltip} /> : null}
                   <IconDiving width={16} height={16} />
                 </Pressable>
               ) : null}
@@ -364,7 +354,7 @@ function PoolListCard({
                   accessibilityLabel="호텔"
                   hitSlop={4}
                 >
-                  {activeTip === 'hotel' ? <Tooltip label="호텔" /> : null}
+                  {activeTip === 'hotel' ? <Tooltip label="호텔" style={styles.tooltip} /> : null}
                   <IconHotel width={16} height={16} />
                 </Pressable>
               ) : null}
@@ -547,7 +537,7 @@ const styles = StyleSheet.create({
     ...tokens.shadow.lg,
   },
 
-  // 툴팁 — PoolBottomCard와 동일 스타일.
+  // 공통 Tooltip 위치만 지정 — 아이콘 위 가운데(말풍선 시각은 ui/Tooltip).
   tooltip: {
     position: 'absolute',
     bottom: '100%',
@@ -555,37 +545,7 @@ const styles = StyleSheet.create({
     left: 10,
     marginLeft: -100,
     width: 200,
-    alignItems: 'center',
     zIndex: 10,
-  },
-  tooltipBody: {
-    backgroundColor: tokens.color.white,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  tooltipText: {
-    fontSize: 11,
-    lineHeight: 14,
-    letterSpacing: -0.04,
-    fontFamily: tokens.font.sansBold,
-    color: '#1F2937',
-    textAlign: 'center',
-  },
-  tooltipTail: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 6,
-    borderRightWidth: 6,
-    borderTopWidth: 6,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderTopColor: tokens.color.white,
   },
 
   // 2개 CTA — Figma 103:2795 gap 16
