@@ -68,6 +68,15 @@ export function ScheduleViewScreen() {
   const groups = schedule?.slotGroups?.[selectedDay];
   const hasGroups = !!groups && groups.length > 0;
 
+  // 풀 전체에 시즌제(slot_groups) 운영이 한 요일이라도 있으면 = 시즌제 풀.
+  // 수정 제안 플로우(ScheduleWrite/draft)는 slot_groups 미지원 →
+  // 시즌제 풀에서는 "수정 제안하기" 버튼 미노출(잘못 덮어쓰기 방지).
+  const isSeasonalPool =
+    !!schedule?.slotGroups &&
+    Object.values(schedule.slotGroups).some(
+      (g) => Array.isArray(g) && g.length > 0,
+    );
+
   // 칩 2열을 슬롯 영역 폭에 "딱 맞게" — 영역폭 실측 후
   // 칩폭 = floor((영역폭 − 가운데여백) / 2). floor로 합이 영역폭을
   // 넘지 않게 해 1열로 무너지는 것 방지. 가운데 여백은 Figma 10 유지.
@@ -237,25 +246,28 @@ export function ScheduleViewScreen() {
           )}
         </ScrollView>
 
-        {/* Figma 101:5902 — pd-blue 텍스트 + 렌치 아이콘, 보더/bg 없음 */}
-        <Pressable
-          onPress={() => {
-            // 기존 시간표를 base로 draft 초기화 → 사용자가 수정 시작점으로
-            if (schedule) {
-              initFromSchedule(poolId, {
-                byDay: schedule.byDay,
-                dayNotes: schedule.dayNotes,
-              });
-            }
-            navigation.navigate('ScheduleWrite', { poolId });
-          }}
-          style={({ pressed }) => [styles.editBtn, pressed && { opacity: 0.6 }]}
-          accessibilityRole="button"
-          accessibilityLabel="자유수영 시간표 수정 제안하기"
-        >
-          <IconWrench width={20} height={20} />
-          <Text style={styles.editLabel}>자유수영 시간표 수정 제안하기</Text>
-        </Pressable>
+        {/* Figma 101:5902 — pd-blue 텍스트 + 렌치 아이콘, 보더/bg 없음.
+            시즌제(slot_groups) 풀은 수정 제안 플로우 미지원 → 버튼 미노출. */}
+        {!isSeasonalPool ? (
+          <Pressable
+            onPress={() => {
+              // 기존 시간표를 base로 draft 초기화 → 사용자가 수정 시작점으로
+              if (schedule) {
+                initFromSchedule(poolId, {
+                  byDay: schedule.byDay,
+                  dayNotes: schedule.dayNotes,
+                });
+              }
+              navigation.navigate('ScheduleWrite', { poolId });
+            }}
+            style={({ pressed }) => [styles.editBtn, pressed && { opacity: 0.6 }]}
+            accessibilityRole="button"
+            accessibilityLabel="자유수영 시간표 수정 제안하기"
+          >
+            <IconWrench width={20} height={20} />
+            <Text style={styles.editLabel}>자유수영 시간표 수정 제안하기</Text>
+          </Pressable>
+        ) : null}
       </View>
     </ModalCard>
   );
