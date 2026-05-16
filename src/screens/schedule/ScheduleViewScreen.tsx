@@ -16,6 +16,7 @@ import { dateKey } from '@/store/swimSchedule';
 import { useAddScheduleIntent } from '@/store/addScheduleIntent';
 import type { RootStackParamList } from '@/navigation/types';
 import { isAnonNickname, type DayOfWeek, type TimeSlot } from '@/types/schedule';
+import { visibleSeasonGroups } from '@/lib/seasonSchedule';
 import { tokens } from '@/styles/tokens';
 
 const DAYS: DayOfWeek[] = ['월', '화', '수', '목', '금', '토', '일'];
@@ -68,22 +69,13 @@ export function ScheduleViewScreen() {
   const groups = schedule?.slotGroups?.[selectedDay];
   const hasGroups = !!groups && groups.length > 0;
 
-  // 시즌 노출 규칙: 그 달 적용 그룹 ≠ 다음 달 적용 그룹이면 "전환 직전 달"
-  // (KBS=5월·9월) → 두 시즌 다 노출(미리보기). 그 외 달은 해당 시즌 그룹만.
-  // months 정보가 불완전하면(한 그룹이라도 없음) 판별 불가 → 안전하게 전체 노출.
-  const visibleGroups = React.useMemo(() => {
-    if (!groups || groups.length === 0) return groups;
-    const allHaveMonths = groups.every(
-      (g) => Array.isArray(g.months) && g.months.length > 0,
-    );
-    if (!allHaveMonths) return groups;
-    const m = new Date().getMonth() + 1;
-    const next = (m % 12) + 1;
-    const cur = groups.find((g) => g.months?.includes(m));
-    const nxt = groups.find((g) => g.months?.includes(next));
-    if (!cur) return groups; // 현재 월 커버 그룹 없음 → 전체
-    return cur === nxt ? [cur] : groups; // 같으면 현재 시즌만, 다르면(전환달) 둘 다
-  }, [groups]);
+  // 시즌 노출: 전환 직전 달(KBS=5월·9월)이면 두 시즌 다, 그 외엔 현재 시즌만.
+  // 전환월 정의는 등록 시트와 동일 로직 공유(@/lib/seasonSchedule).
+  const thisMonth = new Date().getMonth() + 1;
+  const visibleGroups = React.useMemo(
+    () => visibleSeasonGroups(groups, thisMonth),
+    [groups, thisMonth],
+  );
 
   // 풀 전체에 시즌제(slot_groups) 운영이 한 요일이라도 있으면 = 시즌제 풀.
   // 수정 제안 플로우(ScheduleWrite/draft)는 slot_groups 미지원 →

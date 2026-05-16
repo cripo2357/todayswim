@@ -50,8 +50,17 @@ export interface Schedule {
    *   시즌 그룹을 골라 타임표를 보여줌(없으면 ScheduleView 표시엔 영향 없음).
    */
   slotGroups?: {
-    [day in DayOfWeek]?: { label?: string; months?: number[]; slots: TimeSlot[] }[];
+    [day in DayOfWeek]?: SlotGroup[];
   };
+}
+
+/** 계절/변형 운영 그룹 1개 — slotGroups의 요소. */
+export interface SlotGroup {
+  /** 그룹 캡션 (예: "기본 운영 (매월 2, 4주차 일요일은 쉽니다.)") */
+  label?: string;
+  /** 적용되는 달(1~12). 시즌 노출/전환월 판정·등록 시트 슬롯 해석 기준. */
+  months?: number[];
+  slots: TimeSlot[];
 }
 
 /** 작성 4스텝 임시 상태 — Zustand store에 보관 */

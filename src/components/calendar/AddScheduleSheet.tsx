@@ -19,35 +19,17 @@ import {
   dateKey,
   type ScheduleVisibility,
 } from '@/store/swimSchedule';
-import type { DayOfWeek, TimeSlot, Schedule } from '@/types/schedule';
+import type { DayOfWeek, TimeSlot } from '@/types/schedule';
+import {
+  resolveSeasonSlots,
+  isSeasonTransitionMonth,
+} from '@/lib/seasonSchedule';
 import { tokens } from '@/styles/tokens';
 import RequestCompleteIllust from '@assets/illustrations/request-complete.svg';
 import { WeekCalendar } from './WeekCalendar';
 
 const SCREEN_H = Dimensions.get('window').height;
 const DOW: DayOfWeek[] = ['일', '월', '화', '수', '목', '금', '토'];
-
-/**
- * 선택 날짜에 맞는 슬롯 해석 — slotGroups(계절/변형)가 있으면 그 달(1~12)을
- * 포함하는 그룹의 슬롯, 없으면 by_day flat(하위호환). months 없는 그룹은 기본 취급.
- */
-function resolveSeasonSlots(
-  schedule: Schedule | undefined,
-  dow: DayOfWeek,
-  date: Date,
-): TimeSlot[] {
-  if (!schedule) return [];
-  const groups = schedule.slotGroups?.[dow];
-  if (groups && groups.length > 0) {
-    const m = date.getMonth() + 1;
-    const matched =
-      groups.find((g) => g.months?.includes(m)) ??
-      groups.find((g) => !g.months || g.months.length === 0) ??
-      groups[0];
-    return matched.slots;
-  }
-  return schedule.byDay[dow] ?? [];
-}
 
 const VIS_OPTIONS: { value: ScheduleVisibility; label: string }[] = [
   { value: 'private', label: '비공개' },
@@ -109,14 +91,23 @@ export function AddScheduleSheet({
       setDate(dt);
       // 더블탭으로 넘어온 타임이면 그 날짜의 시즌 해석된 슬롯 목록에서
       // start·end 일치 항목을 기본 선택. 없으면 미선택(수동 추가 포함).
+      // 단, 시즌 전환 직전 달(KBS=5·9월)에는 기본 선택 없이 —
+      // 두 시즌이 겹치는 시기라 사용자가 한 번 더 생각하고 직접 고르게.
       let idx: number | null = null;
       if (pid && initialStart && initialEnd) {
         const sch = schedules.find((s) => s.poolId === pid);
-        const resolved = resolveSeasonSlots(sch, DOW[dt.getDay()], dt);
-        const i = resolved.findIndex(
-          (s) => s.start === initialStart && s.end === initialEnd,
+        const dow = DOW[dt.getDay()];
+        const transition = isSeasonTransitionMonth(
+          sch?.slotGroups?.[dow],
+          dt.getMonth() + 1,
         );
-        idx = i >= 0 ? i : null;
+        if (!transition) {
+          const resolved = resolveSeasonSlots(sch, dow, dt);
+          const i = resolved.findIndex(
+            (s) => s.start === initialStart && s.end === initialEnd,
+          );
+          idx = i >= 0 ? i : null;
+        }
       }
       setSlotIdx(idx);
       setVisibility(defaultVisibility);
