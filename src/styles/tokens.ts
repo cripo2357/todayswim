@@ -195,14 +195,15 @@ export const shadow = {
     elevation: 3,
   },
   // Figma Shadow/lg = 아주 옅은 2겹(#0F172A @~0.03 / ~0.08, blur 6/16,
-  // spread -2/-4). RN은 2겹·spread 미지원 → 지배 레이어를 축소 근사:
-  // 진하고 크지 않게(살짝) opacity 0.08 / radius 12 / offset 6.
+  // spread -2/-4). RN은 2겹·spread(특히 음수) 미지원 → 같은 값이라도 더
+  // 크고 진하게 보임. 더 줄여 "살짝"만: opacity 0.06 / radius 8 / offset 4.
+  // Android elevation은 색·투명도 무시하고 자체 그림자 → 2로 최소화.
   lg: {
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   pop: {
     shadowColor: '#0F172A',
