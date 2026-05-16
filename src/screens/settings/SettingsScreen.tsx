@@ -18,6 +18,12 @@ import { ChevronRight } from 'lucide-react-native';
 
 import type { RootStackParamList } from '@/navigation/types';
 import { useAuth } from '@/store/auth';
+import {
+  usePrefs,
+  type OthersScheduleView,
+  type ScheduleInvite,
+} from '@/store/prefs';
+import { OptionSheet, type Option } from '@/components/ui/OptionSheet';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { tokens } from '@/styles/tokens';
 import BrandWordmark from '@assets/illustrations/wordmark-poolsday.svg';
@@ -37,10 +43,36 @@ import IconMapPin from '@assets/icons/settings/map-pin.svg';
 
 const FEEDBACK_EMAIL = 'cripo2357@gmail.com';
 
+// 다른 사람 수영 일정 보기 — OptionSheet 옵션 + 행 우측 표시값
+const VIEW_OPTIONS: Option<OthersScheduleView>[] = [
+  { value: 'friends', label: '친구 일정만 보기' },
+  { value: 'public', label: '공개일정 모두 보기' },
+];
+const VIEW_VALUE: Record<OthersScheduleView, string> = {
+  friends: '친구 일정만',
+  public: '공개일정 모두',
+};
+// 수영 일정 초대
+const INVITE_OPTIONS: Option<ScheduleInvite>[] = [
+  { value: 'on', label: '초대 받기' },
+  { value: 'off', label: '초대 안 받기' },
+];
+const INVITE_VALUE: Record<ScheduleInvite, string> = {
+  on: '받음',
+  off: '안 받음',
+};
+
 export function SettingsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const signOut = useAuth((s) => s.signOut);
   const [pushOn, setPushOn] = React.useState(true);
+
+  const othersView = usePrefs((s) => s.othersScheduleView);
+  const setOthersView = usePrefs((s) => s.setOthersScheduleView);
+  const scheduleInvite = usePrefs((s) => s.scheduleInvite);
+  const setScheduleInvite = usePrefs((s) => s.setScheduleInvite);
+  const [viewSheet, setViewSheet] = React.useState(false);
+  const [inviteSheet, setInviteSheet] = React.useState(false);
 
   const onLogout = () => {
     Alert.alert('로그아웃', '로그아웃 하시겠어요?', [
@@ -99,12 +131,14 @@ export function SettingsScreen() {
           <Row
             icon={<IconCalendar width={24} height={24} />}
             label="다른 사람 수영 일정 보기"
-            value="친구 일정만"
+            value={VIEW_VALUE[othersView]}
+            onPress={() => setViewSheet(true)}
           />
           <Row
             icon={<IconEnvelope width={24} height={24} />}
             label="수영 일정 초대"
-            value="안 받음"
+            value={INVITE_VALUE[scheduleInvite]}
+            onPress={() => setInviteSheet(true)}
           />
         </Section>
 
@@ -168,6 +202,23 @@ export function SettingsScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <OptionSheet<OthersScheduleView>
+        visible={viewSheet}
+        onClose={() => setViewSheet(false)}
+        title="다른 사람 수영 일정 보기"
+        options={VIEW_OPTIONS}
+        value={othersView}
+        onConfirm={(v) => setOthersView(v)}
+      />
+      <OptionSheet<ScheduleInvite>
+        visible={inviteSheet}
+        onClose={() => setInviteSheet(false)}
+        title="수영 일정 초대"
+        options={INVITE_OPTIONS}
+        value={scheduleInvite}
+        onConfirm={(v) => setScheduleInvite(v)}
+      />
     </SafeAreaView>
   );
 }

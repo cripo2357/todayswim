@@ -15,6 +15,7 @@ import { useSelection } from '@/store/selection';
 import { useAuth } from '@/store/auth';
 import { useProfile } from '@/store/profile';
 import { useSwimSchedules } from '@/store/swimSchedule';
+import { usePrefs } from '@/store/prefs';
 import { tokens } from '@/styles/tokens';
 
 const queryClient = new QueryClient({
@@ -32,6 +33,7 @@ export default function App() {
     useAuth.getState().hydrate();
     useProfile.getState().hydrate();
     useSwimSchedules.getState().hydrate();
+    usePrefs.getState().hydrate();
   }, []);
 
   if (!fontsLoaded && !fontError) {
