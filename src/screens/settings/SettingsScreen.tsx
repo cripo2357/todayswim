@@ -80,8 +80,8 @@ const FRIEND_REQ_OPTIONS: Option<FriendRequest>[] = [
 ];
 const FRIEND_REQ_VALUE: Record<FriendRequest, string> = {
   off: '안 받음',
-  id: 'ID 아는 사람에게',
-  nickname: '닉네임 아는 사람에게',
+  id: 'ID 아는 사람에게만',
+  nickname: '닉네임 아는 사람에게만',
   all: '모든 사람에게',
 };
 
