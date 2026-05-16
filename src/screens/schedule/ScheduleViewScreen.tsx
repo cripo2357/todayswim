@@ -121,7 +121,7 @@ export function ScheduleViewScreen() {
           ) : (
             slots.map((slot, i) => (
               <View key={i} style={styles.slotChip}>
-                <Text style={styles.slotChipText}>
+                <Text style={styles.slotChipText} numberOfLines={1}>
                   {slot.start} ~ {slot.end}
                 </Text>
               </View>
@@ -314,26 +314,29 @@ const styles = StyleSheet.create({
   slotsScroll: {
     flex: 1,
   },
-  // Figma 5:14530 — flex-wrap gap-10
+  // Figma 144:3610 — flex-wrap gap-10, items-start
   slotsWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
+    alignItems: 'flex-start',
   },
   slotsEmptyWrap: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Figma 90:3413 — 126×40 고정. border #cbd5e1 radius 12. 가운데 정렬.
+  // Figma 144:3611 — w150 고정(2열), border #cbd5e1 r12, px16 py10, 중앙 정렬
   slotChip: {
-    width: 126,
-    height: 40,
+    width: 150,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   // Figma I5:15658;5588:20562 — SemiBold 14/20 tracking -0.084 #4b5563
   slotChipText: {
