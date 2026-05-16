@@ -32,7 +32,10 @@ const VIS_LABEL: Record<ScheduleVisibility, string> = {
   friends: '친구에게만 공개',
   public: '전체 공개',
 };
-const VIS_OPTIONS: Option<ScheduleVisibility>[] = [
+// 일정 관리 시트 액션 — 공개여부 3종 + 일정 취소(맨 위)
+type ManageAction = ScheduleVisibility | 'cancel';
+const MANAGE_OPTIONS: Option<ManageAction>[] = [
+  { value: 'cancel', label: '일정 취소' },
   { value: 'private', label: VIS_LABEL.private },
   { value: 'friends', label: VIS_LABEL.friends },
   { value: 'public', label: VIS_LABEL.public },
@@ -203,17 +206,20 @@ export function CalendarTab() {
         onClose={() => setSheetOpen(false)}
       />
 
-      {/* 일정 공개여부 변경 — 지난 일정은 칩 자체가 비활성이라 여기 안 열림 */}
-      <OptionSheet<ScheduleVisibility>
+      {/* 일정 관리 — 지난 일정은 칩 자체가 비활성이라 여기 안 열림.
+          '일정 취소' 선택 시 confirm Alert → 삭제, 그 외는 공개여부 변경. */}
+      <OptionSheet<ManageAction>
         visible={visEditId !== null}
         onClose={() => setVisEditId(null)}
         title="일정 관리"
-        options={VIS_OPTIONS}
+        options={MANAGE_OPTIONS}
         value={
           schedules.find((x) => x.id === visEditId)?.visibility ?? null
         }
         onConfirm={(v) => {
-          if (visEditId) setVisibility(visEditId, v);
+          if (!visEditId) return;
+          if (v === 'cancel') onCancel(visEditId);
+          else setVisibility(visEditId, v);
         }}
       />
     </View>
