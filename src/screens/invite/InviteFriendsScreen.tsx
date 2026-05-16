@@ -114,11 +114,16 @@ export function InviteFriendsScreen() {
       {/* 본문 고정 높이 View — 시트 총높이 불변. body가 ScrollView가 아니라
           목록(float 내부 ScrollView)이 유일 스크롤러라 중첩 충돌 없음. */}
       <View style={[styles.body, styles.bodyContent]}>
-        {/* 초대 친구 — 상단 고정: 라벨 + 트리거 */}
+        {/* 초대 친구 — 상단 고정: 라벨(+안내문구) + 트리거. Figma 163:6309 */}
         <View style={styles.section}>
-          <Text style={styles.label}>
-            초대 친구{selected.length > 0 ? ` (${selected.length})` : ''}
-          </Text>
+          <View style={styles.labelRow}>
+            <Text style={styles.label}>
+              초대 친구{selected.length > 0 ? ` (${selected.length})` : ''}
+            </Text>
+            <Text style={styles.labelNote} numberOfLines={1}>
+              참여중인 친구는 초대할 수 없습니다.
+            </Text>
+          </View>
           <View onLayout={(e) => setTriggerY(e.nativeEvent.layout.y)}>
             <Pressable
               onPress={() => setOpen((o) => !o)}
@@ -285,13 +290,26 @@ const styles = StyleSheet.create({
   // 트리거~일정 사이 남는 공간 — 선택 목록이 이만큼 차지(없으면 빈 공간).
   // 덕분에 초대 일정 카드가 항상 하단(보내기 버튼 위)에 고정.
   fillArea: { flex: 1 },
+  // Figma 163:6309 — 라벨 + 안내문구 한 줄(gap8). 안내는 우측 정렬·남는폭.
+  labelRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   // Figma 150:9110 — SemiBold 14/20 -0.084 #4B5563
   label: {
+    flexShrink: 0,
     fontSize: 14,
     lineHeight: 20,
     letterSpacing: -0.084,
     fontFamily: tokens.font.sansSemibold,
     color: '#4B5563',
+  },
+  // Figma 163:6307 — Regular 12/16 -0.06 rgba(27,31,38,0.72) 우측정렬
+  labelNote: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: -0.06,
+    fontFamily: tokens.font.sans,
+    color: 'rgba(27, 31, 38, 0.72)',
+    textAlign: 'right',
   },
   // Figma 150:9129 — 흰 카드 r16 h72 p16 Shadow/lg (보더 없음)
   scheduleCard: {
