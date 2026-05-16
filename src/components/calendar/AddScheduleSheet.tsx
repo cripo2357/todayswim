@@ -89,27 +89,27 @@ export function AddScheduleSheet({
   const { data: schedules = [] } = useSchedules();
   const addSchedule = useSwimSchedules((s) => s.add);
   const mySchedules = useSwimSchedules((s) => s.schedules);
-  const profileVis = usePrefs((s) => s.profileVisibility);
+  const othersView = usePrefs((s) => s.othersScheduleView);
 
-  // 프로필 '친구만' 공개면 일정 공개범위에서 '전체 공개' 미노출
+  // 다른 사람 일정 보기가 '친구 일정만'이면 일정 공개범위에서 '전체 공개' 미노출
   const visOptions = React.useMemo(
     () =>
-      profileVis === 'friends'
+      othersView === 'friends'
         ? VIS_OPTIONS.filter((o) => o.value !== 'public')
         : VIS_OPTIONS,
-    [profileVis],
+    [othersView],
   );
 
   // 일정 공유 기본값 = 가장 최근 등록 일정의 공개범위(없으면 비공개).
-  // 프로필 '친구만'인데 직전 값이 'public'이면 'friends'로 강등.
+  // '친구 일정만'인데 직전 값이 'public'이면 'friends'로 강등.
   const defaultVisibility = React.useMemo<ScheduleVisibility>(() => {
     const base: ScheduleVisibility =
       mySchedules.length === 0
         ? 'private'
         : mySchedules.reduce((a, b) => (a.createdAt >= b.createdAt ? a : b))
             .visibility;
-    return profileVis === 'friends' && base === 'public' ? 'friends' : base;
-  }, [mySchedules, profileVis]);
+    return othersView === 'friends' && base === 'public' ? 'friends' : base;
+  }, [mySchedules, othersView]);
 
   const slideY = React.useRef(new Animated.Value(SCREEN_H)).current;
   const [phase, setPhase] = React.useState<'form' | 'done'>('form');

@@ -3,6 +3,7 @@
 
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSwimSchedules } from './swimSchedule';
 
 /** 다른 사람 수영 일정 보기 범위 */
 export type OthersScheduleView = 'friends' | 'public';
@@ -80,6 +81,10 @@ export const usePrefs = create<PrefsState>((set) => ({
   setOthersScheduleView: async (v) => {
     await AsyncStorage.setItem(K_VIEW, v);
     set({ othersScheduleView: v });
+    // '친구 일정만'으로 바뀌면 내 예정 일정 중 전체공개 → 친구공개로 강등
+    if (v === 'friends') {
+      await useSwimSchedules.getState().downgradePublicToFriends();
+    }
   },
 
   setScheduleInvite: async (v) => {
@@ -91,8 +96,10 @@ export const usePrefs = create<PrefsState>((set) => ({
     await AsyncStorage.setItem(K_PROFILE_VIS, v);
     if (v === 'friends') {
       // 프로필 '친구만' → 다른 사람 일정 보기 강제 '친구 일정만'
+      // + 내 예정 일정 중 전체공개 → 친구공개로 강등
       await AsyncStorage.setItem(K_VIEW, 'friends');
       set({ profileVisibility: v, othersScheduleView: 'friends' });
+      await useSwimSchedules.getState().downgradePublicToFriends();
     } else {
       set({ profileVisibility: v });
     }

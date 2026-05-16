@@ -29,6 +29,8 @@ interface SwimScheduleState {
   add: (s: Omit<MySwimSchedule, 'id' | 'createdAt'>) => Promise<void>;
   remove: (id: string) => Promise<void>;
   setVisibility: (id: string, visibility: ScheduleVisibility) => Promise<void>;
+  /** 다른 사람 일정 보기 '친구 일정만' 전환 시 — 예정 일정 중 public → friends 강등 */
+  downgradePublicToFriends: () => Promise<void>;
 }
 
 /** 일정이 지났는지 — 그 일정 date+start(시작시각) 기준 현재시각이 더 크면 지남. */
@@ -81,6 +83,20 @@ export const useSwimSchedules = create<SwimScheduleState>((set, get) => ({
     const next = get().schedules.map((x) =>
       x.id === id ? { ...x, visibility } : x,
     );
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    set({ schedules: next });
+  },
+
+  downgradePublicToFriends: async () => {
+    let changed = false;
+    const next = get().schedules.map((x) => {
+      if (x.visibility === 'public' && !isSchedulePast(x)) {
+        changed = true;
+        return { ...x, visibility: 'friends' as const };
+      }
+      return x;
+    });
+    if (!changed) return;
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     set({ schedules: next });
   },
