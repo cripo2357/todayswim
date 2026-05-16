@@ -58,8 +58,8 @@ function filterFutureToday(list: TimeSlot[], date: Date): TimeSlot[] {
 
 const VIS_OPTIONS: { value: ScheduleVisibility; label: string }[] = [
   { value: 'private', label: '비공개' },
-  { value: 'friends', label: '친구만' },
-  { value: 'public', label: '전부 공개' },
+  { value: 'friends', label: '친구에게만 공개' },
+  { value: 'public', label: '전체 공개' },
 ];
 
 export function AddScheduleSheet({
@@ -365,6 +365,12 @@ export function AddScheduleSheet({
                     transparent
                     animationType="fade"
                     onRequestClose={() => setPoolOpen(false)}
+                    onShow={() => {
+                      // 모달이 실제 표시된 뒤 포커스해야 키보드까지 올라옴
+                      // (Android Modal 내 TextInput은 mount 직후 focus만으론
+                      // 소프트키보드가 안 뜨는 경우가 있어 onShow에서 재포커스).
+                      setTimeout(() => searchInputRef.current?.focus(), 50);
+                    }}
                   >
                     <Pressable
                       style={styles.poolOverlay}
