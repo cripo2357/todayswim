@@ -10,9 +10,8 @@ import {
   Dimensions, ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { X, Check, Calendar as LucideCalendar, XCircle } from 'lucide-react-native';
+import { X, Check, Calendar as LucideCalendar, XCircle, Mail } from 'lucide-react-native';
 import IconChevronDown from '@assets/icons/chevron-down.svg';
-import IconEnvelope from '@assets/icons/settings/envelope.svg';
 import { usePools } from '@/hooks/usePools';
 import { useSchedules } from '@/hooks/useSchedules';
 import {
@@ -319,7 +318,8 @@ export function AddScheduleSheet({
                   accessibilityRole="button"
                   accessibilityLabel="이 일정에 친구 초대하기"
                 >
-                  <IconEnvelope width={20} height={20} />
+                  {/* Figma 150:5949 — line 스타일 편지 아이콘, 라벨과 동일 pd-blue */}
+                  <Mail size={20} color={tokens.color.pdBlue} strokeWidth={2} />
                   <Text style={styles.inviteLabel}>
                     이 일정에 친구 초대하기
                   </Text>
@@ -341,7 +341,7 @@ export function AddScheduleSheet({
 
               <View style={styles.sheet}>
                 <View style={styles.titleRow}>
-                  <Text style={styles.title}>수영 일정 등록</Text>
+                  <Text style={styles.title}>수영 일정 추가</Text>
                   <Pressable onPress={close} hitSlop={8}>
                     <X size={24} color={tokens.color.ink900} strokeWidth={1.5} />
                   </Pressable>
