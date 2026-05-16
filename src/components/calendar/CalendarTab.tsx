@@ -384,17 +384,19 @@ const styles = StyleSheet.create({
 
   // Figma 120:3156 — 참여자 영역(나 / 친구그리드+초대 / 다른사람그리드)
   participants: { gap: 12 },
+  // 1행 3명 고정 — 고정폭(px) 대신 정확히 1/3 폭이라 화면 너비와
+  // 무관하게 항상 3열(좁은 기기서 2열로 무너지던 버그 해결).
   ptGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     rowGap: 8,
-    columnGap: 8,
   },
   ptCell: {
-    width: 96,
+    width: '33.333%',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    paddingRight: 8, // 열 간격(내부 패딩으로 — 1/3 폭 유지)
   },
   ptAvatar: {
     width: 24,
