@@ -81,7 +81,7 @@ export function ScheduleViewScreen() {
               {pool?.name ?? '수영장'}
             </Text>
             <Text style={styles.notice}>
-              실제 운영시간과 다를 수 있습니다. 꼭 문의 후 방문하세요.
+              {'타임을 빠르게 두 번 터치하면 일정으로 등록할 수 있습니다.\n자유수영 시간표는 실제와 다를 수 있습니다. 문의 후 방문하세요.'}
             </Text>
           </View>
         </View>
