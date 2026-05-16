@@ -37,6 +37,25 @@ import { ConflictTooltip } from './ConflictTooltip';
 const SCREEN_H = Dimensions.get('window').height;
 const DOW: DayOfWeek[] = ['일', '월', '화', '수', '목', '금', '토'];
 
+function isSameDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+function toMinutes(t: string): number {
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+/** 선택일이 오늘이면 이미 시작 시각이 지난 슬롯 제거(과거 시간대 등록 불가). */
+function filterFutureToday(list: TimeSlot[], date: Date): TimeSlot[] {
+  const now = new Date();
+  if (!isSameDay(date, now)) return list;
+  const cut = now.getHours() * 60 + now.getMinutes();
+  return list.filter((s) => toMinutes(s.start) > cut);
+}
+
 const VIS_OPTIONS: { value: ScheduleVisibility; label: string }[] = [
   { value: 'private', label: '비공개' },
   { value: 'friends', label: '친구만' },
@@ -129,7 +148,10 @@ export function AddScheduleSheet({
           dt.getMonth() + 1,
         );
         if (!transition) {
-          const resolved = resolveSeasonSlots(sch, dow, dt);
+          const resolved = filterFutureToday(
+            resolveSeasonSlots(sch, dow, dt),
+            dt,
+          );
           const i = resolved.findIndex(
             (s) => s.start === initialStart && s.end === initialEnd,
           );
@@ -183,16 +205,39 @@ export function AddScheduleSheet({
   // 않는다(아래 ScrollView keyboardShouldPersistTaps="always"). 포커스는
   // 리스트에서 풀을 "선택"했을 때만 풀림(선택 시 poolOpen=false → 입력 unmount).
 
+  // 등록 가능 날짜 범위: 오늘 ~ +90일 (과거·먼 미래 차단).
+  const calMin = React.useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+  const calMax = React.useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 90);
+    return d;
+  }, []);
+
   const selectedPool = pools.find((p) => p.id === poolId) ?? null;
   const dow = DOW[date.getDay()];
   const schedule = poolId
     ? schedules.find((s) => s.poolId === poolId)
     : undefined;
-  const slots: TimeSlot[] = resolveSeasonSlots(schedule, dow, date);
+  // 오늘이면 이미 지난 시간대 슬롯은 미노출(등록 불가).
+  const slots: TimeSlot[] = filterFutureToday(
+    resolveSeasonSlots(schedule, dow, date),
+    date,
+  );
 
-  const filteredPools = poolQuery.trim()
-    ? pools.filter((p) => p.name.includes(poolQuery.trim()))
-    : pools;
+  // 수영장 목록: 가나다순 정렬 + 대소문자 무시 like 검색(KBS/kbs 동일).
+  const sortedPools = React.useMemo(
+    () => [...pools].sort((a, b) => a.name.localeCompare(b.name, 'ko')),
+    [pools],
+  );
+  const q = poolQuery.trim().toLowerCase();
+  const filteredPools = q
+    ? sortedPools.filter((p) => p.name.toLowerCase().includes(q))
+    : sortedPools;
 
   const canAdd = !!selectedPool && slotIdx !== null;
 
@@ -359,6 +404,8 @@ export function AddScheduleSheet({
                       setSlotIdx(null);
                       clearTip();
                     }}
+                    minDate={calMin}
+                    maxDate={calMax}
                   />
 
                   {/* 시간 슬롯 — 영역 높이 고정(슬롯 수·풀 선택 여부와 무관)
@@ -666,6 +713,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 50,
+    // 버튼에 2px 더 가깝게 (툴팁이 너무 높던 것 보정).
+    transform: [{ translateY: 2 }],
   },
 
   radioRow: { flexDirection: 'row', gap: 20 },

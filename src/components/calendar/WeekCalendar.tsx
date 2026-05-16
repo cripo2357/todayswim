@@ -20,16 +20,49 @@ function mondayOf(d: Date): Date {
   return x;
 }
 
+/** 시:분 0으로 내린 날짜 복사본 */
+function floorDay(d: Date): Date {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
 export function WeekCalendar({
   selectedDate,
   onSelectDate,
   markedKeys,
+  minDate,
+  maxDate,
 }: {
   selectedDate: Date;
   onSelectDate: (d: Date) => void;
   /** 일정 있는 날짜 키(YYYY-MM-DD) set — dot 표시 */
   markedKeys?: Set<string>;
+  /** 선택 가능 최소/최대 날짜 (없으면 무제한). 등록 캘린더에서만 사용. */
+  minDate?: Date;
+  maxDate?: Date;
 }) {
+  const minMs = minDate ? floorDay(minDate).getTime() : undefined;
+  const maxMs = maxDate ? floorDay(maxDate).getTime() : undefined;
+  const inRange = React.useCallback(
+    (d: Date) => {
+      const t = floorDay(d).getTime();
+      if (minMs !== undefined && t < minMs) return false;
+      if (maxMs !== undefined && t > maxMs) return false;
+      return true;
+    },
+    [minMs, maxMs],
+  );
+  const clamp = React.useCallback(
+    (d: Date) => {
+      const t = floorDay(d).getTime();
+      if (minMs !== undefined && t < minMs) return new Date(minMs);
+      if (maxMs !== undefined && t > maxMs) return new Date(maxMs);
+      return d;
+    },
+    [minMs, maxMs],
+  );
+
   const weekStart = React.useMemo(() => mondayOf(selectedDate), [selectedDate]);
   const days = React.useMemo(
     () =>
@@ -44,9 +77,17 @@ export function WeekCalendar({
   const shiftWeek = (delta: number) => {
     const d = new Date(selectedDate);
     d.setDate(d.getDate() + delta * 7);
-    onSelectDate(d);
+    onSelectDate(clamp(d));
   };
-  const goToday = () => onSelectDate(new Date());
+  const goToday = () => onSelectDate(clamp(new Date()));
+
+  // 이전/다음 주에 선택 가능한 날짜가 하나라도 있는지 (없으면 화살표 비활성).
+  const prevWeekLast = new Date(weekStart);
+  prevWeekLast.setDate(prevWeekLast.getDate() - 1);
+  const nextWeekFirst = new Date(weekStart);
+  nextWeekFirst.setDate(nextWeekFirst.getDate() + 7);
+  const canPrev = inRange(prevWeekLast);
+  const canNext = inRange(nextWeekFirst);
 
   const selKey = dateKey(selectedDate);
   const todayKey = dateKey(new Date());
@@ -61,11 +102,27 @@ export function WeekCalendar({
           {selectedDate.getFullYear()}년 {selectedDate.getMonth() + 1}월
         </Text>
         <View style={styles.navBtns}>
-          <Pressable onPress={() => shiftWeek(-1)} hitSlop={8}>
-            <ChevronLeft size={20} color={tokens.color.ink500} strokeWidth={2} />
+          <Pressable
+            onPress={() => canPrev && shiftWeek(-1)}
+            disabled={!canPrev}
+            hitSlop={8}
+          >
+            <ChevronLeft
+              size={20}
+              color={canPrev ? tokens.color.ink500 : tokens.color.lineDefault}
+              strokeWidth={2}
+            />
           </Pressable>
-          <Pressable onPress={() => shiftWeek(1)} hitSlop={8}>
-            <ChevronRight size={20} color={tokens.color.ink500} strokeWidth={2} />
+          <Pressable
+            onPress={() => canNext && shiftWeek(1)}
+            disabled={!canNext}
+            hitSlop={8}
+          >
+            <ChevronRight
+              size={20}
+              color={canNext ? tokens.color.ink500 : tokens.color.lineDefault}
+              strokeWidth={2}
+            />
           </Pressable>
         </View>
       </View>
@@ -90,19 +147,26 @@ export function WeekCalendar({
           const k = dateKey(d);
           const selected = k === selKey;
           const isToday = k === todayKey;
+          const outOfRange = !inRange(d);
           return (
             <Pressable
               key={k}
-              onPress={() => onSelectDate(d)}
-              style={styles.dayCell}
+              onPress={() => !outOfRange && onSelectDate(d)}
+              disabled={outOfRange}
+              style={[styles.dayCell, outOfRange && styles.dayDisabled]}
             >
-              <View style={[styles.dayCircle, selected && styles.daySelected]}>
+              <View
+                style={[
+                  styles.dayCircle,
+                  selected && !outOfRange && styles.daySelected,
+                ]}
+              >
                 <Text
                   style={[
                     styles.dayNum,
                     i === 5 && !selected && styles.sat,
                     i === 6 && !selected && styles.sun,
-                    selected && styles.dayNumSelected,
+                    selected && !outOfRange && styles.dayNumSelected,
                     isToday && !selected && styles.dayToday,
                   ]}
                 >
@@ -158,6 +222,8 @@ const styles = StyleSheet.create({
   sat: { color: tokens.color.pdMint },
   sun: { color: tokens.color.red },
   dayCell: { flex: 1, alignItems: 'center', gap: 4, paddingVertical: 4 },
+  // 선택 범위(오늘~+90일) 밖 날짜 — 비활성 표시
+  dayDisabled: { opacity: 0.3 },
   dayCircle: {
     width: 36,
     height: 36,
