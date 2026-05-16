@@ -403,12 +403,14 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sansMedium,
     color: tokens.color.pdBlue,
   },
-  // Figma 120:3706 — 지난 일정 "수영 완료" 상태 배지(비대화형, #4B5563)
+  // Figma 133:3874 — 지난 일정 "수영 완료" 채움 배지(비대화형):
+  // bg #4B5563 + 흰 텍스트/아이콘, r8 px8 py4 gap4.
   doneChip: {
     alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    backgroundColor: '#4B5563',
     borderWidth: 1,
     borderColor: '#4B5563',
     borderRadius: 8,
@@ -420,7 +422,7 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     letterSpacing: -0.06,
     fontFamily: tokens.font.sansMedium,
-    color: '#4B5563',
+    color: tokens.color.white,
   },
   thumb: { width: 80, height: 80, borderRadius: 6, backgroundColor: '#E2E8F0' },
 
