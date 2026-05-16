@@ -175,6 +175,7 @@ export function CalendarTab() {
                   전체공개=+다른사람(설정 '다른 사람 일정 보기' 시) */}
               {(() => {
                 const pg = resolveParticipants(s, viewPref);
+                const past = isSchedulePast(s); // 지난 일정엔 친구초대 미노출
                 return (
                   <View style={styles.participants}>
                     {/* 나 */}
@@ -203,8 +204,9 @@ export function CalendarTab() {
                       </Text>
                     </View>
 
-                    {/* 친구 섹션 (비공개 아니면) — 친구 + 친구초대(마지막) */}
-                    {pg.showInvite ? (
+                    {/* 친구 섹션 (비공개 아니면) — 친구 + 친구초대(마지막).
+                        지난 일정은 친구초대 미노출(친구 0명이면 섹션 자체 생략). */}
+                    {pg.showInvite && (pg.friends.length > 0 || !past) ? (
                       <>
                         <View style={styles.divider} />
                         <View style={styles.ptGrid}>
@@ -226,34 +228,37 @@ export function CalendarTab() {
                               </Text>
                             </View>
                           ))}
-                          <Pressable
-                            onPress={() =>
-                              navigation.navigate('InviteScheduleSelect')
-                            }
-                            style={styles.ptCell}
-                            accessibilityRole="button"
-                            accessibilityLabel="친구 초대"
-                          >
-                            <View style={styles.ptInviteAvatar}>
-                              <Plus
-                                size={13}
-                                color={tokens.color.pdMint}
-                                strokeWidth={2.4}
-                              />
-                            </View>
-                            <Text
-                              style={styles.ptInviteName}
-                              numberOfLines={1}
+                          {!past ? (
+                            <Pressable
+                              onPress={() =>
+                                navigation.navigate('InviteScheduleSelect')
+                              }
+                              style={styles.ptCell}
+                              accessibilityRole="button"
+                              accessibilityLabel="친구 초대"
                             >
-                              친구 초대
-                            </Text>
-                          </Pressable>
+                              <View style={styles.ptInviteAvatar}>
+                                <Plus
+                                  size={13}
+                                  color={tokens.color.pdMint}
+                                  strokeWidth={2.4}
+                                />
+                              </View>
+                              <Text
+                                style={styles.ptInviteName}
+                                numberOfLines={1}
+                              >
+                                친구 초대
+                              </Text>
+                            </Pressable>
+                          ) : null}
                         </View>
                       </>
                     ) : null}
 
-                    {/* 다른 사람 섹션 (전체공개 + 설정 '다른 사람 일정 보기') */}
-                    {pg.others.length > 0 ? (
+                    {/* 다른 사람 섹션 (전체공개 + 설정 '다른 사람 일정 보기').
+                        지난 일정은 전체공개여도 다른 사람 목록 미노출. */}
+                    {pg.others.length > 0 && !past ? (
                       <>
                         <View style={styles.divider} />
                         <View style={styles.ptGrid}>
