@@ -10,7 +10,7 @@ import {
   Dimensions, ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { X, Search, Check, Calendar as LucideCalendar } from 'lucide-react-native';
+import { X, Check, Calendar as LucideCalendar } from 'lucide-react-native';
 import IconChevronDown from '@assets/icons/chevron-down.svg';
 import { usePools } from '@/hooks/usePools';
 import { useSchedules } from '@/hooks/useSchedules';
@@ -201,36 +201,37 @@ export function AddScheduleSheet({
                 >
                   {/* 수영장 드롭다운 */}
                   <Text style={styles.fieldLabel}>수영장</Text>
-                  <Pressable
-                    onPress={() => setPoolOpen((v) => !v)}
-                    style={styles.dropdown}
-                  >
-                    <Text
-                      style={[
-                        styles.dropdownText,
-                        !selectedPool && styles.dropdownPlaceholder,
-                      ]}
-                      numberOfLines={1}
+                  {/* Figma 122:7490 — 닫힘: 트리거 / 열림: 알약형 검색+리스트 카드 */}
+                  {!poolOpen ? (
+                    <Pressable
+                      onPress={() => setPoolOpen(true)}
+                      style={styles.dropdown}
                     >
-                      {selectedPool ? selectedPool.name : '수영장 이름'}
-                    </Text>
-                    <IconChevronDown width={20} height={20} />
-                  </Pressable>
-
-                  {poolOpen && (
+                      <Text
+                        style={[
+                          styles.dropdownText,
+                          !selectedPool && styles.dropdownPlaceholder,
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {selectedPool ? selectedPool.name : '수영장 이름'}
+                      </Text>
+                      <IconChevronDown width={20} height={20} />
+                    </Pressable>
+                  ) : (
                     <View style={styles.dropdownList}>
                       <View style={styles.searchBox}>
-                        <Search size={18} color={tokens.color.ink400} />
                         <TextInput
                           value={poolQuery}
                           onChangeText={setPoolQuery}
-                          placeholder="Search"
-                          placeholderTextColor={tokens.color.ink400}
+                          placeholder="수영장 이름"
+                          placeholderTextColor="#4B5563"
                           style={styles.searchInput}
                         />
                       </View>
                       <ScrollView
                         style={styles.optionScroll}
+                        contentContainerStyle={styles.optionListContent}
                         nestedScrollEnabled
                         keyboardShouldPersistTaps="handled"
                       >
@@ -436,38 +437,53 @@ const styles = StyleSheet.create({
     color: tokens.color.ink900,
   },
   dropdownPlaceholder: { color: tokens.color.ink400 },
+  // Figma I122:7490;5626:22412 — 흰 카드, border #E2E8F0, r24, p8, gap4, Shadow/lg
   dropdownList: {
     marginTop: 8,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 14,
+    borderColor: '#E2E8F0',
+    borderRadius: 24,
     backgroundColor: tokens.color.white,
-    overflow: 'hidden',
+    padding: 8,
+    gap: 4,
+    ...tokens.shadow.lg,
   },
+  // Figma 5626:22413 — 검색칸: bg #F8FAFC, 알약(rounded-full), minH40, p8, 아이콘 없음
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: tokens.color.lineDefault,
+    minHeight: 40,
+    padding: 8,
+    borderRadius: 9999,
     backgroundColor: '#F8FAFC',
   },
+  // Figma 5626:21974 — Medium 16/22 -0.112 #4B5563
   searchInput: {
     flex: 1,
-    fontSize: 15,
-    fontFamily: tokens.font.sans,
-    color: tokens.color.ink900,
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sansMedium,
+    color: '#4B5563',
     padding: 0,
   },
-  optionScroll: { maxHeight: 220 },
-  optionItem: { paddingHorizontal: 14, paddingVertical: 12 },
+  optionScroll: { maxHeight: 240 },
+  optionListContent: { gap: 4 },
+  // Figma 5626:22473 — 아이템: 알약, minH40, p8 (선택 시 강조는 Phase 2)
+  optionItem: {
+    minHeight: 40,
+    padding: 8,
+    borderRadius: 9999,
+    justifyContent: 'center',
+  },
+  // Figma 5544:288 — Medium 16/22 -0.112 #4B5563
   optionText: {
-    fontSize: 15,
-    lineHeight: 20,
-    fontFamily: tokens.font.sans,
-    color: tokens.color.ink900,
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sansMedium,
+    color: '#4B5563',
   },
   emptyText: {
     fontSize: 14,
