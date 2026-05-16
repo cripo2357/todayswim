@@ -22,6 +22,8 @@ import {
   usePrefs,
   type OthersScheduleView,
   type ScheduleInvite,
+  type ProfileVisibility,
+  type FriendRequest,
 } from '@/store/prefs';
 import { OptionSheet, type Option } from '@/components/ui/OptionSheet';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
@@ -60,6 +62,28 @@ const INVITE_VALUE: Record<ScheduleInvite, string> = {
   on: '받음',
   off: '안 받음',
 };
+// 내 프로필 공개
+const PROFILE_VIS_OPTIONS: Option<ProfileVisibility>[] = [
+  { value: 'friends', label: '친구에게만 공개' },
+  { value: 'public', label: '전체 공개' },
+];
+const PROFILE_VIS_VALUE: Record<ProfileVisibility, string> = {
+  friends: '친구만',
+  public: '모두에게',
+};
+// 친구 신청 받기
+const FRIEND_REQ_OPTIONS: Option<FriendRequest>[] = [
+  { value: 'off', label: '신청 안 받기' },
+  { value: 'id', label: 'ID로만 신청 받기' },
+  { value: 'nickname', label: '닉네임으로만 신청 받기' },
+  { value: 'all', label: '모두에게 신청 받기' },
+];
+const FRIEND_REQ_VALUE: Record<FriendRequest, string> = {
+  off: '안 받음',
+  id: 'ID 아는 사람에게',
+  nickname: '닉네임 아는 사람에게',
+  all: '모든 사람에게',
+};
 
 export function SettingsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -70,8 +94,14 @@ export function SettingsScreen() {
   const setOthersView = usePrefs((s) => s.setOthersScheduleView);
   const scheduleInvite = usePrefs((s) => s.scheduleInvite);
   const setScheduleInvite = usePrefs((s) => s.setScheduleInvite);
+  const profileVis = usePrefs((s) => s.profileVisibility);
+  const setProfileVis = usePrefs((s) => s.setProfileVisibility);
+  const friendReq = usePrefs((s) => s.friendRequest);
+  const setFriendReq = usePrefs((s) => s.setFriendRequest);
   const [viewSheet, setViewSheet] = React.useState(false);
   const [inviteSheet, setInviteSheet] = React.useState(false);
+  const [profileSheet, setProfileSheet] = React.useState(false);
+  const [friendReqSheet, setFriendReqSheet] = React.useState(false);
 
   const onLogout = () => {
     Alert.alert('로그아웃', '로그아웃 하시겠어요?', [
@@ -125,18 +155,20 @@ export function SettingsScreen() {
           />
         </Section>
 
-        {/* 사용자 관계 — Figma 129:6006. 신규 2행(내 프로필 공개/친구 신청
-            받기)은 친구 시스템 Phase2라 비활성 placeholder(값만 표기). */}
+        {/* 사용자 관계 — Figma 129:6006. 4행 모두 prefs + OptionSheet
+            (실동작 연동은 친구 시스템 Phase2, 선택값은 로컬 영속). */}
         <Section title="사용자 관계">
           <Row
             icon={<IconProfile width={24} height={24} />}
             label="내 프로필 공개"
-            value="친구만"
+            value={PROFILE_VIS_VALUE[profileVis]}
+            onPress={() => setProfileSheet(true)}
           />
           <Row
             icon={<IconPerson width={24} height={24} />}
             label="친구 신청 받기"
-            value="모두에게 받기"
+            value={FRIEND_REQ_VALUE[friendReq]}
+            onPress={() => setFriendReqSheet(true)}
           />
           <Row
             icon={<IconCalendar width={24} height={24} />}
@@ -224,6 +256,22 @@ export function SettingsScreen() {
         options={INVITE_OPTIONS}
         value={scheduleInvite}
         onConfirm={(v) => setScheduleInvite(v)}
+      />
+      <OptionSheet<ProfileVisibility>
+        visible={profileSheet}
+        onClose={() => setProfileSheet(false)}
+        title="내 프로필 공개"
+        options={PROFILE_VIS_OPTIONS}
+        value={profileVis}
+        onConfirm={(v) => setProfileVis(v)}
+      />
+      <OptionSheet<FriendRequest>
+        visible={friendReqSheet}
+        onClose={() => setFriendReqSheet(false)}
+        title="친구 신청 받기"
+        options={FRIEND_REQ_OPTIONS}
+        value={friendReq}
+        onConfirm={(v) => setFriendReq(v)}
       />
     </SafeAreaView>
   );
