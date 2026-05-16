@@ -48,6 +48,14 @@ export function ScheduleViewScreen() {
   const groups = schedule?.slotGroups?.[selectedDay];
   const hasGroups = !!groups && groups.length > 0;
 
+  // 칩 2열을 슬롯 영역 폭에 "딱 맞게" — 영역폭 실측 후
+  // 칩폭 = floor((영역폭 − 가운데여백) / 2). floor로 합이 영역폭을
+  // 넘지 않게 해 1열로 무너지는 것 방지. 가운데 여백은 Figma 10 유지.
+  const SLOT_GAP = 10;
+  const [slotAreaW, setSlotAreaW] = React.useState(0);
+  const chipW =
+    slotAreaW > 0 ? Math.floor((slotAreaW - SLOT_GAP) / 2) : 146;
+
   const setIntent = useAddScheduleIntent((s) => s.setIntent);
   const lastTapRef = React.useRef<{ key: string; t: number } | null>(null);
 
@@ -151,6 +159,7 @@ export function ScheduleViewScreen() {
         {/* 슬롯 영역 — 많으면 스크롤, 비어있어도 영역 유지 */}
         <ScrollView
           style={styles.slotsScroll}
+          onLayout={(e) => setSlotAreaW(e.nativeEvent.layout.width)}
           contentContainerStyle={
             slots.length === 0 && !hasGroups
               ? styles.slotsEmptyWrap
@@ -175,6 +184,7 @@ export function ScheduleViewScreen() {
                       onPress={() => onSlotTap(`${selectedDay}-g${gi}-${i}`)}
                       style={({ pressed }) => [
                         styles.slotChip,
+                        { width: chipW },
                         pressed && styles.slotChipPressed,
                       ]}
                     >
@@ -193,6 +203,7 @@ export function ScheduleViewScreen() {
                 onPress={() => onSlotTap(`${selectedDay}-${i}`)}
                 style={({ pressed }) => [
                   styles.slotChip,
+                  { width: chipW },
                   pressed && styles.slotChipPressed,
                 ]}
               >
@@ -401,9 +412,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Figma 144:3611 — w146 고정(2열), border #cbd5e1 r12, px16 py10, 중앙 정렬
+  // Figma 144:3611 — 2열(폭은 영역 실측으로 동적 계산), border #cbd5e1 r12, px16 py10, 중앙 정렬
   slotChip: {
-    width: 146,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderWidth: 1,
