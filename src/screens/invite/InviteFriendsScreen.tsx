@@ -292,7 +292,15 @@ export function InviteFriendsScreen() {
         label="초대장 보내기"
         onPress={send}
         disabled={selected.length === 0}
-        icon={<Mail size={20} color={tokens.color.black} strokeWidth={2} />}
+        icon={
+          <Mail
+            size={20}
+            color={
+              selected.length === 0 ? tokens.color.pdGray : tokens.color.black
+            }
+            strokeWidth={2}
+          />
+        }
       />
     </BottomSheet>
   );
