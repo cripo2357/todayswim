@@ -354,10 +354,11 @@ export function AddScheduleSheet({
                 >
                   {/* 수영장 드롭다운 */}
                   <Text style={styles.fieldLabel}>수영장</Text>
-                  {/* Figma 122:7490 — 닫힘: 트리거 / 열림: 검색+리스트 카드.
-                      인-플로우 렌더(중첩 Modal float은 Android에서 위치·키보드
-                      깨져 폐기). 시트 높이는 슬롯 영역 고정으로 안정. */}
-                  {!poolOpen ? (
+                  {/* Figma 122:7490 — 트리거는 항상 in-flow(48px 자리 고정).
+                      열림 시 검색+리스트 카드는 그 위에 absolute로 "떠서"
+                      아래 콘텐츠(시간표·슬롯)를 밀지 않음 → 시트 높이 불변.
+                      같은 Modal 내 absolute(중첩 Modal 아님)라 키보드 정상. */}
+                  <View style={styles.dropdownAnchor}>
                     <Pressable
                       onPress={() => setPoolOpen(true)}
                       style={styles.dropdown}
@@ -373,44 +374,45 @@ export function AddScheduleSheet({
                       </Text>
                       <IconChevronDown width={20} height={20} />
                     </Pressable>
-                  ) : (
-                    <View style={styles.dropdownList}>
-                      <SearchInput
-                        ref={searchInputRef}
-                        value={poolQuery}
-                        onChangeText={setPoolQuery}
-                        placeholder="수영장 이름"
-                        autoFocus
-                      />
-                      <ScrollView
-                        style={styles.optionScroll}
-                        contentContainerStyle={styles.optionListContent}
-                        nestedScrollEnabled
-                        keyboardShouldPersistTaps="always"
-                      >
-                        {filteredPools.map((p) => (
-                          <Pressable
-                            key={p.id}
-                            onPress={() => {
-                              setPoolId(p.id);
-                              setSlotIdx(null);
-                              setPoolOpen(false);
-                            }}
-                            style={styles.optionItem}
-                          >
-                            <Text style={styles.optionText} numberOfLines={1}>
-                              {p.name}
+                    {poolOpen ? (
+                      <View style={[styles.dropdownList, styles.dropdownFloat]}>
+                        <SearchInput
+                          ref={searchInputRef}
+                          value={poolQuery}
+                          onChangeText={setPoolQuery}
+                          placeholder="수영장 이름"
+                          autoFocus
+                        />
+                        <ScrollView
+                          style={styles.optionScroll}
+                          contentContainerStyle={styles.optionListContent}
+                          nestedScrollEnabled
+                          keyboardShouldPersistTaps="always"
+                        >
+                          {filteredPools.map((p) => (
+                            <Pressable
+                              key={p.id}
+                              onPress={() => {
+                                setPoolId(p.id);
+                                setSlotIdx(null);
+                                setPoolOpen(false);
+                              }}
+                              style={styles.optionItem}
+                            >
+                              <Text style={styles.optionText} numberOfLines={1}>
+                                {p.name}
+                              </Text>
+                            </Pressable>
+                          ))}
+                          {filteredPools.length === 0 && (
+                            <Text style={styles.emptyText}>
+                              검색 결과가 없어요.
                             </Text>
-                          </Pressable>
-                        ))}
-                        {filteredPools.length === 0 && (
-                          <Text style={styles.emptyText}>
-                            검색 결과가 없어요.
-                          </Text>
-                        )}
-                      </ScrollView>
-                    </View>
-                  )}
+                          )}
+                        </ScrollView>
+                      </View>
+                    ) : null}
+                  </View>
 
                   {/* Figma 122:8031 — 캘린더 위 "시간표" 섹션 라벨 */}
                   <Text style={[styles.fieldLabel, { marginTop: 24 }]}>
@@ -602,6 +604,18 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sansBold,
     color: '#1F2937',
     marginBottom: 8,
+  },
+  // 트리거 자리 고정용 relative 컨테이너 — 열림 카드는 이 안에서 absolute로 뜸.
+  dropdownAnchor: { position: 'relative', zIndex: 20 },
+  // 열림 카드: 트리거 위(top:0)에 겹쳐 떠서 아래 콘텐츠를 밀지 않음.
+  // Android는 elevation이 있어야 뒤따르는 형제(캘린더) 위로 올라온다.
+  dropdownFloat: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 30,
+    elevation: 24,
   },
   dropdown: {
     flexDirection: 'row',
