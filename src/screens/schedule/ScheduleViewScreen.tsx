@@ -70,14 +70,14 @@ export function ScheduleViewScreen() {
     return d;
   };
 
-  // 더블탭 → 풀+날짜만 잡아 등록 플로우로 넘긴다. 타임은 등록 시트에서
-  // 그 날짜(시즌)에 맞춰 다시 고름 — KBS 같은 하절기 변동 풀까지 일관 처리.
+  // 더블탭 → 풀+날짜만 잡아 의도 set 후 시간표 모달만 닫는다.
+  // 화면 이동 없음 — 루트의 GlobalAddScheduleSheet가 의도를 소비해 그 자리에서
+  // 등록 시트를 띄움. 타임은 시트에서 날짜(시즌)에 맞춰 다시 고름(KBS 등 일관).
   const openRegister = () => {
     if (!pool) return;
     const d = nextDateForWeekday(selectedDay);
     setIntent({ poolId, date: dateKey(d) });
-    navigation.goBack(); // 시간표 모달 닫고
-    navigation.navigate('MyInfo'); // 내 정보(달력) → 시트 자동 오픈
+    navigation.goBack(); // 시간표 모달만 닫음 (지도 등 현재 화면 유지)
   };
 
   // 빠르게 두 번 탭(같은 슬롯, 300ms 내) → 등록 플로우 진입.
