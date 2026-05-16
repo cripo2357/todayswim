@@ -165,14 +165,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  daySelected: { backgroundColor: tokens.color.pdMint },
+  // Figma 123:8264 — pd-mint 배경 + pd-blue 1px 테두리, 완전 원형
+  daySelected: {
+    backgroundColor: tokens.color.pdMint,
+    borderWidth: 1,
+    borderColor: tokens.color.pdBlue,
+  },
   dayNum: {
     fontSize: 16,
     lineHeight: 22,
     fontFamily: tokens.font.sansMedium,
     color: tokens.color.ink900,
   },
-  dayNumSelected: { color: tokens.color.white, fontFamily: tokens.font.sansBold },
+  // Figma 123:8265 — 선택 숫자는 Regular(흰색), Bold 아님
+  dayNumSelected: { color: tokens.color.white, fontFamily: tokens.font.sans },
   dayToday: { color: tokens.color.pdMint, fontFamily: tokens.font.sansBold },
   dot: {
     width: 5,
