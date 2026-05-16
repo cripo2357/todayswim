@@ -12,12 +12,24 @@ export type RootStackParamList = {
   TermsService: undefined;
   TermsPrivacy: undefined;
   ProfileSetup: undefined;
-  // signup: 가입 흐름(완료→Welcome) / edit: 내 정보에서 사진만 변경(완료→뒤로)
-  ProfileImage: { mode: 'signup' | 'edit' } | undefined;
+  // 가입 마지막 단계 전용 (완료→Welcome). 내 정보 수정은 이 화면을 쓰지 않음.
+  ProfileImage: undefined;
   Welcome: undefined;
 
   // 내 정보 (로그인 계정) — 3탭: 프로필 / 달력 / 사람들
   MyInfo: undefined;
+
+  // 설정 (내 정보 상단 우측 톱니 → 진입). Figma 129:5245
+  Settings: undefined;
+
+  // 프로필 (설정 > 프로필 → 진입). Figma 117:2556 — 기능은 MyInfo 프로필 탭과 동일
+  Profile: undefined;
+
+  // 친구 초대 플로우 (달력 탭 카드 "친구 초대" → 일정선택 → 친구선택 → 완료)
+  // Figma 126:4221 / 126:4726·126:7261·129:3442 / 129:3779
+  InviteScheduleSelect: undefined;
+  InviteFriends: undefined;
+  InviteDone: { count: number };
 
   // 시간표 조회·작성
   // 흐름: Map → Write(시간표 작성) → Time(modal/요일별) → Nickname(마지막) → Done

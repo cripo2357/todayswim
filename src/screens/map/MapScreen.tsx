@@ -345,7 +345,7 @@ export function MapScreen() {
             anchor={{ x: 0.5, y: 0.5 }}
             zIndex={5}
             caption={{
-              text: '내 위치',
+              text: profile?.name?.trim() || '내 위치',
               textSize: 14,
               color: tokens.color.ink900,
               haloColor: tokens.color.white,

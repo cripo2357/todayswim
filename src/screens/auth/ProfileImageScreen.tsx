@@ -1,22 +1,22 @@
-// Figma 110:3316 / 110:3327 / 110:3337 — 프로필 이미지 등록 (가입 마지막 단계).
+// Figma 110:3316 / 110:3327 / 110:3337 — 프로필 이미지 등록 (가입 마지막 단계, 가입 전용).
 //
 // 진입 시 성별에 맞는 번들 아바타가 기본 셋팅된다. 사용자는 그대로 두거나
-// 우하단 업로드 버튼으로 자기 사진을 올릴 수 있다. "프로필 사용" → 가입은 Welcome / 수정은 뒤로.
+// 우하단 업로드 버튼으로 자기 사진을 올릴 수 있다. "프로필 사용" → Welcome.
+// (내 정보 수정에서는 이 화면을 쓰지 않고 업로드 버튼이 바로 파일 선택기를 연다.)
 //
 // 3-state: idle(110:3316) / uploading(110:3327) / error(110:3337).
-// Phase 1: expo-image-picker 미도입 — 업로드는 mock. Phase 2에서 실제 픽+Storage 업로드.
 
 import React from 'react';
 import {
   View, Text, StyleSheet, Pressable, Animated, Alert, Image,
 } from 'react-native';
-import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as ImagePicker from 'expo-image-picker';
-import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { useProfile } from '@/store/profile';
 import { useAuth } from '@/store/auth';
+import { pickProfileImage } from '@/lib/pickProfileImage';
+import { uploadProfileAvatar } from '@/lib/uploadProfileAvatar';
 import {
   BUNDLE_AVATARS,
   defaultAvatarForGender,
@@ -42,8 +42,6 @@ function formatSince(createdAt?: string): string {
 
 export function ProfileImageScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const route = useRoute<RouteProp<RootStackParamList, 'ProfileImage'>>();
-  const mode = route.params?.mode ?? 'signup';
   const profile = useProfile((s) => s.profile);
   const saveProfile = useProfile((s) => s.save);
   const authUser = useAuth((s) => s.user);
@@ -59,64 +57,34 @@ export function ProfileImageScreen() {
   // 현재 선택된 사진 — 번들 AvatarId / 소셜 URL / 업로드 URI.
   const [photo, setPhoto] = React.useState<string>(initialPhoto);
   const [state, setState] = React.useState<State>('idle');
-  const uploadTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  React.useEffect(() => {
-    return () => {
-      if (uploadTimerRef.current) clearTimeout(uploadTimerRef.current);
-    };
-  }, []);
-
-  // 갤러리에서 사진 선택 → 1:1 크롭 → 512px 리사이즈 + JPEG 압축으로 용량 축소.
-  // (Phase 2에서 uploading 단계에 Supabase Storage 업로드 추가 예정.)
+  // 갤러리 선택 → 512px JPEG 리사이즈 → Storage 업로드 (공용 유틸).
   const pickImage = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
+    const r = await pickProfileImage();
+    if (r.status === 'denied') {
       Alert.alert(
         '사진 권한 필요',
         '프로필 사진을 등록하려면 설정에서 사진 보관함 접근을 허용해주세요.',
       );
       return;
     }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-    if (result.canceled) return;
-
-    const asset = result.assets[0];
-    if (!asset?.uri) {
+    if (r.status === 'canceled') return;
+    if (r.status === 'error') {
       setState('error');
       return;
     }
-
+    setPhoto(r.uri); // 낙관적 — 즉시 표시
     setState('uploading');
-    try {
-      // 원본이 수 MB일 수 있어 프로필용 512px / JPEG 압축으로 축소 후 저장.
-      const resized = await manipulateAsync(
-        asset.uri,
-        [{ resize: { width: 512 } }],
-        { compress: 0.7, format: SaveFormat.JPEG },
-      );
-      uploadTimerRef.current = setTimeout(() => {
-        uploadTimerRef.current = null;
-        setPhoto(resized.uri);
-        setState('idle');
-      }, 400);
-    } catch {
-      setState('error');
-    }
+    const up = await uploadProfileAvatar(r.base64);
+    if (up.status === 'ok') setPhoto(up.url); // 로컬→공개 URL
+    // skipped/error → 로컬 r.uri 유지 (가입 막지 않음)
+    setState('idle');
   };
 
   const onComplete = async () => {
     if (!profile) return;
     await saveProfile({ ...profile, photoUri: photo });
-    // 가입 흐름은 Welcome으로, 내 정보 수정은 이전 화면(내 정보)으로 복귀.
-    if (mode === 'edit') navigation.goBack();
-    else navigation.replace('Welcome');
+    navigation.replace('Welcome');
   };
 
   return (
@@ -138,25 +106,36 @@ export function ProfileImageScreen() {
   );
 }
 
-/** 선택된 사진을 원형으로 — 번들이면 SVG, 업로드 URI면 (Phase 2) Image. */
+/** 선택된 사진을 원형으로 — byellow 2px ring(외곽) + 안쪽 사진.
+ *  RN border 함정 회피 위해 byellow 배경 원 + 안쪽 작은 원 구조
+ *  (130:3640 byellow 외곽선, MyInfo와 통일). */
 function AvatarCircle({ photo, size }: { photo: string; size: number }) {
-  if (isBundleAvatar(photo)) {
-    const Svg = BUNDLE_AVATARS[photo];
-    return (
-      <View style={[styles.avatar, { width: size, height: size, borderRadius: size / 2 }]}>
-        <Svg width={size} height={size} />
-      </View>
-    );
-  }
-  // 사용자가 갤러리에서 고른 로컬 사진 (file:// URI).
+  const inner = size - 4; // 2px ring 양쪽
   return (
     <View
       style={[
-        styles.avatar,
+        styles.avatarRing,
         { width: size, height: size, borderRadius: size / 2 },
       ]}
     >
-      <Image source={{ uri: photo }} style={{ width: size, height: size }} />
+      <View
+        style={[
+          styles.avatarInner,
+          { width: inner, height: inner, borderRadius: inner / 2 },
+        ]}
+      >
+        {isBundleAvatar(photo) ? (
+          React.createElement(BUNDLE_AVATARS[photo], {
+            width: inner,
+            height: inner,
+          })
+        ) : (
+          <Image
+            source={{ uri: photo }}
+            style={{ width: inner, height: inner }}
+          />
+        )}
+      </View>
     </View>
   );
 }
@@ -282,11 +261,19 @@ const styles = StyleSheet.create({
   // Figma 110:3316 — 아바타 블록(아바타+업로드) + 닉네임/가입일, gap 10
   avatarBlock: { alignItems: 'center', gap: 10 },
   avatarWrap: { position: 'relative', width: IDLE_AVATAR, height: IDLE_AVATAR },
-  // 외곽선 없음 (border-0)
-  avatar: {
-    overflow: 'hidden',
+  // Figma 130:3640 — byellow 외곽선. RN border+overflow 함정 회피 위해
+  // byellow 배경 원 + 안쪽 2px 작은 원 구조 (MyInfo와 통일).
+  // size/borderRadius는 AvatarCircle에서 인라인으로 주입.
+  avatarRing: {
+    backgroundColor: tokens.color.pdByellow,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  avatarInner: {
+    backgroundColor: '#EBEBEB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
   // Figma 130:3640 — 우하단 검정(ink900) 32 원 + 흰 업로드 아이콘
   uploadBtn: {

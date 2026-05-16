@@ -1,0 +1,96 @@
+// 더미 데이터 (Phase 1 목업) — 친구 10 / 친구아닌 계정 10 / 수영일정 50.
+//
+// 백엔드(친구 시스템·Supabase) 연동 전까지 화면을 채우는 용도.
+// FriendsTab / InviteFriendsScreen / 달력 store(useSwimSchedules) 에서 사용.
+
+import type { MySwimSchedule, ScheduleVisibility } from '@/store/swimSchedule';
+import type { AvatarId } from '@/lib/avatars';
+
+export interface MockAccount {
+  id: string;
+  name: string;
+  nickname: string;
+  status: string;
+  code: string;
+  /** 번들 프로필 아바타 (avatar-male-1 등) */
+  avatar: AvatarId;
+}
+
+// ── 친구 10명 ────────────────────────────────────────────────
+export const MOCK_FRIENDS: MockAccount[] = [
+  { id: 'fr1', name: '강두형', nickname: '물개왕', status: '오늘도 1km 완영', code: 'POOL-1A2B', avatar: 'avatar-male-1' },
+  { id: 'fr2', name: '이수진', nickname: '자유형장인', status: '접영 연습 중', code: 'POOL-3C4D', avatar: 'avatar-female-1' },
+  { id: 'fr3', name: 'Joshua Smith', nickname: 'josh', status: '수영 더 열심히', code: 'POOL-5E6F', avatar: 'avatar-male-2' },
+  { id: 'fr4', name: '박민재', nickname: '새벽수영러', status: '아침 6시 고정', code: 'POOL-7G8H', avatar: 'avatar-male-3' },
+  { id: 'fr5', name: 'Alice Kim', nickname: 'ally', status: '평영이 제일 좋아', code: 'POOL-9I0J', avatar: 'avatar-female-2' },
+  { id: 'fr6', name: '정해린', nickname: '돌고래', status: '대회 준비 중 🏊', code: 'POOL-1K2L', avatar: 'avatar-female-3' },
+  { id: 'fr7', name: '최우진', nickname: '버터플라이', status: '접영 200m 도전', code: 'POOL-3M4N', avatar: 'avatar-male-4' },
+  { id: 'fr8', name: 'Daniel Park', nickname: 'danp', status: '주 5회 수영', code: 'POOL-5O6P', avatar: 'avatar-male-5' },
+  { id: 'fr9', name: '한지우', nickname: '잠수왕', status: '숨 참기 2분', code: 'POOL-7Q8R', avatar: 'avatar-female-4' },
+  { id: 'fr10', name: '오세영', nickname: '수영바보', status: '수영장이 내 집', code: 'POOL-9S0T', avatar: 'avatar-male-6' },
+];
+
+// ── 친구 아닌 계정 10개 ──────────────────────────────────────
+export const MOCK_NON_FRIENDS: MockAccount[] = [
+  { id: 'nf1', name: 'Bob Johnson', nickname: 'bobby', status: '수영 잘하고 싶다', code: 'POOL-AB12', avatar: 'avatar-male-2' },
+  { id: 'nf2', name: '김도윤', nickname: '초보수영', status: '발차기 연습 중', code: 'POOL-CD34', avatar: 'avatar-male-5' },
+  { id: 'nf3', name: 'Clara Garcia', nickname: 'clara', status: '물 무서워요', code: 'POOL-EF56', avatar: 'avatar-female-5' },
+  { id: 'nf4', name: '서지호', nickname: '주말수영', status: '주말에만 출몰', code: 'POOL-GH78', avatar: 'avatar-male-3' },
+  { id: 'nf5', name: 'Emma Lee', nickname: 'emma', status: '자유형 25m', code: 'POOL-IJ90', avatar: 'avatar-female-6' },
+  { id: 'nf6', name: '윤채원', nickname: '물방울', status: '수영 입문 1주차', code: 'POOL-KL12', avatar: 'avatar-female-2' },
+  { id: 'nf7', name: 'Frank Wong', nickname: 'frank', status: '레인 독차지 금지', code: 'POOL-MN34', avatar: 'avatar-male-6' },
+  { id: 'nf8', name: '임태현', nickname: '느림보', status: '천천히 오래', code: 'POOL-OP56', avatar: 'avatar-male-4' },
+  { id: 'nf9', name: 'Henry Martinez', nickname: 'henry', status: '@henrymartinez', code: 'POOL-QR78', avatar: 'avatar-female-6' },
+  { id: 'nf10', name: '배수아', nickname: '인어공주', status: '바다 수영 좋아', code: 'POOL-ST90', avatar: 'avatar-female-3' },
+];
+
+// ── 수영 일정 50개 (오늘 기준 ±, 다양한 풀/시간/공개범위) ────
+const POOLS = [
+  { id: 'p1', name: '올림픽 수영장' },
+  { id: 'p2', name: '강남구민체육센터' },
+  { id: 'p3', name: 'ABC 수영장' },
+  { id: 'p4', name: '잠실 실내수영장' },
+  { id: 'p5', name: '관악구민체육센터' },
+  { id: 'p6', name: '송파 한솔수영장' },
+  { id: 'p7', name: '여의도 스포츠클럽' },
+  { id: 'p8', name: '목동 아쿠아센터' },
+];
+
+const SLOTS = [
+  { start: '06:00', end: '08:00' },
+  { start: '07:00', end: '09:00' },
+  { start: '09:00', end: '11:00' },
+  { start: '12:00', end: '14:00' },
+  { start: '13:00', end: '15:00' },
+  { start: '15:00', end: '18:00' },
+  { start: '18:00', end: '20:00' },
+  { start: '20:00', end: '22:00' },
+];
+
+const VIS: ScheduleVisibility[] = ['private', 'friends', 'public'];
+
+function ymd(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+export const MOCK_SCHEDULES: MySwimSchedule[] = Array.from({ length: 50 }, (_, i) => {
+  const base = new Date();
+  // -12 ~ +24일 사이로 분산 (오늘 포함, 같은 날 복수 일정도 생김)
+  base.setDate(base.getDate() + ((i * 7) % 37) - 12);
+  const pool = POOLS[i % POOLS.length];
+  const slot = SLOTS[i % SLOTS.length];
+  return {
+    id: `mock-sch-${i + 1}`,
+    poolId: pool.id,
+    poolName: pool.name,
+    poolPhotoUrl: undefined,
+    date: ymd(base),
+    start: slot.start,
+    end: slot.end,
+    visibility: VIS[i % VIS.length],
+    createdAt: new Date().toISOString(),
+  };
+});

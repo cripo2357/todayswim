@@ -311,7 +311,7 @@ function DoneView({ onClose }: { onClose: () => void }) {
         onPress={onClose}
         style={({ pressed }) => [styles.cta, pressed && { opacity: 0.85 }]}
       >
-        <Text style={styles.ctaLabel}>완료했습니다</Text>
+        <Text style={styles.ctaLabel}>알겠습니다</Text>
         <Check size={20} color={tokens.color.black} strokeWidth={2.4} />
       </Pressable>
     </View>

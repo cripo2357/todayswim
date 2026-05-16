@@ -1,21 +1,22 @@
-// Figma 117:2556 — 내 정보 (로그인 계정). 3탭: 프로필 / 달력 / 사람들.
-// 1번 탭(프로필)만 구현. 달력·사람들은 디자인 확정 시 추가 (placeholder).
-//
-// 가입(ProfileSetup)과 달리 "보기+수정" 화면 — 저장 버튼 없이 변경 즉시 반영.
+// Figma 134:9643 — 내 정보 (로그인 계정). 3탭: 달력 / 친구 / 알림 (기본=달력).
+// 달력=CalendarTab, 알림=NotificationsTab. 친구는 디자인 확정 시 추가(placeholder).
+// 프로필은 별도 화면(ProfileScreen, 설정>프로필)으로 분리 — ProfileTab은 여기서
+// export 되어 재사용됨(보기+수정, 저장 버튼 없이 즉시 반영).
 
 import React from 'react';
 import {
   View, Text, TextInput, ScrollView, StyleSheet, Pressable,
-  KeyboardAvoidingView, Platform,
+  Platform, Alert, Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, Pencil, Calendar as LucideCalendar } from 'lucide-react-native';
+import { Calendar as LucideCalendar } from 'lucide-react-native';
 import IconArrowUpload from '@assets/icons/arrow-upload.svg';
+import IconEdit from '@assets/icons/edit.svg';
 import IconChevronDown from '@assets/icons/chevron-down.svg';
 import IconIntro from '@assets/icons/intro.svg';
-import { isNicknameTaken, claimNickname } from '@/lib/nicknames';
+import { isNicknameTaken, claimNickname, sanitizeNickname } from '@/lib/nicknames';
 
 import {
   useProfile,
@@ -30,19 +31,25 @@ import { isBundleAvatar, BUNDLE_AVATARS } from '@/lib/avatars';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
 import { CalendarSheet } from '@/components/auth/CalendarSheet';
+import { GenderSheet } from '@/components/auth/GenderSheet';
+import { pickProfileImage } from '@/lib/pickProfileImage';
+import { uploadProfileAvatar } from '@/lib/uploadProfileAvatar';
 import { CalendarTab } from '@/components/calendar/CalendarTab';
+import { NotificationsTab } from '@/components/notifications/NotificationsTab';
+import { FriendsTab } from '@/components/friends/FriendsTab';
+import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import IconUser from '@assets/icons/user-profile.svg';
 import IconGenderMale from '@assets/icons/gender-male.svg';
+import IconGenderFemale from '@assets/icons/gender-female.svg';
 import IconLock from '@assets/icons/lock-secure.svg';
 import IconSettings from '@assets/icons/settings.svg';
 import IconSectionBasic from '@assets/icons/section-basic.svg';
 import IconLaneCount from '@assets/icons/lane-count.svg';
-import { Image } from 'react-native';
 
 const ALL_STROKES: Stroke[] = ['자유형', '배영', '접영', '평영'];
 const EXP_MAX = 30;
 const BIO_MAX = 10;
-const TABS = ['프로필', '달력', '사람들'] as const;
+const TABS = ['달력', '친구', '알림'] as const;
 type Tab = (typeof TABS)[number];
 
 /** 가입일 → "YYYY년 M월 D일부터 풀스데이와 수영중" */
@@ -55,8 +62,7 @@ function formatSince(createdAt?: string): string {
 export function MyInfoScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const profile = useProfile((s) => s.profile);
-  const saveProfile = useProfile((s) => s.save);
-  const [tab, setTab] = React.useState<Tab>('프로필');
+  const [tab, setTab] = React.useState<Tab>('달력');
 
   // profile 없으면(비정상 진입) 안전하게 뒤로.
   React.useEffect(() => {
@@ -64,29 +70,23 @@ export function MyInfoScreen() {
   }, [profile, navigation]);
   if (!profile) return null;
 
-  const patch = (p: Partial<UserProfile>) => saveProfile({ ...profile, ...p });
-
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
-      {/* 헤더 — 뒤로 / 닉네임 / 설정 */}
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => navigation.goBack()}
-          hitSlop={8}
-          style={styles.headerBtn}
-          accessibilityLabel="뒤로"
-        >
-          <ChevronLeft size={24} color={tokens.color.ink900} strokeWidth={1.5} />
-        </Pressable>
-        <Text style={styles.headerTitle} numberOfLines={1}>
-          내 정보
-        </Text>
-        <Pressable hitSlop={8} style={styles.headerBtn} accessibilityLabel="설정">
-          <IconSettings width={24} height={24} color={tokens.color.ink900} />
-        </Pressable>
-      </View>
+      <ScreenHeader
+        title="내 정보"
+        onBack={() => navigation.goBack()}
+        right={
+          <Pressable
+            hitSlop={8}
+            accessibilityLabel="설정"
+            onPress={() => navigation.navigate('Settings')}
+          >
+            <IconSettings width={24} height={24} color={tokens.color.ink900} />
+          </Pressable>
+        }
+      />
 
-      {/* 탭 바 */}
+      {/* 탭 바 (Figma 134:9655) */}
       <View style={styles.tabWrap}>
         <View style={styles.tabGroup}>
           {TABS.map((t) => {
@@ -106,33 +106,36 @@ export function MyInfoScreen() {
         </View>
       </View>
 
-      {tab === '프로필' && (
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.flex}
-        >
-          <ProfileTab profile={profile} patch={patch} />
-        </KeyboardAvoidingView>
-      )}
       {tab === '달력' && <CalendarTab />}
-      {tab === '사람들' && (
-        <View style={styles.placeholder}>
-          <Text style={styles.placeholderText}>사람들 탭은 준비 중이에요.</Text>
-        </View>
-      )}
+      {tab === '친구' && <FriendsTab />}
+      {tab === '알림' && <NotificationsTab />}
     </SafeAreaView>
   );
 }
 
-function ProfileTab({
+export function ProfileTab({
   profile,
   patch,
 }: {
   profile: UserProfile;
   patch: (p: Partial<UserProfile>) => void;
 }) {
-  const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  // 내 정보에서는 ProfileImage 화면을 거치지 않고 바로 파일 선택기 → 즉시 반영.
+  const onPickPhoto = async () => {
+    const r = await pickProfileImage();
+    if (r.status === 'denied') {
+      Alert.alert(
+        '사진 권한 필요',
+        '프로필 사진을 등록하려면 설정에서 사진 보관함 접근을 허용해주세요.',
+      );
+      return;
+    }
+    if (r.status !== 'ok') return; // canceled / error
+    patch({ photoUri: r.uri }); // 낙관적 — 즉시 표시
+    const up = await uploadProfileAvatar(r.base64);
+    if (up.status === 'ok') patch({ photoUri: up.url }); // 로컬→공개 URL
+    // skipped/error → 로컬 URI 유지 (무손실, 현행 동작)
+  };
   const [bio, setBio] = React.useState(profile.bio ?? '');
   const bioInputRef = React.useRef<TextInput>(null);
   const [bioEditing, setBioEditing] = React.useState(false);
@@ -148,6 +151,7 @@ function ProfileTab({
     bioInputRef.current?.blur();
   };
   const [showCalendar, setShowCalendar] = React.useState(false);
+  const [showGender, setShowGender] = React.useState(false);
 
   // 2그룹(수영기간/영법/자격증/IM100) — 변경 즉시 저장하지 않고 로컬 state로
   // 보관하다가 화면 이탈(탭 변경/뒤로가기 = ProfileTab unmount) 시 일괄 저장.
@@ -198,7 +202,7 @@ function ProfileTab({
   const [nickEditing, setNickEditing] = React.useState(false);
 
   const onChangeNick = (v: string) => {
-    setNick(v);
+    setNick(sanitizeNickname(v));
     setNickErr(false);
   };
   // "변경" 버튼: 비활성 → 편집 시작 / 편집 중 → 검증·저장.
@@ -269,7 +273,7 @@ function ProfileTab({
           </View>
         </View>
         <Pressable
-          onPress={() => navigation.navigate('ProfileImage', { mode: 'edit' })}
+          onPress={onPickPhoto}
           style={styles.avatarUploadBtn}
           accessibilityLabel="사진 변경"
         >
@@ -303,13 +307,22 @@ function ProfileTab({
           </View>
           <Pressable
             onPress={onNickButton}
-            style={[styles.nickChangeBtn, styles.nickChangeBtnActive]}
-            accessibilityLabel="닉네임 변경"
+            style={[styles.nickChangeBtn, nickEditing && styles.nickChangeBtnActive]}
+            accessibilityLabel={nickEditing ? '닉네임 저장' : '닉네임 변경'}
           >
-            <Text style={[styles.nickChangeLabel, styles.nickChangeLabelActive]}>
-              변경
+            <Text
+              style={[
+                styles.nickChangeLabel,
+                nickEditing && styles.nickChangeLabelActive,
+              ]}
+            >
+              {nickEditing ? '저장' : '변경'}
             </Text>
-            <Pencil size={16} color={tokens.color.white} strokeWidth={2} />
+            <IconEdit
+              width={16}
+              height={16}
+              color={nickEditing ? tokens.color.white : '#4B5563'}
+            />
           </Pressable>
         </View>
         {nickErr ? (
@@ -348,13 +361,22 @@ function ProfileTab({
           </View>
           <Pressable
             onPress={onBioButton}
-            style={[styles.nickChangeBtn, styles.nickChangeBtnActive]}
-            accessibilityLabel="자기소개 변경"
+            style={[styles.nickChangeBtn, bioEditing && styles.nickChangeBtnActive]}
+            accessibilityLabel={bioEditing ? '자기소개 저장' : '자기소개 변경'}
           >
-            <Text style={[styles.nickChangeLabel, styles.nickChangeLabelActive]}>
-              변경
+            <Text
+              style={[
+                styles.nickChangeLabel,
+                bioEditing && styles.nickChangeLabelActive,
+              ]}
+            >
+              {bioEditing ? '저장' : '변경'}
             </Text>
-            <Pencil size={16} color={tokens.color.white} strokeWidth={2} />
+            <IconEdit
+              width={16}
+              height={16}
+              color={bioEditing ? tokens.color.white : '#4B5563'}
+            />
           </Pressable>
         </View>
         {bioEditing ? (
@@ -365,8 +387,12 @@ function ProfileTab({
       </Field>
 
       <Field label="성별">
-        <View style={styles.inputBox}>
-          <IconGenderMale width={20} height={20} />
+        <Pressable onPress={() => setShowGender(true)} style={styles.inputBox}>
+          {profile.gender === 'female' ? (
+            <IconGenderFemale width={20} height={20} />
+          ) : (
+            <IconGenderMale width={20} height={20} />
+          )}
           <Text style={styles.inputText}>
             {profile.gender === 'male'
               ? '남성'
@@ -375,7 +401,7 @@ function ProfileTab({
                 : '성별'}
           </Text>
           <IconChevronDown width={20} height={20} />
-        </View>
+        </Pressable>
       </Field>
 
       <Field label="생년월일">
@@ -457,6 +483,13 @@ function ProfileTab({
         initial={profile.birthDate || '1990-01-01'}
         onConfirm={(iso) => patch({ birthDate: iso })}
         onClose={() => setShowCalendar(false)}
+      />
+
+      <GenderSheet
+        visible={showGender}
+        value={profile.gender}
+        onConfirm={(g) => patch({ gender: g })}
+        onClose={() => setShowGender(false)}
       />
     </ScrollView>
   );
@@ -585,27 +618,6 @@ function formatExp(value: number, max: number): string {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: tokens.color.bgPaper },
-  flex: { flex: 1 },
-
-  // 헤더
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 48,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    gap: 16,
-  },
-  headerBtn: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: {
-    flex: 1,
-    fontSize: 16,
-    lineHeight: 22,
-    letterSpacing: -0.112,
-    fontFamily: tokens.font.sansBold,
-    color: tokens.color.ink900,
-    textAlign: 'center',
-  },
 
   // 탭
   tabWrap: { paddingHorizontal: 16, paddingVertical: 8 },
@@ -634,13 +646,6 @@ const styles = StyleSheet.create({
     color: '#4B5563',
   },
   tabLabelActive: { color: tokens.color.ink900 },
-
-  placeholder: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  placeholderText: {
-    fontSize: 14,
-    fontFamily: tokens.font.sans,
-    color: tokens.color.ink500,
-  },
 
   // 스크롤 컨텐츠
   scroll: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32 },

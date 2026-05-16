@@ -22,6 +22,11 @@ import { TermsPrivacyScreen } from '@/screens/auth/TermsPrivacyScreen';
 import { ProfileSetupScreen } from '@/screens/auth/ProfileSetupScreen';
 import { ProfileImageScreen } from '@/screens/auth/ProfileImageScreen';
 import { MyInfoScreen } from '@/screens/auth/MyInfoScreen';
+import { SettingsScreen } from '@/screens/settings/SettingsScreen';
+import { ProfileScreen } from '@/screens/auth/ProfileScreen';
+import { InviteScheduleSelectScreen } from '@/screens/invite/InviteScheduleSelectScreen';
+import { InviteFriendsScreen } from '@/screens/invite/InviteFriendsScreen';
+import { InviteDoneScreen } from '@/screens/invite/InviteDoneScreen';
 import { WelcomeScreen } from '@/screens/auth/WelcomeScreen';
 import { ErrorNotFoundScreen } from '@/screens/status/ErrorNotFoundScreen';
 import { ErrorNoInternetScreen } from '@/screens/status/ErrorNoInternetScreen';
@@ -118,6 +123,15 @@ export function RootNavigator() {
       <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
       <Stack.Screen name="ProfileImage" component={ProfileImageScreen} />
       <Stack.Screen name="MyInfo" component={MyInfoScreen} />
+      <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="Profile" component={ProfileScreen} />
+      <Stack.Screen name="InviteScheduleSelect" component={InviteScheduleSelectScreen} />
+      <Stack.Screen name="InviteFriends" component={InviteFriendsScreen} />
+      <Stack.Screen
+        name="InviteDone"
+        component={InviteDoneScreen}
+        options={DIM_MODAL_OPTIONS}
+      />
       <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ animation: 'fade' }} />
 
       {/* 상태/오류/점검/강제 업데이트 — gestureEnabled 차단(블로킹 화면) */}

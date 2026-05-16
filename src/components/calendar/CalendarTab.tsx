@@ -1,22 +1,35 @@
 // 내 정보 > 달력 탭 — Figma 120:3156.
-// 주간 캘린더 + 선택일의 내 수영 일정 카드 리스트 + "수영 일정 추가".
+// 주간 캘린더 + 선택일의 내 수영 일정 카드(공개범위 칩 + 참여자 + 친구 초대) + "수영 일정 추가".
 //
-// 친구/모르는사람 목록은 친구 시스템(사람들 탭)·Supabase 선행이라 Phase 2 —
-// 지금은 본인 아바타만 표시.
+// 친구/공개범위 실동작은 친구 시스템·Supabase 선행이라 Phase 2 —
+// 공개범위 칩은 현재 값 표시(탭 inert), 참여자는 본인만, 친구 초대는 초대 플로우로 이동.
 
 import React from 'react';
 import {
   View, Text, StyleSheet, Pressable, ScrollView, Image, Alert,
 } from 'react-native';
-import { CalendarCheck, Mail } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { CalendarCheck, ChevronDown, Plus, User } from 'lucide-react-native';
 import { useProfile } from '@/store/profile';
-import { useSwimSchedules, dateKey } from '@/store/swimSchedule';
+import {
+  useSwimSchedules,
+  dateKey,
+  type ScheduleVisibility,
+} from '@/store/swimSchedule';
 import { isBundleAvatar, BUNDLE_AVATARS } from '@/lib/avatars';
+import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
 import { WeekCalendar } from './WeekCalendar';
 import { AddScheduleSheet } from './AddScheduleSheet';
 
 const DOW_KR = ['일', '월', '화', '수', '목', '금', '토'];
+
+const VIS_LABEL: Record<ScheduleVisibility, string> = {
+  private: '일정 비공개',
+  friends: '친구에게만 일정 공개',
+  public: '모두에게 공개',
+};
 
 function formatDate(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number);
@@ -25,6 +38,7 @@ function formatDate(iso: string): string {
 }
 
 export function CalendarTab() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const profile = useProfile((s) => s.profile);
   const schedules = useSwimSchedules((s) => s.schedules);
   const remove = useSwimSchedules((s) => s.remove);
@@ -39,6 +53,8 @@ export function CalendarTab() {
   const dayList = schedules
     .filter((s) => s.date === selKey)
     .sort((a, b) => a.start.localeCompare(b.start));
+
+  const myName = profile?.name?.trim() || '내 닉네임';
 
   const onCancel = (id: string) => {
     Alert.alert('수영 취소', '이 수영 일정을 취소할까요?', [
@@ -69,77 +85,76 @@ export function CalendarTab() {
           </View>
         ) : (
           dayList.map((s) => (
-            <View key={s.id} style={styles.card}>
-              <View style={styles.cardHead}>
-                <View style={styles.cardHeadText}>
-                  <Text style={styles.poolName}>{s.poolName}</Text>
-                  <View style={styles.metaRow}>
-                    <CalendarCheck size={16} color={tokens.color.ink500} />
-                    <Text style={styles.metaText}>{formatDate(s.date)}</Text>
-                  </View>
-                  <View style={styles.metaRow}>
-                    <Text style={styles.metaText}>
-                      {s.start} ~ {s.end}
+            <Pressable
+              key={s.id}
+              onLongPress={() => onCancel(s.id)}
+              style={styles.card}
+            >
+              {/* 상단: 풀명/일시/공개범위 + 썸네일 */}
+              <View style={styles.cardTop}>
+                <View style={styles.cardInfo}>
+                  <Text style={styles.poolName} numberOfLines={1}>
+                    {s.poolName}
+                  </Text>
+                  <Text style={styles.when} numberOfLines={1}>
+                    {formatDate(s.date)}, {s.start} ~ {s.end}
+                  </Text>
+                  <View style={styles.visChip}>
+                    <Text style={styles.visChipLabel}>
+                      {VIS_LABEL[s.visibility]}
                     </Text>
+                    <ChevronDown
+                      size={12}
+                      color={tokens.color.pdBlue}
+                      strokeWidth={2}
+                    />
                   </View>
                 </View>
                 {s.poolPhotoUrl ? (
-                  <Image
-                    source={{ uri: s.poolPhotoUrl }}
-                    style={styles.thumb}
-                  />
+                  <Image source={{ uri: s.poolPhotoUrl }} style={styles.thumb} />
                 ) : (
                   <View style={[styles.thumb, styles.thumbEmpty]} />
                 )}
               </View>
 
-              {/* 참여자 — 본인만 (친구/모르는사람은 Phase 2) */}
-              <View style={styles.meRow}>
-                <View style={styles.avatarSm}>
-                  {isBundleAvatar(profile?.photoUri) ? (
-                    React.createElement(BUNDLE_AVATARS[profile.photoUri], {
-                      width: 28,
-                      height: 28,
-                    })
-                  ) : profile?.photoUri ? (
-                    <Image
-                      source={{ uri: profile.photoUri }}
-                      style={styles.avatarSmImg}
-                    />
-                  ) : (
-                    <View style={styles.avatarSmImg} />
-                  )}
-                </View>
-                <Text style={styles.meName}>내 닉네임</Text>
-              </View>
+              <View style={styles.divider} />
 
-              <View style={styles.cardBtns}>
+              {/* 참여자 — 본인 + 친구 초대 (친구 목록은 Phase 2) */}
+              <View style={styles.people}>
+                <View style={styles.miniRow}>
+                  <View style={[styles.miniAvatar, styles.miniMine]}>
+                    {isBundleAvatar(profile?.photoUri) ? (
+                      React.createElement(BUNDLE_AVATARS[profile.photoUri], {
+                        width: 22,
+                        height: 22,
+                      })
+                    ) : profile?.photoUri ? (
+                      <Image
+                        source={{ uri: profile.photoUri }}
+                        style={styles.miniAvatarImg}
+                      />
+                    ) : (
+                      <User
+                        size={12}
+                        color={tokens.color.ink400}
+                        strokeWidth={2}
+                      />
+                    )}
+                  </View>
+                  <Text style={styles.miniName} numberOfLines={1}>
+                    {myName}
+                  </Text>
+                </View>
+
                 <Pressable
-                  onPress={() => onCancel(s.id)}
-                  style={({ pressed }) => [
-                    styles.cancelBtn,
-                    pressed && { opacity: 0.85 },
-                  ]}
+                  onPress={() => navigation.navigate('InviteScheduleSelect')}
+                  style={styles.inviteChip}
                 >
-                  <Text style={styles.cancelLabel}>수영 취소</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() =>
-                    Alert.alert(
-                      '친구 초대',
-                      '친구 초대는 친구 기능 준비 후 제공됩니다.',
-                    )
-                  }
-                  style={({ pressed }) => [
-                    styles.inviteBtn,
-                    pressed && { opacity: 0.85 },
-                  ]}
-                >
-                  <Text style={styles.inviteLabel}>친구 초대</Text>
-                  <Mail size={18} color={tokens.color.black} strokeWidth={2} />
+                  <Plus size={14} color={tokens.color.pdMint} strokeWidth={2.4} />
+                  <Text style={styles.inviteChipLabel}>친구 초대</Text>
                 </Pressable>
               </View>
-            </View>
+            </Pressable>
           ))
         )}
       </ScrollView>
@@ -178,84 +193,104 @@ const styles = StyleSheet.create({
     color: tokens.color.ink500,
   },
 
+  // Figma 120:3156 일정 카드 — white r16 p16 Shadow/lg
   card: {
-    borderWidth: 1,
-    borderColor: tokens.color.lineDefault,
-    borderRadius: 20,
+    backgroundColor: tokens.color.bgPaper,
+    borderRadius: 16,
     padding: 16,
     gap: 12,
-    backgroundColor: tokens.color.white,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 4,
   },
-  cardHead: { flexDirection: 'row', gap: 12 },
-  cardHeadText: { flex: 1, gap: 6 },
+  cardTop: { flexDirection: 'row', gap: 12 },
+  cardInfo: { flex: 1, gap: 8 },
   poolName: {
-    fontSize: 16,
-    lineHeight: 22,
-    letterSpacing: -0.112,
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: -0.084,
     fontFamily: tokens.font.sansBold,
-    color: tokens.color.ink900,
+    color: '#1F2937',
   },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  metaText: {
-    fontSize: 14,
-    lineHeight: 20,
+  when: {
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: -0.06,
     fontFamily: tokens.font.sans,
-    color: tokens.color.ink500,
+    color: '#1F2937',
   },
-  thumb: { width: 72, height: 56, borderRadius: 12, backgroundColor: '#E2E8F0' },
-  thumbEmpty: { backgroundColor: '#E2E8F0' },
-
-  meRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  avatarSm: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    overflow: 'hidden',
-    backgroundColor: '#EBEBEB',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarSmImg: { width: 28, height: 28 },
-  meName: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: tokens.font.sansMedium,
-    color: tokens.color.ink900,
-  },
-
-  cardBtns: { flexDirection: 'row', gap: 8 },
-  cancelBtn: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    minHeight: 48,
-    borderRadius: 14,
-    backgroundColor: tokens.color.bgSubtle,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelLabel: {
-    fontSize: 16,
-    lineHeight: 22,
-    letterSpacing: -0.112,
-    fontFamily: tokens.font.sansSemibold,
-    color: tokens.color.ink900,
-  },
-  inviteBtn: {
-    flex: 1,
+  visChip: {
+    alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    minHeight: 48,
-    borderRadius: 14,
-    backgroundColor: tokens.color.pdByellow,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: tokens.color.pdBlue,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
-  inviteLabel: {
-    fontSize: 16,
-    lineHeight: 22,
-    letterSpacing: -0.112,
+  visChipLabel: {
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: -0.06,
+    fontFamily: tokens.font.sansMedium,
+    color: tokens.color.pdBlue,
+  },
+  thumb: { width: 80, height: 80, borderRadius: 6, backgroundColor: '#E2E8F0' },
+  thumbEmpty: { backgroundColor: '#E2E8F0' },
+
+  divider: { height: 1, backgroundColor: tokens.color.lineDefault },
+
+  people: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 7,
+  },
+  miniRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    maxWidth: 120,
+  },
+  miniAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  miniMine: { borderColor: tokens.color.pdByellow },
+  miniAvatarImg: { width: 22, height: 22 },
+  miniName: {
+    fontSize: 10,
+    lineHeight: 14,
+    letterSpacing: -0.04,
     fontFamily: tokens.font.sansBold,
-    color: tokens.color.black,
+    color: '#1F2937',
+  },
+  inviteChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderColor: tokens.color.pdMint,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  inviteChipLabel: {
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: -0.06,
+    fontFamily: tokens.font.sansMedium,
+    color: tokens.color.pdMint,
   },
 
   footer: {

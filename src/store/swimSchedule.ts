@@ -6,6 +6,7 @@
  */
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { MOCK_SCHEDULES } from '@/lib/mockData';
 
 export type ScheduleVisibility = 'private' | 'friends' | 'public';
 
@@ -32,14 +33,15 @@ interface SwimScheduleState {
 const STORAGE_KEY = 'poolsday.swimSchedules';
 
 export const useSwimSchedules = create<SwimScheduleState>((set, get) => ({
-  schedules: [],
+  // Phase 1: 저장소 비어있으면 더미 50개로 시드 (mockData).
+  schedules: MOCK_SCHEDULES,
   hydrated: false,
 
   hydrate: async () => {
     try {
       const raw = await AsyncStorage.getItem(STORAGE_KEY);
       set({
-        schedules: raw ? (JSON.parse(raw) as MySwimSchedule[]) : [],
+        schedules: raw ? (JSON.parse(raw) as MySwimSchedule[]) : MOCK_SCHEDULES,
         hydrated: true,
       });
     } catch {

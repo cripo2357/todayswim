@@ -25,3 +25,13 @@ export async function claimNickname(nickname: string): Promise<void> {
   if (!n) return;
   await supabase.from('profile_nicknames').insert({ nickname: n });
 }
+
+/**
+ * 닉네임 입력 필터 — 영소문자(a-z)·한글·숫자만 허용.
+ * 공백·특수문자·영대문자 등 그 외 문자는 모두 제거(입력 자체를 차단).
+ * 한글 IME 조합 중 자모(ㄱ-ㅎ, ㅏ-ㅣ, 결합 자모 U+1100~U+11FF)도 허용해
+ * 입력 도중 글자가 끊기지 않게 한다.
+ */
+export function sanitizeNickname(v: string): string {
+  return v.replace(/[^a-z0-9가-힣ㄱ-ㅎㅏ-ㅣᄀ-ᇿ]/g, '');
+}
