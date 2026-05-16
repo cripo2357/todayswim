@@ -43,14 +43,14 @@ import IconMapPin from '@assets/icons/settings/map-pin.svg';
 
 const FEEDBACK_EMAIL = 'cripo2357@gmail.com';
 
-// 다른 사람 수영 일정 보기 — OptionSheet 옵션 + 행 우측 표시값
+// 내 일정의 다른 참여자 보기 — OptionSheet 옵션 + 행 우측 표시값
 const VIEW_OPTIONS: Option<OthersScheduleView>[] = [
-  { value: 'friends', label: '친구 일정만 보기' },
-  { value: 'public', label: '다른 사람 일정도 보기' },
+  { value: 'friends', label: '참여하는 친구들만 보기' },
+  { value: 'public', label: '모든 참여자 보기' },
 ];
 const VIEW_VALUE: Record<OthersScheduleView, string> = {
-  friends: '친구만',
-  public: '모든 사람',
+  friends: '참여 친구만',
+  public: '모든 참여자',
 };
 // 수영 일정 초대
 const INVITE_OPTIONS: Option<ScheduleInvite>[] = [
@@ -130,7 +130,7 @@ export function SettingsScreen() {
         <Section title="수영 일정">
           <Row
             icon={<IconCalendar width={24} height={24} />}
-            label="다른 사람 수영 일정 보기"
+            label="내 일정의 다른 참여자 보기"
             value={VIEW_VALUE[othersView]}
             onPress={() => setViewSheet(true)}
           />
@@ -206,7 +206,7 @@ export function SettingsScreen() {
       <OptionSheet<OthersScheduleView>
         visible={viewSheet}
         onClose={() => setViewSheet(false)}
-        title="다른 사람 수영 일정 보기"
+        title="내 일정의 다른 참여자 보기"
         options={VIEW_OPTIONS}
         value={othersView}
         onConfirm={(v) => setOthersView(v)}
