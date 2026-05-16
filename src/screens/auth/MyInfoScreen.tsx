@@ -650,23 +650,25 @@ const styles = StyleSheet.create({
 
   // 탭
   tabWrap: { paddingHorizontal: 16, paddingVertical: 8 },
-  // Figma 133:6053 — 알림 미읽음 배지 (우상단 핀, pd-pink #FF2D55)
+  // Figma 133:6053 — 알림 미읽음 배지: 29 원, #FF2D55,
+  // tabWrap(=Figma Frame px16 py8) 기준 top:0 / left319 → right:27
   unreadBadge: {
     position: 'absolute',
     top: 0,
-    right: 8,
-    minWidth: 22,
-    height: 22,
-    borderRadius: 11,
-    paddingHorizontal: 6,
+    right: 27,
+    width: 29,
+    height: 29,
+    borderRadius: 15,
     backgroundColor: '#FF2D55',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // Figma 133:6054 — Regular 16/22 -0.112 흰색 중앙
   unreadBadgeText: {
-    fontSize: 12,
-    lineHeight: 16,
-    fontFamily: tokens.font.sansBold,
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sans,
     color: tokens.color.white,
     textAlign: 'center',
   },
