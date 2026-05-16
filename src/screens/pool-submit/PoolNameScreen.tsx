@@ -12,6 +12,7 @@ import {
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import IconChevronDown from '@assets/icons/chevron-down.svg';
+import IconNotch from '@assets/icons/textarea-notch.svg';
 
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { AppHeader } from '@/components/layout/AppHeader';
@@ -317,7 +318,7 @@ function EditForm({ poolId }: { poolId?: string }) {
                   <TextInput
                     value={name}
                     onChangeText={setName}
-                    placeholder="풀스데이 체육센터"
+                    placeholder="풀스데이 수영장"
                     placeholderTextColor={tokens.color.ink400}
                     style={styles.inputText}
                     maxLength={40}
@@ -338,7 +339,10 @@ function EditForm({ poolId }: { poolId?: string }) {
                     maxLength={DESC_MAX}
                     textAlignVertical="top"
                   />
-                  <Text style={styles.counterText}>{desc.length}/{DESC_MAX}</Text>
+                  <View style={styles.textareaFooter}>
+                    <Text style={styles.counterText}>{desc.length}/{DESC_MAX}</Text>
+                    <IconNotch width={16} height={16} />
+                  </View>
                 </View>
               </Field>
 
@@ -592,32 +596,37 @@ const styles = StyleSheet.create({
   },
   optionLabelChecked: { color: tokens.color.white },
 
-  // edit 모드 textarea
+  // edit 모드 textarea — Figma 90:7409 (field h-200: label 20 + gap 8 + box 172)
   textareaBox: {
+    height: 172,
     backgroundColor: tokens.color.bgPaper,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     borderRadius: 14,
     padding: 12,
-    minHeight: 180,
+    gap: 10,
   },
   textareaInput: {
     flex: 1,
     fontFamily: tokens.font.sans,
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: 16,
+    lineHeight: 26,
     color: tokens.color.ink900,
     padding: 0,
-    minHeight: 140,
+  },
+  // Figma 90:7413 — 박스 하단 행: 카운터(flex) + 리사이즈 notch
+  textareaFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   counterText: {
-    alignSelf: 'flex-start',
+    flex: 1,
     fontFamily: tokens.font.sans,
     fontSize: 12,
     lineHeight: 16,
     letterSpacing: -0.06,
     color: tokens.color.ink400,
-    marginTop: 8,
   },
 
   // submit 버튼 (Figma — pd-byellow + 검정 Bold + wrench icon)

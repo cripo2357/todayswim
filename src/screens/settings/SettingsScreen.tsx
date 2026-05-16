@@ -36,6 +36,7 @@ import IconBell from '@assets/icons/settings/bell.svg';
 import IconCalendar from '@assets/icons/settings/calendar.svg';
 import IconEnvelope from '@assets/icons/settings/envelope.svg';
 import IconLifeBuoy from '@assets/icons/settings/life-buoy.svg';
+import IconEditPencil from '@assets/icons/settings/edit-pencil.svg';
 import IconMegaphone from '@assets/icons/settings/megaphone.svg';
 import IconQuestion from '@assets/icons/settings/question.svg';
 import IconGavel from '@assets/icons/settings/gavel.svg';
@@ -190,6 +191,11 @@ export function SettingsScreen() {
             icon={<IconLifeBuoy width={24} height={24} />}
             label="새로운 수영장 등록 요청"
             onPress={() => navigation.navigate('PoolName', { mode: 'create' })}
+          />
+          <Row
+            icon={<IconEditPencil width={24} height={24} />}
+            label="수영장 정보 수정 요청"
+            onPress={() => navigation.navigate('PoolName', { mode: 'edit' })}
           />
         </Section>
 

@@ -1,5 +1,5 @@
-// Figma 5:19712 (시간표 등록 요청 완료) / 5:18464 (수영장 추가 요청 완료) / 38:766 (수영장 정보 수정 요청 완료)
-// dark backdrop + centered white card + illustration + title + desc + primary 버튼.
+// Figma 90:6703 (수영장 추가 요청 완료) / 90:6914 (수영장 정보 수정 요청 완료)
+// dark backdrop + centered white card(r32, p16, gap32) + 일러스트 + 제목/설명 + primary 버튼.
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
@@ -18,21 +18,24 @@ interface Props {
 
 export function RequestComplete({ title, description, ctaLabel, onCtaPress }: Props) {
   return (
-    <ModalCard withCardPadding={false}>
+    <ModalCard withCardPadding={false} cardStyle={styles.card}>
       <View style={styles.inner}>
+        {/* Figma 90:6916 — h-210, 카드 내부 가로 꽉 (311 on 343 card) */}
         <View style={styles.illustWrap}>
-          <RequestCompleteIllust width={240} height={163} />
+          <RequestCompleteIllust width="100%" height="100%" />
         </View>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.desc}>{description}</Text>
+        {/* Figma 90:7116 — gap-12, center */}
+        <View style={styles.textGroup}>
+          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.desc}>{description}</Text>
+        </View>
         <Button
           label={ctaLabel}
           onPress={onCtaPress}
           size="lg"
           variant="pdYellow"
           fullWidth
-          style={styles.cta}
-          iconRight={<Check size={18} color={tokens.color.black} strokeWidth={2.4} />}
+          iconRight={<Check size={20} color={tokens.color.black} strokeWidth={2.4} />}
         />
       </View>
     </ModalCard>
@@ -40,31 +43,40 @@ export function RequestComplete({ title, description, ctaLabel, onCtaPress }: Pr
 }
 
 const styles = StyleSheet.create({
+  // Figma 90:6915 — radius 32 (ModalCard 기본 폭 343 유지)
+  card: {
+    borderRadius: 32,
+  },
+  // Figma 90:6915 — p-16, gap-32, column
   inner: {
-    paddingHorizontal: tokens.space[6],
-    paddingTop: tokens.space[8],
-    paddingBottom: tokens.space[6],
+    padding: 16,
+    gap: 32,
+  },
+  // Figma 90:6916 — h-210, w-full. SVG 원본 311x211 비율 유지.
+  illustWrap: {
+    width: '100%',
+    aspectRatio: 311 / 211,
+  },
+  // Figma 90:7116 — gap-12, items-center, text-center
+  textGroup: {
+    gap: 12,
     alignItems: 'center',
   },
-  illustWrap: {
-    width: 240,
-    height: 163,
-    marginBottom: tokens.space[6],
-  },
+  // Figma 90:7117 — Bold 24/32 -0.288 #1F2937
   title: {
-    ...tokens.text.h3,
     fontFamily: tokens.font.sansBold,
-    color: tokens.color.ink900,
+    fontSize: 24,
+    lineHeight: 32,
+    letterSpacing: -0.288,
+    color: '#1F2937',
     textAlign: 'center',
   },
+  // Figma 90:7118 — Regular 18, lineHeight 1.6 (≈29) #4B5563
   desc: {
-    ...tokens.text.bodySm,
-    color: tokens.color.ink500,
+    fontFamily: tokens.font.sans,
+    fontSize: 18,
+    lineHeight: 29,
+    color: '#4B5563',
     textAlign: 'center',
-    marginTop: tokens.space[3],
-    lineHeight: 22,
-  },
-  cta: {
-    marginTop: tokens.space[6],
   },
 });
