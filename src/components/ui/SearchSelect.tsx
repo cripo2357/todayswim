@@ -37,6 +37,8 @@ interface SearchSelectProps<T> {
   emptyText?: string;
   /** 한 번에 보일 행 수 (기본 5) */
   visibleRows?: number;
+  /** 열림/닫힘 변화 알림 — 부모가 바깥 ScrollView 스크롤 차단 등에 사용 */
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function SearchSelect<T>({
@@ -48,10 +50,19 @@ export function SearchSelect<T>({
   placeholder,
   emptyText = '검색 결과가 없어요.',
   visibleRows = 5,
+  onOpenChange,
 }: SearchSelectProps<T>) {
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState('');
   const inputRef = React.useRef<TextInput>(null);
+
+  const changeOpen = React.useCallback(
+    (v: boolean) => {
+      setOpen(v);
+      onOpenChange?.(v);
+    },
+    [onOpenChange],
+  );
 
   // 열릴 때 검색창 자동 포커스 (같은 Modal 내 absolute라 키보드 안정).
   React.useEffect(() => {
@@ -75,14 +86,14 @@ export function SearchSelect<T>({
 
   const pick = (it: T) => {
     onChange(it);
-    setOpen(false);
+    changeOpen(false);
     setQuery('');
   };
 
   return (
     <View style={styles.anchor}>
       {/* 트리거는 항상 in-flow(48px 자리 고정) */}
-      <Pressable onPress={() => setOpen(true)} style={styles.trigger}>
+      <Pressable onPress={() => changeOpen(true)} style={styles.trigger}>
         <Text
           style={[styles.triggerText, !value && styles.triggerPlaceholder]}
           numberOfLines={1}
