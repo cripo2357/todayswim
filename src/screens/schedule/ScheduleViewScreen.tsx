@@ -326,9 +326,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Figma 144:3611 — w150 고정(2열), border #cbd5e1 r12, px16 py10, 중앙 정렬
+  // Figma 144:3611 — w146 고정(2열), border #cbd5e1 r12, px16 py10, 중앙 정렬
   slotChip: {
-    width: 150,
+    width: 146,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderWidth: 1,
