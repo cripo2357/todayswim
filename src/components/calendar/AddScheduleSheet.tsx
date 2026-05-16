@@ -30,7 +30,7 @@ import {
   type SlotConflict,
 } from '@/lib/scheduleConflict';
 import { tokens } from '@/styles/tokens';
-import RequestCompleteIllust from '@assets/illustrations/request-complete.svg';
+import ScheduleCompleteIllust from '@assets/illustrations/schedule-complete.svg';
 import { WeekCalendar } from './WeekCalendar';
 import { ConflictTooltip } from './ConflictTooltip';
 
@@ -294,7 +294,7 @@ export function AddScheduleSheet({
           <Pressable onPress={close} style={styles.backdrop} />
           <View style={styles.doneCard}>
             <View style={styles.doneIllustWrap}>
-              <RequestCompleteIllust width={240} height={228} />
+              <ScheduleCompleteIllust width={311} height={228} />
             </View>
             <View style={styles.doneTextBlock}>
               <Text style={styles.doneTitle}>수영 일정 등록</Text>
