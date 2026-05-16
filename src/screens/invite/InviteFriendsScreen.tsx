@@ -50,12 +50,7 @@ export function InviteFriendsScreen() {
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState('');
   const [triggerY, setTriggerY] = React.useState(0);
-  const searchRef = React.useRef<TextInput>(null);
-  React.useEffect(() => {
-    if (!open) return;
-    const t = setTimeout(() => searchRef.current?.focus(), 60);
-    return () => clearTimeout(t);
-  }, [open]);
+  // 자동 포커스/키보드 X — 사용자가 입력칸을 직접 탭해야 포커스(요청).
 
   const sorted = React.useMemo(
     () => [...MOCK_FRIENDS].sort((a, b) => a.name.localeCompare(b.name, 'ko')),
@@ -95,26 +90,8 @@ export function InviteFriendsScreen() {
       {/* 본문 고정 높이 View — 시트 총높이 불변. body가 ScrollView가 아니라
           목록(float 내부 ScrollView)이 유일 스크롤러라 중첩 충돌 없음. */}
       <View style={[styles.body, styles.bodyContent]}>
-        {/* 초대 일정 — 확정된 일정 카드(읽기 전용) */}
-        <View style={styles.section}>
-          <Text style={styles.label}>초대 일정</Text>
-          <View style={styles.scheduleCard}>
-            <View style={styles.scheduleInfo}>
-              <Text style={styles.poolName} numberOfLines={1}>
-                {poolName}
-              </Text>
-              <Text style={styles.when} numberOfLines={1}>
-                {formatScheduleLine(date, start)}
-              </Text>
-            </View>
-            {poolPhotoUrl ? (
-              <Image source={{ uri: poolPhotoUrl }} style={styles.thumb} />
-            ) : null}
-          </View>
-        </View>
-
         {/* 초대 친구 — 멀티선택. 닫힘=트리거+선택목록 / 열림=float 패널 */}
-        <View style={[styles.section, styles.friendSection]}>
+        <View style={styles.section}>
           <Text style={styles.label}>
             초대 친구{selected.length > 0 ? ` (${selected.length})` : ''}
           </Text>
@@ -164,6 +141,24 @@ export function InviteFriendsScreen() {
           ) : null}
         </View>
 
+        {/* 초대 일정 — 확정된 일정 카드(읽기 전용) */}
+        <View style={styles.section}>
+          <Text style={styles.label}>초대 일정</Text>
+          <View style={styles.scheduleCard}>
+            <View style={styles.scheduleInfo}>
+              <Text style={styles.poolName} numberOfLines={1}>
+                {poolName}
+              </Text>
+              <Text style={styles.when} numberOfLines={1}>
+                {formatScheduleLine(date, start)}
+              </Text>
+            </View>
+            {poolPhotoUrl ? (
+              <Image source={{ uri: poolPhotoUrl }} style={styles.thumb} />
+            ) : null}
+          </View>
+        </View>
+
         {/* 열림 float — body의 마지막 자식 + absolute(top=트리거y).
             트리 최상위라 elevation/그림자 없이 터치 우선. */}
         {open ? (
@@ -179,8 +174,6 @@ export function InviteFriendsScreen() {
               <View style={styles.search}>
                 <View style={styles.searchInputWrap}>
                   <TextInput
-                    ref={searchRef}
-                    autoFocus
                     value={query}
                     onChangeText={setQuery}
                     style={styles.searchInput}
@@ -261,7 +254,6 @@ const styles = StyleSheet.create({
   body: { height: BODY_H },
   bodyContent: { gap: 24 },
   section: { gap: 8 },
-  friendSection: { flex: 1 },
   // Figma 150:9110 — SemiBold 14/20 -0.084 #4B5563
   label: {
     fontSize: 14,
@@ -318,8 +310,8 @@ const styles = StyleSheet.create({
     color: '#4B5563',
   },
 
-  // 닫힘 선택 목록 — 남는 높이 채우고 길면 스크롤(중첩 아님: body가 View)
-  selectedList: { flex: 1, marginTop: 4 },
+  // 닫힘 선택 목록 — 많으면 스크롤(중첩 아님: body가 View). 위→아래 자연 배치
+  selectedList: { maxHeight: 240, marginTop: 4 },
   // Figma 154:3850 — 행 gap8 minH40 p8 + 우측 빨강 삭제
   selectedRow: {
     flexDirection: 'row',
