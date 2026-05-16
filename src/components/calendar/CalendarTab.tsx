@@ -161,11 +161,10 @@ export function CalendarTab() {
                     );
                   })()}
                 </View>
+                {/* 사진 없으면 회색 박스 없이 깨끗하게 미노출 */}
                 {s.poolPhotoUrl ? (
                   <Image source={{ uri: s.poolPhotoUrl }} style={styles.thumb} />
-                ) : (
-                  <View style={[styles.thumb, styles.thumbEmpty]} />
-                )}
+                ) : null}
               </View>
 
               <View style={styles.divider} />
@@ -393,7 +392,6 @@ const styles = StyleSheet.create({
   },
   visChipLabelDisabled: { color: tokens.color.ink400 },
   thumb: { width: 80, height: 80, borderRadius: 6, backgroundColor: '#E2E8F0' },
-  thumbEmpty: { backgroundColor: '#E2E8F0' },
 
   divider: { height: 1, backgroundColor: tokens.color.lineDefault },
 
