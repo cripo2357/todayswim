@@ -37,6 +37,9 @@ import { uploadProfileAvatar } from '@/lib/uploadProfileAvatar';
 import { CalendarTab } from '@/components/calendar/CalendarTab';
 import { NotificationsTab } from '@/components/notifications/NotificationsTab';
 import { FriendsTab } from '@/components/friends/FriendsTab';
+import { useSwimSchedules, isSchedulePast } from '@/store/swimSchedule';
+import { useNotifications } from '@/store/notifications';
+import { MOCK_FRIENDS } from '@/lib/mockData';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import IconUser from '@assets/icons/user-profile.svg';
 import IconGenderMale from '@assets/icons/gender-male.svg';
@@ -63,6 +66,17 @@ export function MyInfoScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const profile = useProfile((s) => s.profile);
   const [tab, setTab] = React.useState<Tab>('달력');
+
+  // 탭 카운터 — 달력: 앞으로 예정된(지나지 않은) 내 일정 수,
+  // 친구: 친구 수, 알림: 읽지 않은 알림(0이면 배지 미노출, max 99).
+  const schedules = useSwimSchedules((s) => s.schedules);
+  const upcomingCount = React.useMemo(
+    () => schedules.filter((x) => !isSchedulePast(x)).length,
+    [schedules],
+  );
+  const friendCount = MOCK_FRIENDS.length;
+  const unread = useNotifications((s) => s.unread);
+  const markAllRead = useNotifications((s) => s.markAllRead);
 
   // profile 없으면(비정상 진입) 안전하게 뒤로.
   React.useEffect(() => {
@@ -91,19 +105,34 @@ export function MyInfoScreen() {
         <View style={styles.tabGroup}>
           {TABS.map((t) => {
             const active = t === tab;
+            const label =
+              t === '달력'
+                ? `달력 (${upcomingCount})`
+                : t === '친구'
+                  ? `친구 (${friendCount})`
+                  : '알림';
             return (
               <Pressable
                 key={t}
-                onPress={() => setTab(t)}
+                onPress={() => {
+                  setTab(t);
+                  if (t === '알림') markAllRead(); // 진입 시 모두 읽음
+                }}
                 style={[styles.tabItem, active && styles.tabItemActive]}
               >
                 <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>
-                  {t}
+                  {label}
                 </Text>
               </Pressable>
             );
           })}
         </View>
+        {/* Figma 133:6053 — 읽지 않은 알림 배지(우상단, 0이면 미노출, max 99) */}
+        {unread > 0 ? (
+          <View style={styles.unreadBadge} pointerEvents="none">
+            <Text style={styles.unreadBadgeText}>{Math.min(unread, 99)}</Text>
+          </View>
+        ) : null}
       </View>
 
       {tab === '달력' && <CalendarTab />}
@@ -621,6 +650,26 @@ const styles = StyleSheet.create({
 
   // 탭
   tabWrap: { paddingHorizontal: 16, paddingVertical: 8 },
+  // Figma 133:6053 — 알림 미읽음 배지 (우상단 핀, pd-pink #FF2D55)
+  unreadBadge: {
+    position: 'absolute',
+    top: 0,
+    right: 8,
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    paddingHorizontal: 6,
+    backgroundColor: '#FF2D55',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  unreadBadgeText: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontFamily: tokens.font.sansBold,
+    color: tokens.color.white,
+    textAlign: 'center',
+  },
   tabGroup: {
     flexDirection: 'row',
     backgroundColor: '#F1F5F9',

@@ -74,6 +74,9 @@ const RECENT: Notif[] = [
   },
 ];
 
+// 읽지 않은 알림 = '최근' 그룹 수. 알림 탭 진입 시 전부 읽음 처리.
+export const UNREAD_SEED = RECENT.length;
+
 // Figma 134:9643 — 이전 그룹.
 const PREVIOUS: Notif[] = [
   {
