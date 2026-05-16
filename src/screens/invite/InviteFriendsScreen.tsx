@@ -71,7 +71,9 @@ export function InviteFriendsScreen() {
 
   const send = () => {
     if (selected.length === 0) return;
-    navigation.navigate('InviteDone', { count: selected.length });
+    // BottomSheet는 RN Modal — navigate면 그 Modal이 위에 떠 완료 화면을
+    // 가림. replace로 이 화면(시트 Modal)을 닫고 완료 화면을 노출.
+    navigation.replace('InviteDone', { count: selected.length });
   };
 
   const Avatar = ({ f }: { f: MockAccount }) => (
