@@ -6,11 +6,14 @@
 
 import React from 'react';
 import {
-  View, Text, StyleSheet, Pressable, Modal, Animated,
+  View, Text, TextInput, StyleSheet, Pressable, Modal, Animated,
   Dimensions, ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Check, Calendar as LucideCalendar, Mail } from 'lucide-react-native';
+import {
+  Check, Calendar as LucideCalendar, Mail, XCircle,
+} from 'lucide-react-native';
+import IconChevronDown from '@assets/icons/chevron-down.svg';
 import { usePools } from '@/hooks/usePools';
 import { useSchedules } from '@/hooks/useSchedules';
 import {
@@ -97,6 +100,17 @@ export function AddScheduleSheet({
   const slideY = React.useRef(new Animated.Value(SCREEN_H)).current;
   const [phase, setPhase] = React.useState<'form' | 'done'>('form');
   const [poolId, setPoolId] = React.useState<string | null>(null);
+  // 수영장 검색(Figma 122:7490/147:5323) — 닫힘=트리거 / 열림=float 카드.
+  const [poolOpen, setPoolOpen] = React.useState(false);
+  const [poolQuery, setPoolQuery] = React.useState('');
+  // 트리거의 body 콘텐츠 내 y — float 패널을 같은 좌표계에서 그 위치에 띄움.
+  const [triggerY, setTriggerY] = React.useState(0);
+  const poolSearchRef = React.useRef<TextInput>(null);
+  React.useEffect(() => {
+    if (!poolOpen) return;
+    const t = setTimeout(() => poolSearchRef.current?.focus(), 60);
+    return () => clearTimeout(t);
+  }, [poolOpen]);
   const [date, setDate] = React.useState(new Date());
   const [slotIdx, setSlotIdx] = React.useState<number | null>(null);
   const [visibility, setVisibility] = React.useState<ScheduleVisibility>('private');
@@ -129,6 +143,8 @@ export function AddScheduleSheet({
     if (visible && !openedRef.current) {
       openedRef.current = true;
       setPhase('form');
+      setPoolOpen(false);
+      setPoolQuery('');
       const pid = initialPoolId ?? null;
       const dt = initialDate ?? new Date();
       setPoolId(pid);
@@ -231,6 +247,15 @@ export function AddScheduleSheet({
   }, []);
 
   const selectedPool = pools.find((p) => p.id === poolId) ?? null;
+  // 가나다 정렬 + 대소문자 무시 부분일치 검색
+  const sortedPools = React.useMemo(
+    () => [...pools].sort((a, b) => a.name.localeCompare(b.name, 'ko')),
+    [pools],
+  );
+  const poolQ = poolQuery.trim().toLowerCase();
+  const filteredPools = poolQ
+    ? sortedPools.filter((p) => p.name.toLowerCase().includes(poolQ))
+    : sortedPools;
   const dow = DOW[date.getDay()];
   const schedule = poolId
     ? schedules.find((s) => s.poolId === poolId)
@@ -338,11 +363,32 @@ export function AddScheduleSheet({
                 <ScrollView
                   showsVerticalScrollIndicator={false}
                   keyboardShouldPersistTaps="always"
+                  scrollEnabled={!poolOpen}
                   style={styles.body}
                 >
-                  {/* 수영장 선택 UI 제거됨 — 새로 구현 예정.
-                      (초기 진입 시 initialPoolId 프리필만 동작) */}
+                  {/* 수영장 — Figma 122:8027 닫힘 트리거 / 122:7490·147:5323 열림.
+                      열림 패널은 body 마지막 자식으로(트리 최상위 = 그림자 없이
+                      터치 우선) absolute float. 트리거는 자리 고정. */}
                   <Text style={styles.fieldLabel}>수영장</Text>
+                  <View
+                    onLayout={(e) => setTriggerY(e.nativeEvent.layout.y)}
+                  >
+                    <Pressable
+                      onPress={() => setPoolOpen(true)}
+                      style={styles.poolTrigger}
+                    >
+                      <Text
+                        style={[
+                          styles.poolTriggerText,
+                          !selectedPool && styles.poolTriggerPlaceholder,
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {selectedPool ? selectedPool.name : '수영장 이름'}
+                      </Text>
+                      <IconChevronDown width={20} height={20} />
+                    </Pressable>
+                  </View>
 
                   {/* Figma 122:8031 — 캘린더 위 "시간표" 섹션 라벨 */}
                   <Text style={[styles.fieldLabel, { marginTop: 24 }]}>
@@ -452,6 +498,88 @@ export function AddScheduleSheet({
                       );
                     })}
                   </View>
+
+                  {/* 수영장 검색 float — body의 마지막 자식이라 트리 최상위:
+                      Android가 elevation/그림자 없이도 터치를 먼저 받음.
+                      body scrollEnabled=false(열림)라 목록 스크롤 정상. */}
+                  {poolOpen ? (
+                    <>
+                      <Pressable
+                        style={styles.poolBackdrop}
+                        onPress={() => setPoolOpen(false)}
+                        accessibilityRole="button"
+                        accessibilityLabel="수영장 검색 닫기"
+                      />
+                      <View style={[styles.poolPanel, { top: triggerY }]}>
+                        {/* Figma 147:5406 — 검색칸 #F8FAFC 알약 */}
+                        <View style={styles.poolSearch}>
+                          <View style={styles.poolSearchInputWrap}>
+                            <TextInput
+                              ref={poolSearchRef}
+                              autoFocus
+                              value={poolQuery}
+                              onChangeText={setPoolQuery}
+                              style={styles.poolSearchInput}
+                            />
+                            {poolQuery.length === 0 ? (
+                              <Text
+                                style={styles.poolSearchPlaceholder}
+                                pointerEvents="none"
+                              >
+                                수영장 이름
+                              </Text>
+                            ) : null}
+                          </View>
+                          {/* Figma 147:5413 — 입력값 있을 때만 clear */}
+                          {poolQuery.length > 0 ? (
+                            <Pressable
+                              onPress={() => setPoolQuery('')}
+                              hitSlop={8}
+                              accessibilityRole="button"
+                              accessibilityLabel="검색어 지우기"
+                            >
+                              <XCircle
+                                size={20}
+                                color="#94A3B8"
+                                strokeWidth={2}
+                              />
+                            </Pressable>
+                          ) : null}
+                        </View>
+                        <ScrollView
+                          style={styles.poolList}
+                          contentContainerStyle={styles.poolListContent}
+                          nestedScrollEnabled
+                          keyboardShouldPersistTaps="always"
+                        >
+                          {filteredPools.map((p) => (
+                            <Pressable
+                              key={p.id}
+                              onPress={() => {
+                                setPoolId(p.id);
+                                setSlotIdx(null);
+                                setPoolOpen(false);
+                                setPoolQuery('');
+                              }}
+                              style={styles.poolItem}
+                            >
+                              <Text
+                                style={styles.poolItemText}
+                                numberOfLines={1}
+                              >
+                                {p.name}
+                              </Text>
+                            </Pressable>
+                          ))}
+                          {filteredPools.length === 0 ? (
+                            <Text style={styles.poolEmpty}>
+                              검색 결과가 없어요.
+                            </Text>
+                          ) : null}
+                        </ScrollView>
+                      </View>
+                    </>
+                  ) : null}
                 </ScrollView>
 
                 <Pressable
@@ -516,6 +644,106 @@ const styles = StyleSheet.create({
     color: tokens.color.ink900,
   },
   body: { maxHeight: SCREEN_H * 0.62 },
+
+  // ── 수영장 검색 (Figma 122:8027 닫힘 / 122:7490·147:5323 열림) ──
+  // 닫힘 트리거 — Figma 122:8036: border #94A3B8 r14 minH48 px12
+  poolTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 48,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#94A3B8',
+    borderRadius: 14,
+    backgroundColor: tokens.color.white,
+  },
+  poolTriggerText: {
+    flex: 1,
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sans,
+    color: '#1F2937',
+  },
+  poolTriggerPlaceholder: { color: '#4B5563' },
+  // 열림 시 시트 본문 덮는 투명 영역 — 탭하면 닫힘(패널은 그 위, 트리 최상위)
+  poolBackdrop: { ...StyleSheet.absoluteFillObject },
+  // Figma 147:5326 — 흰 카드 border #E2E8F0 r14 p8 gap4 Shadow/lg.
+  // body 마지막 자식 + absolute(top=트리거y) → 그림자/elevation 없이 최상위.
+  poolPanel: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
+    backgroundColor: tokens.color.white,
+    padding: 8,
+    gap: 4,
+    ...tokens.shadow.lg,
+  },
+  // Figma 147:5406 — 검색칸 #F8FAFC 알약 minH40 p8 gap8
+  poolSearch: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    minHeight: 40,
+    padding: 8,
+    borderRadius: 9999,
+    backgroundColor: '#F8FAFC',
+  },
+  poolSearchInputWrap: { flex: 1, justifyContent: 'center' },
+  // Figma 147:5409 — Medium 16/22 -0.112 #4B5563
+  poolSearchInput: {
+    flex: 1,
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sansMedium,
+    color: '#4B5563',
+    padding: 0,
+  },
+  // RN Android 커스텀폰트 placeholder 회피 — 빈 값 시 Text 오버레이
+  poolSearchPlaceholder: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    textAlignVertical: 'center',
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sansMedium,
+    color: '#4B5563',
+    includeFontPadding: false,
+  },
+  // 5개 노출 고정(아이템 minH40 + gap4 → 5*40 + 4*4 = 216, 여유 220)
+  poolList: { height: 220 },
+  poolListContent: { gap: 4 },
+  // Figma 147:5330 — 아이템 알약 minH40 p8
+  poolItem: {
+    minHeight: 40,
+    padding: 8,
+    borderRadius: 9999,
+    justifyContent: 'center',
+  },
+  // Figma I147:5330;5544:288 — Medium 16/22 -0.112 #4B5563
+  poolItemText: {
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sansMedium,
+    color: '#4B5563',
+  },
+  poolEmpty: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: tokens.font.sans,
+    color: tokens.color.ink500,
+    textAlign: 'center',
+    paddingVertical: 16,
+  },
 
   // Figma 122:7490/122:8031 — 수영장·시간표 라벨: SemiBold 14/20 -0.084 #4B5563
   fieldLabel: {
