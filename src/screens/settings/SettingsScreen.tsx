@@ -24,7 +24,9 @@ import {
   type ScheduleInvite,
   type ProfileVisibility,
   type FriendRequest,
+  type AgeVisibility,
 } from '@/store/prefs';
+import { useProfile } from '@/store/profile';
 import { OptionSheet, type Option } from '@/components/ui/OptionSheet';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { tokens } from '@/styles/tokens';
@@ -85,6 +87,36 @@ const FRIEND_REQ_VALUE: Record<FriendRequest, string> = {
   nickname: '닉네임 아는 사람에게만',
   all: '모든 사람에게',
 };
+// 나이 공개 (Figma 129:6006) — 선택 옵션
+const AGE_VIS_OPTIONS: Option<AgeVisibility>[] = [
+  { value: 'private', label: '비공개' },
+  { value: 'ageGroup', label: '연령대로 공개' },
+  { value: 'exact', label: '나이 공개' },
+];
+
+/** birthDate(YYYY-MM-DD) → 만 나이. 형식 오류 시 null */
+function calcKoreanAge(birthDate?: string): number | null {
+  if (!birthDate) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(birthDate);
+  if (!m) return null;
+  const by = +m[1];
+  const bm = +m[2];
+  const bd = +m[3];
+  const now = new Date();
+  let age = now.getFullYear() - by;
+  const mo = now.getMonth() + 1;
+  const d = now.getDate();
+  if (mo < bm || (mo === bm && d < bd)) age -= 1;
+  return age >= 0 ? age : null;
+}
+
+/** 행 우측 표시값 — 비공개 / 만 N0대 / 만 N세 */
+function ageVisValue(v: AgeVisibility, birthDate?: string): string {
+  if (v === 'private') return '비공개';
+  const age = calcKoreanAge(birthDate);
+  if (age === null) return v === 'ageGroup' ? '연령대로 공개' : '나이 공개';
+  return v === 'ageGroup' ? `만 ${Math.floor(age / 10) * 10}대` : `만 ${age}세`;
+}
 
 export function SettingsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -99,10 +131,14 @@ export function SettingsScreen() {
   const setProfileVis = usePrefs((s) => s.setProfileVisibility);
   const friendReq = usePrefs((s) => s.friendRequest);
   const setFriendReq = usePrefs((s) => s.setFriendRequest);
+  const ageVis = usePrefs((s) => s.ageVisibility);
+  const setAgeVis = usePrefs((s) => s.setAgeVisibility);
+  const profile = useProfile((s) => s.profile);
   const [viewSheet, setViewSheet] = React.useState(false);
   const [inviteSheet, setInviteSheet] = React.useState(false);
   const [profileSheet, setProfileSheet] = React.useState(false);
   const [friendReqSheet, setFriendReqSheet] = React.useState(false);
+  const [ageSheet, setAgeSheet] = React.useState(false);
 
   const onLogout = () => {
     Alert.alert('로그아웃', '로그아웃 하시겠어요?', [
@@ -128,22 +164,12 @@ export function SettingsScreen() {
         contentContainerStyle={styles.body}
         showsVerticalScrollIndicator={false}
       >
-        {/* 계정 */}
-        <Section title="계정">
+        {/* 프로필 (Figma 129:5990) */}
+        <Section title="프로필">
           <Row
             icon={<IconProfile width={24} height={24} />}
             label="프로필"
             onPress={() => navigation.navigate('Profile')}
-          />
-          <Row
-            icon={<IconLogout width={24} height={24} />}
-            label="로그아웃"
-            onPress={onLogout}
-          />
-          <Row
-            icon={<IconTrash width={24} height={24} />}
-            label="회원 탈퇴"
-            destructive
           />
         </Section>
 
@@ -166,16 +192,22 @@ export function SettingsScreen() {
             onPress={() => setProfileSheet(true)}
           />
           <Row
-            icon={<IconPerson width={24} height={24} />}
-            label="친구 신청 받기"
-            value={FRIEND_REQ_VALUE[friendReq]}
-            onPress={() => setFriendReqSheet(true)}
-          />
-          <Row
             icon={<IconCalendar width={24} height={24} />}
             label="다른 사람 수영 일정 보기"
             value={VIEW_VALUE[othersView]}
             onPress={() => setViewSheet(true)}
+          />
+          <Row
+            icon={<IconProfile width={24} height={24} />}
+            label="나이 공개"
+            value={ageVisValue(ageVis, profile?.birthDate)}
+            onPress={() => setAgeSheet(true)}
+          />
+          <Row
+            icon={<IconPerson width={24} height={24} />}
+            label="친구 신청 받기"
+            value={FRIEND_REQ_VALUE[friendReq]}
+            onPress={() => setFriendReqSheet(true)}
           />
           <Row
             icon={<IconEnvelope width={24} height={24} />}
@@ -237,9 +269,22 @@ export function SettingsScreen() {
 
         <View style={styles.divider} />
 
+        {/* 계정 (Figma 163:10343) — 구분선 아래, 회원 탈퇴 + 로그아웃 */}
+        <Section title="계정">
+          <Row
+            icon={<IconTrash width={24} height={24} />}
+            label="회원 탈퇴"
+          />
+          <Row
+            icon={<IconLogout width={24} height={24} />}
+            label="로그아웃"
+            onPress={onLogout}
+          />
+        </Section>
+
         {/* 푸터 (129:5971) — 워드마크 + 버전 + 카피라이트 */}
         <View style={styles.footer}>
-          <BrandWordmark width={131} height={78} />
+          <BrandWordmark width={256} height={152} />
           <View style={styles.footerText}>
             <Text style={styles.version}>Pool’s day v1.0.0</Text>
             <Text style={styles.copyright}>© 2026 CRIPO. All right reserved</Text>
@@ -278,6 +323,14 @@ export function SettingsScreen() {
         options={FRIEND_REQ_OPTIONS}
         value={friendReq}
         onConfirm={(v) => setFriendReq(v)}
+      />
+      <OptionSheet<AgeVisibility>
+        visible={ageSheet}
+        onClose={() => setAgeSheet(false)}
+        title="나이 공개"
+        options={AGE_VIS_OPTIONS}
+        value={ageVis}
+        onConfirm={(v) => setAgeVis(v)}
       />
     </SafeAreaView>
   );
