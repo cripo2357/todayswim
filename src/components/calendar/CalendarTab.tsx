@@ -210,7 +210,12 @@ export function CalendarTab() {
                         <View style={styles.ptGrid}>
                           {pg.friends.map((o) => (
                             <View key={o.id} style={styles.ptCell}>
-                              <View style={styles.ptAvatar}>
+                              <View
+                                style={[
+                                  styles.ptAvatar,
+                                  styles.ptAvatarFriend,
+                                ]}
+                              >
                                 {React.createElement(
                                   BUNDLE_AVATARS[o.avatar],
                                   { width: 24, height: 24 },
@@ -254,7 +259,12 @@ export function CalendarTab() {
                         <View style={styles.ptGrid}>
                           {pg.others.map((o) => (
                             <View key={o.id} style={styles.ptCell}>
-                              <View style={styles.ptAvatar}>
+                              <View
+                                style={[
+                                  styles.ptAvatar,
+                                  styles.ptAvatarOther,
+                                ]}
+                              >
                                 {React.createElement(
                                   BUNDLE_AVATARS[o.avatar],
                                   { width: 24, height: 24 },
@@ -398,19 +408,22 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingRight: 8, // 열 간격(내부 패딩으로 — 1/3 폭 유지)
   },
+  // 프로필 테두리 정책 — 테두리는 항상 1px 유지(색만 변경)해서
+  // Android borderWidth 0↔1 토글 시 원→사각형 버그 회피.
   ptAvatar: {
     width: 24,
     height: 24,
     borderRadius: 12,
     overflow: 'hidden',
     backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  ptAvatarMine: {
-    borderWidth: 1,
-    borderColor: tokens.color.pdByellow,
-  },
+  ptAvatarMine: { borderColor: tokens.color.pdByellow }, // 나
+  ptAvatarFriend: { borderColor: tokens.color.pdMint }, // 내 친구
+  ptAvatarOther: { borderColor: tokens.color.pdGray }, // 친구 아님
   ptAvatarImg: { width: 24, height: 24 },
   ptName: {
     flex: 1,
