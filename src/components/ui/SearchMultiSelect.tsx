@@ -205,11 +205,11 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sans,
     color: tokens.color.ink400,
   },
-  // Figma 154:4423 — 흰 카드 border #E2E8F0 r24 p8 gap4 Shadow/lg
+  // Figma 154:4423 — 흰 카드 border #E2E8F0 r15 p8 gap4 Shadow/lg
   card: {
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 24,
+    borderRadius: 15,
     backgroundColor: tokens.color.white,
     padding: 8,
     gap: 4,
