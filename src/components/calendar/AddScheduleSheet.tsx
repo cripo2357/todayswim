@@ -24,9 +24,15 @@ import {
   resolveSeasonSlots,
   isSeasonTransitionMonth,
 } from '@/lib/seasonSchedule';
+import {
+  slotConflict,
+  CONFLICT_LABEL,
+  type SlotConflict,
+} from '@/lib/scheduleConflict';
 import { tokens } from '@/styles/tokens';
 import RequestCompleteIllust from '@assets/illustrations/request-complete.svg';
 import { WeekCalendar } from './WeekCalendar';
+import { ConflictTooltip } from './ConflictTooltip';
 
 const SCREEN_H = Dimensions.get('window').height;
 const DOW: DayOfWeek[] = ['일', '월', '화', '수', '목', '금', '토'];
@@ -76,6 +82,27 @@ export function AddScheduleSheet({
   const [slotIdx, setSlotIdx] = React.useState<number | null>(null);
   const [visibility, setVisibility] = React.useState<ScheduleVisibility>('private');
 
+  // 충돌 슬롯 탭 시 5초 툴팁 (tipIdx = 해당 슬롯 인덱스).
+  const [tipIdx, setTipIdx] = React.useState<number | null>(null);
+  const [tipText, setTipText] = React.useState('');
+  const tipTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showTip = React.useCallback((idx: number, text: string) => {
+    setTipIdx(idx);
+    setTipText(text);
+    if (tipTimer.current) clearTimeout(tipTimer.current);
+    tipTimer.current = setTimeout(() => setTipIdx(null), 5000);
+  }, []);
+  const clearTip = React.useCallback(() => {
+    if (tipTimer.current) clearTimeout(tipTimer.current);
+    setTipIdx(null);
+  }, []);
+  React.useEffect(
+    () => () => {
+      if (tipTimer.current) clearTimeout(tipTimer.current);
+    },
+    [],
+  );
+
   // 시트가 닫힘→열림으로 "전환될 때만" 1회 초기화. openedRef 가드로
   // 열린 상태에서 prefill/schedules 등이 바뀌어도 사용자 입력을 안 덮어씀.
   const openedRef = React.useRef(false);
@@ -106,10 +133,22 @@ export function AddScheduleSheet({
           const i = resolved.findIndex(
             (s) => s.start === initialStart && s.end === initialEnd,
           );
-          idx = i >= 0 ? i : null;
+          // 충돌(이미 등록/중복) 슬롯이면 자동 선택하지 않음.
+          if (
+            i >= 0 &&
+            !slotConflict(mySchedules, {
+              poolId: pid,
+              date: dateKey(dt),
+              start: initialStart,
+              end: initialEnd,
+            })
+          ) {
+            idx = i;
+          }
         }
       }
       setSlotIdx(idx);
+      setTipIdx(null);
       setVisibility(defaultVisibility);
       Animated.timing(slideY, {
         toValue: 0,
@@ -128,6 +167,7 @@ export function AddScheduleSheet({
     initialStart,
     initialEnd,
     schedules,
+    mySchedules,
     defaultVisibility,
   ]);
 
@@ -317,11 +357,13 @@ export function AddScheduleSheet({
                     onSelectDate={(d) => {
                       setDate(d);
                       setSlotIdx(null);
+                      clearTip();
                     }}
                   />
 
                   {/* 시간 슬롯 — 영역 높이 고정(슬롯 수·풀 선택 여부와 무관)
-                      → 시트 전체 높이 불변. 넘치면 내부 스크롤, 비면 중앙 안내. */}
+                      → 시트 전체 높이 불변. 충돌 슬롯은 비활성+탭 시 5초 툴팁.
+                      ScrollView 미사용(툴팁 클리핑 회피, 슬롯 수 적음). */}
                   <View style={styles.slotSection}>
                     {!selectedPool ? (
                       <View style={styles.slotHintWrap}>
@@ -330,37 +372,55 @@ export function AddScheduleSheet({
                         </Text>
                       </View>
                     ) : slots.length > 0 ? (
-                      <ScrollView
-                        style={styles.slotScroll}
-                        showsVerticalScrollIndicator={false}
-                        nestedScrollEnabled
-                        keyboardShouldPersistTaps="always"
-                      >
-                        <View style={styles.slotGrid}>
-                          {slots.map((s, i) => {
-                            const sel = i === slotIdx;
-                            return (
-                              <Pressable
-                                key={`${s.start}-${s.end}-${i}`}
-                                onPress={() => setSlotIdx(i)}
+                      <View style={styles.slotGrid}>
+                        {slots.map((s, i) => {
+                          const conflict: SlotConflict = slotConflict(
+                            mySchedules,
+                            {
+                              poolId: selectedPool.id,
+                              date: dateKey(date),
+                              start: s.start,
+                              end: s.end,
+                            },
+                          );
+                          const sel = i === slotIdx && !conflict;
+                          return (
+                            <Pressable
+                              key={`${s.start}-${s.end}-${i}`}
+                              onPress={() => {
+                                if (conflict) {
+                                  showTip(i, CONFLICT_LABEL[conflict]);
+                                  return;
+                                }
+                                clearTip();
+                                setSlotIdx(i);
+                              }}
+                              style={[
+                                styles.slot,
+                                conflict === 'duplicate' && styles.slotDup,
+                                conflict === 'overlap' && styles.slotOverlap,
+                                sel && styles.slotSelected,
+                              ]}
+                            >
+                              {tipIdx === i ? (
+                                <ConflictTooltip
+                                  label={tipText}
+                                  style={styles.slotTip}
+                                />
+                              ) : null}
+                              <Text
                                 style={[
-                                  styles.slot,
-                                  sel && styles.slotSelected,
+                                  styles.slotText,
+                                  conflict && styles.slotTextDisabled,
+                                  sel && styles.slotTextSelected,
                                 ]}
                               >
-                                <Text
-                                  style={[
-                                    styles.slotText,
-                                    sel && styles.slotTextSelected,
-                                  ]}
-                                >
-                                  {s.start} ~ {s.end}
-                                </Text>
-                              </Pressable>
-                            );
-                          })}
-                        </View>
-                      </ScrollView>
+                                {s.start} ~ {s.end}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
                     ) : (
                       <View style={styles.slotHintWrap}>
                         <Text style={styles.emptyText}>
@@ -531,7 +591,9 @@ const styles = StyleSheet.create({
     color: '#4B5563',
     includeFontPadding: false,
   },
-  optionScroll: { maxHeight: 240 },
+  // 결과 수와 무관하게 카드 높이 일정 — maxHeight면 1개일 때 높이가
+  // 틀어져서 고정 height 사용(0/1/N개 모두 동일).
+  optionScroll: { height: 220 },
   optionListContent: { gap: 4 },
   // Figma 5626:22473 — 아이템: 알약, minH40, p8 (선택 시 강조는 Phase 2)
   optionItem: {
@@ -578,6 +640,16 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.color.pdMint,
     borderColor: tokens.color.pdMint,
   },
+  // Figma 122:8215 — 이미 등록한 일정: pd-blue 채움
+  slotDup: {
+    backgroundColor: tokens.color.pdBlue,
+    borderColor: tokens.color.pdBlue,
+  },
+  // Figma 122:8225 — 다른 일정과 중복: pd-gray 채움
+  slotOverlap: {
+    backgroundColor: tokens.color.pdGray,
+    borderColor: tokens.color.pdGray,
+  },
   slotText: {
     fontSize: 15,
     lineHeight: 20,
@@ -585,6 +657,16 @@ const styles = StyleSheet.create({
     color: tokens.color.ink900,
   },
   slotTextSelected: { color: tokens.color.white },
+  // Figma — 충돌 슬롯 텍스트 pd-bgray
+  slotTextDisabled: { color: tokens.color.pdBgray },
+  // 슬롯 위 absolute 툴팁(아래 화살표가 슬롯 상단을 가리킴)
+  slotTip: {
+    position: 'absolute',
+    bottom: '100%',
+    left: 0,
+    right: 0,
+    zIndex: 50,
+  },
 
   radioRow: { flexDirection: 'row', gap: 20 },
   radioItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },

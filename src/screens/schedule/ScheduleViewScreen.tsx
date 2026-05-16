@@ -12,11 +12,17 @@ import { ModalCard } from '@/components/layout/ModalCard';
 import { useSchedules } from '@/hooks/useSchedules';
 import { usePools } from '@/hooks/usePools';
 import { useScheduleDraft } from '@/store/scheduleDraft';
-import { dateKey } from '@/store/swimSchedule';
+import { dateKey, useSwimSchedules } from '@/store/swimSchedule';
 import { useAddScheduleIntent } from '@/store/addScheduleIntent';
 import type { RootStackParamList } from '@/navigation/types';
 import { isAnonNickname, type DayOfWeek, type TimeSlot } from '@/types/schedule';
 import { visibleSeasonGroups } from '@/lib/seasonSchedule';
+import {
+  slotConflict,
+  CONFLICT_LABEL,
+  type SlotConflict,
+} from '@/lib/scheduleConflict';
+import { ConflictTooltip } from '@/components/calendar/ConflictTooltip';
 import { tokens } from '@/styles/tokens';
 
 const DAYS: DayOfWeek[] = ['월', '화', '수', '목', '금', '토', '일'];
@@ -95,7 +101,29 @@ export function ScheduleViewScreen() {
     slotAreaW > 0 ? Math.floor((slotAreaW - SLOT_GAP) / 2) : 146;
 
   const setIntent = useAddScheduleIntent((s) => s.setIntent);
+  const mySchedules = useSwimSchedules((s) => s.schedules);
   const lastTapRef = React.useRef<{ key: string; t: number } | null>(null);
+
+  // 충돌 칩 탭 시 5초 툴팁 (tipKey = 칩 키).
+  const [tipKey, setTipKey] = React.useState<string | null>(null);
+  const [tipText, setTipText] = React.useState('');
+  const tipTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showTip = React.useCallback((key: string, text: string) => {
+    setTipKey(key);
+    setTipText(text);
+    if (tipTimer.current) clearTimeout(tipTimer.current);
+    tipTimer.current = setTimeout(() => setTipKey(null), 5000);
+  }, []);
+  const clearTip = React.useCallback(() => {
+    if (tipTimer.current) clearTimeout(tipTimer.current);
+    setTipKey(null);
+  }, []);
+  React.useEffect(
+    () => () => {
+      if (tipTimer.current) clearTimeout(tipTimer.current);
+    },
+    [],
+  );
 
   // 요일 → 다음 발생일(오늘이 그 요일이면 오늘).
   const nextDateForWeekday = (day: DayOfWeek): Date => {
@@ -104,6 +132,16 @@ export function ScheduleViewScreen() {
     d.setDate(d.getDate() + ((JS_DOW[day] - d.getDay() + 7) % 7));
     return d;
   };
+
+  // 선택 요일의 등록 대상 날짜 키 + 슬롯 충돌 판정(내 일정 기준).
+  const targetDateKey = dateKey(nextDateForWeekday(selectedDay));
+  const conflictOf = (slot: TimeSlot): SlotConflict =>
+    slotConflict(mySchedules, {
+      poolId,
+      date: targetDateKey,
+      start: slot.start,
+      end: slot.end,
+    });
 
   // 더블탭 → 풀+날짜만 잡아 의도 set 후 시간표 모달만 닫는다.
   // 화면 이동 없음 — 루트의 GlobalAddScheduleSheet가 의도를 소비해 그 자리에서
@@ -120,12 +158,18 @@ export function ScheduleViewScreen() {
     navigation.goBack(); // 시간표 모달만 닫음 (지도 등 현재 화면 유지)
   };
 
-  // 빠르게 두 번 탭(같은 슬롯, 300ms 내) → 등록 플로우 진입(그 타임 프리필).
-  const onSlotTap = (key: string, slot: TimeSlot) => {
+  // 충돌 슬롯은 등록 불가 → 탭하면 5초 툴팁만. 정상 슬롯은 빠르게 두 번
+  // 탭(같은 슬롯, 300ms 내) → 등록 플로우 진입(그 타임 프리필).
+  const onSlotTap = (key: string, slot: TimeSlot, conflict: SlotConflict) => {
+    if (conflict) {
+      showTip(key, CONFLICT_LABEL[conflict]);
+      return;
+    }
     const now = Date.now();
     const last = lastTapRef.current;
     if (last && last.key === key && now - last.t < 300) {
       lastTapRef.current = null;
+      clearTip();
       openRegister(slot);
     } else {
       lastTapRef.current = { key, t: now };
@@ -187,6 +231,7 @@ export function ScheduleViewScreen() {
                   onPress={() => {
                     userPickedRef.current = true;
                     setSelectedDay(d);
+                    clearTip();
                   }}
                 />
               );
@@ -220,23 +265,39 @@ export function ScheduleViewScreen() {
                   <Text style={styles.groupLabel}>{g.label}</Text>
                 ) : null}
                 <View style={styles.slotsWrap}>
-                  {g.slots.map((slot, i) => (
-                    <Pressable
-                      key={i}
-                      onPress={() =>
-                        onSlotTap(`${selectedDay}-g${gi}-${i}`, slot)
-                      }
-                      style={({ pressed }) => [
-                        styles.slotChip,
-                        { width: chipW },
-                        pressed && styles.slotChipPressed,
-                      ]}
-                    >
-                      <Text style={styles.slotChipText} numberOfLines={1}>
-                        {slot.start} ~ {slot.end}
-                      </Text>
-                    </Pressable>
-                  ))}
+                  {g.slots.map((slot, i) => {
+                    const key = `${selectedDay}-g${gi}-${i}`;
+                    const conflict = conflictOf(slot);
+                    return (
+                      <Pressable
+                        key={i}
+                        onPress={() => onSlotTap(key, slot, conflict)}
+                        style={({ pressed }) => [
+                          styles.slotChip,
+                          { width: chipW },
+                          conflict === 'duplicate' && styles.slotChipDup,
+                          conflict === 'overlap' && styles.slotChipOverlap,
+                          pressed && !conflict && styles.slotChipPressed,
+                        ]}
+                      >
+                        {tipKey === key ? (
+                          <ConflictTooltip
+                            label={tipText}
+                            style={styles.slotTip}
+                          />
+                        ) : null}
+                        <Text
+                          style={[
+                            styles.slotChipText,
+                            conflict && styles.slotChipTextDisabled,
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {slot.start} ~ {slot.end}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
                 </View>
               </View>
             ))
@@ -248,21 +309,39 @@ export function ScheduleViewScreen() {
                   <Text style={styles.groupLabel}>{dayNote}</Text>
                 </View>
               ) : null}
-              {slots.map((slot, i) => (
-                <Pressable
-                  key={i}
-                  onPress={() => onSlotTap(`${selectedDay}-${i}`, slot)}
-                  style={({ pressed }) => [
-                    styles.slotChip,
-                    { width: chipW },
-                    pressed && styles.slotChipPressed,
-                  ]}
-                >
-                  <Text style={styles.slotChipText} numberOfLines={1}>
-                    {slot.start} ~ {slot.end}
-                  </Text>
-                </Pressable>
-              ))}
+              {slots.map((slot, i) => {
+                const key = `${selectedDay}-${i}`;
+                const conflict = conflictOf(slot);
+                return (
+                  <Pressable
+                    key={i}
+                    onPress={() => onSlotTap(key, slot, conflict)}
+                    style={({ pressed }) => [
+                      styles.slotChip,
+                      { width: chipW },
+                      conflict === 'duplicate' && styles.slotChipDup,
+                      conflict === 'overlap' && styles.slotChipOverlap,
+                      pressed && !conflict && styles.slotChipPressed,
+                    ]}
+                  >
+                    {tipKey === key ? (
+                      <ConflictTooltip
+                        label={tipText}
+                        style={styles.slotTip}
+                      />
+                    ) : null}
+                    <Text
+                      style={[
+                        styles.slotChipText,
+                        conflict && styles.slotChipTextDisabled,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {slot.start} ~ {slot.end}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </>
           )}
         </ScrollView>
@@ -472,7 +551,27 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
+    // 툴팁이 칩 위로 벗어나 보이도록 visible (텍스트는 1줄 고정폭이라 안전).
+    overflow: 'visible',
+  },
+  // Figma 122:8215 — 이미 등록한 일정: pd-blue 채움
+  slotChipDup: {
+    backgroundColor: tokens.color.pdBlue,
+    borderColor: tokens.color.pdBlue,
+  },
+  // Figma 122:8225 — 다른 일정과 중복: pd-gray 채움
+  slotChipOverlap: {
+    backgroundColor: tokens.color.pdGray,
+    borderColor: tokens.color.pdGray,
+  },
+  slotChipTextDisabled: { color: tokens.color.pdBgray },
+  // 칩 위 absolute 툴팁(아래 화살표가 칩 상단을 가리킴)
+  slotTip: {
+    position: 'absolute',
+    bottom: '100%',
+    left: 0,
+    right: 0,
+    zIndex: 50,
   },
   // Figma I5:15658;5588:20562 — SemiBold 14/20 tracking -0.084 #4b5563
   slotChipText: {
