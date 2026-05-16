@@ -19,7 +19,11 @@ import IconChevronDown from '@assets/icons/chevron-down.svg';
 
 import type { RootStackParamList } from '@/navigation/types';
 import { BottomSheet, SheetCtaButton } from '@/components/ui/BottomSheet';
-import { MOCK_FRIENDS, type MockAccount } from '@/lib/mockData';
+import {
+  MOCK_FRIENDS,
+  MOCK_OTHER_SCHEDULES,
+  type MockAccount,
+} from '@/lib/mockData';
 import { BUNDLE_AVATARS } from '@/lib/avatars';
 import { tokens } from '@/styles/tokens';
 
@@ -43,7 +47,7 @@ function formatScheduleLine(iso: string, start: string): string {
 export function InviteFriendsScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { poolName, poolPhotoUrl, date, start } =
+  const { poolId, poolName, poolPhotoUrl, date, start, end } =
     useRoute<RouteProp<RootStackParamList, 'InviteFriends'>>().params;
 
   const [selected, setSelected] = React.useState<MockAccount[]>([]);
@@ -52,9 +56,27 @@ export function InviteFriendsScreen() {
   const [triggerY, setTriggerY] = React.useState(0);
   // 자동 포커스/키보드 X — 사용자가 입력칸을 직접 탭해야 포커스(요청).
 
+  // 이미 이 슬롯(풀+날짜+시작/끝)에 참여 중인 친구는 초대 불필요 → 제외.
+  // 가시성 무관(이미 참여면 보이든 안 보이든 초대 의미 없음).
+  const joinedIds = React.useMemo(
+    () =>
+      new Set(
+        MOCK_OTHER_SCHEDULES.filter(
+          (o) =>
+            o.poolId === poolId &&
+            o.date === date &&
+            o.start === start &&
+            o.end === end,
+        ).map((o) => o.userId),
+      ),
+    [poolId, date, start, end],
+  );
   const sorted = React.useMemo(
-    () => [...MOCK_FRIENDS].sort((a, b) => a.name.localeCompare(b.name, 'ko')),
-    [],
+    () =>
+      MOCK_FRIENDS.filter((f) => !joinedIds.has(f.id)).sort((a, b) =>
+        a.name.localeCompare(b.name, 'ko'),
+      ),
+    [joinedIds],
   );
   const q = query.trim().toLowerCase();
   const filtered = q

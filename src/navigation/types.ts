@@ -27,10 +27,12 @@ export type RootStackParamList = {
 
   // 친구 초대 (일정 확정 → 초대 대상만 추가). Figma 150:8692 / 154:3850 / 129:3779
   InviteFriends: {
+    poolId: string;
     poolName: string;
     poolPhotoUrl?: string;
     date: string; // YYYY-MM-DD
     start: string; // HH:MM
+    end: string; // HH:MM — 슬롯 매칭(이미 참여 친구 제외)용
   };
   InviteDone: { count: number };
 

@@ -219,10 +219,12 @@ export function AddScheduleSheet({
   const hasFriends = MOCK_FRIENDS.length > 0;
   // 방금 등록한 일정 스냅샷(초대 화면에 넘길 확정 일정 정보).
   const submittedRef = React.useRef<{
+    poolId: string;
     poolName: string;
     poolPhotoUrl?: string;
     date: string;
     start: string;
+    end: string;
   } | null>(null);
   // 전역 시트는 NavigationContainer 바깥 → useNavigation 불가, ref로 이동.
   const goInviteFriends = () => {
@@ -286,10 +288,12 @@ export function AddScheduleSheet({
       visibility,
     });
     submittedRef.current = {
+      poolId: selectedPool.id,
       poolName: selectedPool.name,
       poolPhotoUrl: photoUrl,
       date: dateKey(date),
       start: slot.start,
+      end: slot.end,
     };
     setPhase('done');
   };
