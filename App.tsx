@@ -17,6 +17,7 @@ import { useAuth } from '@/store/auth';
 import { useProfile } from '@/store/profile';
 import { useSwimSchedules } from '@/store/swimSchedule';
 import { usePrefs } from '@/store/prefs';
+import { useFavorites } from '@/store/favorites';
 import { tokens } from '@/styles/tokens';
 
 const queryClient = new QueryClient({
@@ -35,6 +36,7 @@ export default function App() {
     useProfile.getState().hydrate();
     useSwimSchedules.getState().hydrate();
     usePrefs.getState().hydrate();
+    useFavorites.getState().hydrate();
   }, []);
 
   if (!fontsLoaded && !fontError) {

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { Button } from '@/components/ui/Button';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { FavoriteHeart } from '@/components/ui/FavoriteHeart';
 import type { Pool } from '@/types/pool';
 import { tokens } from '@/styles/tokens';
 import Swimmer from '@assets/icons/swimmer.svg';
@@ -56,7 +57,13 @@ export function PoolBottomCard({
         {/* Header — text column + photo */}
         <View style={styles.headerRow}>
           <View style={styles.textCol}>
-            <Text style={styles.name} numberOfLines={1}>{pool.name}</Text>
+            {/* Figma 163:10646 — 이름 + 즐겨찾기 하트(gap 4, 20x20) */}
+            <View style={styles.nameRow}>
+              <Text style={[styles.name, styles.nameFlex]} numberOfLines={1}>
+                {pool.name}
+              </Text>
+              <FavoriteHeart poolId={pool.id} size={20} />
+            </View>
             <Text style={styles.addr} numberOfLines={1}>{pool.address}</Text>
             {pool.phone ? (
               <Text style={styles.phone} numberOfLines={1}>{pool.phone}</Text>
@@ -212,6 +219,9 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: tokens.color.bgSubtle,
   },
+  // Figma 163:10646 — 이름 + 하트 한 줄(gap 4)
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  nameFlex: { flexShrink: 1 },
   // Figma 93:10606 — Plus Jakarta Bold 14/20 -0.084 #1F2937
   name: {
     fontSize: 14,
