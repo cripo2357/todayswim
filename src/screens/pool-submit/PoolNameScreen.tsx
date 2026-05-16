@@ -315,30 +315,43 @@ function EditForm({ poolId }: { poolId?: string }) {
               <Field label="수영장 이름">
                 <View style={styles.inputBox}>
                   <IconLifeBuoy width={20} height={20} />
-                  <TextInput
-                    value={name}
-                    onChangeText={setName}
-                    placeholder="풀스데이 수영장"
-                    placeholderTextColor={tokens.color.ink400}
-                    style={styles.inputText}
-                    maxLength={40}
-                    returnKeyType="next"
-                  />
+                  <View style={styles.inputFill}>
+                    <TextInput
+                      value={name}
+                      onChangeText={setName}
+                      style={styles.inputText}
+                      maxLength={40}
+                      returnKeyType="next"
+                    />
+                    {/* RN Android는 TextInput placeholder에 커스텀 폰트 미적용 →
+                        빈 값일 때 Text 오버레이로 Pretendard 일관 표시 */}
+                    {name.length === 0 ? (
+                      <Text style={styles.inputPlaceholder} pointerEvents="none">
+                        풀스데이 수영장
+                      </Text>
+                    ) : null}
+                  </View>
                 </View>
               </Field>
 
               <Field label="수정 요청">
                 <View style={styles.textareaBox}>
-                  <TextInput
-                    multiline
-                    placeholder="어떤 정보를 수정하고 싶은지 자세하게 작성 부탁드립니다."
-                    placeholderTextColor={tokens.color.ink400}
-                    style={styles.textareaInput}
-                    value={desc}
-                    onChangeText={setDesc}
-                    maxLength={DESC_MAX}
-                    textAlignVertical="top"
-                  />
+                  <View style={styles.textareaFill}>
+                    <TextInput
+                      multiline
+                      style={styles.textareaInput}
+                      value={desc}
+                      onChangeText={setDesc}
+                      maxLength={DESC_MAX}
+                      textAlignVertical="top"
+                    />
+                    {/* placeholder Pretendard 일관 표시 (시스템 폰트 fallback 방지) */}
+                    {desc.length === 0 ? (
+                      <Text style={styles.textareaPlaceholder} pointerEvents="none">
+                        어떤 정보를 수정하고 싶은지 자세하게 작성 부탁드립니다.
+                      </Text>
+                    ) : null}
+                  </View>
                   <View style={styles.textareaFooter}>
                     <Text style={styles.counterText}>{desc.length}/{DESC_MAX}</Text>
                     <IconNotch width={16} height={16} />
@@ -517,6 +530,22 @@ const styles = StyleSheet.create({
     color: tokens.color.ink900,
     padding: 0,
   },
+  // placeholder Text 오버레이용 (TextInput placeholder는 시스템 폰트 fallback)
+  inputFill: { flex: 1, justifyContent: 'center' },
+  inputPlaceholder: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    textAlignVertical: 'center',
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sans,
+    color: tokens.color.ink400,
+    includeFontPadding: false,
+  },
 
   // 레인 길이 라디오 (전체/25m/50m)
   radioRow: { flexDirection: 'row', gap: 8 },
@@ -613,6 +642,19 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     color: tokens.color.ink900,
     padding: 0,
+  },
+  textareaFill: { flex: 1 },
+  // multiline placeholder Text 오버레이 (상단 정렬)
+  textareaPlaceholder: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    fontFamily: tokens.font.sans,
+    fontSize: 16,
+    lineHeight: 26,
+    color: tokens.color.ink400,
+    includeFontPadding: false,
   },
   // Figma 90:7413 — 박스 하단 행: 카운터(flex) + 리사이즈 notch
   textareaFooter: {
