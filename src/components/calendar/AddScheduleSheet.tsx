@@ -177,19 +177,43 @@ export function AddScheduleSheet({
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={close}>
-      <View style={styles.root}>
-        <Pressable onPress={close} style={styles.backdrop} />
-        <Animated.View
-          style={[styles.sheetWrap, { transform: [{ translateY: slideY }] }]}
-        >
-          <SafeAreaView edges={['bottom']}>
-            <View style={styles.handleWrap}>
-              <View style={styles.handle} />
+      {phase === 'done' ? (
+        /* Figma 125:3342 — 중앙 정렬 축하 카드(바텀시트 아님) */
+        <View style={styles.doneRoot}>
+          <Pressable onPress={close} style={styles.backdrop} />
+          <View style={styles.doneCard}>
+            <View style={styles.doneIllustWrap}>
+              <RequestCompleteIllust width={240} height={228} />
             </View>
+            <View style={styles.doneTextBlock}>
+              <Text style={styles.doneTitle}>수영 일정 등록</Text>
+              <Text style={styles.doneSub}>
+                즐거운 수영 일정이 등록되었습니다.
+              </Text>
+            </View>
+            <Pressable
+              onPress={close}
+              style={({ pressed }) => [
+                styles.doneBtn,
+                pressed && { opacity: 0.85 },
+              ]}
+            >
+              <Text style={styles.doneBtnLabel}>알겠습니다</Text>
+              <Check size={20} color={tokens.color.black} strokeWidth={2.4} />
+            </Pressable>
+          </View>
+        </View>
+      ) : (
+        <View style={styles.root}>
+          <Pressable onPress={close} style={styles.backdrop} />
+          <Animated.View
+            style={[styles.sheetWrap, { transform: [{ translateY: slideY }] }]}
+          >
+            <SafeAreaView edges={['bottom']}>
+              <View style={styles.handleWrap}>
+                <View style={styles.handle} />
+              </View>
 
-            {phase === 'done' ? (
-              <DoneView onClose={close} />
-            ) : (
               <View style={styles.sheet}>
                 <View style={styles.titleRow}>
                   <Text style={styles.title}>수영 일정 등록</Text>
@@ -205,12 +229,13 @@ export function AddScheduleSheet({
                 >
                   {/* 수영장 드롭다운 */}
                   <Text style={styles.fieldLabel}>수영장</Text>
-                  {/* Figma 122:7490 — 트리거는 항상 흐름에 고정,
-                      검색+리스트 카드는 absolute float로 위에 겹쳐 노출
-                      (자동완성이 레이아웃을 밀지 않음 → 시트 높이 불변). */}
-                  <View style={styles.dropdownAnchor}>
+                  {/* Figma 122:7490 — 닫힘: 트리거 / 열림: 검색+리스트 카드.
+                      absolute float은 RN Android에서 부모 영역 밖 터치 미수신
+                      → 인-플로우 렌더(검색/선택 정상). 시트 높이는 슬롯 영역
+                      고정 높이로 안정화. */}
+                  {!poolOpen ? (
                     <Pressable
-                      onPress={() => setPoolOpen((v) => !v)}
+                      onPress={() => setPoolOpen(true)}
                       style={styles.dropdown}
                     >
                       <Text
@@ -224,78 +249,67 @@ export function AddScheduleSheet({
                       </Text>
                       <IconChevronDown width={20} height={20} />
                     </Pressable>
-
-                    {poolOpen ? (
-                      <View style={styles.dropdownFloat}>
-                        <View style={styles.dropdownList}>
-                          <View style={styles.searchBox}>
-                            {/* RN Android는 TextInput placeholder에 커스텀
-                                폰트 미적용 → 빈 값일 때 Text 오버레이로 고정 */}
-                            <View style={styles.searchInputWrap}>
-                              <TextInput
-                                value={poolQuery}
-                                onChangeText={setPoolQuery}
-                                style={styles.searchInput}
-                              />
-                              {poolQuery.length === 0 ? (
-                                <Text
-                                  style={styles.searchPlaceholder}
-                                  pointerEvents="none"
-                                >
-                                  수영장 이름
-                                </Text>
-                              ) : null}
-                            </View>
-                            {/* Figma 147:5413 — 입력값 있을 때만 clear 노출 */}
-                            {poolQuery.length > 0 ? (
-                              <Pressable
-                                onPress={() => setPoolQuery('')}
-                                hitSlop={8}
-                                accessibilityRole="button"
-                                accessibilityLabel="검색어 지우기"
-                              >
-                                <XCircle
-                                  size={20}
-                                  color="#94A3B8"
-                                  strokeWidth={2}
-                                />
-                              </Pressable>
-                            ) : null}
-                          </View>
-                          <ScrollView
-                            style={styles.optionScroll}
-                            contentContainerStyle={styles.optionListContent}
-                            nestedScrollEnabled
-                            keyboardShouldPersistTaps="always"
-                          >
-                            {filteredPools.map((p) => (
-                              <Pressable
-                                key={p.id}
-                                onPress={() => {
-                                  setPoolId(p.id);
-                                  setSlotIdx(null);
-                                  setPoolOpen(false);
-                                }}
-                                style={styles.optionItem}
-                              >
-                                <Text
-                                  style={styles.optionText}
-                                  numberOfLines={1}
-                                >
-                                  {p.name}
-                                </Text>
-                              </Pressable>
-                            ))}
-                            {filteredPools.length === 0 && (
-                              <Text style={styles.emptyText}>
-                                검색 결과가 없어요.
-                              </Text>
-                            )}
-                          </ScrollView>
+                  ) : (
+                    <View style={styles.dropdownList}>
+                      <View style={styles.searchBox}>
+                        {/* RN Android는 TextInput placeholder 커스텀폰트
+                            미적용 → 빈 값일 때 Text 오버레이로 고정 */}
+                        <View style={styles.searchInputWrap}>
+                          <TextInput
+                            value={poolQuery}
+                            onChangeText={setPoolQuery}
+                            style={styles.searchInput}
+                          />
+                          {poolQuery.length === 0 ? (
+                            <Text
+                              style={styles.searchPlaceholder}
+                              pointerEvents="none"
+                            >
+                              수영장 이름
+                            </Text>
+                          ) : null}
                         </View>
+                        {/* Figma 147:5413 — 입력값 있을 때만 clear 노출 */}
+                        {poolQuery.length > 0 ? (
+                          <Pressable
+                            onPress={() => setPoolQuery('')}
+                            hitSlop={8}
+                            accessibilityRole="button"
+                            accessibilityLabel="검색어 지우기"
+                          >
+                            <XCircle size={20} color="#94A3B8" strokeWidth={2} />
+                          </Pressable>
+                        ) : null}
                       </View>
-                    ) : null}
-                  </View>
+                      <ScrollView
+                        style={styles.optionScroll}
+                        contentContainerStyle={styles.optionListContent}
+                        nestedScrollEnabled
+                        keyboardShouldPersistTaps="always"
+                      >
+                        {filteredPools.map((p) => (
+                          <Pressable
+                            key={p.id}
+                            onPress={() => {
+                              setPoolId(p.id);
+                              setSlotIdx(null);
+                              setPoolOpen(false);
+                            }}
+                            style={styles.optionItem}
+                          >
+                            <Text style={styles.optionText} numberOfLines={1}>
+                              {p.name}
+                            </Text>
+                          </Pressable>
+                        ))}
+                        {filteredPools.length === 0 && (
+                          <Text style={styles.emptyText}>
+                            검색 결과가 없어요.
+                          </Text>
+                        )}
+                      </ScrollView>
+                    </View>
+                  )}
 
                   <View style={styles.calSpacer} />
                   <WeekCalendar
@@ -405,30 +419,11 @@ export function AddScheduleSheet({
                   />
                 </Pressable>
               </View>
-            )}
-          </SafeAreaView>
-        </Animated.View>
-      </View>
+            </SafeAreaView>
+          </Animated.View>
+        </View>
+      )}
     </Modal>
-  );
-}
-
-function DoneView({ onClose }: { onClose: () => void }) {
-  return (
-    <View style={styles.doneWrap}>
-      <RequestCompleteIllust width={240} height={200} />
-      <View style={styles.doneTextBlock}>
-        <Text style={styles.doneTitle}>수영 일정 등록</Text>
-        <Text style={styles.doneSub}>즐거운 수영 일정이 등록되었습니다.</Text>
-      </View>
-      <Pressable
-        onPress={onClose}
-        style={({ pressed }) => [styles.cta, pressed && { opacity: 0.85 }]}
-      >
-        <Text style={styles.ctaLabel}>알겠습니다</Text>
-        <Check size={20} color={tokens.color.black} strokeWidth={2.4} />
-      </Pressable>
-    </View>
   );
 }
 
@@ -489,17 +484,6 @@ const styles = StyleSheet.create({
     color: tokens.color.ink900,
   },
   dropdownPlaceholder: { color: tokens.color.ink400 },
-  // 트리거를 감싸는 relative 앵커. zIndex로 이후 형제(캘린더/슬롯) 위.
-  dropdownAnchor: { position: 'relative', zIndex: 20 },
-  // 검색+리스트 카드: 트리거 바로 아래 absolute float (레이아웃 미점유 → 시트 높이 불변).
-  dropdownFloat: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    zIndex: 30,
-    elevation: 30,
-  },
   // Figma I122:7490;5626:22412 — 흰 카드, border #E2E8F0, r24, p8, gap4, Shadow/lg
   dropdownList: {
     marginTop: 8,
@@ -649,26 +633,71 @@ const styles = StyleSheet.create({
   },
   ctaLabelDisabled: { color: tokens.color.pdGray },
 
-  doneWrap: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 24,
+  // Figma 125:3342 — 중앙 정렬 축하 모달
+  doneRoot: {
+    flex: 1,
     alignItems: 'center',
-    gap: 24,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
   },
-  doneTextBlock: { alignItems: 'center', gap: 12 },
+  // Figma 125:3343 — 흰 카드 w343 r32 p16, 섹션 gap 32
+  doneCard: {
+    width: '100%',
+    maxWidth: 343,
+    backgroundColor: tokens.color.white,
+    borderRadius: 32,
+    padding: 16,
+    gap: 32,
+    alignItems: 'center',
+    overflow: 'hidden',
+    ...tokens.shadow.pop,
+  },
+  // Figma 125:3484 — 일러스트 프레임 h228, 전체폭
+  doneIllustWrap: {
+    width: '100%',
+    height: 228,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  // Figma 125:3767 — 타이틀/서브 gap 16, 가운데
+  doneTextBlock: { width: '100%', alignItems: 'center', gap: 16 },
+  // Figma 125:3768 — Bold 24/32 -0.288 #1F2937
   doneTitle: {
     fontSize: 24,
     lineHeight: 32,
-    letterSpacing: -0.24,
+    letterSpacing: -0.288,
     fontFamily: tokens.font.sansBold,
-    color: tokens.color.ink900,
-  },
-  doneSub: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: tokens.font.sans,
-    color: tokens.color.ink500,
+    color: '#1F2937',
     textAlign: 'center',
+  },
+  // Figma 125:3769 — Regular 16/26(1.6) #4B5563
+  doneSub: {
+    fontSize: 16,
+    lineHeight: 26,
+    fontFamily: tokens.font.sans,
+    color: '#4B5563',
+    textAlign: 'center',
+  },
+  // Figma 125:3773 — 풀폭 byellow 버튼 r14 minH48 px20 py12 gap10
+  doneBtn: {
+    flexDirection: 'row',
+    width: '100%',
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 14,
+    backgroundColor: tokens.color.pdByellow,
+  },
+  // Figma I125:3773;5588:18178 — SemiBold 16/22 -0.112 black
+  doneBtnLabel: {
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sansSemibold,
+    color: tokens.color.black,
   },
 });
