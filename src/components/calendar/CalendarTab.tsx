@@ -43,10 +43,15 @@ const MANAGE_OPTIONS: Option<ManageAction>[] = [
   { value: 'public', label: VIS_LABEL.public },
 ];
 
-function formatDate(iso: string): string {
+// Figma 120:3701 — "2026년 1월 23일(목), 오전 11:00" (날짜+시작시각 12h)
+function formatScheduleLine(iso: string, start: string): string {
   const [y, m, d] = iso.split('-').map(Number);
   const dow = DOW_KR[new Date(y, m - 1, d).getDay()];
-  return `${y}년 ${m}월 ${d}일 ${dow}요일`;
+  const [hhStr, mm] = start.split(':');
+  const hh = Number(hhStr);
+  const ampm = hh < 12 ? '오전' : '오후';
+  const h12 = hh % 12 || 12;
+  return `${y}년 ${m}월 ${d}일(${dow}), ${ampm} ${h12}:${mm}`;
 }
 
 export function CalendarTab() {
@@ -131,7 +136,7 @@ export function CalendarTab() {
                     {s.poolName}
                   </Text>
                   <Text style={styles.when} numberOfLines={1}>
-                    {formatDate(s.date)}, {s.start} ~ {s.end}
+                    {formatScheduleLine(s.date, s.start)}
                   </Text>
                   {(() => {
                     const past = isSchedulePast(s);
