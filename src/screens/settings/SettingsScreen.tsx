@@ -140,6 +140,12 @@ export function SettingsScreen() {
   const [friendReqSheet, setFriendReqSheet] = React.useState(false);
   const [ageSheet, setAgeSheet] = React.useState(false);
 
+  // 프로필 '친구만' 공개면 다른 사람 일정 보기는 '친구 일정만'으로 강제 (전체 옵션 미노출)
+  const viewOptions =
+    profileVis === 'friends'
+      ? VIEW_OPTIONS.filter((o) => o.value === 'friends')
+      : VIEW_OPTIONS;
+
   const onLogout = () => {
     Alert.alert('로그아웃', '로그아웃 하시겠어요?', [
       { text: '취소', style: 'cancel' },
@@ -296,7 +302,7 @@ export function SettingsScreen() {
         visible={viewSheet}
         onClose={() => setViewSheet(false)}
         title="다른 사람 수영 일정 보기"
-        options={VIEW_OPTIONS}
+        options={viewOptions}
         value={othersView}
         onConfirm={(v) => setOthersView(v)}
       />

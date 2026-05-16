@@ -57,10 +57,13 @@ export const usePrefs = create<PrefsState>((set) => ({
         AsyncStorage.getItem(K_FRIEND_REQ),
         AsyncStorage.getItem(K_AGE_VIS),
       ]);
+      const pv: ProfileVisibility = p === 'public' ? 'public' : 'friends';
+      const ov: OthersScheduleView = v === 'public' ? 'public' : 'friends';
       set({
-        othersScheduleView: v === 'public' ? 'public' : 'friends',
+        // 프로필 '친구만' 공개면 다른 사람 일정 보기는 강제 '친구 일정만'
+        othersScheduleView: pv === 'friends' ? 'friends' : ov,
         scheduleInvite: i === 'off' ? 'off' : 'on',
-        profileVisibility: p === 'public' ? 'public' : 'friends',
+        profileVisibility: pv,
         friendRequest: FRIEND_REQ_VALUES.includes(f as FriendRequest)
           ? (f as FriendRequest)
           : 'nickname',
@@ -86,7 +89,13 @@ export const usePrefs = create<PrefsState>((set) => ({
 
   setProfileVisibility: async (v) => {
     await AsyncStorage.setItem(K_PROFILE_VIS, v);
-    set({ profileVisibility: v });
+    if (v === 'friends') {
+      // 프로필 '친구만' → 다른 사람 일정 보기 강제 '친구 일정만'
+      await AsyncStorage.setItem(K_VIEW, 'friends');
+      set({ profileVisibility: v, othersScheduleView: 'friends' });
+    } else {
+      set({ profileVisibility: v });
+    }
   },
 
   setFriendRequest: async (v) => {
