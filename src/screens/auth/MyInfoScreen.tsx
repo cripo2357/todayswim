@@ -1,5 +1,6 @@
-// Figma 134:9643 — 내 정보 (로그인 계정). 3탭: 달력 / 친구 / 알림 (기본=달력).
-// 달력=CalendarTab, 알림=NotificationsTab. 친구는 디자인 확정 시 추가(placeholder).
+// Figma 134:9643 / 120:3167 — 내 정보. 3탭 텍스트: 스케줄 / 사람들 / 메시지
+// (기본=스케줄). 내부 키는 '달력'/'친구'/'알림' 식별자 유지.
+// 스케줄=CalendarTab, 사람들=FriendsTab, 메시지=NotificationsTab.
 // 프로필은 별도 화면(ProfileScreen, 설정>프로필)으로 분리 — ProfileTab은 여기서
 // export 되어 재사용됨(보기+수정, 저장 버튼 없이 즉시 반영).
 
@@ -105,12 +106,14 @@ export function MyInfoScreen() {
         <View style={styles.tabGroup}>
           {TABS.map((t) => {
             const active = t === tab;
+            // Figma 120:3167 — 탭 텍스트: 스케줄 / 사람들 / 메시지
+            // (내부 키 '달력'/'친구'/'알림'은 식별자로 유지)
             const label =
               t === '달력'
-                ? `달력 (${upcomingCount})`
+                ? `스케줄 (${upcomingCount})`
                 : t === '친구'
-                  ? `친구 (${friendCount})`
-                  : '알림';
+                  ? `사람들 (${friendCount})`
+                  : '메시지';
             return (
               <Pressable
                 key={t}
