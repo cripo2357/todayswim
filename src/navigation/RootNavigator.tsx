@@ -5,10 +5,6 @@ import type { RootStackParamList } from './types';
 import { SplashScreen } from '@/screens/splash/SplashScreen';
 import { MapScreen } from '@/screens/map/MapScreen';
 import { ScheduleViewScreen } from '@/screens/schedule/ScheduleViewScreen';
-import { ScheduleNicknameScreen } from '@/screens/schedule/ScheduleNicknameScreen';
-import { ScheduleWriteScreen } from '@/screens/schedule/ScheduleWriteScreen';
-import { ScheduleTimeScreen } from '@/screens/schedule/ScheduleTimeScreen';
-import { ScheduleDoneScreen } from '@/screens/schedule/ScheduleDoneScreen';
 import { PoolNameScreen } from '@/screens/pool-submit/PoolNameScreen';
 import { PoolDoneScreen } from '@/screens/pool-submit/PoolDoneScreen';
 import { MoreScreen } from '@/screens/more/MoreScreen';
@@ -78,22 +74,6 @@ export function RootNavigator() {
       <Stack.Screen
         name="ScheduleView"
         component={ScheduleViewScreen}
-        options={DIM_MODAL_OPTIONS}
-      />
-      <Stack.Screen name="ScheduleNickname" component={ScheduleNicknameScreen} />
-      <Stack.Screen name="ScheduleWrite" component={ScheduleWriteScreen} />
-      <Stack.Screen
-        name="ScheduleTime"
-        component={ScheduleTimeScreen}
-        options={{
-          ...DIM_MODAL_OPTIONS,
-          // sheet 자체 슬라이드는 화면 내부 Animated로 처리 → dim은 fade로 빠르게 등장
-          animation: 'fade',
-        }}
-      />
-      <Stack.Screen
-        name="ScheduleDone"
-        component={ScheduleDoneScreen}
         options={DIM_MODAL_OPTIONS}
       />
 

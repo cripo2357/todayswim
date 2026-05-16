@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { X, Check, Calendar as LucideCalendar, XCircle } from 'lucide-react-native';
 import IconChevronDown from '@assets/icons/chevron-down.svg';
+import IconEnvelope from '@assets/icons/settings/envelope.svg';
 import { usePools } from '@/hooks/usePools';
 import { useSchedules } from '@/hooks/useSchedules';
 import {
@@ -30,6 +31,8 @@ import {
   type SlotConflict,
 } from '@/lib/scheduleConflict';
 import { tokens } from '@/styles/tokens';
+import { navigationRef } from '@/navigation/navigationRef';
+import { MOCK_FRIENDS } from '@/lib/mockData';
 import ScheduleCompleteIllust from '@assets/illustrations/schedule-complete.svg';
 import { WeekCalendar } from './WeekCalendar';
 import { ConflictTooltip } from './ConflictTooltip';
@@ -208,6 +211,16 @@ export function AddScheduleSheet({
     }).start(() => onClose());
   };
 
+  // 친구가 0명이면 "이 일정에 친구 초대하기" 미노출 (Figma 125:3342).
+  const hasFriends = MOCK_FRIENDS.length > 0;
+  // 전역 시트는 NavigationContainer 바깥 → useNavigation 불가, ref로 이동.
+  const goInviteFriends = () => {
+    if (navigationRef.isReady()) {
+      navigationRef.navigate('InviteScheduleSelect');
+    }
+    close();
+  };
+
   // 수영장 선택을 강조: 검색 열렸을 땐 다른 곳을 눌러도 포커스를 풀지
   // 않는다(아래 ScrollView keyboardShouldPersistTaps="always"). 포커스는
   // 리스트에서 풀을 "선택"했을 때만 풀림(선택 시 poolOpen=false → 입력 unmount).
@@ -283,16 +296,36 @@ export function AddScheduleSheet({
                 즐거운 수영 일정이 등록되었습니다.
               </Text>
             </View>
-            <Pressable
-              onPress={close}
-              style={({ pressed }) => [
-                styles.doneBtn,
-                pressed && { opacity: 0.85 },
-              ]}
-            >
-              <Text style={styles.doneBtnLabel}>알겠습니다</Text>
-              <Check size={20} color={tokens.color.black} strokeWidth={2.4} />
-            </Pressable>
+            {/* Figma 150:5947 — 버튼 그룹 col gap-24 */}
+            <View style={styles.doneActions}>
+              <Pressable
+                onPress={close}
+                style={({ pressed }) => [
+                  styles.doneBtn,
+                  pressed && { opacity: 0.85 },
+                ]}
+              >
+                <Text style={styles.doneBtnLabel}>알겠습니다</Text>
+                <Check size={20} color={tokens.color.black} strokeWidth={2.4} />
+              </Pressable>
+              {/* Figma 150:5949 — 친구 0명이면 미노출 */}
+              {hasFriends ? (
+                <Pressable
+                  onPress={goInviteFriends}
+                  style={({ pressed }) => [
+                    styles.inviteBtn,
+                    pressed && { opacity: 0.6 },
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="이 일정에 친구 초대하기"
+                >
+                  <IconEnvelope width={20} height={20} />
+                  <Text style={styles.inviteLabel}>
+                    이 일정에 친구 초대하기
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
           </View>
         </View>
       ) : (
@@ -838,5 +871,22 @@ const styles = StyleSheet.create({
     letterSpacing: -0.112,
     fontFamily: tokens.font.sansSemibold,
     color: tokens.color.black,
+  },
+  // Figma 150:5947 — 버튼 그룹: 전체폭 세로 gap 24, 가운데
+  doneActions: { width: '100%', alignItems: 'center', gap: 24 },
+  // Figma 150:5949 — 아이콘 20 + 텍스트, gap 8, 가운데 (보더/bg 없음)
+  inviteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  // Figma I150:5949;5603:17351 — SemiBold 14/20 -0.084 pd-blue
+  inviteLabel: {
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: -0.084,
+    fontFamily: tokens.font.sansSemibold,
+    color: tokens.color.pdBlue,
   },
 });

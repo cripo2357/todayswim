@@ -33,7 +33,7 @@ export const color = {
   pdMint:      '#63CBE8',
   // pd-blue — 새 브랜드 indigo blue (필터 footer 텍스트, 칩 보더/체크 원, 요일 비선택 칩)
   pdBlue:      '#6890CB',
-  // pd-bgray — 새 브랜드 light gray (시간표 작성 화면 + 버튼 배경)
+  // pd-bgray — 새 브랜드 light gray (버튼/입력 배경)
   pdBgray:     '#EBEBEB',
   // pd-gray — 새 브랜드 medium gray (disabled 텍스트/아이콘)
   pdGray:      '#C8C8C8',

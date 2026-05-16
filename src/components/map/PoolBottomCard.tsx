@@ -13,7 +13,7 @@ import IconHotel from '@assets/icons/facility-hotel.svg';
 /**
  * 3-state CTA:
  * - 'available'    → pdYellow primary "자유수영 시간표 보기" (Figma 93:10597)
- * - 'no_schedule'  → 2버튼 split (시간표 작성 + 자유수영 정보 없음)
+ * - 'no_schedule'  → disabled "자유수영 정보 없음"
  * - 'impossible'   → disabled "자유수영 불가능"
  */
 export type FreeSwimStatus = 'available' | 'no_schedule' | 'impossible';
@@ -21,7 +21,7 @@ export type FreeSwimStatus = 'available' | 'no_schedule' | 'impossible';
 interface Props {
   pool: Pool;
   status: FreeSwimStatus;
-  /** 'available' → 시간표 보기 / 'no_schedule' → 시간표 작성 / 'impossible' → 호출 X */
+  /** 'available' → 시간표 보기 / 그 외 → 비활성(호출 X) */
   onPressScheduleAction?: () => void;
 }
 
@@ -184,23 +184,11 @@ export function PoolBottomCard({
             variant="pdYellow"
             fullWidth
           />
-        ) : status === 'no_schedule' ? (
-          <View style={styles.splitRow}>
-            <Pressable
-              onPress={onPressScheduleAction}
-              style={({ pressed }) => [styles.writeBtn, pressed && { opacity: 0.85 }]}
-              accessibilityRole="button"
-              accessibilityLabel="시간표 작성"
-            >
-              <Text style={styles.writeBtnLabel}>시간표 작성</Text>
-            </Pressable>
-            <View style={styles.disabledHalfBtn} accessibilityRole="text">
-              <Text style={styles.disabledLabel}>자유수영 정보 없음</Text>
-            </View>
-          </View>
         ) : (
           <View style={styles.disabledCta} accessibilityRole="text">
-            <Text style={styles.disabledLabel}>자유수영 불가능</Text>
+            <Text style={styles.disabledLabel}>
+              {status === 'no_schedule' ? '자유수영 정보 없음' : '자유수영 불가능'}
+            </Text>
           </View>
         )}
       </View>
@@ -351,35 +339,8 @@ const styles = StyleSheet.create({
     borderTopColor: tokens.color.white,
   },
 
-  // 'impossible' / 'no_schedule' disabled 영역 — 기존 스타일 유지
+  // 'impossible' / 'no_schedule' 공통 disabled CTA
   disabledCta: {
-    minHeight: 48,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 14,
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  splitRow: { flexDirection: 'row', gap: 10 },
-  writeBtn: {
-    minHeight: 48,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 14,
-    backgroundColor: tokens.color.brandBlue,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  writeBtnLabel: {
-    fontSize: 16,
-    lineHeight: 22,
-    letterSpacing: -0.112,
-    fontFamily: tokens.font.sansSemibold,
-    color: tokens.color.white,
-  },
-  disabledHalfBtn: {
-    flex: 1,
     minHeight: 48,
     paddingHorizontal: 20,
     paddingVertical: 12,

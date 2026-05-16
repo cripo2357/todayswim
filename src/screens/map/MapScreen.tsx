@@ -29,7 +29,6 @@ import { usePools } from '@/hooks/usePools';
 import { useSchedules } from '@/hooks/useSchedules';
 import { PoolBottomCard } from '@/components/map/PoolBottomCard';
 import { useSelection } from '@/store/selection';
-import { useScheduleDraft } from '@/store/scheduleDraft';
 import { usePoolFilter, isFilterActive, filterPools } from '@/store/poolFilter';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useProfile } from '@/store/profile';
@@ -112,7 +111,6 @@ export function MapScreen() {
 
   const selectedPoolId = useSelection((s) => s.selectedPoolId);
   const select = useSelection((s) => s.select);
-  const initDraft = useScheduleDraft((s) => s.init);
 
   const filter = usePoolFilter();
   const filterActive = isFilterActive(filter);
@@ -286,14 +284,11 @@ export function MapScreen() {
     }
   };
 
+  // 시간표가 있는 풀만 조회 가능 — 없으면 'no_schedule' 비활성 CTA(액션 없음).
   const onScheduleAction = () => {
     if (!selectedPool) return;
     if (scheduleByPool.has(selectedPool.id)) {
       navigation.navigate('ScheduleView', { poolId: selectedPool.id });
-    } else {
-      initDraft(selectedPool.id);
-      // 새 흐름: 시간표 작성 → (요일별 Time modal) → 닉네임(마지막). Nickname 화면 우회.
-      navigation.navigate('ScheduleWrite', { poolId: selectedPool.id });
     }
   };
 

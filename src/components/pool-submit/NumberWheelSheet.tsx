@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
     height: PICKER_HEIGHT,
     position: 'relative',
   },
-  // pd-mint 배경 + 보더 없음 (ScheduleTime과 동일)
+  // pd-mint 배경 + 보더 없음
   selectionPill: {
     position: 'absolute',
     top: PICKER_PAD,

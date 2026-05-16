@@ -1,17 +1,16 @@
-// Figma: 5:14288 (자유수영 시간표 보기) — dark backdrop + centered card.
+// Figma: 144:3717 (자유수영 시간표 보기) — dark backdrop + 가운데 흰 카드.
 //
-// 풀이름 + 업데이트 캡션 + 7일 day chip + 선택 요일 시간 슬롯 + "시간표 수정 요청" outline 버튼.
+// 풀이름 + 업데이트 캡션 + 7일 day chip + 선택 요일 시간 슬롯 + 하단 안내문구.
+// 조회 전용 — 사용자 작성/수정 요청 기능 없음.
 
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { useRoute, useNavigation, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import IconWrench from '@assets/icons/wrench.svg';
 
 import { ModalCard } from '@/components/layout/ModalCard';
 import { useSchedules } from '@/hooks/useSchedules';
 import { usePools } from '@/hooks/usePools';
-import { useScheduleDraft } from '@/store/scheduleDraft';
 import { dateKey } from '@/store/swimSchedule';
 import { useAddScheduleIntent } from '@/store/addScheduleIntent';
 import type { RootStackParamList } from '@/navigation/types';
@@ -35,7 +34,6 @@ export function ScheduleViewScreen() {
   const { data: schedulesData } = useSchedules();
   const pool = poolsData?.find((p) => p.id === poolId);
   const schedule = schedulesData?.find((s) => s.poolId === poolId);
-  const initFromSchedule = useScheduleDraft((s) => s.initFromSchedule);
 
   const daysWithSchedule = React.useMemo(() => {
     if (!schedule) return new Set<DayOfWeek>();
@@ -76,15 +74,6 @@ export function ScheduleViewScreen() {
     () => visibleSeasonGroups(groups, thisMonth),
     [groups, thisMonth],
   );
-
-  // 풀 전체에 시즌제(slot_groups) 운영이 한 요일이라도 있으면 = 시즌제 풀.
-  // 수정 제안 플로우(ScheduleWrite/draft)는 slot_groups 미지원 →
-  // 시즌제 풀에서는 "수정 제안하기" 버튼 미노출(잘못 덮어쓰기 방지).
-  const isSeasonalPool =
-    !!schedule?.slotGroups &&
-    Object.values(schedule.slotGroups).some(
-      (g) => Array.isArray(g) && g.length > 0,
-    );
 
   // 칩 2열을 슬롯 영역 폭에 "딱 맞게" — 영역폭 실측 후
   // 칩폭 = floor((영역폭 − 가운데여백) / 2). floor로 합이 영역폭을
@@ -136,7 +125,7 @@ export function ScheduleViewScreen() {
     <ModalCard
       withCardPadding={false}
       onBackdropPress={() => navigation.goBack()}
-      cardStyle={{ height: CARD_H, padding: 16 }}
+      cardStyle={{ height: CARD_H, padding: 16, borderRadius: 24 }}
     >
       <View style={styles.body}>
         {/* 헤더 (credit + title + notice) — Figma 5:15676 gap-24 */}
@@ -157,19 +146,14 @@ export function ScheduleViewScreen() {
             )
           ) : null}
 
-          <View style={styles.titleBlock}>
-            <Text
-              style={styles.poolName}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.6}
-            >
-              {pool?.name ?? '수영장'}
-            </Text>
-            <Text style={styles.notice}>
-              {'타임을 빠르게 두 번 터치하면 일정으로 등록할 수 있습니다.\n자유수영 시간표는 참고용이니, 꼭 문의 후 방문하세요.'}
-            </Text>
-          </View>
+          <Text
+            style={styles.poolName}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.6}
+          >
+            {pool?.name ?? '수영장'}
+          </Text>
         </View>
 
         {/* 요일 chip 컨테이너 — Figma 5:15641 흰 카드 + 그림자 */}
@@ -267,34 +251,16 @@ export function ScheduleViewScreen() {
           )}
         </ScrollView>
 
-        {/* Figma 101:5902 — pd-blue 텍스트 + 렌치 아이콘, 보더/bg 없음.
-            시즌제(slot_groups) 풀은 수정 제안 플로우 미지원 → 버튼 미노출. */}
-        {!isSeasonalPool ? (
-          <Pressable
-            onPress={() => {
-              // 기존 시간표를 base로 draft 초기화 → 사용자가 수정 시작점으로
-              if (schedule) {
-                initFromSchedule(poolId, {
-                  byDay: schedule.byDay,
-                  dayNotes: schedule.dayNotes,
-                });
-              }
-              navigation.navigate('ScheduleWrite', { poolId });
-            }}
-            style={({ pressed }) => [styles.editBtn, pressed && { opacity: 0.6 }]}
-            accessibilityRole="button"
-            accessibilityLabel="자유수영 시간표 수정 제안하기"
-          >
-            <IconWrench width={20} height={20} />
-            <Text style={styles.editLabel}>자유수영 시간표 수정 제안하기</Text>
-          </Pressable>
-        ) : null}
+        {/* Figma 144:3717 — 안내문구는 카드 하단(슬롯 영역 아래) 2줄 가운데 */}
+        <Text style={styles.notice}>
+          {'타임을 빠르게 두 번 터치하면 일정으로 등록할 수 있습니다.\n자유수영 시간표는 참고용이니, 꼭 문의 후 방문하세요.'}
+        </Text>
       </View>
     </ModalCard>
   );
 }
 
-// Figma 5:14289 card spec: 343×580 fixed
+// Figma 144:3717 card spec: 343×580 fixed (rounded-24)
 const CARD_H = 580;
 
 interface DayChipProps {
@@ -339,13 +305,9 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 16, // Figma 5:14290 gap-16
   },
-  // Figma 5:15676 — header gap-24 (credit ↔ title block)
+  // Figma 144:3717 — header gap-24 (credit ↔ poolName)
   headerBlock: {
     gap: 24,
-  },
-  // Figma 57:789 — title gap-5 (poolName ↔ notice)
-  titleBlock: {
-    gap: 5,
   },
   // Figma 5:15668 — parent SemiBold default, color ink900, right-aligned
   credit: {
@@ -370,7 +332,7 @@ const styles = StyleSheet.create({
     color: tokens.color.ink900,
     textAlign: 'center',
   },
-  // Figma 5:15673 — Regular 12/16 tracking -0.06 rgba(27,31,38,0.72)
+  // Figma 144:3717 — 하단 안내문구. Regular 12/16 tracking -0.06 rgba(27,31,38,0.72)
   notice: {
     fontSize: 12,
     lineHeight: 16,
@@ -504,21 +466,5 @@ const styles = StyleSheet.create({
     ...tokens.text.bodySm,
     color: tokens.color.ink500,
     textAlign: 'center',
-  },
-  // Figma 101:5902 — gap-10, items-center, no border/bg, content-sized 가운데
-  editBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    alignSelf: 'center',
-  },
-  // SemiBold 16/22 -0.112 pd-blue
-  editLabel: {
-    fontSize: 16,
-    lineHeight: 22,
-    letterSpacing: -0.112,
-    fontFamily: tokens.font.sansSemibold,
-    color: tokens.color.pdBlue,
   },
 });

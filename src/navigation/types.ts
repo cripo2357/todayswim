@@ -31,13 +31,8 @@ export type RootStackParamList = {
   InviteFriends: undefined;
   InviteDone: { count: number };
 
-  // 시간표 조회·작성
-  // 흐름: Map → Write(시간표 작성) → Time(modal/요일별) → Nickname(마지막) → Done
+  // 자유수영 시간표 조회 (조회 전용 — 사용자 작성/수정 요청 기능 없음)
   ScheduleView: { poolId: string };
-  ScheduleWrite: { poolId: string };
-  ScheduleTime: { poolId: string; day: string };
-  ScheduleNickname: { poolId: string };
-  ScheduleDone: undefined;
 
   // 수영장 등록·수정
   PoolName: { mode: 'create' | 'edit'; poolId?: string };
