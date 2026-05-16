@@ -185,12 +185,9 @@ export function ScheduleViewScreen() {
           </View>
         </View>
 
-        {/* 요일별 안내 문구 — 슬롯 있는 요일에만 노출. slot_groups가 있는 요일은
-            그룹 라벨이 시즌/휴무 안내를 담당하므로 day_note는 숨김(중복/모순 방지).
-            DB day_notes가 안 비워져 있어도 UI에서 방어(제약 강제). */}
-        {dayNote && slots.length > 0 && !hasGroups ? (
-          <Text style={styles.dayNote}>{dayNote}</Text>
-        ) : null}
+        {/* 요일 안내문구는 슬롯 wrap 안 첫 줄(전체폭)로 인라인 렌더 — Figma 147:5180.
+            시즌 그룹 라벨과 동일 스타일로 통일. slot_groups 요일은 그룹 라벨이
+            안내를 담당하므로 day_note 미표시(중복/모순 방지, DB 안 비워져도 UI 방어). */}
 
         {/* 슬롯 영역 — 많으면 스크롤, 비어있어도 영역 유지 */}
         <ScrollView
@@ -235,21 +232,29 @@ export function ScheduleViewScreen() {
               </View>
             ))
           ) : (
-            slots.map((slot, i) => (
-              <Pressable
-                key={i}
-                onPress={() => onSlotTap(`${selectedDay}-${i}`, slot)}
-                style={({ pressed }) => [
-                  styles.slotChip,
-                  { width: chipW },
-                  pressed && styles.slotChipPressed,
-                ]}
-              >
-                <Text style={styles.slotChipText} numberOfLines={1}>
-                  {slot.start} ~ {slot.end}
-                </Text>
-              </Pressable>
-            ))
+            <>
+              {/* Figma 147:5181 — 안내문구: 전체폭 첫 줄, 그룹 라벨과 동일 스타일 */}
+              {dayNote ? (
+                <View style={styles.noteBlock}>
+                  <Text style={styles.groupLabel}>{dayNote}</Text>
+                </View>
+              ) : null}
+              {slots.map((slot, i) => (
+                <Pressable
+                  key={i}
+                  onPress={() => onSlotTap(`${selectedDay}-${i}`, slot)}
+                  style={({ pressed }) => [
+                    styles.slotChip,
+                    { width: chipW },
+                    pressed && styles.slotChipPressed,
+                  ]}
+                >
+                  <Text style={styles.slotChipText} numberOfLines={1}>
+                    {slot.start} ~ {slot.end}
+                  </Text>
+                </Pressable>
+              ))}
+            </>
           )}
         </ScrollView>
 
@@ -429,14 +434,10 @@ const styles = StyleSheet.create({
     color: tokens.color.pdBlue,
     textAlign: 'center',
   },
-  // 요일별 안내 문구 — Figma 90:3387, 가운데 정렬 작은 회색 텍스트
-  dayNote: {
-    fontSize: 13,
-    lineHeight: 18,
-    letterSpacing: -0.06,
-    fontFamily: tokens.font.sans,
-    color: tokens.color.ink500,
-    textAlign: 'center',
+  // Figma 147:5181 — 안내문구 블록: 전체폭(슬롯 wrap에서 줄바꿈 유발).
+  // 텍스트는 groupLabel 스타일 재사용(시즌 그룹 라벨과 동일 톤).
+  noteBlock: {
+    width: '100%',
   },
   slotsScroll: {
     flex: 1,
