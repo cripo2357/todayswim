@@ -35,8 +35,8 @@ interface SearchMultiSelectProps<T> {
   /** 트리거 + 검색창 placeholder */
   placeholder: string;
   emptyText?: string;
-  /** 열림 목록에 한 번에 보일 행 수 (기본 5) */
-  visibleRows?: number;
+  /** 열림 목록 고정 높이 px (기본 200) — 결과 수와 무관, 넘치면 내부 스크롤 */
+  listHeight?: number;
 }
 
 export function SearchMultiSelect<T>({
@@ -49,7 +49,7 @@ export function SearchMultiSelect<T>({
   renderAvatar,
   placeholder,
   emptyText = '검색 결과가 없어요.',
-  visibleRows = 5,
+  listHeight = 200,
 }: SearchMultiSelectProps<T>) {
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState('');
@@ -71,8 +71,6 @@ export function SearchMultiSelect<T>({
     : sorted;
 
   const selectedKeys = new Set(selected.map(keyOf));
-  const listHeight =
-    visibleRows * ITEM_H + (visibleRows - 1) * ITEM_GAP + ITEM_GAP;
 
   const toggle = (it: T) => {
     const k = keyOf(it);
@@ -90,7 +88,7 @@ export function SearchMultiSelect<T>({
   );
 
   return (
-    <View style={styles.anchor}>
+    <View>
       {/* 트리거 — 항상 placeholder 표시(선택값은 아래 리스트로) */}
       <Pressable onPress={() => setOpen(true)} style={styles.trigger}>
         <Text style={styles.triggerText} numberOfLines={1}>
@@ -99,8 +97,10 @@ export function SearchMultiSelect<T>({
         <IconChevronDown width={20} height={20} />
       </Pressable>
 
+      {/* 열림 카드는 in-flow — 아래로 펼쳐져 바텀시트 전체 높이가 커짐
+          (목록 고정 listHeight). 트리거 위에 띄우지 않음. */}
       {open ? (
-        <View style={[styles.card, styles.cardFloat]}>
+        <View style={[styles.card, styles.cardOpen]}>
           <SearchInput
             ref={inputRef}
             value={query}
@@ -185,7 +185,6 @@ export function SearchMultiSelect<T>({
 }
 
 const styles = StyleSheet.create({
-  anchor: { position: 'relative', zIndex: 20 },
   // 트리거 — border #CBD5E1 r14 minH48 px12 (SearchSelect와 동일 톤)
   trigger: {
     flexDirection: 'row',
@@ -215,14 +214,8 @@ const styles = StyleSheet.create({
     gap: 4,
     ...tokens.shadow.lg,
   },
-  // RN 0.83 Fabric: zIndex로 형제 위 스택 — elevation 제거(Android 과한 halo).
-  cardFloat: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 30,
-  },
+  // in-flow: 트리거 아래로 펼쳐짐(시트 높이 증가). 트리거와 8 간격.
+  cardOpen: { marginTop: 8 },
   listContent: { gap: ITEM_GAP },
   // Figma 154:4540 — 행: gap8 minH40 p8 rounded-full
   row: {
