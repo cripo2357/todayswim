@@ -185,22 +185,24 @@ export const shadow = {
     shadowRadius: 2,
     elevation: 1,
   },
+  // Figma Shadow/lg 등은 모두 slate(#0F172A 계열) — pool500(파랑) 쓰면
+  // halo가 파랗게 떠 디자인과 어긋남. sm과 동일하게 #0F172A로 통일.
   md: {
-    shadowColor: color.pool500,
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
     elevation: 3,
   },
   lg: {
-    shadowColor: color.pool500,
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.12,
     shadowRadius: 24,
     elevation: 6,
   },
   pop: {
-    shadowColor: color.pool500,
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.15,
     shadowRadius: 36,
