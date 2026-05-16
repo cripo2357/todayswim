@@ -10,9 +10,6 @@ import { Mail } from 'lucide-react-native';
 
 import type { RootStackParamList } from '@/navigation/types';
 import { BottomSheet, SheetCtaButton } from '@/components/ui/BottomSheet';
-import { SearchMultiSelect } from '@/components/ui/SearchMultiSelect';
-import { MOCK_FRIENDS, type MockAccount } from '@/lib/mockData';
-import { BUNDLE_AVATARS } from '@/lib/avatars';
 import { tokens } from '@/styles/tokens';
 
 const SCREEN_H = Dimensions.get('window').height;
@@ -39,11 +36,12 @@ export function InviteFriendsScreen() {
   const { poolName, poolPhotoUrl, date, start } =
     useRoute<RouteProp<RootStackParamList, 'InviteFriends'>>().params;
 
-  const [selected, setSelected] = React.useState<MockAccount[]>([]);
+  // 초대 대상 선택 UI 제거됨 — 새로 구현 예정.
+  const inviteeCount = 0;
 
   const send = () => {
-    if (selected.length === 0) return;
-    navigation.navigate('InviteDone', { count: selected.length });
+    if (inviteeCount === 0) return;
+    navigation.navigate('InviteDone', { count: inviteeCount });
   };
 
   return (
@@ -75,33 +73,16 @@ export function InviteFriendsScreen() {
           </View>
         </View>
 
-        {/* 초대 친구 — 멀티선택 (공통 SearchMultiSelect) */}
+        {/* 초대 친구 선택 UI 제거됨 — 새로 구현 예정 */}
         <View style={styles.section}>
-          <Text style={styles.label}>
-            초대 친구{selected.length > 0 ? ` (${selected.length})` : ''}
-          </Text>
-          <SearchMultiSelect
-            items={MOCK_FRIENDS}
-            selected={selected}
-            onChange={setSelected}
-            keyOf={(f) => f.id}
-            labelOf={(f) => f.name}
-            subLabelOf={(f) => f.status}
-            renderAvatar={(f, size) =>
-              React.createElement(BUNDLE_AVATARS[f.avatar], {
-                width: size,
-                height: size,
-              })
-            }
-            placeholder="닉네임"
-          />
+          <Text style={styles.label}>초대 친구</Text>
         </View>
       </View>
 
       <SheetCtaButton
         label="초대장 보내기"
         onPress={send}
-        disabled={selected.length === 0}
+        disabled={inviteeCount === 0}
         icon={<Mail size={20} color={tokens.color.black} strokeWidth={2} />}
       />
     </BottomSheet>

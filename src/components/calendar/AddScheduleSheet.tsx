@@ -34,7 +34,6 @@ import { MOCK_FRIENDS } from '@/lib/mockData';
 import ScheduleCompleteIllust from '@assets/illustrations/schedule-complete.svg';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { SheetCloseButton } from '@/components/ui/SheetCloseButton';
-import { SearchSelect } from '@/components/ui/SearchSelect';
 import { WeekCalendar } from './WeekCalendar';
 
 const SCREEN_H = Dimensions.get('window').height;
@@ -97,12 +96,6 @@ export function AddScheduleSheet({
 
   const slideY = React.useRef(new Animated.Value(SCREEN_H)).current;
   const [phase, setPhase] = React.useState<'form' | 'done'>('form');
-  // 수영장 콤보박스(SearchSelect)는 자체적으로 열림/검색 상태 보유 —
-  // 시트가 닫힘→열림 전환될 때 key를 바꿔 remount(닫힘·검색어 초기화).
-  const [comboKey, setComboKey] = React.useState(0);
-  // 드롭다운 열림 중엔 본문 ScrollView 스크롤 차단 → 중첩 ScrollView가
-  // 제스처 가로채지 않아 자동완성 목록이 정상 스크롤됨.
-  const [searchOpen, setSearchOpen] = React.useState(false);
   const [poolId, setPoolId] = React.useState<string | null>(null);
   const [date, setDate] = React.useState(new Date());
   const [slotIdx, setSlotIdx] = React.useState<number | null>(null);
@@ -136,8 +129,6 @@ export function AddScheduleSheet({
     if (visible && !openedRef.current) {
       openedRef.current = true;
       setPhase('form');
-      setComboKey((k) => k + 1);
-      setSearchOpen(false);
       const pid = initialPoolId ?? null;
       const dt = initialDate ?? new Date();
       setPoolId(pid);
@@ -347,25 +338,11 @@ export function AddScheduleSheet({
                 <ScrollView
                   showsVerticalScrollIndicator={false}
                   keyboardShouldPersistTaps="always"
-                  scrollEnabled={!searchOpen}
                   style={styles.body}
                 >
-                  {/* 수영장 드롭다운 — 공통 SearchSelect(검색+float 리스트).
-                      시트 닫힘→열림 시 comboKey 변경으로 remount(상태 초기화). */}
+                  {/* 수영장 선택 UI 제거됨 — 새로 구현 예정.
+                      (초기 진입 시 initialPoolId 프리필만 동작) */}
                   <Text style={styles.fieldLabel}>수영장</Text>
-                  <SearchSelect
-                    key={comboKey}
-                    items={pools}
-                    value={selectedPool}
-                    onChange={(p) => {
-                      setPoolId(p.id);
-                      setSlotIdx(null);
-                    }}
-                    keyOf={(p) => p.id}
-                    labelOf={(p) => p.name}
-                    placeholder="수영장 이름"
-                    onOpenChange={setSearchOpen}
-                  />
 
                   {/* Figma 122:8031 — 캘린더 위 "시간표" 섹션 라벨 */}
                   <Text style={[styles.fieldLabel, { marginTop: 24 }]}>
