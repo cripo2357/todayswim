@@ -230,7 +230,12 @@ export function CalendarTab() {
                           {!past ? (
                             <Pressable
                               onPress={() =>
-                                navigation.navigate('InviteScheduleSelect')
+                                navigation.navigate('InviteFriends', {
+                                  poolName: s.poolName,
+                                  poolPhotoUrl: s.poolPhotoUrl,
+                                  date: s.date,
+                                  start: s.start,
+                                })
                               }
                               style={styles.ptCell}
                               accessibilityRole="button"

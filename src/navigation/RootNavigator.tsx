@@ -20,7 +20,6 @@ import { ProfileImageScreen } from '@/screens/auth/ProfileImageScreen';
 import { MyInfoScreen } from '@/screens/auth/MyInfoScreen';
 import { SettingsScreen } from '@/screens/settings/SettingsScreen';
 import { ProfileScreen } from '@/screens/auth/ProfileScreen';
-import { InviteScheduleSelectScreen } from '@/screens/invite/InviteScheduleSelectScreen';
 import { InviteFriendsScreen } from '@/screens/invite/InviteFriendsScreen';
 import { InviteDoneScreen } from '@/screens/invite/InviteDoneScreen';
 import { WelcomeScreen } from '@/screens/auth/WelcomeScreen';
@@ -105,8 +104,11 @@ export function RootNavigator() {
       <Stack.Screen name="MyInfo" component={MyInfoScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
-      <Stack.Screen name="InviteScheduleSelect" component={InviteScheduleSelectScreen} />
-      <Stack.Screen name="InviteFriends" component={InviteFriendsScreen} />
+      <Stack.Screen
+        name="InviteFriends"
+        component={InviteFriendsScreen}
+        options={DIM_MODAL_OPTIONS}
+      />
       <Stack.Screen
         name="InviteDone"
         component={InviteDoneScreen}

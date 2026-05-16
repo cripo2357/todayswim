@@ -206,10 +206,18 @@ export function AddScheduleSheet({
 
   // 친구가 0명이면 "이 일정에 친구 초대하기" 미노출 (Figma 125:3342).
   const hasFriends = MOCK_FRIENDS.length > 0;
+  // 방금 등록한 일정 스냅샷(초대 화면에 넘길 확정 일정 정보).
+  const submittedRef = React.useRef<{
+    poolName: string;
+    poolPhotoUrl?: string;
+    date: string;
+    start: string;
+  } | null>(null);
   // 전역 시트는 NavigationContainer 바깥 → useNavigation 불가, ref로 이동.
   const goInviteFriends = () => {
-    if (navigationRef.isReady()) {
-      navigationRef.navigate('InviteScheduleSelect');
+    const s = submittedRef.current;
+    if (s && navigationRef.isReady()) {
+      navigationRef.navigate('InviteFriends', s);
     }
     close();
   };
@@ -243,19 +251,26 @@ export function AddScheduleSheet({
   const onSubmit = async () => {
     if (!selectedPool || slotIdx === null) return;
     const slot = slots[slotIdx];
+    // 로컬 require(number)는 영속 저장 무의미 — 원격 {uri} 일 때만 URL 보관.
+    const photoUrl =
+      selectedPool.photoUrl && typeof selectedPool.photoUrl === 'object'
+        ? selectedPool.photoUrl.uri
+        : undefined;
     await addSchedule({
       poolId: selectedPool.id,
       poolName: selectedPool.name,
-      // 로컬 require(number)는 영속 저장 무의미 — 원격 {uri} 일 때만 URL 보관.
-      poolPhotoUrl:
-        selectedPool.photoUrl && typeof selectedPool.photoUrl === 'object'
-          ? selectedPool.photoUrl.uri
-          : undefined,
+      poolPhotoUrl: photoUrl,
       date: dateKey(date),
       start: slot.start,
       end: slot.end,
       visibility,
     });
+    submittedRef.current = {
+      poolName: selectedPool.name,
+      poolPhotoUrl: photoUrl,
+      date: dateKey(date),
+      start: slot.start,
+    };
     setPhase('done');
   };
 

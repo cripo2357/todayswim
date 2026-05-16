@@ -1,352 +1,148 @@
-// Figma 126:4726 / 126:7261 / 129:3442 — 친구 초대 ② 친구 선택.
-// 한 화면이 3상태(0명/검색리스트/N명 선택)를 다 처리. 백엔드 미연동 — 목 친구 풀.
+// Figma 150:8692 / 154:3850 — 친구 초대 (일정 확정 상태 → 초대 대상만 추가).
+// 바텀시트: "초대 일정" 카드(읽기전용) + "초대 친구" 멀티선택 + 초대장 보내기.
+// 일정 선택 단계 없음(이미 확정). 백엔드 미연동 — 친구 풀은 mockData.
 
 import React from 'react';
-import {
-  View, Text, StyleSheet, Pressable, ScrollView, TextInput,
-} from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { View, Text, Image, StyleSheet } from 'react-native';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import {
-  ChevronLeft, CalendarCheck, Clock, Trash2, ChevronDown, Mail, MessageCircle,
-} from 'lucide-react-native';
+import { Mail } from 'lucide-react-native';
 
 import type { RootStackParamList } from '@/navigation/types';
-import { Button } from '@/components/ui/Button';
-import { MOCK_FRIENDS } from '@/lib/mockData';
+import { BottomSheet, SheetCtaButton } from '@/components/ui/BottomSheet';
+import { SearchMultiSelect } from '@/components/ui/SearchMultiSelect';
+import { MOCK_FRIENDS, type MockAccount } from '@/lib/mockData';
 import { BUNDLE_AVATARS } from '@/lib/avatars';
 import { tokens } from '@/styles/tokens';
 
-const SCHEDULE = {
-  pool: 'ABC 수영장',
-  date: '2026년 1월 23일 목요일',
-  time: '15:00 ~ 18:00',
-};
+const DOW_KR = ['일', '월', '화', '수', '목', '금', '토'];
 
-// 초대 대상 = 내 친구 10명 (mockData)
-const FRIEND_POOL = MOCK_FRIENDS.map((f) => ({
-  id: f.id,
-  name: f.name,
-  status: f.status,
-  avatar: f.avatar,
-}));
+/** "2026년 1월 23일 목요일, 오전 3시10분" (일정 확정 — date + 시작시각 12h) */
+function formatScheduleLine(iso: string, start: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  const dow = DOW_KR[new Date(y, m - 1, d).getDay()];
+  const [hhStr, mm] = start.split(':');
+  const hh = Number(hhStr);
+  const ampm = hh < 12 ? '오전' : '오후';
+  const h12 = hh % 12 || 12;
+  return `${y}년 ${m}월 ${d}일 ${dow}요일, ${ampm} ${h12}시${mm}분`;
+}
 
 export function InviteFriendsScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const [query, setQuery] = React.useState('');
-  const [open, setOpen] = React.useState(false);
-  const [selected, setSelected] = React.useState<string[]>([]);
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { poolName, poolPhotoUrl, date, start } =
+    useRoute<RouteProp<RootStackParamList, 'InviteFriends'>>().params;
 
-  const selectedFriends = FRIEND_POOL.filter((f) => selected.includes(f.id));
-  const results = FRIEND_POOL.filter(
-    (f) =>
-      !selected.includes(f.id) &&
-      (query.trim() === '' || f.name.toLowerCase().includes(query.trim().toLowerCase())),
-  );
+  const [selected, setSelected] = React.useState<MockAccount[]>([]);
 
-  const toggle = (id: string) =>
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
+  const send = () => {
+    if (selected.length === 0) return;
+    navigation.navigate('InviteDone', { count: selected.length });
+  };
 
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
-      <View style={styles.headerRow}>
-        <Pressable onPress={() => navigation.goBack()} hitSlop={8} accessibilityLabel="뒤로">
-          <ChevronLeft size={24} color={tokens.color.ink900} strokeWidth={1.5} />
-        </Pressable>
-      </View>
-      <Text style={styles.pageTitle}>친구 초대</Text>
-
-      <ScrollView
-        contentContainerStyle={styles.body}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* 선택된 일정 */}
-        <View style={[styles.card, styles.cardSelected]}>
-          <View style={styles.cardInfo}>
+    <BottomSheet
+      visible
+      onClose={() => navigation.goBack()}
+      title="친구 초대"
+      contentStyle={styles.sheet}
+    >
+      {/* 초대 일정 — 확정된 일정 카드(읽기 전용) */}
+      <View style={styles.section}>
+        <Text style={styles.label}>초대 일정</Text>
+        <View style={styles.scheduleCard}>
+          <View style={styles.scheduleInfo}>
             <Text style={styles.poolName} numberOfLines={1}>
-              {SCHEDULE.pool}
+              {poolName}
             </Text>
-            <View style={styles.metaRow}>
-              <CalendarCheck size={16} color={tokens.color.ink500} strokeWidth={2} />
-              <Text style={styles.metaText}>{SCHEDULE.date}</Text>
-            </View>
-            <View style={styles.metaRow}>
-              <Clock size={16} color={tokens.color.ink500} strokeWidth={2} />
-              <Text style={styles.metaText}>{SCHEDULE.time}</Text>
-            </View>
+            <Text style={styles.when} numberOfLines={1}>
+              {formatScheduleLine(date, start)}
+            </Text>
           </View>
-          <View style={styles.thumb} />
-          <Pressable
-            onPress={() => navigation.goBack()}
-            style={styles.deleteBtn}
-            accessibilityLabel="일정 삭제"
-          >
-            <Trash2 size={16} color={tokens.color.white} strokeWidth={2} />
-          </Pressable>
+          {poolPhotoUrl ? (
+            <Image source={{ uri: poolPhotoUrl }} style={styles.thumb} />
+          ) : null}
         </View>
+      </View>
 
-        <Text style={styles.sectionTitle}>초대 친구({selectedFriends.length})</Text>
-
-        {/* 검색/드롭다운 */}
-        <Pressable
-          style={styles.searchBox}
-          onPress={() => setOpen(true)}
-        >
-          <TextInput
-            value={query}
-            onChangeText={(v) => {
-              setQuery(v);
-              setOpen(true);
-            }}
-            onFocus={() => setOpen(true)}
-            placeholder="이름 또는 친구코드"
-            placeholderTextColor={tokens.color.ink400}
-            style={styles.searchInput}
-          />
-          <ChevronDown size={20} color={tokens.color.ink500} strokeWidth={2} />
-        </Pressable>
-
-        {open && results.length > 0 && (
-          <View style={styles.dropdown}>
-            {results.map((f) => (
-              <Pressable
-                key={f.id}
-                onPress={() => {
-                  toggle(f.id);
-                  setQuery('');
-                }}
-                style={styles.resultRow}
-              >
-                <View style={styles.avatar}>
-                  {React.createElement(BUNDLE_AVATARS[f.avatar], {
-                    width: 30,
-                    height: 30,
-                  })}
-                </View>
-                <Text style={styles.resultName} numberOfLines={1}>
-                  {f.name}
-                </Text>
-                <Text style={styles.resultStatus} numberOfLines={1}>
-                  {f.status}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        )}
-
-        {/* 선택된 친구 */}
-        <View style={styles.list}>
-          {selectedFriends.map((f) => (
-            <View key={f.id} style={styles.friendRow}>
-              <View style={styles.avatarLg}>
-                {React.createElement(BUNDLE_AVATARS[f.avatar], {
-                  width: 44,
-                  height: 44,
-                })}
-              </View>
-              <View style={styles.friendInfo}>
-                <Text style={styles.friendName} numberOfLines={1}>
-                  {f.name}
-                </Text>
-                <View style={styles.friendStatusRow}>
-                  <MessageCircle size={16} color={tokens.color.ink500} strokeWidth={2} />
-                  <Text style={styles.friendStatus} numberOfLines={1}>
-                    {f.status}
-                  </Text>
-                </View>
-              </View>
-              <Pressable
-                onPress={() => toggle(f.id)}
-                style={styles.deleteBtn}
-                accessibilityLabel={`${f.name} 제외`}
-              >
-                <Trash2 size={16} color={tokens.color.white} strokeWidth={2} />
-              </Pressable>
-            </View>
-          ))}
-        </View>
-      </ScrollView>
-
-      <View style={styles.footer}>
-        <Button
-          label="초대장 보내기"
-          variant="pdYellow"
-          size="lg"
-          fullWidth
-          disabled={selectedFriends.length === 0}
-          onPress={() =>
-            navigation.navigate('InviteDone', { count: selectedFriends.length })
+      {/* 초대 친구 — 멀티선택 (공통 SearchMultiSelect) */}
+      <View style={styles.section}>
+        <Text style={styles.label}>
+          초대 친구{selected.length > 0 ? ` (${selected.length})` : ''}
+        </Text>
+        <SearchMultiSelect
+          items={MOCK_FRIENDS}
+          selected={selected}
+          onChange={setSelected}
+          keyOf={(f) => f.id}
+          labelOf={(f) => f.name}
+          subLabelOf={(f) => f.status}
+          renderAvatar={(f, size) =>
+            React.createElement(BUNDLE_AVATARS[f.avatar], {
+              width: size,
+              height: size,
+            })
           }
-          iconRight={<Mail size={18} color={tokens.color.black} strokeWidth={2} />}
+          placeholder="닉네임"
         />
       </View>
-    </SafeAreaView>
+
+      <SheetCtaButton
+        label="초대장 보내기"
+        onPress={send}
+        disabled={selected.length === 0}
+        icon={<Mail size={20} color={tokens.color.black} strokeWidth={2} />}
+      />
+    </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: tokens.color.bgCream },
-  headerRow: { paddingHorizontal: 16, paddingVertical: 8, minHeight: 48, justifyContent: 'center' },
-  pageTitle: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 16,
-    fontSize: 28,
-    lineHeight: 34,
-    letterSpacing: -0.56,
-    fontFamily: tokens.font.sansBold,
-    color: '#1F2937',
+  // BottomSheet 기본 gap 24 유지(섹션 간격)
+  sheet: { gap: 24 },
+  section: { gap: 8 },
+  // Figma 150:9110 — SemiBold 14/20 -0.084 #4B5563
+  label: {
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: -0.084,
+    fontFamily: tokens.font.sansSemibold,
+    color: '#4B5563',
   },
-  body: { paddingHorizontal: 16, paddingBottom: 24, gap: 16 },
-
-  card: {
+  // Figma 150:9129 — 흰 카드 r16 h72 p16 Shadow/lg (보더 없음)
+  scheduleCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: tokens.color.bgPaper,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: tokens.color.lineDefault,
+    height: 72,
     padding: 16,
+    borderRadius: 16,
+    backgroundColor: tokens.color.white,
+    ...tokens.shadow.lg,
   },
-  cardSelected: { borderColor: tokens.color.pdMint, borderWidth: 1.5 },
-  cardInfo: { flex: 1, gap: 6 },
+  scheduleInfo: { flex: 1, gap: 4 },
+  // Figma 150:9134 — Bold 14/20 -0.084 #1F2937
   poolName: {
-    fontSize: 16,
-    lineHeight: 22,
-    letterSpacing: -0.112,
-    fontFamily: tokens.font.sansBold,
-    color: tokens.color.ink900,
-  },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  metaText: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: tokens.font.sans,
-    color: tokens.color.ink500,
-  },
-  thumb: { width: 64, height: 64, borderRadius: 8, backgroundColor: '#E2E8F0' },
-  deleteBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: tokens.color.red,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  sectionTitle: {
     fontSize: 14,
     lineHeight: 20,
     letterSpacing: -0.084,
     fontFamily: tokens.font.sansBold,
     color: '#1F2937',
   },
-
-  searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    minHeight: 48,
-    paddingHorizontal: 12,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#94A3B8',
-    backgroundColor: tokens.color.bgPaper,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    lineHeight: 22,
-    letterSpacing: -0.112,
+  // Figma 150:9136 — Regular 12/16 -0.06 #1F2937
+  when: {
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: -0.06,
     fontFamily: tokens.font.sans,
-    color: tokens.color.ink900,
-    padding: 0,
+    color: '#1F2937',
   },
-  dropdown: {
-    borderWidth: 1,
-    borderColor: tokens.color.lineDefault,
-    borderRadius: 14,
-    backgroundColor: tokens.color.bgPaper,
-    overflow: 'hidden',
+  // Figma 150:9137 — image 40x40 r6
+  thumb: {
+    width: 40,
+    height: 40,
+    borderRadius: 6,
+    backgroundColor: '#E2E8F0',
   },
-  resultRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: tokens.color.pdMint,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  resultName: {
-    fontSize: 16,
-    lineHeight: 20,
-    fontFamily: tokens.font.sansSemibold,
-    color: tokens.color.ink900,
-  },
-  resultStatus: {
-    flex: 1,
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: tokens.font.sans,
-    color: tokens.color.ink400,
-  },
-
-  list: { gap: 12 },
-  friendRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: tokens.color.bgPaper,
-    borderRadius: 24,
-    padding: 12,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  avatarLg: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 2,
-    borderColor: tokens.color.pdMint,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  friendInfo: { flex: 1, gap: 4, justifyContent: 'center' },
-  friendName: {
-    fontSize: 16,
-    lineHeight: 22,
-    letterSpacing: -0.112,
-    fontFamily: tokens.font.sansSemibold,
-    color: tokens.color.ink900,
-  },
-  friendStatusRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  friendStatus: {
-    flex: 1,
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: tokens.font.sans,
-    color: tokens.color.ink500,
-  },
-
-  footer: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 16 },
 });

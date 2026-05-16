@@ -25,10 +25,13 @@ export type RootStackParamList = {
   // 프로필 (설정 > 프로필 → 진입). Figma 117:2556 — 기능은 MyInfo 프로필 탭과 동일
   Profile: undefined;
 
-  // 친구 초대 플로우 (달력 탭 카드 "친구 초대" → 일정선택 → 친구선택 → 완료)
-  // Figma 126:4221 / 126:4726·126:7261·129:3442 / 129:3779
-  InviteScheduleSelect: undefined;
-  InviteFriends: undefined;
+  // 친구 초대 (일정 확정 → 초대 대상만 추가). Figma 150:8692 / 154:3850 / 129:3779
+  InviteFriends: {
+    poolName: string;
+    poolPhotoUrl?: string;
+    date: string; // YYYY-MM-DD
+    start: string; // HH:MM
+  };
   InviteDone: { count: number };
 
   // 자유수영 시간표 조회 (조회 전용 — 사용자 작성/수정 요청 기능 없음)
