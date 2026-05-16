@@ -40,6 +40,16 @@ export interface Schedule {
   dayNotes?: {
     [day in DayOfWeek]?: string;
   };
+  /**
+   * 계절/변형 운영 — 요일 슬롯을 라벨 붙은 그룹으로 분할 (Figma 144:3716).
+   * 예: { "일": [{ label: "기본 운영 (매월 2,4주차 일요일은 쉽니다.)", slots: [...] },
+   *              { label: "6~9월 운영 (하절기는 휴장일이 없습니다.)", slots: [...] }] }
+   * 있으면 ScheduleView가 그룹 렌더, 없으면 byDay flat 그대로(하위호환).
+   * byDay[요일]은 여전히 채워둠(요일칩 활성·dayNote 게이팅 기준).
+   */
+  slotGroups?: {
+    [day in DayOfWeek]?: { label?: string; slots: TimeSlot[] }[];
+  };
 }
 
 /** 작성 4스텝 임시 상태 — Zustand store에 보관 */

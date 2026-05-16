@@ -10,6 +10,7 @@ interface ScheduleRow {
   author_nickname: string;
   by_day: Schedule['byDay']; // jsonb는 자동 parse
   day_notes: Schedule['dayNotes'] | null;
+  slot_groups: Schedule['slotGroups'] | null;
   updated_at: string;
 }
 
@@ -19,6 +20,7 @@ function rowToSchedule(row: ScheduleRow): Schedule {
     authorNickname: row.author_nickname,
     byDay: row.by_day,
     dayNotes: row.day_notes ?? undefined,
+    slotGroups: row.slot_groups ?? undefined,
     // 표시 형식 "2026.10.31"로 변환 (DB는 timestamptz)
     updatedAt: row.updated_at.slice(0, 10).replace(/-/g, '.'),
   };

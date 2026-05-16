@@ -43,6 +43,8 @@ export function ScheduleViewScreen() {
   const [selectedDay, setSelectedDay] = React.useState<DayOfWeek>(firstAvailable);
   const slots = schedule?.byDay[selectedDay] ?? [];
   const dayNote = schedule?.dayNotes?.[selectedDay];
+  const groups = schedule?.slotGroups?.[selectedDay];
+  const hasGroups = !!groups && groups.length > 0;
 
   return (
     <ModalCard
@@ -112,12 +114,33 @@ export function ScheduleViewScreen() {
         <ScrollView
           style={styles.slotsScroll}
           contentContainerStyle={
-            slots.length === 0 ? styles.slotsEmptyWrap : styles.slotsWrap
+            slots.length === 0 && !hasGroups
+              ? styles.slotsEmptyWrap
+              : hasGroups
+                ? styles.slotGroupsWrap
+                : styles.slotsWrap
           }
           showsVerticalScrollIndicator={false}
         >
-          {slots.length === 0 ? (
+          {slots.length === 0 && !hasGroups ? (
             <Text style={styles.empty}>{selectedDay}요일에는 자유수영이 없습니다.</Text>
+          ) : hasGroups ? (
+            (groups ?? []).map((g, gi) => (
+              <View key={gi} style={styles.slotGroup}>
+                {g.label ? (
+                  <Text style={styles.groupLabel}>{g.label}</Text>
+                ) : null}
+                <View style={styles.slotsWrap}>
+                  {g.slots.map((slot, i) => (
+                    <View key={i} style={styles.slotChip}>
+                      <Text style={styles.slotChipText} numberOfLines={1}>
+                        {slot.start} ~ {slot.end}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            ))
           ) : (
             slots.map((slot, i) => (
               <View key={i} style={styles.slotChip}>
@@ -345,6 +368,23 @@ const styles = StyleSheet.create({
     letterSpacing: -0.084,
     fontFamily: tokens.font.sansSemibold,
     color: '#4B5563',
+  },
+  // Figma 144:3796 — 계절/변형 그룹 간 세로 gap 20
+  slotGroupsWrap: {
+    gap: 20,
+  },
+  // Figma 144:3744 — 그룹: 캡션(전체폭) + 칩 wrap, 사이 gap 10
+  slotGroup: {
+    width: '100%',
+    gap: 10,
+  },
+  // Figma 144:3778 — Regular 12/16 tracking -0.06, rgba(27,31,38,0.72)
+  groupLabel: {
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: -0.06,
+    fontFamily: tokens.font.sans,
+    color: 'rgba(27, 31, 38, 0.72)',
   },
   empty: {
     ...tokens.text.bodySm,
