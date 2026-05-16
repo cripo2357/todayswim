@@ -71,6 +71,20 @@ export function CalendarTab() {
 
   const myName = profile?.name?.trim() || '내 닉네임';
 
+  // 달력 조회 범위: 지난 6개월 ~ 앞으로 90일 (무제한 아님)
+  const calMin = React.useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setMonth(d.getMonth() - 6);
+    return d;
+  }, []);
+  const calMax = React.useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 90);
+    return d;
+  }, []);
+
   const onCancel = (id: string) => {
     Alert.alert('수영 취소', '이 수영 일정을 취소할까요?', [
       { text: '닫기', style: 'cancel' },
@@ -89,6 +103,8 @@ export function CalendarTab() {
             selectedDate={date}
             onSelectDate={setDate}
             markedKeys={markedKeys}
+            minDate={calMin}
+            maxDate={calMax}
           />
         </View>
 
