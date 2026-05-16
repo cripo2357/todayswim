@@ -207,7 +207,7 @@ export function CalendarTab() {
       <OptionSheet<ScheduleVisibility>
         visible={visEditId !== null}
         onClose={() => setVisEditId(null)}
-        title="일정 공개여부"
+        title="일정 관리"
         options={VIS_OPTIONS}
         value={
           schedules.find((x) => x.id === visEditId)?.visibility ?? null
