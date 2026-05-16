@@ -90,7 +90,6 @@ export function WeekCalendar({
   const canNext = inRange(nextWeekFirst);
 
   const selKey = dateKey(selectedDate);
-  const todayKey = dateKey(new Date());
 
   return (
     <View style={styles.wrap}>
@@ -146,7 +145,6 @@ export function WeekCalendar({
         {days.map((d, i) => {
           const k = dateKey(d);
           const selected = k === selKey;
-          const isToday = k === todayKey;
           const outOfRange = !inRange(d);
           return (
             <Pressable
@@ -165,8 +163,8 @@ export function WeekCalendar({
                   style={[
                     styles.dayNum,
                     // 날짜 숫자는 요일 무관 동일 색 (토/일 틴트 제거).
+                    // 오늘 날짜 별도 색 없음(선택 시만 흰색).
                     selected && !outOfRange && styles.dayNumSelected,
-                    isToday && !selected && styles.dayToday,
                   ]}
                 >
                   {d.getDate()}
@@ -244,7 +242,6 @@ const styles = StyleSheet.create({
   },
   // Figma 123:8265 — 선택 숫자는 Regular(흰색), Bold 아님
   dayNumSelected: { color: tokens.color.white, fontFamily: tokens.font.sans },
-  dayToday: { color: tokens.color.pdMint, fontFamily: tokens.font.sansBold },
   // Figma 120:4701 — 내 일정 있는 날: 숫자 바로 아래 6px 빨간 점.
   // dayCircle 기준 absolute → 선택 원 안쪽 하단에 겹쳐 위치.
   // 선택일에도 동일 빨강(일관) — 색 토글 안 함.
