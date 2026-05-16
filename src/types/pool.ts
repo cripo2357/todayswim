@@ -33,7 +33,9 @@ export interface Pool {
   isHotelPool?: boolean;        // 호텔 부속 — 마커도 별도(marker-hotel)
   hasSchedule?: boolean;        // 자유수영 시간표 등록 여부
   freeSwimAvailable?: boolean;  // 자유수영 자체가 가능한 풀인지 (false면 PoolBottomCard에서 "자유수영 불가능" 표시)
-  pricePerSession?: number;     // 1회 자유수영 가격 (KRW)
+  pricePerSession?: number;     // (레거시) 단일 1회가 — priceWeekday로 대체
+  priceWeekday?: number;        // 평일 성인 1회 가격 (KRW, 쉼표 없는 정수)
+  priceWeekend?: number;        // 주말 성인 1회 가격 (KRW)
   // 수영장 건물 사진 (1:1, 정사각). 없으면 카드에서 미노출.
   // 로컬 require()는 number, 원격은 { uri: string } 형태.
   photoUrl?: number | { uri: string };

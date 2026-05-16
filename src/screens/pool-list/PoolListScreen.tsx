@@ -272,9 +272,11 @@ function PoolListCard({
             {pool.phone ? (
               <Text style={styles.phone} numberOfLines={1}>{pool.phone}</Text>
             ) : null}
-            {pool.pricePerSession ? (
+            {pool.priceWeekday != null ? (
               <Text style={styles.price} numberOfLines={1}>
-                1회 {pool.pricePerSession.toLocaleString('ko-KR')}원
+                {pool.priceWeekend != null
+                  ? `평일 ${pool.priceWeekday}원 · 주말 ${pool.priceWeekend}원`
+                  : `${pool.priceWeekday}원`}
               </Text>
             ) : null}
           </View>
