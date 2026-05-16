@@ -126,7 +126,9 @@ export function PoolBottomCard({
               {activeTip === 'depth' ? <Tooltip label="수심" /> : null}
               <IconDepth width={20} height={20} />
               <Text style={styles.statValue}>
-                {pool.depthMin}~{pool.depthMax}m
+                {pool.depthMin === pool.depthMax
+                  ? `${pool.depthMin}m`
+                  : `${pool.depthMin}~${pool.depthMax}m`}
               </Text>
             </Pressable>
           ) : null}

@@ -61,7 +61,10 @@ export function ScheduleViewScreen() {
             ) : (
               <Text style={styles.credit}>
                 <Text style={styles.creditPrefix}>업데이트: {schedule.updatedAt} - </Text>
-                <Text style={styles.creditNick}>{schedule.authorNickname}님</Text>
+                <Text style={styles.creditNick}>
+                  {schedule.authorNickname}
+                  {schedule.authorNickname === '풀스데이' ? '' : '님'}
+                </Text>
               </Text>
             )
           ) : null}
