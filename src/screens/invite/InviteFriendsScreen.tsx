@@ -25,11 +25,14 @@ import {
   type MockAccount,
 } from '@/lib/mockData';
 import { BUNDLE_AVATARS } from '@/lib/avatars';
+import { useSentInvites, inviteSlotKey } from '@/store/sentInvites';
 import { tokens } from '@/styles/tokens';
 
 const SCREEN_H = Dimensions.get('window').height;
 // 시트 본문 고정 높이 — 멀티선택 열림/닫힘과 무관하게 시트 총높이 일정.
 const BODY_H = Math.round(SCREEN_H * 0.62);
+// 안정적 빈 배열(미초대 슬롯에서 매 렌더 새 [] 생성으로 인한 리렌더 방지)
+const EMPTY_IDS: string[] = [];
 
 const DOW_KR = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -56,6 +59,12 @@ export function InviteFriendsScreen() {
   const [triggerY, setTriggerY] = React.useState(0);
   // 자동 포커스/키보드 X — 사용자가 입력칸을 직접 탭해야 포커스(요청).
 
+  // 이 슬롯에 이미 초대장 보낸 친구(한 번이면 충분) — 검색 대상 제외.
+  const slotKey = inviteSlotKey(poolId, date, start, end);
+  const sentBySlot = useSentInvites((st) => st.bySlot);
+  const markInvited = useSentInvites((st) => st.markInvited);
+  const sentIds = sentBySlot[slotKey] ?? EMPTY_IDS;
+
   // 이미 이 슬롯(풀+날짜+시작/끝)에 참여 중인 친구는 초대 불필요 → 제외.
   // 가시성 무관(이미 참여면 보이든 안 보이든 초대 의미 없음).
   const joinedIds = React.useMemo(
@@ -71,12 +80,17 @@ export function InviteFriendsScreen() {
       ),
     [poolId, date, start, end],
   );
+  // 제외 대상 = 이미 참여 중 + 이미 초대장 보낸 친구.
+  const excludedIds = React.useMemo(
+    () => new Set<string>([...joinedIds, ...sentIds]),
+    [joinedIds, sentIds],
+  );
   const sorted = React.useMemo(
     () =>
-      MOCK_FRIENDS.filter((f) => !joinedIds.has(f.id)).sort((a, b) =>
+      MOCK_FRIENDS.filter((f) => !excludedIds.has(f.id)).sort((a, b) =>
         a.name.localeCompare(b.name, 'ko'),
       ),
-    [joinedIds],
+    [excludedIds],
   );
   const q = query.trim().toLowerCase();
   const filtered = q
@@ -93,6 +107,8 @@ export function InviteFriendsScreen() {
 
   const send = () => {
     if (selected.length === 0) return;
+    // 보낸 초대 기록 → 다음에 같은 슬롯 열면 검색 대상에서 제외.
+    markInvited(slotKey, selected.map((f) => f.id));
     // BottomSheet는 RN Modal — navigate면 그 Modal이 위에 떠 완료 화면을
     // 가림. replace로 이 화면(시트 Modal)을 닫고 완료 화면을 노출.
     navigation.replace('InviteDone', { count: selected.length });
@@ -121,7 +137,7 @@ export function InviteFriendsScreen() {
               초대 친구{selected.length > 0 ? ` (${selected.length})` : ''}
             </Text>
             <Text style={styles.labelNote} numberOfLines={1}>
-              참여중인 친구는 초대할 수 없습니다.
+              초대중이거나 참여한 친구는 초대할 수 없습니다.
             </Text>
           </View>
           <View onLayout={(e) => setTriggerY(e.nativeEvent.layout.y)}>
