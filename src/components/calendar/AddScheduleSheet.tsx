@@ -188,7 +188,7 @@ export function AddScheduleSheet({
             ) : (
               <View style={styles.sheet}>
                 <View style={styles.titleRow}>
-                  <Text style={styles.title}>수영 일정</Text>
+                  <Text style={styles.title}>수영 일정 등록</Text>
                   <Pressable onPress={close} hitSlop={8}>
                     <X size={24} color={tokens.color.ink900} strokeWidth={1.5} />
                   </Pressable>
