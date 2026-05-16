@@ -215,13 +215,13 @@ const styles = StyleSheet.create({
     gap: 4,
     ...tokens.shadow.lg,
   },
+  // RN 0.83 Fabric: zIndex로 형제 위 스택 — elevation 제거(Android 과한 halo).
   cardFloat: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     zIndex: 30,
-    elevation: 24,
   },
   listContent: { gap: ITEM_GAP },
   // Figma 154:4540 — 행: gap8 minH40 p8 rounded-full

@@ -161,14 +161,14 @@ const styles = StyleSheet.create({
     ...tokens.shadow.lg,
   },
   // 트리거 위(top:0)에 겹쳐 떠서 아래 콘텐츠를 안 밀어 부모 높이 불변.
-  // Android는 elevation 있어야 뒤따르는 형제 위로 올라옴.
+  // RN 0.83 Fabric은 zIndex로 형제 위 스택 가능 — elevation 제거(elevation은
+  // Android에서 boxShadow와 별개로 과한 그림자를 그려 halo가 진해짐).
   cardFloat: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     zIndex: 30,
-    elevation: 24,
   },
   listContent: { gap: ITEM_GAP },
   // Figma 5626:22473 — 아이템: 알약 minH40 p8

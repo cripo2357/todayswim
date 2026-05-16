@@ -171,47 +171,20 @@ export const radius = {
 } as const;
 
 /**
- * 그림자.
- * RN의 그림자는 iOS와 Android가 다르게 동작:
- * - iOS: shadowColor + shadowOffset + shadowOpacity + shadowRadius
- * - Android: elevation
- * 두 플랫폼 호환되도록 객체로 묶어 spread하기.
+ * 그림자 — RN 0.83 `boxShadow`(CSS form). iOS·Android 공통이며 spread(음수
+ * 포함)·다중 겹 지원 → Figma DROP_SHADOW를 그대로 옮길 수 있음(레거시
+ * shadow 계열·elevation 근사 불필요). 형식: 'offX offY blur spread color'.
  */
 export const shadow = {
-  sm: {
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  // Figma Shadow/lg 등은 모두 slate(#0F172A 계열) — pool500(파랑) 쓰면
-  // halo가 파랗게 떠 디자인과 어긋남. sm과 동일하게 #0F172A로 통일.
-  md: {
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
-  },
-  // Figma Shadow/lg = 아주 옅은 2겹(#0F172A @~0.03 / ~0.08, blur 6/16,
-  // spread -2/-4). RN은 2겹·spread(특히 음수) 미지원 → 같은 값이라도 더
-  // 크고 진하게 보임. 더 줄여 "살짝"만: opacity 0.06 / radius 8 / offset 4.
-  // Android elevation은 색·투명도 무시하고 자체 그림자 → 2로 최소화.
+  sm: { boxShadow: '0px 1px 2px rgba(15, 23, 42, 0.04)' },
+  md: { boxShadow: '0px 2px 12px rgba(15, 23, 42, 0.08)' },
+  // Figma Shadow/lg 정확 재현 — 2겹 + 음수 spread:
+  // #0F172A @0.03 (0,4) blur6 spread-2 / @0.08 (0,12) blur16 spread-4
   lg: {
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    boxShadow:
+      '0px 4px 6px -2px rgba(15, 23, 42, 0.03), 0px 12px 16px -4px rgba(15, 23, 42, 0.08)',
   },
-  pop: {
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.15,
-    shadowRadius: 36,
-    elevation: 10,
-  },
+  pop: { boxShadow: '0px 12px 36px rgba(15, 23, 42, 0.15)' },
 } as const;
 
 /**
