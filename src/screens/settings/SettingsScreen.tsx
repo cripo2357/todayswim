@@ -51,7 +51,7 @@ const VIEW_VALUE: Record<OthersScheduleView, string> = {
   friends: '참여 친구만',
   public: '모든 참여자',
 };
-// 수영 일정 초대
+// 친구의 수영 일정 초대
 const INVITE_OPTIONS: Option<ScheduleInvite>[] = [
   { value: 'on', label: '초대 받기' },
   { value: 'off', label: '초대 안 받기' },
@@ -135,7 +135,7 @@ export function SettingsScreen() {
           />
           <Row
             icon={<IconEnvelope width={24} height={24} />}
-            label="수영 일정 초대"
+            label="친구의 수영 일정 초대"
             value={INVITE_VALUE[scheduleInvite]}
             onPress={() => setInviteSheet(true)}
           />
@@ -209,7 +209,7 @@ export function SettingsScreen() {
       <OptionSheet<ScheduleInvite>
         visible={inviteSheet}
         onClose={() => setInviteSheet(false)}
-        title="수영 일정 초대"
+        title="친구의 수영 일정 초대"
         options={INVITE_OPTIONS}
         value={scheduleInvite}
         onConfirm={(v) => setScheduleInvite(v)}
