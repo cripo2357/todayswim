@@ -88,19 +88,29 @@ export function SearchMultiSelect<T>({
   );
 
   return (
-    <View>
-      {/* 트리거 — 항상 placeholder 표시(선택값은 아래 리스트로) */}
-      <Pressable onPress={() => setOpen(true)} style={styles.trigger}>
+    <View style={styles.root}>
+      {/* 트리거 — 항상 보임(닉네임 + ⌄). 탭하면 토글(열림 시 ⌄ 탭 → 닫힘). */}
+      <Pressable
+        onPress={() => setOpen((o) => !o)}
+        style={styles.trigger}
+      >
         <Text style={styles.triggerText} numberOfLines={1}>
           {placeholder}
         </Text>
         <IconChevronDown width={20} height={20} />
       </Pressable>
 
-      {/* 열림 카드는 in-flow — 아래로 펼쳐져 바텀시트 전체 높이가 커짐
-          (목록 고정 listHeight). 트리거 위에 띄우지 않음. */}
+      {/* 열림: 목록은 검색영역에 겹쳐 뜨는 float 오버레이(absolute) —
+          레이아웃 안 밀어 시트 높이 불변. 바깥 영역 탭은 backdrop가 닫음. */}
       {open ? (
-        <View style={[styles.card, styles.cardOpen]}>
+        <>
+          <Pressable
+            style={styles.backdrop}
+            onPress={() => setOpen(false)}
+            accessibilityRole="button"
+            accessibilityLabel="자동완성 닫기"
+          />
+          <View style={[styles.card, styles.cardFloat]}>
           <SearchInput
             ref={inputRef}
             value={query}
@@ -144,7 +154,8 @@ export function SearchMultiSelect<T>({
               <Text style={styles.empty}>{emptyText}</Text>
             ) : null}
           </ScrollView>
-        </View>
+          </View>
+        </>
       ) : selected.length > 0 ? (
         // 닫힘 + 선택 있음 → 선택 목록(삭제 버튼). Figma 154:3850
         <View style={styles.selectedList}>
@@ -185,7 +196,11 @@ export function SearchMultiSelect<T>({
 }
 
 const styles = StyleSheet.create({
-  // 트리거 — border #CBD5E1 r14 minH48 px12 (SearchSelect와 동일 톤)
+  // absolute 자식(backdrop·float)의 기준 컨테이너. overflow visible(기본)
+  // 이라 float이 트리거 밖으로 떠도 됨(부모 body가 고정높이라 그 안에 그림).
+  root: { position: 'relative', zIndex: 1 },
+  // 트리거 — border #CBD5E1 r14 minH48 px12 (SearchSelect와 동일 톤).
+  // zIndex 2 > backdrop(1) → 열림 시에도 ⌄ 탭이 토글(닫힘)로 동작.
   trigger: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -195,6 +210,7 @@ const styles = StyleSheet.create({
     borderColor: '#CBD5E1',
     borderRadius: 14,
     backgroundColor: tokens.color.white,
+    zIndex: 2,
   },
   triggerText: {
     flex: 1,
@@ -214,8 +230,25 @@ const styles = StyleSheet.create({
     gap: 4,
     ...tokens.shadow.lg,
   },
-  // in-flow: 트리거 아래로 펼쳐짐(시트 높이 증가). 트리거와 8 간격.
-  cardOpen: { marginTop: 8 },
+  // float 오버레이 — 트리거 바로 아래(약 56)에 absolute로 떠서
+  // 레이아웃을 안 밀음(시트 높이 불변). RN 0.83 Fabric: zIndex로 스택
+  // (elevation은 Android 과한 halo라 미사용).
+  cardFloat: {
+    position: 'absolute',
+    top: 56,
+    left: 0,
+    right: 0,
+    zIndex: 3,
+  },
+  // 열림 시 시트 본문을 덮는 투명 영역 — 탭하면 닫힘(트리거·카드는 위 zIndex).
+  backdrop: {
+    position: 'absolute',
+    top: -1000,
+    left: -1000,
+    right: -1000,
+    bottom: -1000,
+    zIndex: 1,
+  },
   listContent: { gap: ITEM_GAP },
   // Figma 154:4540 — 행: gap8 minH40 p8 rounded-full
   row: {
