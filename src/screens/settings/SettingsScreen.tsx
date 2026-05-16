@@ -1,7 +1,7 @@
 // Figma 129:5245 — 설정. 내 정보(MyInfo) 상단 우측 톱니 → 진입.
 //
-// 구조: TopNav(뒤로/설정/빈칸) + 섹션 6개(계정/알림/수영 일정/수영장 정보 수정/
-// 헬프 센터/서비스 약관) + 구분선 + 푸터(워드마크/버전/카피라이트).
+// 구조: TopNav(뒤로/설정/빈칸) + 섹션 6개(계정/알림/사용자 관계/수영장 정보
+// 수정/헬프 센터/서비스 약관) + 구분선 + 푸터(워드마크/버전/카피라이트).
 // 행 아이콘은 Figma export SVG(색 baked: pdMint #63CBE8, 회원탈퇴 trash #F43F5E)
 // → color prop 없이 그대로 렌더 (gender 아이콘과 동일 컨벤션).
 //
@@ -42,14 +42,14 @@ import IconMapPin from '@assets/icons/settings/map-pin.svg';
 
 const FEEDBACK_EMAIL = 'cripo2357@gmail.com';
 
-// 내 일정의 다른 참여자 보기 — OptionSheet 옵션 + 행 우측 표시값
+// 다른 사람 수영 일정 보기 — OptionSheet 옵션 + 행 우측 표시값 (Figma 129:6006)
 const VIEW_OPTIONS: Option<OthersScheduleView>[] = [
-  { value: 'friends', label: '참여하는 친구들만 보기' },
-  { value: 'public', label: '모든 참여자 보기' },
+  { value: 'friends', label: '친구 일정만 보기' },
+  { value: 'public', label: '모든 일정 보기' },
 ];
 const VIEW_VALUE: Record<OthersScheduleView, string> = {
-  friends: '참여 친구만',
-  public: '모든 참여자',
+  friends: '친구 일정만',
+  public: '모든 일정',
 };
 // 친구의 수영 일정 초대
 const INVITE_OPTIONS: Option<ScheduleInvite>[] = [
@@ -125,11 +125,22 @@ export function SettingsScreen() {
           />
         </Section>
 
-        {/* 수영 일정 */}
-        <Section title="수영 일정">
+        {/* 사용자 관계 — Figma 129:6006. 신규 2행(내 프로필 공개/친구 신청
+            받기)은 친구 시스템 Phase2라 비활성 placeholder(값만 표기). */}
+        <Section title="사용자 관계">
+          <Row
+            icon={<IconProfile width={24} height={24} />}
+            label="내 프로필 공개"
+            value="친구만"
+          />
+          <Row
+            icon={<IconPerson width={24} height={24} />}
+            label="친구 신청 받기"
+            value="모두에게 받기"
+          />
           <Row
             icon={<IconCalendar width={24} height={24} />}
-            label="내 일정의 다른 참여자 보기"
+            label="다른 사람 수영 일정 보기"
             value={VIEW_VALUE[othersView]}
             onPress={() => setViewSheet(true)}
           />
@@ -201,7 +212,7 @@ export function SettingsScreen() {
       <OptionSheet<OthersScheduleView>
         visible={viewSheet}
         onClose={() => setViewSheet(false)}
-        title="내 일정의 다른 참여자 보기"
+        title="다른 사람 수영 일정 보기"
         options={VIEW_OPTIONS}
         value={othersView}
         onConfirm={(v) => setOthersView(v)}
