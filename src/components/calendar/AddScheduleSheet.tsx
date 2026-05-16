@@ -10,7 +10,7 @@ import {
   Dimensions, ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { X, Check, Calendar as LucideCalendar } from 'lucide-react-native';
+import { X, Check, Calendar as LucideCalendar, XCircle } from 'lucide-react-native';
 import IconChevronDown from '@assets/icons/chevron-down.svg';
 import { usePools } from '@/hooks/usePools';
 import { useSchedules } from '@/hooks/useSchedules';
@@ -139,6 +139,10 @@ export function AddScheduleSheet({
     }).start(() => onClose());
   };
 
+  // 수영장 선택을 강조: 검색 열렸을 땐 다른 곳을 눌러도 포커스를 풀지
+  // 않는다(아래 ScrollView keyboardShouldPersistTaps="always"). 포커스는
+  // 리스트에서 풀을 "선택"했을 때만 풀림(선택 시 poolOpen=false → 입력 unmount).
+
   const selectedPool = pools.find((p) => p.id === poolId) ?? null;
   const dow = DOW[date.getDay()];
   const schedule = poolId
@@ -196,7 +200,7 @@ export function AddScheduleSheet({
 
                 <ScrollView
                   showsVerticalScrollIndicator={false}
-                  keyboardShouldPersistTaps="handled"
+                  keyboardShouldPersistTaps="always"
                   style={styles.body}
                 >
                   {/* 수영장 드롭다운 */}
@@ -221,19 +225,40 @@ export function AddScheduleSheet({
                   ) : (
                     <View style={styles.dropdownList}>
                       <View style={styles.searchBox}>
-                        <TextInput
-                          value={poolQuery}
-                          onChangeText={setPoolQuery}
-                          placeholder="수영장 이름"
-                          placeholderTextColor="#4B5563"
-                          style={styles.searchInput}
-                        />
+                        {/* RN Android는 TextInput placeholder에 커스텀 폰트
+                            미적용 → 빈 값일 때 Text 오버레이로 Pretendard 고정 */}
+                        <View style={styles.searchInputWrap}>
+                          <TextInput
+                            value={poolQuery}
+                            onChangeText={setPoolQuery}
+                            style={styles.searchInput}
+                          />
+                          {poolQuery.length === 0 ? (
+                            <Text
+                              style={styles.searchPlaceholder}
+                              pointerEvents="none"
+                            >
+                              수영장 이름
+                            </Text>
+                          ) : null}
+                        </View>
+                        {/* Figma 147:5413 — 입력값 있을 때만 clear(circle-x) 노출 */}
+                        {poolQuery.length > 0 ? (
+                          <Pressable
+                            onPress={() => setPoolQuery('')}
+                            hitSlop={8}
+                            accessibilityRole="button"
+                            accessibilityLabel="검색어 지우기"
+                          >
+                            <XCircle size={20} color="#94A3B8" strokeWidth={2} />
+                          </Pressable>
+                        ) : null}
                       </View>
                       <ScrollView
                         style={styles.optionScroll}
                         contentContainerStyle={styles.optionListContent}
                         nestedScrollEnabled
-                        keyboardShouldPersistTaps="handled"
+                        keyboardShouldPersistTaps="always"
                       >
                         {filteredPools.map((p) => (
                           <Pressable
@@ -458,6 +483,7 @@ const styles = StyleSheet.create({
     borderRadius: 9999,
     backgroundColor: '#F8FAFC',
   },
+  searchInputWrap: { flex: 1, justifyContent: 'center' },
   // Figma 5626:21974 — Medium 16/22 -0.112 #4B5563
   searchInput: {
     flex: 1,
@@ -467,6 +493,21 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sansMedium,
     color: '#4B5563',
     padding: 0,
+  },
+  // RN Android placeholder 커스텀 폰트 미적용 회피 — 빈 값 시 Text 오버레이.
+  searchPlaceholder: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    textAlignVertical: 'center',
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sansMedium,
+    color: '#4B5563',
+    includeFontPadding: false,
   },
   optionScroll: { maxHeight: 240 },
   optionListContent: { gap: 4 },
