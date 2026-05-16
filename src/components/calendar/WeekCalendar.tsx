@@ -228,13 +228,16 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
+    // 테두리를 항상 1px 유지(평소 transparent) — RN Android에서
+    // borderWidth 0↔1 토글 시 borderRadius가 풀려 사각형 되는 버그 회피.
+    borderWidth: 1,
+    borderColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Figma 123:8264 — pd-mint 배경 + pd-blue 1px 테두리, 완전 원형
+  // Figma 123:8264 — pd-mint 배경 + pd-blue 테두리(폭은 dayCircle에서 고정)
   daySelected: {
     backgroundColor: tokens.color.pdMint,
-    borderWidth: 1,
     borderColor: tokens.color.pdBlue,
   },
   dayNum: {
