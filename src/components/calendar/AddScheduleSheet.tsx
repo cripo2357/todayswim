@@ -650,8 +650,8 @@ const styles = StyleSheet.create({
   },
   // 결과 수와 무관하게 카드 높이 일정 — maxHeight면 1개일 때 높이가
   // 틀어져서 고정 height 사용(0/1/N개 모두 동일).
-  // 4개 노출(아이템 minH40 + gap4 → 4*40 + 3*4 ≈ 172, 살짝 여유 176).
-  optionScroll: { height: 176 },
+  // 5개 노출(아이템 minH40 + gap4 → 5*40 + 4*4 = 216, 살짝 여유 220).
+  optionScroll: { height: 220 },
   optionListContent: { gap: 4 },
   // Figma 5626:22473 — 아이템: 알약, minH40, p8 (선택 시 강조는 Phase 2)
   optionItem: {
