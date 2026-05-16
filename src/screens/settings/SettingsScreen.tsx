@@ -26,7 +26,7 @@ import {
 import { OptionSheet, type Option } from '@/components/ui/OptionSheet';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { tokens } from '@/styles/tokens';
-import BrandWordmark from '@assets/illustrations/wordmark-poolsday.svg';
+import BrandWordmark from '@assets/illustrations/wordmark-poolsday-light.svg';
 import IconProfile from '@assets/icons/settings/profile.svg';
 import IconLogout from '@assets/icons/settings/logout.svg';
 import IconTrash from '@assets/icons/settings/trash.svg';
@@ -167,7 +167,7 @@ export function SettingsScreen() {
             label="자주 묻는 질문"
           />
           <Row
-            icon={<IconGavel width={24} height={24} />}
+            icon={<IconEnvelope width={24} height={24} />}
             label="운영진에게 메일 보내기"
             onPress={sendMail}
           />
@@ -392,11 +392,12 @@ const styles = StyleSheet.create({
   // 푸터 (129:5971) — column center, gap 20
   footer: { alignItems: 'center', gap: 20 },
   footerText: { alignItems: 'center', gap: 8 },
+  // Figma 129:5976 — Regular (bold 제거)
   version: {
     fontSize: 14,
     lineHeight: 20,
     letterSpacing: -0.084,
-    fontFamily: tokens.font.sansBold,
+    fontFamily: tokens.font.sans,
     color: '#1F2937',
     textAlign: 'center',
   },
