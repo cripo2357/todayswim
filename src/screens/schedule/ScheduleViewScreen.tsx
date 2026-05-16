@@ -151,8 +151,10 @@ export function ScheduleViewScreen() {
           </View>
         </View>
 
-        {/* 요일별 안내 문구 — 슬롯 있는 요일에만 노출 (제약 강제, 외부에서 데이터 깨져도 방어) */}
-        {dayNote && slots.length > 0 ? (
+        {/* 요일별 안내 문구 — 슬롯 있는 요일에만 노출. slot_groups가 있는 요일은
+            그룹 라벨이 시즌/휴무 안내를 담당하므로 day_note는 숨김(중복/모순 방지).
+            DB day_notes가 안 비워져 있어도 UI에서 방어(제약 강제). */}
+        {dayNote && slots.length > 0 && !hasGroups ? (
           <Text style={styles.dayNote}>{dayNote}</Text>
         ) : null}
 
