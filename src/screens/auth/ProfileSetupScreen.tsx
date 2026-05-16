@@ -8,11 +8,9 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import {
-  ArrowRight, HelpCircle,
-  Calendar as LucideCalendar,
-} from 'lucide-react-native';
+import { ArrowRight, HelpCircle } from 'lucide-react-native';
 import IconChevronDown from '@assets/icons/chevron-down.svg';
+import IconCake from '@assets/icons/cake.svg';
 
 import { useProfile, type Gender, type Stroke } from '@/store/profile';
 import { useAuth } from '@/store/auth';
@@ -186,7 +184,7 @@ export function ProfileSetupScreen() {
               onPress={() => setShowCalendarSheet(true)}
               style={styles.inputBox}
             >
-              <LucideCalendar size={20} color={tokens.color.ink900} strokeWidth={2} />
+              <IconCake width={20} height={20} />
               <Text
                 style={[
                   styles.inputText,

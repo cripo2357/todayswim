@@ -11,7 +11,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Calendar as LucideCalendar } from 'lucide-react-native';
+import IconCake from '@assets/icons/cake.svg';
 import IconArrowUpload from '@assets/icons/arrow-upload.svg';
 import IconEdit from '@assets/icons/edit.svg';
 import IconChevronDown from '@assets/icons/chevron-down.svg';
@@ -406,7 +406,7 @@ export function ProfileTab({
 
       <Field label="생년월일">
         <Pressable onPress={() => setShowCalendar(true)} style={styles.inputBox}>
-          <LucideCalendar size={20} color={tokens.color.ink900} strokeWidth={2} />
+          <IconCake width={20} height={20} />
           <Text style={styles.inputText}>
             {profile.birthDate
               ? profile.birthDate.replace(/-/g, '.') + '.'
