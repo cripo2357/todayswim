@@ -1,20 +1,30 @@
-// Figma 150:8692 / 154:3850 — 친구 초대 (일정 확정 상태 → 초대 대상만 추가).
+// Figma 150:8692 / 154:3850 — 친구 초대 (일정 확정 → 초대 대상만 추가).
 // 바텀시트: "초대 일정" 카드(읽기전용) + "초대 친구" 멀티선택 + 초대장 보내기.
-// 일정 선택 단계 없음(이미 확정). 백엔드 미연동 — 친구 풀은 mockData.
+// 멀티선택 검색은 AddScheduleSheet 수영장 검색에서 검증된 패턴 재사용:
+//  · 열림 패널 = body의 "마지막 자식" + absolute(top=트리거 onLayout y)
+//    → 트리 최상위라 elevation/그림자 없이 터치 우선([[android_nested_modal_float]])
+//  · body가 ScrollView가 아니라 View → 목록 ScrollView가 유일 스크롤러(중첩 X)
+//  · float이라 레이아웃 안 밀어 시트 높이 불변. 항목 탭=토글(안 닫힘, 멀티),
+//    바깥 backdrop·트리거 ⌄=닫힘.
 
 import React from 'react';
-import { View, Text, Image, StyleSheet, Dimensions } from 'react-native';
+import {
+  View, Text, Image, TextInput, ScrollView, StyleSheet, Pressable,
+  Dimensions,
+} from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Mail } from 'lucide-react-native';
+import { Mail, XCircle, Check } from 'lucide-react-native';
+import IconChevronDown from '@assets/icons/chevron-down.svg';
 
 import type { RootStackParamList } from '@/navigation/types';
 import { BottomSheet, SheetCtaButton } from '@/components/ui/BottomSheet';
+import { MOCK_FRIENDS, type MockAccount } from '@/lib/mockData';
+import { BUNDLE_AVATARS } from '@/lib/avatars';
 import { tokens } from '@/styles/tokens';
 
 const SCREEN_H = Dimensions.get('window').height;
 // 시트 본문 고정 높이 — 멀티선택 열림/닫힘과 무관하게 시트 총높이 일정.
-// 넘치면 내부 스크롤(AddScheduleSheet body와 동일 비율 0.62).
 const BODY_H = Math.round(SCREEN_H * 0.62);
 
 const DOW_KR = ['일', '월', '화', '수', '목', '금', '토'];
@@ -36,13 +46,44 @@ export function InviteFriendsScreen() {
   const { poolName, poolPhotoUrl, date, start } =
     useRoute<RouteProp<RootStackParamList, 'InviteFriends'>>().params;
 
-  // 초대 대상 선택 UI 제거됨 — 새로 구현 예정.
-  const inviteeCount = 0;
+  const [selected, setSelected] = React.useState<MockAccount[]>([]);
+  const [open, setOpen] = React.useState(false);
+  const [query, setQuery] = React.useState('');
+  const [triggerY, setTriggerY] = React.useState(0);
+  const searchRef = React.useRef<TextInput>(null);
+  React.useEffect(() => {
+    if (!open) return;
+    const t = setTimeout(() => searchRef.current?.focus(), 60);
+    return () => clearTimeout(t);
+  }, [open]);
+
+  const sorted = React.useMemo(
+    () => [...MOCK_FRIENDS].sort((a, b) => a.name.localeCompare(b.name, 'ko')),
+    [],
+  );
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? sorted.filter((f) => f.name.toLowerCase().includes(q))
+    : sorted;
+  const selectedIds = new Set(selected.map((f) => f.id));
+
+  const toggle = (f: MockAccount) =>
+    setSelected((prev) =>
+      prev.some((s) => s.id === f.id)
+        ? prev.filter((s) => s.id !== f.id)
+        : [...prev, f],
+    );
 
   const send = () => {
-    if (inviteeCount === 0) return;
-    navigation.navigate('InviteDone', { count: inviteeCount });
+    if (selected.length === 0) return;
+    navigation.navigate('InviteDone', { count: selected.length });
   };
+
+  const Avatar = ({ f }: { f: MockAccount }) => (
+    <View style={styles.avatar}>
+      {React.createElement(BUNDLE_AVATARS[f.avatar], { width: 24, height: 24 })}
+    </View>
+  );
 
   return (
     <BottomSheet
@@ -51,9 +92,8 @@ export function InviteFriendsScreen() {
       title="친구 초대"
       contentStyle={styles.sheet}
     >
-      {/* 본문 고정 높이 View — 시트 총높이 불변. 스크롤은 자동완성 목록(float
-          내부 ScrollView)만 담당(여기를 ScrollView로 두면 중첩돼 목록이 안
-          스크롤됨). 자동완성은 absolute float이라 레이아웃을 안 밀어 OK. */}
+      {/* 본문 고정 높이 View — 시트 총높이 불변. body가 ScrollView가 아니라
+          목록(float 내부 ScrollView)이 유일 스크롤러라 중첩 충돌 없음. */}
       <View style={[styles.body, styles.bodyContent]}>
         {/* 초대 일정 — 확정된 일정 카드(읽기 전용) */}
         <View style={styles.section}>
@@ -73,16 +113,143 @@ export function InviteFriendsScreen() {
           </View>
         </View>
 
-        {/* 초대 친구 선택 UI 제거됨 — 새로 구현 예정 */}
-        <View style={styles.section}>
-          <Text style={styles.label}>초대 친구</Text>
+        {/* 초대 친구 — 멀티선택. 닫힘=트리거+선택목록 / 열림=float 패널 */}
+        <View style={[styles.section, styles.friendSection]}>
+          <Text style={styles.label}>
+            초대 친구{selected.length > 0 ? ` (${selected.length})` : ''}
+          </Text>
+          <View onLayout={(e) => setTriggerY(e.nativeEvent.layout.y)}>
+            <Pressable
+              onPress={() => setOpen((o) => !o)}
+              style={styles.trigger}
+            >
+              <Text style={styles.triggerText} numberOfLines={1}>
+                닉네임
+              </Text>
+              <IconChevronDown width={20} height={20} />
+            </Pressable>
+          </View>
+
+          {/* 닫힘 + 선택 있음 → 선택 목록(삭제). Figma 154:3850 */}
+          {!open && selected.length > 0 ? (
+            <ScrollView
+              style={styles.selectedList}
+              keyboardShouldPersistTaps="always"
+              showsVerticalScrollIndicator={false}
+            >
+              {selected.map((f) => (
+                <View key={f.id} style={styles.selectedRow}>
+                  <Avatar f={f} />
+                  <Text style={styles.name} numberOfLines={1}>
+                    {f.name}
+                  </Text>
+                  <Text style={styles.sub} numberOfLines={1}>
+                    {f.status}
+                  </Text>
+                  <Pressable
+                    onPress={() => toggle(f)}
+                    hitSlop={6}
+                    style={({ pressed }) => [
+                      styles.removeBtn,
+                      pressed && { opacity: 0.7 },
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${f.name} 삭제`}
+                  >
+                    <Text style={styles.removeLabel}>삭제</Text>
+                  </Pressable>
+                </View>
+              ))}
+            </ScrollView>
+          ) : null}
         </View>
+
+        {/* 열림 float — body의 마지막 자식 + absolute(top=트리거y).
+            트리 최상위라 elevation/그림자 없이 터치 우선. */}
+        {open ? (
+          <>
+            <Pressable
+              style={styles.backdrop}
+              onPress={() => setOpen(false)}
+              accessibilityRole="button"
+              accessibilityLabel="친구 검색 닫기"
+            />
+            <View style={[styles.panel, { top: triggerY }]}>
+              {/* Figma 154:4424 — 검색칸 #F8FAFC 알약 */}
+              <View style={styles.search}>
+                <View style={styles.searchInputWrap}>
+                  <TextInput
+                    ref={searchRef}
+                    autoFocus
+                    value={query}
+                    onChangeText={setQuery}
+                    style={styles.searchInput}
+                  />
+                  {query.length === 0 ? (
+                    <Text style={styles.searchPlaceholder} pointerEvents="none">
+                      닉네임
+                    </Text>
+                  ) : null}
+                </View>
+                {query.length > 0 ? (
+                  <Pressable
+                    onPress={() => setQuery('')}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel="검색어 지우기"
+                  >
+                    <XCircle size={20} color="#94A3B8" strokeWidth={2} />
+                  </Pressable>
+                ) : null}
+              </View>
+              <ScrollView
+                style={styles.list}
+                contentContainerStyle={styles.listContent}
+                nestedScrollEnabled
+                keyboardShouldPersistTaps="always"
+              >
+                {filtered.map((f) => {
+                  const on = selectedIds.has(f.id);
+                  return (
+                    <Pressable
+                      key={f.id}
+                      onPress={() => toggle(f)}
+                      style={styles.row}
+                    >
+                      <View
+                        style={[styles.checkbox, on && styles.checkboxOn]}
+                      >
+                        {on ? (
+                          <Check
+                            size={11}
+                            color={tokens.color.white}
+                            strokeWidth={3}
+                          />
+                        ) : null}
+                      </View>
+                      <Avatar f={f} />
+                      <Text style={styles.name} numberOfLines={1}>
+                        {f.name}
+                      </Text>
+                      <Text style={styles.sub} numberOfLines={1}>
+                        {f.status}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+                {filtered.length === 0 ? (
+                  <Text style={styles.empty}>검색 결과가 없어요.</Text>
+                ) : null}
+              </ScrollView>
+            </View>
+          </>
+        ) : null}
       </View>
 
       <SheetCtaButton
         label="초대장 보내기"
         onPress={send}
-        disabled={inviteeCount === 0}
+        disabled={selected.length === 0}
         icon={<Mail size={20} color={tokens.color.black} strokeWidth={2} />}
       />
     </BottomSheet>
@@ -90,12 +257,11 @@ export function InviteFriendsScreen() {
 }
 
 const styles = StyleSheet.create({
-  // BottomSheet 기본 gap 24 유지(타이틀 ↔ 본문 ↔ CTA)
   sheet: { gap: 24 },
-  // 고정 높이 본문 — 시트 총높이 일정, 넘치면 내부 스크롤
   body: { height: BODY_H },
   bodyContent: { gap: 24 },
   section: { gap: 8 },
+  friendSection: { flex: 1 },
   // Figma 150:9110 — SemiBold 14/20 -0.084 #4B5563
   label: {
     fontSize: 14,
@@ -116,7 +282,6 @@ const styles = StyleSheet.create({
     ...tokens.shadow.lg,
   },
   scheduleInfo: { flex: 1, gap: 4 },
-  // Figma 150:9134 — Bold 14/20 -0.084 #1F2937
   poolName: {
     fontSize: 14,
     lineHeight: 20,
@@ -124,7 +289,6 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sansBold,
     color: '#1F2937',
   },
-  // Figma 150:9136 — Regular 12/16 -0.06 #1F2937
   when: {
     fontSize: 12,
     lineHeight: 16,
@@ -132,11 +296,164 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sans,
     color: '#1F2937',
   },
-  // Figma 150:9137 — image 40x40 r6
-  thumb: {
-    width: 40,
-    height: 40,
-    borderRadius: 6,
-    backgroundColor: '#E2E8F0',
+  thumb: { width: 40, height: 40, borderRadius: 6, backgroundColor: '#E2E8F0' },
+
+  // 트리거(닉네임 + ⌄) — SearchSelect 톤(border #94A3B8 r14 minH48 px12)
+  trigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 48,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#94A3B8',
+    borderRadius: 14,
+    backgroundColor: tokens.color.white,
+  },
+  triggerText: {
+    flex: 1,
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sans,
+    color: '#4B5563',
+  },
+
+  // 닫힘 선택 목록 — 남는 높이 채우고 길면 스크롤(중첩 아님: body가 View)
+  selectedList: { flex: 1, marginTop: 4 },
+  // Figma 154:3850 — 행 gap8 minH40 p8 + 우측 빨강 삭제
+  selectedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    minHeight: 40,
+    padding: 8,
+  },
+  removeBtn: {
+    backgroundColor: tokens.color.red,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  removeLabel: {
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: -0.06,
+    fontFamily: tokens.font.sansSemibold,
+    color: tokens.color.white,
+  },
+
+  // 열림 시 본문 덮는 투명 영역 — 탭하면 닫힘(패널은 그 위, 트리 최상위)
+  backdrop: { ...StyleSheet.absoluteFillObject },
+  // Figma 154:4423 — 흰 카드 border #E2E8F0 r15 p8 gap4 Shadow/lg.
+  // body 마지막 자식 + absolute(top=트리거y) → 그림자/elevation 없이 최상위.
+  panel: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 15,
+    backgroundColor: tokens.color.white,
+    padding: 8,
+    gap: 4,
+    ...tokens.shadow.lg,
+  },
+  // Figma 154:4424 — 검색칸 #F8FAFC 알약 minH40 p8 gap8
+  search: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    minHeight: 40,
+    padding: 8,
+    borderRadius: 9999,
+    backgroundColor: '#F8FAFC',
+  },
+  searchInputWrap: { flex: 1, justifyContent: 'center' },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sansMedium,
+    color: '#4B5563',
+    padding: 0,
+  },
+  searchPlaceholder: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    textAlignVertical: 'center',
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sansMedium,
+    color: '#4B5563',
+    includeFontPadding: false,
+  },
+  // 5개 노출 고정(아이템 minH40 + gap4 → 5*40 + 4*4 = 216, 여유 220)
+  list: { height: 220 },
+  listContent: { gap: 4 },
+  // Figma 154:4540 — 행 gap8 minH40 p8 rounded-full
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    minHeight: 40,
+    padding: 8,
+    borderRadius: 9999,
+  },
+  // Figma 154:4546 — 체크박스 원형 16, 미선택 border #CBD5E1 / 선택 pd-mint
+  checkbox: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    backgroundColor: tokens.color.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxOn: {
+    backgroundColor: tokens.color.pdMint,
+    borderColor: tokens.color.pdMint,
+  },
+  // 아바타 24 원형 + pd-mint 보더(친구=mint, [[profile_border_policy]])
+  avatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: tokens.color.pdMint,
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  // Figma 154:4544 — Medium 16/22 -0.112 #4B5563
+  name: {
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sansMedium,
+    color: '#4B5563',
+  },
+  // Figma 154:4545 — Medium 14/20 -0.084 #94A3B8
+  sub: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: -0.084,
+    fontFamily: tokens.font.sansMedium,
+    color: '#94A3B8',
+  },
+  empty: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: tokens.font.sans,
+    color: tokens.color.ink500,
+    textAlign: 'center',
+    paddingVertical: 16,
   },
 });
