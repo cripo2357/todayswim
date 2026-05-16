@@ -15,6 +15,7 @@ import { useProfile } from '@/store/profile';
 import {
   useSwimSchedules,
   dateKey,
+  isSchedulePast,
   type ScheduleVisibility,
 } from '@/store/swimSchedule';
 import { isBundleAvatar, BUNDLE_AVATARS } from '@/lib/avatars';
@@ -22,14 +23,20 @@ import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
 import { WeekCalendar } from './WeekCalendar';
 import { AddScheduleSheet } from './AddScheduleSheet';
+import { OptionSheet, type Option } from '@/components/ui/OptionSheet';
 
 const DOW_KR = ['일', '월', '화', '수', '목', '금', '토'];
 
 const VIS_LABEL: Record<ScheduleVisibility, string> = {
-  private: '일정 비공개',
-  friends: '친구에게만 일정 공개',
-  public: '모두에게 공개',
+  private: '비공개',
+  friends: '친구에게만 공개',
+  public: '전체 공개',
 };
+const VIS_OPTIONS: Option<ScheduleVisibility>[] = [
+  { value: 'private', label: VIS_LABEL.private },
+  { value: 'friends', label: VIS_LABEL.friends },
+  { value: 'public', label: VIS_LABEL.public },
+];
 
 function formatDate(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number);
@@ -42,8 +49,11 @@ export function CalendarTab() {
   const profile = useProfile((s) => s.profile);
   const schedules = useSwimSchedules((s) => s.schedules);
   const remove = useSwimSchedules((s) => s.remove);
+  const setVisibility = useSwimSchedules((s) => s.setVisibility);
   const [date, setDate] = React.useState(new Date());
   const [sheetOpen, setSheetOpen] = React.useState(false);
+  // 공개여부 변경 시트 대상 일정 id (null = 닫힘)
+  const [visEditId, setVisEditId] = React.useState<string | null>(null);
   // 시간표 더블탭(프리필) 진입은 전역 GlobalAddScheduleSheet가 처리 —
   // 여기 시트는 "수영 일정 추가" 버튼의 수동 추가 전용(빈 상태).
 
@@ -101,16 +111,33 @@ export function CalendarTab() {
                   <Text style={styles.when} numberOfLines={1}>
                     {formatDate(s.date)}, {s.start} ~ {s.end}
                   </Text>
-                  <View style={styles.visChip}>
-                    <Text style={styles.visChipLabel}>
-                      {VIS_LABEL[s.visibility]}
-                    </Text>
-                    <ChevronDown
-                      size={12}
-                      color={tokens.color.pdBlue}
-                      strokeWidth={2}
-                    />
-                  </View>
+                  {(() => {
+                    const past = isSchedulePast(s);
+                    return (
+                      <Pressable
+                        onPress={() => !past && setVisEditId(s.id)}
+                        disabled={past}
+                        style={[styles.visChip, past && styles.visChipDisabled]}
+                        accessibilityRole="button"
+                        accessibilityLabel="일정 공개여부 변경"
+                        accessibilityState={{ disabled: past }}
+                      >
+                        <Text
+                          style={[
+                            styles.visChipLabel,
+                            past && styles.visChipLabelDisabled,
+                          ]}
+                        >
+                          {VIS_LABEL[s.visibility]}
+                        </Text>
+                        <ChevronDown
+                          size={12}
+                          color={past ? tokens.color.ink400 : tokens.color.pdBlue}
+                          strokeWidth={2}
+                        />
+                      </Pressable>
+                    );
+                  })()}
                 </View>
                 {s.poolPhotoUrl ? (
                   <Image source={{ uri: s.poolPhotoUrl }} style={styles.thumb} />
@@ -175,6 +202,20 @@ export function CalendarTab() {
         visible={sheetOpen}
         onClose={() => setSheetOpen(false)}
       />
+
+      {/* 일정 공개여부 변경 — 지난 일정은 칩 자체가 비활성이라 여기 안 열림 */}
+      <OptionSheet<ScheduleVisibility>
+        visible={visEditId !== null}
+        onClose={() => setVisEditId(null)}
+        title="일정 공개여부"
+        options={VIS_OPTIONS}
+        value={
+          schedules.find((x) => x.id === visEditId)?.visibility ?? null
+        }
+        onConfirm={(v) => {
+          if (visEditId) setVisibility(visEditId, v);
+        }}
+      />
     </View>
   );
 }
@@ -234,6 +275,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
+  // 지난 일정 — 공개여부 변경 불가(톤다운, chevron 아이콘은 유지)
+  visChipDisabled: { borderColor: tokens.color.ink400 },
   visChipLabel: {
     fontSize: 12,
     lineHeight: 16,
@@ -241,6 +284,7 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sansMedium,
     color: tokens.color.pdBlue,
   },
+  visChipLabelDisabled: { color: tokens.color.ink400 },
   thumb: { width: 80, height: 80, borderRadius: 6, backgroundColor: '#E2E8F0' },
   thumbEmpty: { backgroundColor: '#E2E8F0' },
 

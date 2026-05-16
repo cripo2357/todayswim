@@ -28,6 +28,17 @@ interface SwimScheduleState {
   hydrate: () => Promise<void>;
   add: (s: Omit<MySwimSchedule, 'id' | 'createdAt'>) => Promise<void>;
   remove: (id: string) => Promise<void>;
+  setVisibility: (id: string, visibility: ScheduleVisibility) => Promise<void>;
+}
+
+/** 일정이 지났는지 — 그 일정 date+start(시작시각) 기준 현재시각이 더 크면 지남. */
+export function isSchedulePast(s: {
+  date: string;
+  start: string;
+}): boolean {
+  const [y, m, d] = s.date.split('-').map(Number);
+  const [hh, mm] = s.start.split(':').map(Number);
+  return new Date() > new Date(y, m - 1, d, hh, mm, 0, 0);
 }
 
 const STORAGE_KEY = 'poolsday.swimSchedules';
@@ -62,6 +73,14 @@ export const useSwimSchedules = create<SwimScheduleState>((set, get) => ({
 
   remove: async (id) => {
     const next = get().schedules.filter((x) => x.id !== id);
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    set({ schedules: next });
+  },
+
+  setVisibility: async (id, visibility) => {
+    const next = get().schedules.map((x) =>
+      x.id === id ? { ...x, visibility } : x,
+    );
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     set({ schedules: next });
   },
