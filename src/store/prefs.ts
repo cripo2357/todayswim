@@ -13,32 +13,27 @@ export type ScheduleInvite = 'on' | 'off';
 export type ProfileVisibility = 'friends' | 'public';
 /** 친구 신청 받기 범위 */
 export type FriendRequest = 'off' | 'id' | 'nickname' | 'all';
-/** 나이 공개 범위 */
-export type AgeVisibility = 'private' | 'ageGroup' | 'exact';
+// 나이 공개여부 설정은 제거됨 — 나이는 항상 비공개(프로필 안내문구만 제공).
 
 interface PrefsState {
   othersScheduleView: OthersScheduleView;
   scheduleInvite: ScheduleInvite;
   profileVisibility: ProfileVisibility;
   friendRequest: FriendRequest;
-  ageVisibility: AgeVisibility;
   hydrated: boolean;
   hydrate: () => Promise<void>;
   setOthersScheduleView: (v: OthersScheduleView) => Promise<void>;
   setScheduleInvite: (v: ScheduleInvite) => Promise<void>;
   setProfileVisibility: (v: ProfileVisibility) => Promise<void>;
   setFriendRequest: (v: FriendRequest) => Promise<void>;
-  setAgeVisibility: (v: AgeVisibility) => Promise<void>;
 }
 
 const K_VIEW = 'poolsday.prefs.othersScheduleView';
 const K_INVITE = 'poolsday.prefs.scheduleInvite';
 const K_PROFILE_VIS = 'poolsday.prefs.profileVisibility';
 const K_FRIEND_REQ = 'poolsday.prefs.friendRequest';
-const K_AGE_VIS = 'poolsday.prefs.ageVisibility';
 
 const FRIEND_REQ_VALUES: FriendRequest[] = ['off', 'id', 'nickname', 'all'];
-const AGE_VIS_VALUES: AgeVisibility[] = ['private', 'ageGroup', 'exact'];
 
 export const usePrefs = create<PrefsState>((set) => ({
   // 최초 가입자 기본값 (사용자 지정)
@@ -46,17 +41,15 @@ export const usePrefs = create<PrefsState>((set) => ({
   scheduleInvite: 'on', // 초대 받기
   profileVisibility: 'friends', // 친구에게만 공개
   friendRequest: 'nickname', // 닉네임으로만 신청 받기
-  ageVisibility: 'private', // 나이 비공개 (프라이버시 우선)
   hydrated: false,
 
   hydrate: async () => {
     try {
-      const [v, i, p, f, a] = await Promise.all([
+      const [v, i, p, f] = await Promise.all([
         AsyncStorage.getItem(K_VIEW),
         AsyncStorage.getItem(K_INVITE),
         AsyncStorage.getItem(K_PROFILE_VIS),
         AsyncStorage.getItem(K_FRIEND_REQ),
-        AsyncStorage.getItem(K_AGE_VIS),
       ]);
       const pv: ProfileVisibility = p === 'public' ? 'public' : 'friends';
       const ov: OthersScheduleView = v === 'public' ? 'public' : 'friends';
@@ -68,9 +61,6 @@ export const usePrefs = create<PrefsState>((set) => ({
         friendRequest: FRIEND_REQ_VALUES.includes(f as FriendRequest)
           ? (f as FriendRequest)
           : 'nickname',
-        ageVisibility: AGE_VIS_VALUES.includes(a as AgeVisibility)
-          ? (a as AgeVisibility)
-          : 'private',
         hydrated: true,
       });
     } catch {
@@ -108,10 +98,5 @@ export const usePrefs = create<PrefsState>((set) => ({
   setFriendRequest: async (v) => {
     await AsyncStorage.setItem(K_FRIEND_REQ, v);
     set({ friendRequest: v });
-  },
-
-  setAgeVisibility: async (v) => {
-    await AsyncStorage.setItem(K_AGE_VIS, v);
-    set({ ageVisibility: v });
   },
 }));

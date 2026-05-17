@@ -24,7 +24,6 @@ import {
   type ScheduleInvite,
   type ProfileVisibility,
   type FriendRequest,
-  type AgeVisibility,
 } from '@/store/prefs';
 import { useProfile } from '@/store/profile';
 import { OptionSheet, type Option } from '@/components/ui/OptionSheet';
@@ -98,37 +97,6 @@ function friendReqValue(v: FriendRequest, id: string): string {
   if (v !== 'id') return FRIEND_REQ_VALUE[v];
   return `ID(${id})로만`;
 }
-// 나이 공개 (Figma 129:6006) — 선택 옵션
-const AGE_VIS_OPTIONS: Option<AgeVisibility>[] = [
-  { value: 'private', label: '비공개' },
-  { value: 'ageGroup', label: '연령대로 공개' },
-  { value: 'exact', label: '나이 공개' },
-];
-
-/** birthDate(YYYY-MM-DD) → 만 나이. 형식 오류 시 null */
-function calcKoreanAge(birthDate?: string): number | null {
-  if (!birthDate) return null;
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(birthDate);
-  if (!m) return null;
-  const by = +m[1];
-  const bm = +m[2];
-  const bd = +m[3];
-  const now = new Date();
-  let age = now.getFullYear() - by;
-  const mo = now.getMonth() + 1;
-  const d = now.getDate();
-  if (mo < bm || (mo === bm && d < bd)) age -= 1;
-  return age >= 0 ? age : null;
-}
-
-/** 행 우측 표시값 — 비공개 / 만 N0대 / 만 N세 */
-function ageVisValue(v: AgeVisibility, birthDate?: string): string {
-  if (v === 'private') return '비공개';
-  const age = calcKoreanAge(birthDate);
-  if (age === null) return v === 'ageGroup' ? '연령대로 공개' : '나이 공개';
-  return v === 'ageGroup' ? `만 ${Math.floor(age / 10) * 10}대` : `만 ${age}세`;
-}
-
 export function SettingsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const signOut = useAuth((s) => s.signOut);
@@ -142,14 +110,11 @@ export function SettingsScreen() {
   const setProfileVis = usePrefs((s) => s.setProfileVisibility);
   const friendReq = usePrefs((s) => s.friendRequest);
   const setFriendReq = usePrefs((s) => s.setFriendRequest);
-  const ageVis = usePrefs((s) => s.ageVisibility);
-  const setAgeVis = usePrefs((s) => s.setAgeVisibility);
   const profile = useProfile((s) => s.profile);
   const [viewSheet, setViewSheet] = React.useState(false);
   const [inviteSheet, setInviteSheet] = React.useState(false);
   const [profileSheet, setProfileSheet] = React.useState(false);
   const [friendReqSheet, setFriendReqSheet] = React.useState(false);
-  const [ageSheet, setAgeSheet] = React.useState(false);
 
   // 프로필 '친구만' 공개면 다른 사람 일정 보기는 '친구 일정만'으로 강제 (전체 옵션 미노출)
   const viewOptions =
@@ -213,12 +178,6 @@ export function SettingsScreen() {
             label="수영 일정 공유"
             value={VIEW_VALUE[othersView]}
             onPress={() => setViewSheet(true)}
-          />
-          <Row
-            icon={<IconProfile width={24} height={24} />}
-            label="나이 공개"
-            value={ageVisValue(ageVis, profile?.birthDate)}
-            onPress={() => setAgeSheet(true)}
           />
           <Row
             icon={<IconPerson width={24} height={24} />}
@@ -345,14 +304,6 @@ export function SettingsScreen() {
         options={FRIEND_REQ_OPTIONS}
         value={friendReq}
         onConfirm={(v) => setFriendReq(v)}
-      />
-      <OptionSheet<AgeVisibility>
-        visible={ageSheet}
-        onClose={() => setAgeSheet(false)}
-        title="나이 공개"
-        options={AGE_VIS_OPTIONS}
-        value={ageVis}
-        onConfirm={(v) => setAgeVis(v)}
       />
     </SafeAreaView>
   );

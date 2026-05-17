@@ -488,6 +488,9 @@ export function ProfileTab({
           </Text>
           <IconChevronDown width={20} height={20} />
         </Pressable>
+        <Text style={styles.fieldNote}>
+          성별은 비공개이며, 모임 참여시 성별 확인에만 사용합니다.
+        </Text>
       </Field>
 
       <Field label="생년월일">
@@ -499,6 +502,9 @@ export function ProfileTab({
               : '1900.01.01.'}
           </Text>
         </Pressable>
+        <Text style={styles.fieldNote}>
+          나이는 비공개이며, 모임 참여시 연령대 확인에만 사용합니다.
+        </Text>
       </Field>
 
       <View style={styles.divider} />
@@ -921,6 +927,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 22,
     letterSpacing: -0.112,
+    fontFamily: tokens.font.sans,
+    color: tokens.color.ink500,
+  },
+  // Figma 117:2885 — 성별/나이 수집목적 안내문구 (필드 아래, 회색 소형)
+  fieldNote: {
+    marginTop: 8,
+    fontSize: 13,
+    lineHeight: 18,
+    letterSpacing: -0.078,
     fontFamily: tokens.font.sans,
     color: tokens.color.ink500,
   },
