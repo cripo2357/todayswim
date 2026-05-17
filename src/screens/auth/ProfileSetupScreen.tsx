@@ -12,7 +12,7 @@ import { ArrowRight, HelpCircle } from 'lucide-react-native';
 import IconChevronDown from '@assets/icons/chevron-down.svg';
 import IconCake from '@assets/icons/cake.svg';
 
-import { useProfile, type Gender, type Stroke } from '@/store/profile';
+import { useProfile, genProfileId, type Gender, type Stroke } from '@/store/profile';
 import { useAuth } from '@/store/auth';
 import { isNicknameTaken, claimNickname, sanitizeNickname } from '@/lib/nicknames';
 import type { RootStackParamList } from '@/navigation/types';
@@ -106,6 +106,7 @@ export function ProfileSetupScreen() {
     if (!canSubmit) return;
     const trimmedName = name.trim();
     await saveProfile({
+      id: genProfileId(), // 계정 생성 시 ID 발급
       name: trimmedName,
       gender: gender!,
       birthDate,

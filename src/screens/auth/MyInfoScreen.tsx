@@ -17,7 +17,12 @@ import IconArrowUpload from '@assets/icons/arrow-upload.svg';
 import IconEdit from '@assets/icons/edit.svg';
 import IconChevronDown from '@assets/icons/chevron-down.svg';
 import IconIntro from '@assets/icons/intro.svg';
+import IconIdChange from '@assets/icons/id-change.svg';
+import IconIdCopy from '@assets/icons/id-copy.svg';
+import * as Clipboard from 'expo-clipboard';
 import { isNicknameTaken, claimNickname, sanitizeNickname } from '@/lib/nicknames';
+import { Tooltip } from '@/components/ui/Tooltip';
+import { IdChangeModal, IdChangeDoneModal } from '@/components/profile/IdChangeModals';
 
 import {
   useProfile,
@@ -55,13 +60,6 @@ const EXP_MAX = 30;
 const BIO_MAX = 10;
 const TABS = ['달력', '친구', '알림'] as const;
 type Tab = (typeof TABS)[number];
-
-/** 가입일 → "YYYY년 M월 D일부터 풀스데이와 수영중" */
-function formatSince(createdAt?: string): string {
-  const d = createdAt ? new Date(createdAt) : null;
-  if (!d || Number.isNaN(d.getTime())) return '풀스데이와 수영중';
-  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일부터 풀스데이와 수영중`;
-}
 
 export function MyInfoScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -185,6 +183,33 @@ export function ProfileTab({
   const [showCalendar, setShowCalendar] = React.useState(false);
   const [showGender, setShowGender] = React.useState(false);
 
+  // ── 계정 ID (Figma 117:2556 / 163:6737 / 163:6885) ──
+  const [idChangeOpen, setIdChangeOpen] = React.useState(false);
+  const [idDoneOpen, setIdDoneOpen] = React.useState(false);
+  const [idCopied, setIdCopied] = React.useState(false);
+  const copyTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  React.useEffect(
+    () => () => {
+      if (copyTimer.current) clearTimeout(copyTimer.current);
+    },
+    [],
+  );
+  const onCopyId = async () => {
+    try {
+      await Clipboard.setStringAsync(profile.id);
+    } catch {
+      // 네이티브 모듈 미빌드 시에도 툴팁은 노출(다음 EAS 빌드 후 정상).
+    }
+    setIdCopied(true);
+    if (copyTimer.current) clearTimeout(copyTimer.current);
+    copyTimer.current = setTimeout(() => setIdCopied(false), 2000);
+  };
+  const onConfirmIdChange = async () => {
+    await useProfile.getState().regenerateId();
+    setIdChangeOpen(false);
+    setIdDoneOpen(true);
+  };
+
   // 2그룹(수영기간/영법/자격증/IM100) — 변경 즉시 저장하지 않고 로컬 state로
   // 보관하다가 화면 이탈(탭 변경/뒤로가기 = ProfileTab unmount) 시 일괄 저장.
   const [exp, setExp] = React.useState(profile.experienceYears);
@@ -283,6 +308,7 @@ export function ProfileTab({
   };
 
   return (
+    <>
     <ScrollView
       contentContainerStyle={styles.scroll}
       showsVerticalScrollIndicator={false}
@@ -313,10 +339,32 @@ export function ProfileTab({
         </Pressable>
       </View>
 
-      {/* 닉네임 + 가입일 (Figma 117:2880) */}
+      {/* 닉네임 + 계정 ID (Figma 130:3577) — gap8, ID행 가운데 정렬 */}
       <View style={styles.profileHeadText}>
         <Text style={styles.profileName}>{profile.name}</Text>
-        <Text style={styles.profileSince}>{formatSince(profile.createdAt)}</Text>
+        <View style={styles.idRow}>
+          <Text style={styles.idText}>ID: {profile.id}</Text>
+          <Pressable
+            onPress={() => setIdChangeOpen(true)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="ID 변경"
+          >
+            <IconIdChange width={20} height={20} />
+          </Pressable>
+          <Pressable
+            onPress={onCopyId}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="ID 복사"
+            style={styles.idCopyWrap}
+          >
+            {idCopied ? (
+              <Tooltip label="ID를 복사했습니다." style={styles.idTooltip} />
+            ) : null}
+            <IconIdCopy width={20} height={20} />
+          </Pressable>
+        </View>
       </View>
 
       {/* 자기 소개 */}
@@ -524,6 +572,17 @@ export function ProfileTab({
         onClose={() => setShowGender(false)}
       />
     </ScrollView>
+
+    <IdChangeModal
+      visible={idChangeOpen}
+      onKeep={() => setIdChangeOpen(false)}
+      onChange={onConfirmIdChange}
+    />
+    <IdChangeDoneModal
+      visible={idDoneOpen}
+      onConfirm={() => setIdDoneOpen(false)}
+    />
+    </>
   );
 }
 
@@ -711,24 +770,45 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginBottom: 12,
   },
-  // Figma 117:2880 — 아바타 아래 닉네임 + 가입일
+  // Figma 130:3577 — 아바타 아래 닉네임 + 계정 ID (gap 8)
   profileHeadText: {
     alignItems: 'center',
-    gap: 4,
+    gap: 8,
     marginBottom: 32,
   },
+  // Figma 130:3579 — Bold 24/32 -0.288 #1F2937
   profileName: {
     fontSize: 24,
     lineHeight: 32,
-    letterSpacing: -0.24,
+    letterSpacing: -0.288,
     fontFamily: tokens.font.sansBold,
-    color: tokens.color.ink900,
+    color: '#1F2937',
   },
-  profileSince: {
+  // Figma 130:3602 — ID행: 가운데 정렬, gap 8
+  idRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  // Figma 130:3578 — Regular 14/20 -0.084 #4B5563
+  idText: {
     fontSize: 14,
     lineHeight: 20,
+    letterSpacing: -0.084,
     fontFamily: tokens.font.sans,
     color: '#4B5563',
+  },
+  idCopyWrap: { position: 'relative' },
+  // 복사 아이콘(20) 위 가운데 — 래퍼 width 200 + ml -100
+  idTooltip: {
+    position: 'absolute',
+    bottom: '100%',
+    marginBottom: 4,
+    left: 10,
+    marginLeft: -100,
+    width: 200,
+    zIndex: 10,
   },
   // Figma 130:3572 — byellow 외곽선. RN border+overflow 함정 회피 위해
   // byellow 배경 80 원 + 안쪽 76 원(2px ring) 구조.

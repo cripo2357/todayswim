@@ -43,7 +43,22 @@ export const ALL_IM100_RECORDS: IM100Record[] = [
   '4분 이상',
 ];
 
+/**
+ * 친구 추가용 계정 ID — 닉네임은 노출이 쉬워, 어렵게 추가하고 싶은 사용자를 위해
+ * 별도 발급. 계정 생성 시 자동 발급, 사용자가 변경 가능.
+ * 혼동 문자(0/O/1/I/L) 제외 6자리.
+ */
+const ID_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+export function genProfileId(): string {
+  let s = '';
+  for (let i = 0; i < 6; i++) {
+    s += ID_ALPHABET[Math.floor(Math.random() * ID_ALPHABET.length)];
+  }
+  return s;
+}
+
 export interface UserProfile {
+  id: string; // 친구 추가용 계정 ID (계정 생성 시 발급, 변경 가능)
   name: string;
   gender: Gender;
   birthDate: string; // YYYY-MM-DD
@@ -62,18 +77,25 @@ interface ProfileState {
   hydrate: () => Promise<void>;
   save: (profile: UserProfile) => Promise<void>;
   clear: () => Promise<void>;
+  /** 계정 ID 재발급 — 새 ID 반환 */
+  regenerateId: () => Promise<string>;
 }
 
 const STORAGE_KEY = 'poolsday.profile';
 
-export const useProfile = create<ProfileState>((set) => ({
+export const useProfile = create<ProfileState>((set, get) => ({
   profile: null,
   hydrated: false,
 
   hydrate: async () => {
     try {
       const raw = await AsyncStorage.getItem(STORAGE_KEY);
-      const profile = raw ? (JSON.parse(raw) as UserProfile) : null;
+      let profile = raw ? (JSON.parse(raw) as UserProfile) : null;
+      // 구버전 프로필(ID 없음) 백필 — ID는 항상 존재해야 함.
+      if (profile && !profile.id) {
+        profile = { ...profile, id: genProfileId() };
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+      }
       set({ profile, hydrated: true });
     } catch {
       set({ hydrated: true });
@@ -81,12 +103,25 @@ export const useProfile = create<ProfileState>((set) => ({
   },
 
   save: async (profile) => {
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
-    set({ profile });
+    // 생성 시 ID 미지정이면 자동 발급(계정 생성 시 발급 보장).
+    const withId = profile.id ? profile : { ...profile, id: genProfileId() };
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(withId));
+    set({ profile: withId });
   },
 
   clear: async () => {
     await AsyncStorage.removeItem(STORAGE_KEY);
     set({ profile: null });
+  },
+
+  regenerateId: async () => {
+    const cur = get().profile;
+    const newId = genProfileId();
+    if (cur) {
+      const next = { ...cur, id: newId };
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      set({ profile: next });
+    }
+    return newId;
   },
 }));
