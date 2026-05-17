@@ -29,6 +29,15 @@ import { tokens } from '@/styles/tokens';
 
 type Placement = 'top' | 'bottom' | 'left' | 'right';
 
+// 흰 카드 위 흰 버블/꼬리도 경계가 잡히도록 강화한 그림자.
+// Figma Shadow/lg(0.03/0.08)는 지도(회색) 위 기준이라 흰 배경에서
+// 사실상 투명 → 툴팁이 안 보이는 문제. tight 레이어(가까운 진한
+// 그림자=윤곽) + soft 레이어(깊이). 버블·꼬리 동일 적용(이음새 없음).
+const TOOLTIP_SHADOW = {
+  boxShadow:
+    '0px 1px 4px rgba(15, 23, 42, 0.22), 0px 8px 20px rgba(15, 23, 42, 0.16)',
+} as const;
+
 // 꼬리 위치 — bubbleWrap(=버블 박스) 기준 absolute
 const ARROW_BY_PLACEMENT: Record<Placement, ViewStyle> = {
   top: { bottom: -6, left: '50%', marginLeft: -6 }, // 버블 아래 가운데(아래로)
@@ -79,7 +88,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 6,
-    ...tokens.shadow.lg,
+    ...TOOLTIP_SHADOW,
   },
   // Figma I147:5763;1270:15179 — Bold 10/14 tracking -0.04 #1F2937 center
   text: {
@@ -98,6 +107,6 @@ const styles = StyleSheet.create({
     height: 12,
     backgroundColor: '#FFFFFF',
     transform: [{ rotate: '45deg' }],
-    ...tokens.shadow.lg,
+    ...TOOLTIP_SHADOW,
   },
 });
