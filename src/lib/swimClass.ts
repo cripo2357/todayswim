@@ -25,9 +25,9 @@ export function formatTimeRange(c: Pick<SwimClass, 'start' | 'end'>): string {
   return `${c.start} ~ ${c.end}`;
 }
 
-/** 프로필 칩 라벨 — "매주 {요일}요일 {오전/오후 h:MM}" (시작 시각 기준) */
+/** 프로필 칩 라벨 — "{요일}요일 {오전/오후 h:MM}" (시작 시각 기준) */
 export function formatClassChip(c: SwimClass): string {
-  return `매주 ${c.day}요일 ${to12h(c.start)}`;
+  return `${c.day}요일 ${to12h(c.start)}`;
 }
 
 /** 요일별로 그룹핑 (DAY_ORDER 순). 각 요일 배열은 시작시각 오름차순. */
