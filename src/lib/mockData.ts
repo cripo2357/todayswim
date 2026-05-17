@@ -265,13 +265,13 @@ const GWANAK_24H_TEST: OtherSchedule[] = BASE_FRIENDS.flatMap((u, i) => {
 });
 
 // ── 사당문화회관 오버플로우 테스트 (사용자 요청) ───────────────
-// 친구 30명 전원, 2026-05-16(토) 13:00~14:50 사당문화회관(POOL_SEOUL_0006)
-// 자유수영 슬롯에 참여(가시성 public). 토 13:00 슬롯 = 13:00~14:50
-// (migration 0029 — by_day "토"). 같은 슬롯에 내가 등록하면 30명이
-// 참여자로 잡혀 "더보기"/스택 "… more"(29 초과) 검증 가능.
-// 주의: 05-16은 지난 날짜 → 지도 스택(24h 내 진행예정)에는 안 뜸.
-// 지도 "… more"까지 보려면 기기 시계를 05-16 13:00 이전으로.
-const SADANG_0516: OtherSchedule[] = SADANG_TEST_FRIENDS.map((u) => ({
+// 친구 30명 전원, 2026-05-18(월) 13:00~13:50 사당문화회관(POOL_SEOUL_0006)
+// 자유수영 슬롯에 참여(가시성 public). 월 13:00 슬롯 = 13:00~13:50
+// (migration 0029 — by_day "월", 평일 슬롯. 토 13:00~14:50과 다름).
+// 같은 슬롯에 내가 등록하면 30명이 참여자로 잡혀 "더보기"/스택
+// "… more"(29 초과) 검증 가능. 05-18은 오늘 → 기기 시계가 13:00
+// 이전이면 지도 스택(24h 내 진행예정)에도 떠서 "… more"까지 확인됨.
+const SADANG_0518: OtherSchedule[] = SADANG_TEST_FRIENDS.map((u) => ({
   id: `oth-sadang-${u.id}`,
   userId: u.id,
   name: u.name,
@@ -279,9 +279,9 @@ const SADANG_0516: OtherSchedule[] = SADANG_TEST_FRIENDS.map((u) => ({
   isFriend: true,
   poolId: 'POOL_SEOUL_0006',
   poolName: '사당문화회관',
-  date: '2026-05-16',
+  date: '2026-05-18',
   start: '13:00',
-  end: '14:50',
+  end: '13:50',
   visibility: 'public',
 }));
 
@@ -289,5 +289,5 @@ export const MOCK_OTHER_SCHEDULES: OtherSchedule[] = [
   ...BASE_OTHER_SCHEDULES,
   ...RANGE_5_17_5_30,
   ...GWANAK_24H_TEST,
-  ...SADANG_0516,
+  ...SADANG_0518,
 ];
