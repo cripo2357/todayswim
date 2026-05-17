@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   // Figma 172:11698 — 일러스트 풀폭(311x199 비율)
-  illustWrap: { width: '100%', aspectRatio: 311 / 199 },
+  illustWrap: { width: '100%', aspectRatio: 527 / 242 }, // friend-reject(플러그) viewBox
   // Figma 172:11825 — gap12 center
   textGroup: { gap: 12, alignItems: 'center', alignSelf: 'stretch' },
   // Figma 172:11826 — Bold 24/32 -0.288 #1F2937

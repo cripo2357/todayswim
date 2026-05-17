@@ -87,10 +87,10 @@ const styles = StyleSheet.create({
     gap: 24,
     alignItems: 'center',
   },
-  // Figma 168:7181 — 일러스트 풀폭 (원본 311x199 비율 유지)
+  // 일러스트 풀폭 — friend-reject(플러그) viewBox 527x242 비율 유지
   illustWrap: {
     width: '100%',
-    aspectRatio: 311 / 199,
+    aspectRatio: 527 / 242,
   },
   // Figma 163:10576 — gap12 center
   textGroup: { gap: 12, alignItems: 'center', alignSelf: 'stretch' },

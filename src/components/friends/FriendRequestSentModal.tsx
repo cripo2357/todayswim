@@ -68,8 +68,8 @@ const styles = StyleSheet.create({
     gap: 24,
     alignItems: 'center',
   },
-  // 일러스트 풀폭(311x227 비율 — friend-request-sent.svg viewBox)
-  illustWrap: { width: '100%', aspectRatio: 311 / 227 },
+  // 일러스트 풀폭(343x226 — friend-request-sent.svg 망원경 viewBox)
+  illustWrap: { width: '100%', aspectRatio: 343 / 226 },
   // gap12 center
   textGroup: { gap: 12, alignItems: 'center', alignSelf: 'stretch' },
   // Bold 24/32 -0.288 #1F2937

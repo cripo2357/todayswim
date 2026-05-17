@@ -12,7 +12,7 @@ import { CalendarCheck } from 'lucide-react-native';
 import { ModalCard } from '@/components/layout/ModalCard';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
-import RequestCompleteIllust from '@assets/illustrations/request-complete.svg';
+import InviteSentIllust from '@assets/illustrations/invite-sent.svg';
 
 export function InviteDoneScreen() {
   const navigation =
@@ -22,9 +22,9 @@ export function InviteDoneScreen() {
 
   return (
     <ModalCard withCardPadding={false} cardStyle={styles.card}>
-      {/* Figma 129:4085 — 일러스트 프레임 h216, 전체폭 */}
+      {/* Figma 129:3779 — 물병 일러스트 풀폭(344x237 비율) */}
       <View style={styles.illustWrap}>
-        <RequestCompleteIllust width={279} height={216} />
+        <InviteSentIllust width="100%" height="100%" />
       </View>
 
       {/* Figma 129:4063 — 타이틀/본문 gap16, 가운데 */}
@@ -61,9 +61,7 @@ const styles = StyleSheet.create({
   },
   illustWrap: {
     width: '100%',
-    height: 216,
-    alignItems: 'center',
-    justifyContent: 'center',
+    aspectRatio: 344 / 237,
   },
   textBlock: { width: '100%', gap: 16, alignItems: 'center' },
   // Figma 129:4064 — Bold 24/32 -0.288 #1F2937
