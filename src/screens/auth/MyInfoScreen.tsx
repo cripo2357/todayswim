@@ -899,7 +899,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     letterSpacing: -0.084,
-    fontFamily: tokens.font.sansSemibold,
+    fontFamily: tokens.font.sans,
     color: tokens.color.ink900,
     marginBottom: 12,
   },
