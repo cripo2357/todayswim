@@ -18,6 +18,47 @@ const MOCK_TAKEN = new Set(
  * 백엔드 조회 실패(네트워크 등)면 그쪽만 false — 가입을 막지 않되
  * 로컬 목업 중복은 항상 잡는다. 최종 방어선은 테이블 PK(nickname) 제약.
  */
+// 운영 사칭 차단어 — 정규화(소문자/공백·특수 제거) 후 '포함' 검사.
+// 예: '운영자수영', 'x풀스데이' 등 부분 포함도 모두 차단.
+const RESERVED = [
+  '풀스데이', 'poolsday', 'poolday', '풀스', 'pools',
+  '매니저', 'manager', '운영자', '운영진', '운영팀', '운영', '운영측',
+  '관리자', '관리', '어드민', 'admin', 'administrator', 'root',
+  '공식', 'official', '고객센터', '고객지원', '문의', 'support', 'cs',
+  '스태프', 'staff', '마스터', 'master', '시스템', 'system', '봇', 'bot',
+];
+
+// 욕설/비속어 어근 — 정규화 후 '포함' 검사(1차 필터; 자모분리·변형
+// 완전대응은 백엔드 모더레이션 몫). 대표 어근만 최소 유지.
+const PROFANITY = [
+  '시발', '씨발', '시바', 'ㅅㅂ', '병신', 'ㅂㅅ', '지랄', 'ㅈㄹ',
+  '개새', '새끼', '쌍놈', '쌍년', '썅', '좆', '존나', '죶', '니미',
+  '보지', '자지', '걸레', '창녀', '엿먹', '닥쳐', '꺼져', '죽어',
+  '애미', '느금', '느개비', 'tlqkf', 'qudtls', 'wlfkf',
+  'fuck', 'shit', 'bitch', 'asshole', 'dick', 'pussy', 'fck',
+];
+
+/**
+ * 닉네임 정책 위반 사유 — 운영 사칭 / 욕설. 없으면 null.
+ * isNicknameTaken(중복)과 별개. 정규화 후 substring 검사.
+ */
+export function nicknameBlockReason(
+  nickname: string,
+): 'reserved' | 'profanity' | null {
+  const n = nickname.trim().toLowerCase();
+  if (!n) return null;
+  if (RESERVED.some((w) => n.includes(w))) return 'reserved';
+  if (PROFANITY.some((w) => n.includes(w))) return 'profanity';
+  return null;
+}
+
+/** 닉네임 위반 안내문구 (UI 표시용 단일 출처) */
+export const NICKNAME_NOTICE: Record<'reserved' | 'profanity' | 'taken', string> = {
+  reserved: '운영진을 사칭할 수 있는 닉네임은 사용할 수 없습니다.',
+  profanity: '부적절한 표현이 포함된 닉네임은 사용할 수 없습니다.',
+  taken: '이미 사용중인 닉네임입니다.',
+};
+
 export async function isNicknameTaken(nickname: string): Promise<boolean> {
   const n = nickname.trim();
   if (!n) return false;

@@ -14,7 +14,13 @@ import IconCake from '@assets/icons/cake.svg';
 
 import { useProfile, genProfileId, type Gender, type Stroke } from '@/store/profile';
 import { useAuth } from '@/store/auth';
-import { isNicknameTaken, claimNickname, sanitizeNickname } from '@/lib/nicknames';
+import {
+  isNicknameTaken,
+  claimNickname,
+  sanitizeNickname,
+  nicknameBlockReason,
+  NICKNAME_NOTICE,
+} from '@/lib/nicknames';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
 import IconUser from '@assets/icons/user-profile.svg';
@@ -43,7 +49,13 @@ export function ProfileSetupScreen() {
   const [showCalendarSheet, setShowCalendarSheet] = React.useState(false);
 
   // 닉네임 중복 자동 확인 — 입력 디바운스(500ms) 후 서버 조회.
-  type NickStatus = 'idle' | 'checking' | 'ok' | 'taken';
+  type NickStatus =
+    | 'idle'
+    | 'checking'
+    | 'ok'
+    | 'taken'
+    | 'reserved'
+    | 'profanity';
   const [nickStatus, setNickStatus] = React.useState<NickStatus>('idle');
   const nickTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const nameRef = React.useRef('');
@@ -60,6 +72,11 @@ export function ProfileSetupScreen() {
     const initial = (authUser?.nickname ?? '').trim();
     if (initial.length < 2) return;
     nameRef.current = authUser?.nickname ?? '';
+    const initReason = nicknameBlockReason(initial);
+    if (initReason) {
+      setNickStatus(initReason);
+      return;
+    }
     setNickStatus('checking');
     (async () => {
       const taken = await isNicknameTaken(initial);
@@ -80,6 +97,11 @@ export function ProfileSetupScreen() {
       setNickStatus('idle');
       return;
     }
+    const reason = nicknameBlockReason(trimmed);
+    if (reason) {
+      setNickStatus(reason); // 사칭/욕설 — 동기 즉시 차단(디바운스 불필요)
+      return;
+    }
     setNickStatus('checking');
     nickTimerRef.current = setTimeout(async () => {
       const taken = await isNicknameTaken(trimmed);
@@ -92,6 +114,16 @@ export function ProfileSetupScreen() {
   // 필수 — 닉네임(중복 아님) + 성별 + 생년월일.
   const canSubmit =
     name.trim().length >= 2 && nickStatus === 'ok' && !!gender && !!birthDate;
+
+  // 닉네임 위반 안내 — 중복/사칭/욕설 단일 출처
+  const nickErrorMsg =
+    nickStatus === 'taken'
+      ? NICKNAME_NOTICE.taken
+      : nickStatus === 'reserved'
+        ? NICKNAME_NOTICE.reserved
+        : nickStatus === 'profanity'
+          ? NICKNAME_NOTICE.profanity
+          : null;
 
   const toggleStroke = (s: Stroke) => {
     setStrokes((prev) => {
@@ -140,7 +172,7 @@ export function ProfileSetupScreen() {
             <View
               style={[
                 styles.inputBox,
-                nickStatus === 'taken' && styles.inputBoxError,
+                nickErrorMsg != null && styles.inputBoxError,
               ]}
             >
               <IconUser width={20} height={20} />
@@ -153,12 +185,12 @@ export function ProfileSetupScreen() {
                 maxLength={6}
                 autoCapitalize="none"
               />
-              {nickStatus === 'taken' ? (
+              {nickErrorMsg != null ? (
                 <HelpCircle size={18} color={tokens.color.red} strokeWidth={2} />
               ) : null}
             </View>
-            {nickStatus === 'taken' ? (
-              <Text style={styles.nickError}>이미 사용하고 있는 닉네임입니다.</Text>
+            {nickErrorMsg != null ? (
+              <Text style={styles.nickError}>{nickErrorMsg}</Text>
             ) : null}
           </Field>
 

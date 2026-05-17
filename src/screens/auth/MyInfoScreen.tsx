@@ -19,7 +19,13 @@ import IconChevronDown from '@assets/icons/chevron-down.svg';
 import IconIntro from '@assets/icons/intro.svg';
 import IconIdChange from '@assets/icons/id-change.svg';
 import IconIdCopy from '@assets/icons/id-copy.svg';
-import { isNicknameTaken, claimNickname, sanitizeNickname } from '@/lib/nicknames';
+import {
+  isNicknameTaken,
+  claimNickname,
+  sanitizeNickname,
+  nicknameBlockReason,
+  NICKNAME_NOTICE,
+} from '@/lib/nicknames';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { IdChangeModal, IdChangeDoneModal } from '@/components/profile/IdChangeModals';
 
@@ -261,13 +267,14 @@ export function ProfileTab({
   // 닉네임 인라인 변경 (Figma 120:3030 / 129:6307 / 129:6296)
   const nickInputRef = React.useRef<TextInput>(null);
   const [nick, setNick] = React.useState(profile.name);
-  const [nickErr, setNickErr] = React.useState(false);
+  // 위반 안내문구(중복/사칭/욕설) — 없으면 null
+  const [nickErr, setNickErr] = React.useState<string | null>(null);
   // 기본 비활성(읽기). "변경" 누르면 편집 활성, 다시 누르면 검증·저장.
   const [nickEditing, setNickEditing] = React.useState(false);
 
   const onChangeNick = (v: string) => {
     setNick(sanitizeNickname(v));
-    setNickErr(false);
+    setNickErr(null);
   };
   // "변경" 버튼: 비활성 → 편집 시작 / 편집 중 → 검증·저장.
   const onNickButton = async () => {
@@ -283,13 +290,18 @@ export function ProfileTab({
       return;
     }
     if (next.length < 2 || next.length > 6) return; // 안내문이 가이드
+    const reason = nicknameBlockReason(next);
+    if (reason) {
+      setNickErr(NICKNAME_NOTICE[reason]);
+      return;
+    }
     if (await isNicknameTaken(next)) {
-      setNickErr(true);
+      setNickErr(NICKNAME_NOTICE.taken);
       return;
     }
     patch({ name: next });
     await claimNickname(next);
-    setNickErr(false);
+    setNickErr(null);
     setNickEditing(false);
     nickInputRef.current?.blur();
   };
@@ -413,9 +425,7 @@ export function ProfileTab({
           </Pressable>
         </View>
         {nickErr ? (
-          <Text style={styles.nickHintError}>
-            이미 사용중인 닉네임입니다.
-          </Text>
+          <Text style={styles.nickHintError}>{nickErr}</Text>
         ) : nickEditing ? (
           <Text style={styles.nickHint}>
             닉네임(2~6자)을 입력한 후 변경 버튼을 선택하세요.
