@@ -415,7 +415,8 @@ function PoolListCard({
               </Text>
               <FavoriteHeart poolId={pool.id} size={20} />
             </View>
-            <Text style={styles.addr} numberOfLines={1}>
+            {/* Figma 103:2607 — 주소는 말줄임 없이 여러 줄 줄바꿈(full text) */}
+            <Text style={styles.addr}>
               {pool.address}
               {distanceKm !== undefined ? ` (${formatDistance(distanceKm)})` : ''}
             </Text>
