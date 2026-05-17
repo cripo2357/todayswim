@@ -33,11 +33,13 @@ import {
   useProfile,
   ALL_CERTIFICATIONS,
   ALL_IM100_RECORDS,
+  PROFILE_VIS_DEFAULT,
   type UserProfile,
   type Stroke,
   type Certification,
   type IM100Record,
 } from '@/store/profile';
+import { Toggle } from '@/components/ui/Toggle';
 import { isBundleAvatar, BUNDLE_AVATARS } from '@/lib/avatars';
 import { DAY_ORDER, groupByDay, formatClassChip } from '@/lib/swimClass';
 import type { RootStackParamList } from '@/navigation/types';
@@ -523,7 +525,11 @@ export function ProfileTab({
       {/* 수영 */}
       <SectionHeader icon={<IconLaneCount width={22} height={22} />} label="수영" />
 
-      <Text style={styles.subLabel}>수영 기간</Text>
+      <VisRow
+        label="수영 기간"
+        value={profile.showServiceYears ?? PROFILE_VIS_DEFAULT.showServiceYears}
+        onChange={(v) => patch({ showServiceYears: v })}
+      />
       <ExperienceSlider
         value={exp}
         onChange={(v) => {
@@ -556,7 +562,12 @@ export function ProfileTab({
         </Pressable>
       </View>
 
-      <Text style={[styles.subLabel, { marginTop: 24 }]}>가능 영법</Text>
+      <VisRow
+        label="가능 영법"
+        marginTop={24}
+        value={profile.showStrokes ?? PROFILE_VIS_DEFAULT.showStrokes}
+        onChange={(v) => patch({ showStrokes: v })}
+      />
       <ChipRow>
         {ALL_STROKES.map((s) => (
           <Chip
@@ -568,7 +579,12 @@ export function ProfileTab({
         ))}
       </ChipRow>
 
-      <Text style={[styles.subLabel, { marginTop: 24 }]}>자격증</Text>
+      <VisRow
+        label="자격증"
+        marginTop={24}
+        value={profile.showCerts ?? PROFILE_VIS_DEFAULT.showCerts}
+        onChange={(v) => patch({ showCerts: v })}
+      />
       <ChipRow>
         {ALL_CERTIFICATIONS.map((c) => (
           <Chip
@@ -580,7 +596,12 @@ export function ProfileTab({
         ))}
       </ChipRow>
 
-      <Text style={[styles.subLabel, { marginTop: 24 }]}>IM100 기록</Text>
+      <VisRow
+        label="IM100 기록"
+        marginTop={24}
+        value={profile.showIm100 ?? PROFILE_VIS_DEFAULT.showIm100}
+        onChange={(v) => patch({ showIm100: v })}
+      />
       <ChipRow>
         {ALL_IM100_RECORDS.map((r) => (
           <Chip
@@ -637,6 +658,31 @@ function SectionHeader({ icon, label }: { icon: React.ReactNode; label: string }
     <View style={styles.sectionHeader}>
       {icon}
       <Text style={styles.sectionHeaderLabel}>{label}</Text>
+    </View>
+  );
+}
+
+/** 항목 라벨 + 공개/비공개 토글 (Figma 117:2556). */
+function VisRow({
+  label,
+  marginTop,
+  value,
+  onChange,
+}: {
+  label: string;
+  marginTop?: number;
+  value: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <View style={[styles.visRow, marginTop != null ? { marginTop } : null]}>
+      <Text style={styles.visRowLabel}>{label}</Text>
+      <Toggle
+        value={value}
+        onValueChange={onChange}
+        label={value ? '공개' : '비공개'}
+        labelPosition="left"
+      />
     </View>
   );
 }
@@ -919,6 +965,20 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sans,
     color: tokens.color.ink900,
     marginBottom: 12,
+  },
+  // Figma 117:2556 — 항목 라벨 + 공개/비공개 토글 한 줄
+  visRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  visRowLabel: {
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: -0.084,
+    fontFamily: tokens.font.sans,
+    color: tokens.color.ink900,
   },
 
   inputBox: {

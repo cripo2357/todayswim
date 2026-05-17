@@ -82,8 +82,22 @@ export interface UserProfile {
   certifications?: Certification[]; // 자격증 (복수 선택)
   im100Record?: IM100Record; // IM100 기록 (단일 선택)
   swimClasses?: SwimClass[]; // 수영 수업 시간 (정보 전용 — 초대 참고)
+  // 항목별 공개여부 (Figma 117:2556). undefined=기본값으로 해석:
+  // 기간/영법/IM100=공개, 자격증=비공개. 공개일 때만 다른 사용자에게 노출.
+  showServiceYears?: boolean;
+  showStrokes?: boolean;
+  showCerts?: boolean;
+  showIm100?: boolean;
   createdAt: string;
 }
+
+/** 항목별 공개여부 기본값 (undefined 해석 — Figma 117:2556) */
+export const PROFILE_VIS_DEFAULT = {
+  showServiceYears: true,
+  showStrokes: true,
+  showCerts: false,
+  showIm100: true,
+} as const;
 
 interface ProfileState {
   profile: UserProfile | null;
