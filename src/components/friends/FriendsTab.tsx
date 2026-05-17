@@ -6,7 +6,7 @@
 
 import React from 'react';
 import {
-  View, Text, StyleSheet, Pressable, ScrollView, TextInput, Dimensions,
+  View, Text, StyleSheet, Pressable, ScrollView, TextInput, Dimensions, Image,
 } from 'react-native';
 import { XCircle, Plus, User } from 'lucide-react-native';
 import IconChevronDown from '@assets/icons/chevron-down.svg';
@@ -21,6 +21,7 @@ import { WeekCalendar } from '@/components/calendar/WeekCalendar';
 import { useFriends, type FriendRequest } from '@/store/friends';
 import { useSwimSchedules, dateKey } from '@/store/swimSchedule';
 import { useAddScheduleIntent } from '@/store/addScheduleIntent';
+import { usePools } from '@/hooks/usePools';
 import { tokens } from '@/styles/tokens';
 
 const DOW = ['일', '월', '화', '수', '목', '금', '토'];
@@ -43,7 +44,7 @@ interface FriendSlot {
   date: string;
   start: string;
   end: string;
-  names: string[];
+  participants: { name: string; avatar: AvatarId }[];
 }
 
 export function FriendsTab() {
@@ -53,6 +54,9 @@ export function FriendsTab() {
   const friends = useFriends((s) => s.friends);
   const mySchedules = useSwimSchedules((s) => s.schedules);
   const setIntent = useAddScheduleIntent((s) => s.setIntent);
+  const { data: pools } = usePools();
+  const poolPhoto = (id: string) =>
+    pools?.find((p) => p.id === id)?.photoUrl;
 
   const [rejectTarget, setRejectTarget] = React.useState<FriendRequest | null>(
     null,
@@ -83,11 +87,13 @@ export function FriendsTab() {
           date: o.date,
           start: o.start,
           end: o.end,
-          names: [],
+          participants: [],
         };
         m.set(key, g);
       }
-      if (!g.names.includes(o.name)) g.names.push(o.name);
+      if (!g.participants.some((p) => p.name === o.name)) {
+        g.participants.push({ name: o.name, avatar: o.avatar });
+      }
     }
     return [...m.values()].sort(
       (a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start),
@@ -227,7 +233,9 @@ export function FriendsTab() {
           />
           <View style={styles.list}>
             {daySlots.length > 0 ? (
-              daySlots.map((s) => (
+              daySlots.map((s) => {
+                const photo = poolPhoto(s.poolId);
+                return (
                 <View key={s.key} style={styles.schedCard}>
                   <View style={styles.schedTop}>
                     <View style={styles.schedInfo}>
@@ -256,27 +264,39 @@ export function FriendsTab() {
                         <Plus size={12} color={tokens.color.pdBlue} strokeWidth={2.4} />
                       </Pressable>
                     </View>
-                    <View style={styles.schedThumb} />
+                    {photo ? (
+                      <Image source={photo} style={styles.schedThumb} />
+                    ) : (
+                      <View style={styles.schedThumb} />
+                    )}
                   </View>
                   <View style={styles.schedDivider} />
                   <View style={styles.schedFriends}>
-                    {s.names.map((n, i) => (
-                      <View key={i} style={styles.miniRow}>
-                        <View style={styles.miniAvatar}>
-                          <User
-                            size={12}
-                            color={tokens.color.ink400}
-                            strokeWidth={2}
-                          />
+                    {s.participants.map((p, i) => {
+                      const Bundle = BUNDLE_AVATARS[p.avatar];
+                      return (
+                        <View key={i} style={styles.miniRow}>
+                          <View style={styles.miniAvatar}>
+                            {Bundle ? (
+                              <Bundle width={22} height={22} />
+                            ) : (
+                              <User
+                                size={12}
+                                color={tokens.color.ink400}
+                                strokeWidth={2}
+                              />
+                            )}
+                          </View>
+                          <Text style={styles.miniName} numberOfLines={1}>
+                            {p.name}
+                          </Text>
                         </View>
-                        <Text style={styles.miniName} numberOfLines={1}>
-                          {n}
-                        </Text>
-                      </View>
-                    ))}
+                      );
+                    })}
                   </View>
                 </View>
-              ))
+                );
+              })
             ) : (
               <Text style={styles.empty}>
                 선택한 날짜에 친구들의 수영 일정이 없습니다.
@@ -601,6 +621,7 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 6,
     backgroundColor: '#E2E8F0',
+    overflow: 'hidden',
   },
   schedDivider: { height: 1, backgroundColor: tokens.color.lineDefault },
   schedFriends: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
