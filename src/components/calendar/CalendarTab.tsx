@@ -6,7 +6,7 @@
 
 import React from 'react';
 import {
-  View, Text, StyleSheet, Pressable, ScrollView, Image, Alert,
+  View, Text, StyleSheet, Pressable, ScrollView, Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -27,6 +27,7 @@ import { tokens } from '@/styles/tokens';
 import IconSwim from '@assets/icons/swim.svg';
 import { WeekCalendar } from './WeekCalendar';
 import { AddScheduleSheet } from './AddScheduleSheet';
+import { ConfirmScheduleModal } from './ConfirmScheduleModal';
 import { OptionSheet, type Option } from '@/components/ui/OptionSheet';
 
 const DOW_KR = ['일', '월', '화', '수', '목', '금', '토'];
@@ -123,19 +124,12 @@ export function CalendarTab() {
     return d;
   }, []);
 
-  const onCancel = (id: string) => {
-    Alert.alert('수영 취소', '이 수영 일정을 취소할까요?', [
-      { text: '닫기', style: 'cancel' },
-      { text: '취소하기', style: 'destructive', onPress: () => remove(id) },
-    ]);
-  };
-
-  const onDeletePast = (id: string) => {
-    Alert.alert('일정 삭제', '이 지난 수영 일정을 삭제할까요?', [
-      { text: '닫기', style: 'cancel' },
-      { text: '삭제하기', style: 'destructive', onPress: () => remove(id) },
-    ]);
-  };
+  // 삭제/취소 확인 모달 (Figma 169:6029) — kind로 문구만 다름
+  const [confirm, setConfirm] = React.useState<
+    { kind: 'cancel' | 'delete'; id: string } | null
+  >(null);
+  const onCancel = (id: string) => setConfirm({ kind: 'cancel', id });
+  const onDeletePast = (id: string) => setConfirm({ kind: 'delete', id });
 
   return (
     <View style={styles.root}>
@@ -418,6 +412,31 @@ export function CalendarTab() {
           if (v === 'complete') setCompleted(pastEditId, true);
           else onDeletePast(pastEditId);
         }}
+      />
+
+      {/* 삭제(지난)/취소(예정) 확인 — Figma 169:6029 */}
+      <ConfirmScheduleModal
+        visible={confirm !== null}
+        title={confirm?.kind === 'cancel' ? '수영 일정 취소' : '수영 일정 삭제'}
+        desc={
+          confirm?.kind === 'cancel'
+            ? '수영 일정을 취소하겠습니까?'
+            : '수영 일정을 삭제하겠습니까?'
+        }
+        primaryLabel={
+          confirm?.kind === 'cancel' ? '네, 취소합니다' : '네, 삭제합니다'
+        }
+        secondaryLabel={
+          confirm?.kind === 'cancel'
+            ? '아니요. 취소하지 않습니다.'
+            : '아니요. 삭제하지 않습니다.'
+        }
+        onPrimary={() => {
+          if (confirm) remove(confirm.id);
+          setConfirm(null);
+        }}
+        onSecondary={() => setConfirm(null)}
+        onClose={() => setConfirm(null)}
       />
     </View>
   );
