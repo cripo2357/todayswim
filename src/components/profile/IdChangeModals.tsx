@@ -4,9 +4,9 @@
 
 import React from 'react';
 import { Modal, View, Text, Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
-import { Mail } from 'lucide-react-native';
 import { tokens } from '@/styles/tokens';
 import IconIdBadge from '@assets/icons/id-badge.svg';
+import IconIdChangeBlue from '@assets/icons/id-change-blue.svg';
 import IllustConfused from '@assets/illustrations/confused-password.svg';
 import IllustIdDone from '@assets/illustrations/id-change-done.svg';
 
@@ -71,7 +71,7 @@ export function IdChangeModal({
             accessibilityRole="button"
             accessibilityLabel="ID를 변경합니다"
           >
-            <Mail size={20} color={tokens.color.pdBlue} strokeWidth={2} />
+            <IconIdChangeBlue width={20} height={20} />
             <Text style={styles.linkLabel}>ID를 변경합니다.</Text>
           </Pressable>
         </View>
