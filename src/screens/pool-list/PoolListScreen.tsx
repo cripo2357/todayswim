@@ -177,7 +177,10 @@ export function PoolListScreen() {
   const onPressMap = (pool: Pool) => {
     // 풀 선택 + 지도에서 해당 풀로 카메라 이동 요청 → MapScreen이 focus 시 consume.
     selectAndFocus(pool.id);
-    navigation.navigate('MapMain');
+    // 위계: Map=1depth(루트), 수영장 목록=2depth. '지도에서 보기'는 루트
+    // Map으로 복귀하며 그 위 스택(목록 등) 제거 → 뒤로가기 시 목록으로
+    // 되돌아오지 않음. (Splash가 replace('MapMain')라 MapMain이 스택 루트)
+    navigation.popToTop();
   };
 
   const onPressSchedule = (pool: Pool) => {
