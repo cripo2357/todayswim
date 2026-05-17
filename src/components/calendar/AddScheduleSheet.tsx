@@ -760,9 +760,11 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 9999,
   },
-  // Figma I147:5330;5544:288 — Medium 16/22 -0.112 #4B5563
+  // Figma 163:10814 — Medium 16/22 -0.112 #4B5563.
+  // flexShrink만(=콘텐츠 너비, 길면 말줄임) → 하트가 텍스트 바로 옆에
+  // 붙음(맨 오른쪽 끝 아님). Figma 163:10807: [이름] gap [하트].
   poolItemText: {
-    flex: 1,
+    flexShrink: 1,
     fontSize: 16,
     lineHeight: 22,
     letterSpacing: -0.112,
