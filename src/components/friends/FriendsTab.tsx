@@ -6,9 +6,8 @@
 
 import React from 'react';
 import {
-  View, Text, StyleSheet, Pressable, ScrollView, TextInput, Modal,
+  View, Text, StyleSheet, Pressable, ScrollView, TextInput, Dimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { XCircle, Plus, User } from 'lucide-react-native';
 import IconChevronDown from '@assets/icons/chevron-down.svg';
 import IconUserDouble from '@assets/icons/user-double.svg';
@@ -25,6 +24,7 @@ import { useAddScheduleIntent } from '@/store/addScheduleIntent';
 import { tokens } from '@/styles/tokens';
 
 const DOW = ['일', '월', '화', '수', '목', '금', '토'];
+const SCREEN_H = Dimensions.get('window').height;
 
 /** "YYYY-MM-DD","HH:MM" → "YYYY년 M월 D일(요일), 오전/오후 H:MM" */
 function formatWhen(date: string, start: string): string {
@@ -104,10 +104,21 @@ export function FriendsTab() {
   const dayKey = dateKey(selectedDate);
   const daySlots = allFriendSlots.filter((s) => s.date === dayKey);
 
-  // ── 친구 목록 검색 (상단 고정 Modal — 키보드 비가림) ──
+  // ── 친구 목록 검색 — 열면 친구목록을 상단으로 스크롤 후 그 자리에 float ──
+  const scrollRef = React.useRef<ScrollView>(null);
+  const [sectionY, setSectionY] = React.useState(0); // 친구목록 섹션 y(스크롤 콘텐츠 기준)
+  const [triggerY, setTriggerY] = React.useState(0); // 트리거 y(섹션 기준)
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [draft, setDraft] = React.useState('');
   const [query, setQuery] = React.useState('');
+
+  const openSearch = () => {
+    setSearchOpen(true);
+    // 스페이서가 렌더된 다음 프레임에 섹션을 화면 상단으로
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ y: sectionY, animated: true });
+    });
+  };
 
   const draftQ = draft.trim().toLowerCase();
   const dropdownFriends = draftQ
@@ -136,9 +147,11 @@ export function FriendsTab() {
   return (
     <>
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        scrollEnabled={!searchOpen}
       >
         {/* ── 새 친구 ── */}
         <View style={styles.section}>
@@ -273,10 +286,14 @@ export function FriendsTab() {
         </View>
 
         {/* ── 친구 목록 ── */}
-        <View style={styles.section}>
+        <View
+          style={styles.section}
+          onLayout={(e) => setSectionY(e.nativeEvent.layout.y)}
+        >
           <Text style={styles.sectionTitle}>친구 목록 ({friends.length})</Text>
+          <View onLayout={(e) => setTriggerY(e.nativeEvent.layout.y)}>
           <Pressable
-            onPress={() => setSearchOpen(true)}
+            onPress={openSearch}
             style={styles.searchTrigger}
             accessibilityRole="button"
             accessibilityLabel="닉네임으로 친구 검색"
@@ -292,6 +309,7 @@ export function FriendsTab() {
             </Text>
             <IconChevronDown width={20} height={20} />
           </Pressable>
+          </View>
 
           <View style={styles.list}>
             {listFriends.map((f) => (
@@ -323,87 +341,84 @@ export function FriendsTab() {
             ) : null}
           </View>
 
-        </View>
-      </ScrollView>
-
-      {/* 친구 검색 — 상단 고정 Modal(키보드는 하단이라 안 가림, elevation/스택 무관) */}
-      <Modal
-        visible={searchOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setSearchOpen(false)}
-      >
-        <View style={styles.searchModalRoot}>
-          <Pressable
-            style={StyleSheet.absoluteFill}
-            onPress={() => setSearchOpen(false)}
-            accessibilityRole="button"
-            accessibilityLabel="친구 검색 닫기"
-          />
-          <SafeAreaView edges={['top']} style={styles.searchModalSafe}>
-            <View style={styles.searchPanel}>
-              <View style={styles.searchPill}>
-                <View style={styles.searchInputWrap}>
-                  <TextInput
-                    autoFocus
-                    value={draft}
-                    onChangeText={setDraft}
-                    onSubmitEditing={() => {
-                      setQuery(draft.trim());
-                      setSearchOpen(false);
-                    }}
-                    returnKeyType="search"
-                    style={styles.searchInput}
-                  />
-                  {draft.length === 0 ? (
-                    <Text style={styles.searchPlaceholder} pointerEvents="none">
-                      닉네임
-                    </Text>
+          {/* 검색 float — 트리거 위치 anchor. 열 때 친구목록을 화면
+              상단으로 스크롤(+하단 스페이서) → 키보드(하단)에 안 가림. */}
+          {searchOpen ? (
+            <>
+              <Pressable
+                style={styles.searchBackdrop}
+                onPress={() => setSearchOpen(false)}
+                accessibilityRole="button"
+                accessibilityLabel="친구 검색 닫기"
+              />
+              <View style={[styles.searchPanel, { top: triggerY }]}>
+                <View style={styles.searchPill}>
+                  <View style={styles.searchInputWrap}>
+                    <TextInput
+                      autoFocus
+                      value={draft}
+                      onChangeText={setDraft}
+                      onSubmitEditing={() => {
+                        setQuery(draft.trim());
+                        setSearchOpen(false);
+                      }}
+                      returnKeyType="search"
+                      style={styles.searchInput}
+                    />
+                    {draft.length === 0 ? (
+                      <Text style={styles.searchPlaceholder} pointerEvents="none">
+                        닉네임
+                      </Text>
+                    ) : null}
+                  </View>
+                  {draft.length > 0 ? (
+                    <Pressable
+                      onPress={() => setDraft('')}
+                      hitSlop={8}
+                      accessibilityRole="button"
+                      accessibilityLabel="검색어 지우기"
+                    >
+                      <XCircle size={20} color="#94A3B8" strokeWidth={2} />
+                    </Pressable>
                   ) : null}
                 </View>
-                {draft.length > 0 ? (
-                  <Pressable
-                    onPress={() => setDraft('')}
-                    hitSlop={8}
-                    accessibilityRole="button"
-                    accessibilityLabel="검색어 지우기"
-                  >
-                    <XCircle size={20} color="#94A3B8" strokeWidth={2} />
-                  </Pressable>
-                ) : null}
+                <ScrollView
+                  style={styles.searchList}
+                  contentContainerStyle={styles.searchListContent}
+                  nestedScrollEnabled
+                  keyboardShouldPersistTaps="always"
+                >
+                  {dropdownFriends.map((f) => (
+                    <Pressable
+                      key={f.id}
+                      style={styles.searchItem}
+                      onPress={() => {
+                        setQuery(f.name);
+                        setDraft(f.name);
+                        setSearchOpen(false);
+                      }}
+                    >
+                      <Avatar size={32} avatarId={f.avatar} />
+                      <Text style={styles.searchItemName} numberOfLines={1}>
+                        {f.name}
+                      </Text>
+                      <Text style={styles.searchItemSub} numberOfLines={1}>
+                        {f.status}
+                      </Text>
+                    </Pressable>
+                  ))}
+                  {dropdownFriends.length === 0 ? (
+                    <Text style={styles.empty}>검색 결과가 없어요.</Text>
+                  ) : null}
+                </ScrollView>
               </View>
-              <ScrollView
-                style={styles.searchList}
-                contentContainerStyle={styles.searchListContent}
-                keyboardShouldPersistTaps="always"
-              >
-                {dropdownFriends.map((f) => (
-                  <Pressable
-                    key={f.id}
-                    style={styles.searchItem}
-                    onPress={() => {
-                      setQuery(f.name);
-                      setDraft(f.name);
-                      setSearchOpen(false);
-                    }}
-                  >
-                    <Avatar size={32} avatarId={f.avatar} />
-                    <Text style={styles.searchItemName} numberOfLines={1}>
-                      {f.name}
-                    </Text>
-                    <Text style={styles.searchItemSub} numberOfLines={1}>
-                      {f.status}
-                    </Text>
-                  </Pressable>
-                ))}
-                {dropdownFriends.length === 0 ? (
-                  <Text style={styles.empty}>검색 결과가 없어요.</Text>
-                ) : null}
-              </ScrollView>
-            </View>
-          </SafeAreaView>
+            </>
+          ) : null}
         </View>
-      </Modal>
+
+        {/* 검색 중에만: 마지막 섹션을 화면 상단까지 끌어올리기 위한 스페이서 */}
+        {searchOpen ? <View style={{ height: SCREEN_H }} /> : null}
+      </ScrollView>
 
       <RejectFriendModal
         visible={rejectTarget !== null}
@@ -433,13 +448,9 @@ function Avatar({ size, avatarId }: { size: number; avatarId?: AvatarId }) {
   );
 }
 
-const SHADOW_MD = {
-  shadowColor: '#0F172A',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.06,
-  shadowRadius: 8,
-  elevation: 2,
-} as const;
+// RN 0.83 boxShadow(Shadow/md) — elevation 미사용. float 패널이 카드 위에
+// 정상 표시되도록(Android elevation 스택 회피) + 레거시 shadow* 제거.
+const SHADOW_MD = { ...tokens.shadow.md } as const;
 
 const styles = StyleSheet.create({
   scroll: { padding: 16, gap: 32 },
@@ -641,17 +652,12 @@ const styles = StyleSheet.create({
     color: '#1F2937',
   },
   searchTriggerPlaceholder: { color: '#4B5563' },
-  // 상단 고정 검색 Modal — dim 배경 + 안전영역, 패널은 위쪽에
-  searchModalRoot: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.4)',
-  },
-  searchModalSafe: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
+  // 섹션 내 absolute float (트리거 y에 anchor). 섹션 position:relative.
+  searchBackdrop: { ...StyleSheet.absoluteFillObject },
   searchPanel: {
-    marginTop: 8,
+    position: 'absolute',
+    left: 0,
+    right: 0,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     borderRadius: 14,
