@@ -45,6 +45,8 @@ import IconMegaphone from '@assets/icons/settings/megaphone.svg';
 import IconQuestion from '@assets/icons/settings/question.svg';
 import IconGavel from '@assets/icons/settings/gavel.svg';
 import IconPerson from '@assets/icons/settings/person.svg';
+import IconUsers from '@assets/icons/settings/users.svg';
+import IconHandHeart from '@assets/icons/settings/hand-heart.svg';
 import IconMapPin from '@assets/icons/settings/map-pin.svg';
 
 const FEEDBACK_EMAIL = 'cripo2357@gmail.com';
@@ -201,7 +203,7 @@ export function SettingsScreen() {
             onPress={() => setViewSheet(true)}
           />
           <Row
-            icon={<IconPerson width={24} height={24} />}
+            icon={<IconHandHeart width={24} height={24} />}
             label="친구 신청 받기"
             value={friendReqValue(friendReq, profile?.id ?? '')}
             onPress={() => setFriendReqSheet(true)}
@@ -242,7 +244,7 @@ export function SettingsScreen() {
             onPress={() => navigation.navigate('MapStartLocation')}
           />
           <Row
-            icon={<IconPerson width={24} height={24} />}
+            icon={<IconUsers width={24} height={24} />}
             label="수영 예정 친구 보기"
             value={MAP_FRIEND_VALUE[mapFriendVal]}
             onPress={() => setMapFriendSheet(true)}
