@@ -87,12 +87,14 @@ const FRIEND_REQ_VALUE: Record<Exclude<FriendRequest, 'id'>, string> = {
   nickname: '닉네임 아는 사람에게만',
   all: '모든 사람에게',
 };
-/** 행 우측 표시값 — 'id'는 내 계정 ID 포함 동적 문구 */
-function friendReqValue(v: FriendRequest, id?: string): string {
+/**
+ * 행 우측 표시값 — 'id'는 내 계정 ID 포함 문구.
+ * ID는 시스템이 계정 생성 시 발급(+기존 계정 hydrate 백필)하는 불변값이라
+ * 항상 존재 → 별도 없음 처리 분기 두지 않음.
+ */
+function friendReqValue(v: FriendRequest, id: string): string {
   if (v !== 'id') return FRIEND_REQ_VALUE[v];
-  return id
-    ? `내 ID(${id}) 아는 사람에게만 받기`
-    : '내 ID 아는 사람에게만 받기';
+  return `내 ID(${id}) 아는 사람에게만 받기`;
 }
 // 나이 공개 (Figma 129:6006) — 선택 옵션
 const AGE_VIS_OPTIONS: Option<AgeVisibility>[] = [
@@ -219,7 +221,7 @@ export function SettingsScreen() {
           <Row
             icon={<IconPerson width={24} height={24} />}
             label="친구 신청"
-            value={friendReqValue(friendReq, profile?.id)}
+            value={friendReqValue(friendReq, profile?.id ?? '')}
             onPress={() => setFriendReqSheet(true)}
           />
           <Row
