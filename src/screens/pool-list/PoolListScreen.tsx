@@ -803,6 +803,9 @@ const styles = StyleSheet.create({
     letterSpacing: -0.084,
     fontFamily: tokens.font.sans,
     color: '#1F2937',
+    // 행 높이를 아이콘(20)과 동일하게 — Android 폰트패딩이 행을 키워
+    // chip(고정 20)보다 커지면 bottom:'100%' 툴팁이 더 위로 떠 간격 불일치.
+    includeFontPadding: false,
   },
 
   chipGroup: {
