@@ -32,6 +32,7 @@ import { useSelection } from '@/store/selection';
 import { usePoolFilter, isFilterActive, filterPools } from '@/store/poolFilter';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useProfile } from '@/store/profile';
+import { useNotifications } from '@/store/notifications';
 import { BUNDLE_AVATARS, isBundleAvatar } from '@/lib/avatars';
 import { tokens } from '@/styles/tokens';
 
@@ -106,6 +107,8 @@ function LocationProfileMarker({ photoUri }: { photoUri: string }) {
 export function MapScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const profile = useProfile((s) => s.profile);
+  // 미열람 메시지 카운터 — 로그인(프로필) 시에만 의미. Figma 90:5963
+  const unread = useNotifications((s) => s.unread);
   const mapRef = React.useRef<NaverMapViewRef | null>(null);
   const insets = useSafeAreaInsets();
 
@@ -495,21 +498,31 @@ export function MapScreen() {
         >
           <IconLocate width={20} height={20} />
         </Pressable>
-        <Pressable
-          onPress={() => {
-            // 로그인(프로필 있음) → 내 정보, 비로그인 → Login.
-            navigation.navigate(profile ? 'MyInfo' : 'Login');
-          }}
-          style={[
-            styles.fab,
-            styles.fabRound,
-            profile?.photoUri ? styles.fabAvatar : null,
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel={profile ? '내 프로필' : '프로필 / 로그인'}
-        >
-          <ProfileFabContent photoUri={profile?.photoUri} />
-        </Pressable>
+        <View style={styles.profileFabWrap}>
+          <Pressable
+            onPress={() => {
+              // 로그인(프로필 있음) → 내 정보, 비로그인 → Login.
+              navigation.navigate(profile ? 'MyInfo' : 'Login');
+            }}
+            style={[
+              styles.fab,
+              styles.fabRound,
+              profile?.photoUri ? styles.fabAvatar : null,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel={profile ? '내 프로필' : '프로필 / 로그인'}
+          >
+            <ProfileFabContent photoUri={profile?.photoUri} />
+          </Pressable>
+          {/* 미열람 메시지 카운터 — 로그인 + 1+ 일 때만 (Figma 90:5963) */}
+          {profile && unread > 0 ? (
+            <View style={styles.unreadBadge} pointerEvents="none">
+              <Text style={styles.unreadText}>
+                {unread > 99 ? '99+' : unread}
+              </Text>
+            </View>
+          ) : null}
+        </View>
       </View>
 
       {/* 하단 영역 — 풀 선택 시 카드, 선택 X면 "수영장 목록" 버튼 (Figma 101:1943) */}
@@ -564,6 +577,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...(Platform.OS === 'ios' ? tokens.shadow.md : { elevation: 4 }),
+  },
+  // 프로필 FAB + 미열람 배지 래퍼 (배지가 FAB overflow에 안 잘리게 분리)
+  profileFabWrap: { position: 'relative' },
+  // Figma 90:5963 — 빨강 카운터 배지, FAB 우상단 모서리 겹침
+  unreadBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    paddingHorizontal: 5,
+    backgroundColor: tokens.color.red,
+    borderWidth: 1.5,
+    borderColor: tokens.color.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  unreadText: {
+    fontSize: 11,
+    lineHeight: 14,
+    fontFamily: tokens.font.sansBold,
+    color: tokens.color.white,
+    textAlign: 'center',
   },
   // 로그인 시 — 아바타가 44원을 꽉 채우고 ink900 배경이 비치지 않게.
   // Figma 116:2822 — 아바타들과 동일하게 byellow 외곽선.

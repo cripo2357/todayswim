@@ -305,9 +305,11 @@ export function SettingsScreen() {
 
       <ConfirmLogoutModal
         visible={logoutOpen}
-        onConfirm={() => {
+        onConfirm={async () => {
           setLogoutOpen(false);
-          signOut();
+          await signOut();
+          // 로그아웃 처리 후 맵으로 (스택 리셋 — 뒤로가기로 설정 복귀 방지)
+          navigation.reset({ index: 0, routes: [{ name: 'MapMain' }] });
         }}
         onClose={() => setLogoutOpen(false)}
       />
