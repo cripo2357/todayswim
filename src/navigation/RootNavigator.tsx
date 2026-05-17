@@ -21,6 +21,7 @@ import { MyInfoScreen } from '@/screens/auth/MyInfoScreen';
 import { SettingsScreen } from '@/screens/settings/SettingsScreen';
 import { ProfileScreen } from '@/screens/auth/ProfileScreen';
 import { SwimClassRegisterScreen } from '@/screens/profile/SwimClassRegisterScreen';
+import { OtherUserProfileScreen } from '@/screens/profile/OtherUserProfileScreen';
 import { InviteFriendsScreen } from '@/screens/invite/InviteFriendsScreen';
 import { InviteDoneScreen } from '@/screens/invite/InviteDoneScreen';
 import { WelcomeScreen } from '@/screens/auth/WelcomeScreen';
@@ -106,6 +107,11 @@ export function RootNavigator() {
       <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="SwimClassRegister" component={SwimClassRegisterScreen} />
+      <Stack.Screen
+        name="OtherUserProfile"
+        component={OtherUserProfileScreen}
+        options={DIM_MODAL_OPTIONS}
+      />
       <Stack.Screen
         name="InviteFriends"
         component={InviteFriendsScreen}

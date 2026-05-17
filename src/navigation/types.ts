@@ -28,6 +28,10 @@ export type RootStackParamList = {
   // 수영 수업 시간 등록 (프로필 > 수영 수업 > 수업 시간 추가). Figma 90:6622
   SwimClassRegister: undefined;
 
+  // 다른 사용자 프로필 (다양한 화면에서 사용자 아바타/이름 탭 → 진입).
+  // Figma 172:9735/11530/12010/10725 — dim 모달 카드. 4상태+차단/삭제.
+  OtherUserProfile: { userId: string };
+
   // 친구 초대 (일정 확정 → 초대 대상만 추가). Figma 150:8692 / 154:3850 / 129:3779
   InviteFriends: {
     poolId: string;
