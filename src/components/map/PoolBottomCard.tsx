@@ -211,8 +211,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   // Figma 93:10604 — width 153, gap-4 between text lines.
-  // zIndex 1: 섬네일(Image, 뒤 형제)보다 위로 페인트 → 즐겨찾기 아래툴팁
-  // (textCol 안, 아래로 뻗어 섬네일과 겹침)이 섬네일 위에 보이도록.
+  // zIndex 1: 섬네일(Image, 뒤 형제)보다 위로 페인트 → textCol 안 툴팁이
+  // 섬네일과 겹쳐도 위에 보이도록 하는 안전장치.
   textCol: { flex: 1, gap: 4, zIndex: 1 },
   // Figma 93:10610 — image 1:1, radius 6, self-stretch (텍스트 4줄 높이 ≈ 80px)
   photo: {
