@@ -142,13 +142,17 @@ export function FriendsTab() {
   };
 
   const draftQ = draft.trim().toLowerCase();
-  const dropdownFriends = draftQ
-    ? friends.filter(
-        (f) =>
-          f.nickname.toLowerCase().includes(draftQ) ||
-          f.name.toLowerCase().includes(draftQ),
-      )
-    : friends;
+  // 드롭다운 친구 목록도 항상 이름 가나다순 (목록과 동일 기준).
+  const dropdownFriends = React.useMemo(() => {
+    const base = draftQ
+      ? friends.filter(
+          (f) =>
+            f.nickname.toLowerCase().includes(draftQ) ||
+            f.name.toLowerCase().includes(draftQ),
+        )
+      : friends;
+    return [...base].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+  }, [draftQ, friends]);
   const committedQ = query.trim().toLowerCase();
   // 친구 목록은 항상 이름 가나다순 (검색 필터 후에도 동일).
   const listFriends = React.useMemo(() => {
