@@ -196,7 +196,11 @@ export function OtherUserProfileScreen() {
                 </View>
                 <View style={[styles.stat, styles.statDivider]}>
                   <CalendarCheck size={24} color={tokens.color.pdMint} strokeWidth={2} />
-                  <Text style={styles.statValue}>{profile.serviceYears}년</Text>
+                  <Text style={styles.statValue}>
+                    {profile.showServiceYears
+                      ? `${profile.serviceYears}년`
+                      : '비공개'}
+                  </Text>
                   <Text style={styles.statLabel}>수영 기간</Text>
                 </View>
                 <View style={styles.stat}>

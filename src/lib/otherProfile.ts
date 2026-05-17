@@ -37,6 +37,12 @@ export interface OtherProfile {
   /** 주 평균 수영시간(H, 소수1). 가입 32일 미만이면 null(게이트). */
   weeklyAvgHours: number | null;
   friendCount: number; // 수영 친구 수
+  // 항목별 공개여부 (소유자 설정 — Figma 117:2556). 공개일 때만 노출.
+  // Phase1: 목업 사용자는 결정적 해시로 시뮬레이션(실서비스=백엔드 prefs).
+  showServiceYears: boolean;
+  showStrokes: boolean;
+  showCerts: boolean;
+  showIm100: boolean;
 }
 
 /**
@@ -77,6 +83,12 @@ export function getOtherProfile(userId: string): OtherProfile | null {
   const serviceYears = Math.floor(serviceDays / 365);
   const friendCount = 30 + (h % 12970);
 
+  // 결정적 공개여부 (대체로 공개, 일부 비공개 — Phase1 시뮬레이션)
+  const showServiceYears = hash(userId + 'vy') % 4 !== 0;
+  const showStrokes = hash(userId + 'vs') % 5 !== 0;
+  const showCerts = hash(userId + 'vc') % 3 === 0;
+  const showIm100 = hash(userId + 'vi') % 4 !== 0;
+
   return {
     id: acc.id,
     name: acc.name,
@@ -90,6 +102,10 @@ export function getOtherProfile(userId: string): OtherProfile | null {
     serviceYears,
     weeklyAvgHours: weeklyAvgHours(userId, serviceDays),
     friendCount,
+    showServiceYears,
+    showStrokes,
+    showCerts,
+    showIm100,
   };
 }
 
@@ -98,11 +114,13 @@ export function getOtherProfile(userId: string): OtherProfile | null {
  * 가능 영법을 노출(스펙).
  */
 export function profileLabels(p: OtherProfile): string[] {
-  const hasCertOrIm = p.certifications.length > 0 || !!p.im100;
-  if (hasCertOrIm) {
-    return [...p.certifications, ...(p.im100 ? [p.im100] : [])];
+  // 공개 설정된 것만 노출
+  const certs = p.showCerts ? p.certifications : [];
+  const im100 = p.showIm100 ? p.im100 : undefined;
+  if (certs.length > 0 || im100) {
+    return [...certs, ...(im100 ? [im100] : [])];
   }
-  return p.strokes;
+  return p.showStrokes ? p.strokes : [];
 }
 
 /** "주 X.XH" — 게이트면 "—" */
