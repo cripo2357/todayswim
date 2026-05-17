@@ -1,7 +1,6 @@
 // 수영장 즐겨찾기 하트 (Figma 90:5963 / 163:10650 / 147:5326).
-// 등록=채워진 하트 / 해제=외곽선 하트. 탭하면 토글 + 툴팁:
-//   "즐겨찾기 등록" → 위툴팁(하트 위, Figma 171:6758)
-//   "즐겨찾기 해제" → 아래툴팁(하트 아래, Figma 171:6779)
+// 등록=채워진 하트 / 해제=외곽선 하트. 탭하면 토글 + 하트 위 위툴팁
+// ("즐겨찾기 등록" / "즐겨찾기 해제", Figma 171:6758) — 등록·해제 동일.
 // 유지 5초, 새 툴팁 노출 시 기존(다른 하트 포함) 즉시 숨김.
 
 import React from 'react';
@@ -55,21 +54,9 @@ export function FavoriteHeart({
       accessibilityState={{ selected: isFav }}
       style={[styles.wrap, { width: size, height: size }, style]}
     >
-      {/* 등록 → 위툴팁(하트 위) / 해제 → 아래툴팁(하트 아래) */}
+      {/* 위툴팁 — 등록/해제 동일, 버블이 하트 위 */}
       {tip ? (
-        tip === '즐겨찾기 등록' ? (
-          <Tooltip
-            label={tip}
-            placement="top"
-            style={[styles.tooltipTop, { left: size / 2 }]}
-          />
-        ) : (
-          <Tooltip
-            label={tip}
-            placement="bottom"
-            style={[styles.tooltipBottom, { left: size / 2 }]}
-          />
-        )
+        <Tooltip label={tip} style={[styles.tooltip, { left: size / 2 }]} />
       ) : null}
       {isFav ? (
         <HeartFilled width={size} height={size} />
@@ -86,23 +73,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // 공통 — wrapper width 200 + marginLeft -100 + left=size/2(좁은 부모서
-  // 폭 수렴해 라벨 깨지는 것 방지). zIndex 10. (카드에선 textCol zIndex로
-  // 섬네일 위에 노출)
-  // 위툴팁(등록) — 버블이 하트 위
-  tooltipTop: {
+  // 하트 위 가운데 — wrapper width 200 + marginLeft -100 + left=size/2
+  // (좁은 부모서 폭 수렴해 라벨 깨지는 것 방지). zIndex 10.
+  // (카드에선 textCol zIndex로 섬네일 위에 노출)
+  tooltip: {
     position: 'absolute',
     bottom: '100%',
     marginBottom: 4,
-    marginLeft: -100,
-    width: 200,
-    zIndex: 10,
-  },
-  // 아래툴팁(해제) — 버블이 하트 아래
-  tooltipBottom: {
-    position: 'absolute',
-    top: '100%',
-    marginTop: 4,
     marginLeft: -100,
     width: 200,
     zIndex: 10,
