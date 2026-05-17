@@ -746,7 +746,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 12,
   },
-  textCol: { flex: 1, gap: 4 },
+  // zIndex 1: headerRow에서 섬네일(Image, 뒤 형제)보다 위로 페인트 →
+  // 하트 툴팁(textCol 안, 오른쪽으로 뻗어 섬네일과 겹침)이 섬네일 위에
+  // 보이도록. elevation은 Android halo라 미사용.
+  textCol: { flex: 1, gap: 4, zIndex: 1 },
   // Figma 166:9726 — 이름 + 하트 한 줄(gap 4)
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   nameFlex: { flexShrink: 1 },
