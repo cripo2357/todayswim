@@ -57,6 +57,7 @@ export function FriendsTab() {
   const accept = useFriends((s) => s.accept);
   const reject = useFriends((s) => s.reject);
   const friends = useFriends((s) => s.friends);
+  const blockedIds = useFriends((s) => s.blocked);
   const mySchedules = useSwimSchedules((s) => s.schedules);
   const setIntent = useAddScheduleIntent((s) => s.setIntent);
   const { data: pools } = usePools();
@@ -78,9 +79,11 @@ export function FriendsTab() {
 
   // 친구의 '비공개 아님' 일정 슬롯(중복 참여자 묶음) — 내가 미참여인 것만
   const allFriendSlots = React.useMemo<FriendSlot[]>(() => {
+    const blocked = new Set(blockedIds);
     const m = new Map<string, FriendSlot>();
     for (const o of MOCK_OTHER_SCHEDULES) {
       if (!o.isFriend || o.visibility === 'private') continue;
+      if (blocked.has(o.userId)) continue; // 차단 = 일정에서도 제외
       const key = `${o.poolId}|${o.date}|${o.start}|${o.end}`;
       if (mySlots.has(key)) continue;
       let g = m.get(key);
@@ -107,7 +110,7 @@ export function FriendsTab() {
     return [...m.values()].sort(
       (a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start),
     );
-  }, [mySlots]);
+  }, [mySlots, blockedIds]);
 
   // 기본 선택일 = 가장 이른 친구 일정 날짜(없으면 오늘)
   const [selectedDate, setSelectedDate] = React.useState<Date>(() => {

@@ -33,11 +33,15 @@ export function resolveParticipants(
     'poolId' | 'date' | 'start' | 'end' | 'visibility'
   >,
   viewPref: OthersScheduleView,
+  /** 차단한 사용자 id — 영구·양방향 제외(어떤 일정에도 안 보임). */
+  blockedIds?: readonly string[],
 ): ParticipantGroups {
   if (my.visibility === 'private') return EMPTY;
 
+  const blocked = new Set(blockedIds ?? []);
   const sameSlot = MOCK_OTHER_SCHEDULES.filter(
     (o) =>
+      !blocked.has(o.userId) &&
       o.poolId === my.poolId &&
       o.date === my.date &&
       o.start === my.start &&
