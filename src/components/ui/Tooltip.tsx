@@ -72,7 +72,9 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     textAlign: 'center',
   },
-  // Figma I147:5763;5567:11060 — 아래로 향하는 16x8 흰 삼각형(대상 위에 뜰 때)
+  // Figma I147:5763;5567:11060 — 아래로 향하는 16x8 흰 삼각형(대상 위에 뜰 때).
+  // Figma는 drop-shadow가 버블+꼬리 전체에 적용 → 꼬리에도 shadow.lg 부여
+  // (없으면 흰 꼬리가 흰 배경에 묻혀 안 보이고 여백만 떠 보임).
   arrow: {
     width: 0,
     height: 0,
@@ -82,6 +84,7 @@ const styles = StyleSheet.create({
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
     borderTopColor: '#FFFFFF',
+    ...tokens.shadow.lg,
   },
   // 위로 향하는 삼각형(대상 아래에 뜰 때 — 버블 위에 위치)
   arrowUp: {
@@ -93,6 +96,7 @@ const styles = StyleSheet.create({
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
     borderBottomColor: '#FFFFFF',
+    ...tokens.shadow.lg,
   },
   // 왼쪽으로 향하는 8x16 삼각형 (placement='right' — 대상이 버블 왼쪽)
   arrowLeft: {
@@ -104,6 +108,7 @@ const styles = StyleSheet.create({
     borderTopColor: 'transparent',
     borderBottomColor: 'transparent',
     borderRightColor: '#FFFFFF',
+    ...tokens.shadow.lg,
   },
   // 오른쪽으로 향하는 8x16 삼각형 (placement='left' — 대상이 버블 오른쪽)
   arrowRight: {
@@ -115,5 +120,6 @@ const styles = StyleSheet.create({
     borderTopColor: 'transparent',
     borderBottomColor: 'transparent',
     borderLeftColor: '#FFFFFF',
+    ...tokens.shadow.lg,
   },
 });
