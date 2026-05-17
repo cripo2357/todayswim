@@ -28,6 +28,7 @@ import {
 import { useProfile } from '@/store/profile';
 import { OptionSheet, type Option } from '@/components/ui/OptionSheet';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
+import { ConfirmLogoutModal } from '@/components/settings/ConfirmLogoutModal';
 import { tokens } from '@/styles/tokens';
 import BrandWordmark from '@assets/illustrations/wordmark-poolsday-light.svg';
 import IconProfile from '@assets/icons/settings/profile.svg';
@@ -122,12 +123,8 @@ export function SettingsScreen() {
       ? VIEW_OPTIONS.filter((o) => o.value === 'friends')
       : VIEW_OPTIONS;
 
-  const onLogout = () => {
-    Alert.alert('로그아웃', '로그아웃 하시겠어요?', [
-      { text: '취소', style: 'cancel' },
-      { text: '로그아웃', style: 'destructive', onPress: () => signOut() },
-    ]);
-  };
+  const [logoutOpen, setLogoutOpen] = React.useState(false);
+  const onLogout = () => setLogoutOpen(true);
 
   const sendMail = () => {
     const url = `mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent(
@@ -304,6 +301,15 @@ export function SettingsScreen() {
         options={FRIEND_REQ_OPTIONS}
         value={friendReq}
         onConfirm={(v) => setFriendReq(v)}
+      />
+
+      <ConfirmLogoutModal
+        visible={logoutOpen}
+        onConfirm={() => {
+          setLogoutOpen(false);
+          signOut();
+        }}
+        onClose={() => setLogoutOpen(false)}
       />
     </SafeAreaView>
   );
