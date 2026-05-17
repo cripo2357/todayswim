@@ -67,10 +67,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // 공통 Tooltip 위치 — 하트 오른쪽, 세로 중앙. left:'100%'(하트 오른쪽
-  // 끝) + marginLeft 4(꼬리~하트 gap). 세로 중앙: top:'50%' + 고정
-  // height 48 + marginTop -24 (가로 중앙 trick의 세로 버전 — row+
-  // alignItems center라 버블/꼬리가 48 안에서 세로 중앙). zIndex 10.
+  // 공통 Tooltip 위치 — 하트 오른쪽, 세로 중앙.
+  // width 200 필수: absolute(left:'100%')는 부모(20px)에 폭이 수렴해
+  // 행이 붕괴 → 글자 세로·삼각형 소멸. top/bottom이 쓰던 width:200과
+  // 동일 원리(여기선 가운데 정렬 안 하므로 음수 marginLeft 없음).
+  // 세로 중앙: top:'50%' + height 48 + marginTop -24 (row+alignItems
+  // center라 버블/꼬리가 48 안에서 세로 중앙). zIndex 10.
   // elevation은 Android halo라 미사용.
   tooltip: {
     position: 'absolute',
@@ -79,6 +81,7 @@ const styles = StyleSheet.create({
     top: '50%',
     height: 48,
     marginTop: -24,
+    width: 200,
     zIndex: 10,
   },
 });

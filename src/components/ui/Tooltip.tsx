@@ -43,7 +43,11 @@ export function Tooltip({
       {placement === 'bottom' ? <View style={styles.arrowUp} /> : null}
       {placement === 'right' ? <View style={styles.arrowLeft} /> : null}
       <View style={styles.bubble}>
-        <Text style={styles.text}>{label}</Text>
+        {/* 한 줄 고정(Figma whitespace-nowrap) — left:'100%' 등 폭이
+            0으로 수렴하는 absolute 배치에서 글자가 세로로 쪼개지는 것 방지 */}
+        <Text style={styles.text} numberOfLines={1}>
+          {label}
+        </Text>
       </View>
       {placement === 'top' ? <View style={styles.arrow} /> : null}
       {placement === 'left' ? <View style={styles.arrowRight} /> : null}
