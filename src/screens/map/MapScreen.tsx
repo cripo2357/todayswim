@@ -73,7 +73,7 @@ const ZOOM_DESELECT_LEVELS = 1.0;
 const STACK_PIN_GAP = -7;
 
 // 프로필 스택을 핀 바텀 정렬 기준에서 위로 올리는 양(px). 양수=위로.
-const STACK_LIFT = 5;
+const STACK_LIFT = 9;
 
 // 단순 평면 근사 거리(m). 짧은 거리/한국 위도에선 haversine과 차이 무시 가능.
 function approxDistanceMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
