@@ -6,8 +6,9 @@
 
 import React from 'react';
 import {
-  View, Text, StyleSheet, Pressable, ScrollView, TextInput,
+  View, Text, StyleSheet, Pressable, ScrollView, TextInput, Modal,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { XCircle, Plus, User } from 'lucide-react-native';
 import IconChevronDown from '@assets/icons/chevron-down.svg';
 import IconUserDouble from '@assets/icons/user-double.svg';
@@ -103,11 +104,10 @@ export function FriendsTab() {
   const dayKey = dateKey(selectedDate);
   const daySlots = allFriendSlots.filter((s) => s.date === dayKey);
 
-  // ── 친구 목록 검색 (수영 일정 추가의 풀 검색과 동일 float 패턴) ──
+  // ── 친구 목록 검색 (상단 고정 Modal — 키보드 비가림) ──
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [draft, setDraft] = React.useState('');
   const [query, setQuery] = React.useState('');
-  const [triggerY, setTriggerY] = React.useState(0);
 
   const draftQ = draft.trim().toLowerCase();
   const dropdownFriends = draftQ
@@ -139,7 +139,6 @@ export function FriendsTab() {
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        scrollEnabled={!searchOpen}
       >
         {/* ── 새 친구 ── */}
         <View style={styles.section}>
@@ -276,25 +275,23 @@ export function FriendsTab() {
         {/* ── 친구 목록 ── */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>친구 목록 ({friends.length})</Text>
-          <View onLayout={(e) => setTriggerY(e.nativeEvent.layout.y)}>
-            <Pressable
-              onPress={() => setSearchOpen(true)}
-              style={styles.searchTrigger}
-              accessibilityRole="button"
-              accessibilityLabel="닉네임으로 친구 검색"
+          <Pressable
+            onPress={() => setSearchOpen(true)}
+            style={styles.searchTrigger}
+            accessibilityRole="button"
+            accessibilityLabel="닉네임으로 친구 검색"
+          >
+            <Text
+              style={[
+                styles.searchTriggerText,
+                !query && styles.searchTriggerPlaceholder,
+              ]}
+              numberOfLines={1}
             >
-              <Text
-                style={[
-                  styles.searchTriggerText,
-                  !query && styles.searchTriggerPlaceholder,
-                ]}
-                numberOfLines={1}
-              >
-                {query || '닉네임'}
-              </Text>
-              <IconChevronDown width={20} height={20} />
-            </Pressable>
-          </View>
+              {query || '닉네임'}
+            </Text>
+            <IconChevronDown width={20} height={20} />
+          </Pressable>
 
           <View style={styles.list}>
             {listFriends.map((f) => (
@@ -326,80 +323,87 @@ export function FriendsTab() {
             ) : null}
           </View>
 
-          {/* 검색 float — 섹션 마지막 자식 + absolute(트리거 y) */}
-          {searchOpen ? (
-            <>
-              <Pressable
-                style={styles.searchBackdrop}
-                onPress={() => setSearchOpen(false)}
-                accessibilityRole="button"
-                accessibilityLabel="친구 검색 닫기"
-              />
-              <View style={[styles.searchPanel, { top: triggerY }]}>
-                <View style={styles.searchPill}>
-                  <View style={styles.searchInputWrap}>
-                    <TextInput
-                      autoFocus
-                      value={draft}
-                      onChangeText={setDraft}
-                      onSubmitEditing={() => {
-                        setQuery(draft.trim());
-                        setSearchOpen(false);
-                      }}
-                      returnKeyType="search"
-                      style={styles.searchInput}
-                    />
-                    {draft.length === 0 ? (
-                      <Text style={styles.searchPlaceholder} pointerEvents="none">
-                        닉네임
-                      </Text>
-                    ) : null}
-                  </View>
-                  {draft.length > 0 ? (
-                    <Pressable
-                      onPress={() => setDraft('')}
-                      hitSlop={8}
-                      accessibilityRole="button"
-                      accessibilityLabel="검색어 지우기"
-                    >
-                      <XCircle size={20} color="#94A3B8" strokeWidth={2} />
-                    </Pressable>
-                  ) : null}
-                </View>
-                <ScrollView
-                  style={styles.searchList}
-                  contentContainerStyle={styles.searchListContent}
-                  nestedScrollEnabled
-                  keyboardShouldPersistTaps="always"
-                >
-                  {dropdownFriends.map((f) => (
-                    <Pressable
-                      key={f.id}
-                      style={styles.searchItem}
-                      onPress={() => {
-                        setQuery(f.name);
-                        setDraft(f.name);
-                        setSearchOpen(false);
-                      }}
-                    >
-                      <Avatar size={32} avatarId={f.avatar} />
-                      <Text style={styles.searchItemName} numberOfLines={1}>
-                        {f.name}
-                      </Text>
-                      <Text style={styles.searchItemSub} numberOfLines={1}>
-                        {f.status}
-                      </Text>
-                    </Pressable>
-                  ))}
-                  {dropdownFriends.length === 0 ? (
-                    <Text style={styles.empty}>검색 결과가 없어요.</Text>
-                  ) : null}
-                </ScrollView>
-              </View>
-            </>
-          ) : null}
         </View>
       </ScrollView>
+
+      {/* 친구 검색 — 상단 고정 Modal(키보드는 하단이라 안 가림, elevation/스택 무관) */}
+      <Modal
+        visible={searchOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSearchOpen(false)}
+      >
+        <View style={styles.searchModalRoot}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => setSearchOpen(false)}
+            accessibilityRole="button"
+            accessibilityLabel="친구 검색 닫기"
+          />
+          <SafeAreaView edges={['top']} style={styles.searchModalSafe}>
+            <View style={styles.searchPanel}>
+              <View style={styles.searchPill}>
+                <View style={styles.searchInputWrap}>
+                  <TextInput
+                    autoFocus
+                    value={draft}
+                    onChangeText={setDraft}
+                    onSubmitEditing={() => {
+                      setQuery(draft.trim());
+                      setSearchOpen(false);
+                    }}
+                    returnKeyType="search"
+                    style={styles.searchInput}
+                  />
+                  {draft.length === 0 ? (
+                    <Text style={styles.searchPlaceholder} pointerEvents="none">
+                      닉네임
+                    </Text>
+                  ) : null}
+                </View>
+                {draft.length > 0 ? (
+                  <Pressable
+                    onPress={() => setDraft('')}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel="검색어 지우기"
+                  >
+                    <XCircle size={20} color="#94A3B8" strokeWidth={2} />
+                  </Pressable>
+                ) : null}
+              </View>
+              <ScrollView
+                style={styles.searchList}
+                contentContainerStyle={styles.searchListContent}
+                keyboardShouldPersistTaps="always"
+              >
+                {dropdownFriends.map((f) => (
+                  <Pressable
+                    key={f.id}
+                    style={styles.searchItem}
+                    onPress={() => {
+                      setQuery(f.name);
+                      setDraft(f.name);
+                      setSearchOpen(false);
+                    }}
+                  >
+                    <Avatar size={32} avatarId={f.avatar} />
+                    <Text style={styles.searchItemName} numberOfLines={1}>
+                      {f.name}
+                    </Text>
+                    <Text style={styles.searchItemSub} numberOfLines={1}>
+                      {f.status}
+                    </Text>
+                  </Pressable>
+                ))}
+                {dropdownFriends.length === 0 ? (
+                  <Text style={styles.empty}>검색 결과가 없어요.</Text>
+                ) : null}
+              </ScrollView>
+            </View>
+          </SafeAreaView>
+        </View>
+      </Modal>
 
       <RejectFriendModal
         visible={rejectTarget !== null}
@@ -637,11 +641,17 @@ const styles = StyleSheet.create({
     color: '#1F2937',
   },
   searchTriggerPlaceholder: { color: '#4B5563' },
-  searchBackdrop: { ...StyleSheet.absoluteFillObject },
+  // 상단 고정 검색 Modal — dim 배경 + 안전영역, 패널은 위쪽에
+  searchModalRoot: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+  },
+  searchModalSafe: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
   searchPanel: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
+    marginTop: 8,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     borderRadius: 14,
