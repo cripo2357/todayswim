@@ -62,6 +62,14 @@ export function CalendarTab() {
   const remove = useSwimSchedules((s) => s.remove);
   const setVisibility = useSwimSchedules((s) => s.setVisibility);
   const viewPref = usePrefs((s) => s.othersScheduleView);
+  // 다른 사람 일정 보기가 '친구 일정만'이면 일정 관리 시트에서 '전체 공개' 미노출
+  const manageOptions = React.useMemo(
+    () =>
+      viewPref === 'friends'
+        ? MANAGE_OPTIONS.filter((o) => o.value !== 'public')
+        : MANAGE_OPTIONS,
+    [viewPref],
+  );
   const [date, setDate] = React.useState(new Date());
   const [sheetOpen, setSheetOpen] = React.useState(false);
   // 공개여부 변경 시트 대상 일정 id (null = 닫힘)
@@ -327,7 +335,7 @@ export function CalendarTab() {
         visible={visEditId !== null}
         onClose={() => setVisEditId(null)}
         title="일정 관리"
-        options={MANAGE_OPTIONS}
+        options={manageOptions}
         value={
           schedules.find((x) => x.id === visEditId)?.visibility ?? null
         }
