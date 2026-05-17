@@ -9,6 +9,10 @@ import { useFavorites } from '@/store/favorites';
 import HeartFilled from '@assets/icons/heart-filled.svg';
 import HeartOutline from '@assets/icons/heart-outline.svg';
 
+// 한 번에 하나의 즐겨찾기 툴팁만 — 새 툴팁이 뜨면 직전 것 즉시 숨김
+// (인스턴스마다 state가 분리돼 있어 모듈 레벨 코디네이터로 단일화).
+let hideActiveFavTip: (() => void) | null = null;
+
 export function FavoriteHeart({
   poolId,
   size = 20,
@@ -23,18 +27,22 @@ export function FavoriteHeart({
   const [tip, setTip] = React.useState<string | null>(null);
   const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  React.useEffect(
-    () => () => {
-      if (timer.current) clearTimeout(timer.current);
-    },
-    [],
-  );
+  const hide = React.useCallback(() => {
+    setTip(null);
+    if (timer.current) clearTimeout(timer.current);
+    if (hideActiveFavTip === hide) hideActiveFavTip = null;
+  }, []);
+
+  React.useEffect(() => hide, [hide]); // 언마운트 시 정리
 
   const onPress = async () => {
     const nowFav = await toggle(poolId);
+    // 새 툴팁 노출 → 기존(다른 하트 포함) 즐겨찾기 툴팁 즉시 숨김
+    hideActiveFavTip?.();
     setTip(nowFav ? '즐겨찾기 등록' : '즐겨찾기 해제');
+    hideActiveFavTip = hide;
     if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => setTip(null), 2000);
+    timer.current = setTimeout(hide, 5000); // 유지 5초
   };
 
   return (
