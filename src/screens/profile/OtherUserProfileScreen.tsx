@@ -42,19 +42,25 @@ function formatWhen(date: string, start: string): string {
   return `${y}년 ${m}월 ${d}일(${dow}), ${ampm} ${h12}:${String(mm).padStart(2, '0')}`;
 }
 
-// CTA: 상태별 라벨/색/동작
-function ctaConfig(rel: FriendRelation) {
+// CTA: 상태별 라벨/색/동작. (Figma 172:9735/12010/11530)
+// friend(172:10725)은 버튼 자체가 없음 → null.
+type CtaConfig = {
+  label: string;
+  icon: 'plus' | 'users';
+  yellow: boolean;
+  action: 'send' | 'accept' | 'none';
+};
+function ctaConfig(rel: FriendRelation): CtaConfig | null {
   switch (rel) {
     case 'none':
-      return { label: '친구 신청', icon: 'plus' as const, yellow: true, action: 'send' as const };
+      return { label: '친구 신청', icon: 'plus', yellow: true, action: 'send' };
     case 'incoming':
-      return { label: '서로 친구로 등록', icon: 'users' as const, yellow: true, action: 'accept' as const };
+      return { label: '친구 신청 동의하고 친구하기', icon: 'users', yellow: true, action: 'accept' };
     case 'outgoing':
-      return { label: '친구 신청 진행중입니다', icon: 'users' as const, yellow: false, action: 'none' as const };
+      return { label: '친구 신청 동의를 기다리고 있습니다', icon: 'users', yellow: false, action: 'none' };
     case 'friend':
-      return { label: '이미 친구입니다.', icon: 'users' as const, yellow: false, action: 'none' as const };
     default:
-      return { label: '', icon: 'users' as const, yellow: false, action: 'none' as const };
+      return null;
   }
 }
 
@@ -105,6 +111,7 @@ export function OtherUserProfileScreen() {
 
   const cta = ctaConfig(rel);
   const onCta = () => {
+    if (!cta) return;
     if (cta.action === 'send') {
       fStore.sendRequest(userId);
       setSentOpen(true);
@@ -170,12 +177,12 @@ export function OtherUserProfileScreen() {
           ) : null}
 
           <View style={styles.stats}>
-            <View style={[styles.stat, styles.statDivider]}>
+            <View style={styles.stat}>
               <Waves size={24} color="#1F2937" strokeWidth={2} />
               <Text style={styles.statValue}>{formatWeeklyAvg(profile)}</Text>
               <Text style={styles.statLabel}>평균 수영시간</Text>
             </View>
-            <View style={[styles.stat, styles.statDivider]}>
+            <View style={styles.stat}>
               <CalendarCheck size={24} color="#1F2937" strokeWidth={2} />
               <Text style={styles.statValue}>{profile.serviceYears}년</Text>
               <Text style={styles.statLabel}>수영 기간</Text>
@@ -189,34 +196,41 @@ export function OtherUserProfileScreen() {
             </View>
           </View>
 
-          <Pressable
-            onPress={onCta}
-            disabled={cta.action === 'none'}
-            style={({ pressed }) => [
-              styles.cta,
-              cta.yellow ? styles.ctaYellow : styles.ctaBlue,
-              pressed && cta.action !== 'none' && { opacity: 0.85 },
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel={cta.label}
-          >
-            <Text style={[styles.ctaLabel, cta.yellow ? styles.ctaLabelDark : styles.ctaLabelLight]}>
-              {cta.label}
-            </Text>
-            {cta.icon === 'plus' ? (
-              <Plus
-                size={20}
-                color={cta.yellow ? tokens.color.black : tokens.color.white}
-                strokeWidth={2.4}
-              />
-            ) : (
-              <Users
-                size={20}
-                color={cta.yellow ? tokens.color.black : tokens.color.white}
-                strokeWidth={2}
-              />
-            )}
-          </Pressable>
+          {cta ? (
+            <Pressable
+              onPress={onCta}
+              disabled={cta.action === 'none'}
+              style={({ pressed }) => [
+                styles.cta,
+                cta.yellow ? styles.ctaYellow : styles.ctaBlue,
+                pressed && cta.action !== 'none' && { opacity: 0.85 },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={cta.label}
+            >
+              <Text
+                style={[
+                  styles.ctaLabel,
+                  cta.yellow ? styles.ctaLabelDark : styles.ctaLabelLight,
+                ]}
+              >
+                {cta.label}
+              </Text>
+              {cta.icon === 'plus' ? (
+                <Plus
+                  size={20}
+                  color={cta.yellow ? tokens.color.black : tokens.color.white}
+                  strokeWidth={2.4}
+                />
+              ) : (
+                <Users
+                  size={20}
+                  color={cta.yellow ? tokens.color.black : tokens.color.white}
+                  strokeWidth={2}
+                />
+              )}
+            </Pressable>
+          ) : null}
 
           {/* 예정된 수영 일정 */}
           <View style={styles.section}>
@@ -224,7 +238,14 @@ export function OtherUserProfileScreen() {
             {schedules.length === 0 ? (
               <Text style={styles.empty}>예정된 수영 일정이 없습니다.</Text>
             ) : (
-              schedules.map((s) => {
+              // 일정 많아도 모달이 무한정 길어지지 않게 ~2.3개만 보이고 스크롤
+              <ScrollView
+                style={styles.schedScroll}
+                contentContainerStyle={styles.schedScrollContent}
+                nestedScrollEnabled
+                showsVerticalScrollIndicator={false}
+              >
+                {schedules.map((s) => {
                 const mine = mySlots.has(
                   `${s.poolId}|${s.date}|${s.start}|${s.end}`,
                 );
@@ -267,7 +288,8 @@ export function OtherUserProfileScreen() {
                     )}
                   </View>
                 );
-              })
+                })}
+              </ScrollView>
             )}
           </View>
         </Pressable>
@@ -410,7 +432,10 @@ const styles = StyleSheet.create({
   // Figma 172:10644 — 3열, 사이 #CBD5E1 구분선
   stats: { flexDirection: 'row', alignSelf: 'stretch' },
   stat: { flex: 1, alignItems: 'center', gap: 4, paddingHorizontal: 8 },
-  statDivider: { borderRightWidth: 1, borderRightColor: '#CBD5E1' },
+  // 일정 목록 — ~2.3개(카드 ≈112 + gap16)만 보이고 나머지는 스크롤.
+  // 모달 전체가 일정 수에 따라 무한정 길어지는 것 방지.
+  schedScroll: { alignSelf: 'stretch', maxHeight: 288 },
+  schedScrollContent: { gap: 16 },
   // Figma 172:10647 — Bold 20/28 -0.2 #1F2937
   statValue: {
     fontFamily: tokens.font.sansBold,
