@@ -3,6 +3,7 @@
 
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { usePrefs } from './prefs';
 
 const STORAGE_KEY = 'poolsday.favorites';
 
@@ -41,6 +42,11 @@ export const useFavorites = create<FavoritesState>((set, get) => ({
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {
       // 영속 실패해도 메모리 상태는 유지(다음 토글/재시도 시 정정).
+    }
+    // 즐겨찾기 해제한 풀이 지도 시작 위치였으면 → 내 위치로 리셋
+    // (사용자 확정: 해제 시 시작 위치는 '내 위치'로 변경).
+    if (has && usePrefs.getState().mapStartPoolId === poolId) {
+      void usePrefs.getState().setMapStartPoolId(null);
     }
     return !has;
   },

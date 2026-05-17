@@ -20,18 +20,26 @@ interface PrefsState {
   scheduleInvite: ScheduleInvite;
   profileVisibility: ProfileVisibility;
   friendRequest: FriendRequest;
+  /** 지도 시작 위치 — null=내 위치, 그 외=즐겨찾기 poolId. 즐겨찾기 해제 시 null로 리셋(useFavorites). */
+  mapStartPoolId: string | null;
+  /** 지도에 수영 예정 친구 스택 표시 (false=안 보기) */
+  showMapFriendStack: boolean;
   hydrated: boolean;
   hydrate: () => Promise<void>;
   setOthersScheduleView: (v: OthersScheduleView) => Promise<void>;
   setScheduleInvite: (v: ScheduleInvite) => Promise<void>;
   setProfileVisibility: (v: ProfileVisibility) => Promise<void>;
   setFriendRequest: (v: FriendRequest) => Promise<void>;
+  setMapStartPoolId: (v: string | null) => Promise<void>;
+  setShowMapFriendStack: (v: boolean) => Promise<void>;
 }
 
 const K_VIEW = 'poolsday.prefs.othersScheduleView';
 const K_INVITE = 'poolsday.prefs.scheduleInvite';
 const K_PROFILE_VIS = 'poolsday.prefs.profileVisibility';
 const K_FRIEND_REQ = 'poolsday.prefs.friendRequest';
+const K_MAP_START = 'poolsday.prefs.mapStartPoolId';
+const K_MAP_FRIENDS = 'poolsday.prefs.showMapFriendStack';
 
 const FRIEND_REQ_VALUES: FriendRequest[] = ['off', 'id', 'nickname', 'all'];
 
@@ -41,15 +49,19 @@ export const usePrefs = create<PrefsState>((set) => ({
   scheduleInvite: 'on', // 초대 받기
   profileVisibility: 'friends', // 친구에게만 공개
   friendRequest: 'nickname', // 닉네임으로만 신청 받기
+  mapStartPoolId: null, // 내 위치
+  showMapFriendStack: true, // 지도에 표시 (Figma 기본값)
   hydrated: false,
 
   hydrate: async () => {
     try {
-      const [v, i, p, f] = await Promise.all([
+      const [v, i, p, f, ms, mf] = await Promise.all([
         AsyncStorage.getItem(K_VIEW),
         AsyncStorage.getItem(K_INVITE),
         AsyncStorage.getItem(K_PROFILE_VIS),
         AsyncStorage.getItem(K_FRIEND_REQ),
+        AsyncStorage.getItem(K_MAP_START),
+        AsyncStorage.getItem(K_MAP_FRIENDS),
       ]);
       const pv: ProfileVisibility = p === 'public' ? 'public' : 'friends';
       const ov: OthersScheduleView = v === 'public' ? 'public' : 'friends';
@@ -61,6 +73,8 @@ export const usePrefs = create<PrefsState>((set) => ({
         friendRequest: FRIEND_REQ_VALUES.includes(f as FriendRequest)
           ? (f as FriendRequest)
           : 'nickname',
+        mapStartPoolId: ms || null,
+        showMapFriendStack: mf === 'false' ? false : true,
         hydrated: true,
       });
     } catch {
@@ -98,5 +112,16 @@ export const usePrefs = create<PrefsState>((set) => ({
   setFriendRequest: async (v) => {
     await AsyncStorage.setItem(K_FRIEND_REQ, v);
     set({ friendRequest: v });
+  },
+
+  setMapStartPoolId: async (v) => {
+    if (v) await AsyncStorage.setItem(K_MAP_START, v);
+    else await AsyncStorage.removeItem(K_MAP_START);
+    set({ mapStartPoolId: v });
+  },
+
+  setShowMapFriendStack: async (v) => {
+    await AsyncStorage.setItem(K_MAP_FRIENDS, v ? 'true' : 'false');
+    set({ showMapFriendStack: v });
   },
 }));

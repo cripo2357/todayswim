@@ -22,6 +22,9 @@ export type RootStackParamList = {
   // 설정 (내 정보 상단 우측 톱니 → 진입). Figma 129:5245
   Settings: undefined;
 
+  // 지도 시작 위치 (설정 > 지도 > 지도 시작 위치). Figma 179:4805
+  MapStartLocation: undefined;
+
   // 프로필 (설정 > 프로필 → 진입). Figma 117:2556 — 기능은 MyInfo 프로필 탭과 동일
   Profile: undefined;
 

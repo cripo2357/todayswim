@@ -36,7 +36,11 @@ import { useNotifications } from '@/store/notifications';
 import { useSwimSchedules } from '@/store/swimSchedule';
 import { useFriends } from '@/store/friends';
 import { MOCK_OTHER_SCHEDULES } from '@/lib/mockData';
-import { buildPoolProfileStacks } from '@/lib/mapProfileStacks';
+import {
+  buildPoolProfileStacks,
+  type PoolStack,
+} from '@/lib/mapProfileStacks';
+import { usePrefs } from '@/store/prefs';
 import {
   MapProfileStack,
   STACK_W,
@@ -149,6 +153,9 @@ export function MapScreen() {
   );
 
   const geo = useGeolocation({ auto: true });
+  // 지도 시작 위치(null=내 위치, 그 외=즐겨찾기 poolId) + 친구 스택 표시 설정
+  const mapStartPoolId = usePrefs((s) => s.mapStartPoolId);
+  const showStack = usePrefs((s) => s.showMapFriendStack);
 
   // 카메라 추적 — 두 가지로 분리해서 불필요한 리렌더 방지:
   // (1) cameraRef: 최신 카메라 (lat/lng/zoom). 매 onCameraChanged마다 갱신. 리렌더 X.
@@ -170,13 +177,30 @@ export function MapScreen() {
   const flewToUserOnce = React.useRef(false);
   React.useEffect(() => {
     if (flewToUserOnce.current) return;
-    if (geo.status !== 'granted' || !geo.coords) return;
-    // 외부 포커스 요청(목록 → 지도에서 보기) 있으면 auto-fly 스킵하고
-    // pendingFocus effect가 카메라 이동을 담당하게 함.
+    // 외부 포커스 요청(목록 → 지도에서 보기) 우선 — pendingFocus effect가 담당.
     if (useSelection.getState().pendingFocusPoolId) {
       flewToUserOnce.current = true;
       return;
     }
+    // 지도 시작 위치 = 즐겨찾기 풀이면 그 풀로 시작 (geo 불필요).
+    // 풀 데이터 로드 전이면 flag 미선점 → pools 도착 시 재실행.
+    if (mapStartPoolId) {
+      const sp = pools.find((p) => p.id === mapStartPoolId);
+      if (sp) {
+        flewToUserOnce.current = true;
+        setTimeout(() => {
+          mapRef.current?.animateCameraTo({
+            latitude: sp.lat,
+            longitude: sp.lng,
+            zoom: 15,
+            duration: 600,
+          });
+        }, 300);
+      }
+      return;
+    }
+    // 내 위치 — 좌표 잡히면 첫 1회 이동.
+    if (geo.status !== 'granted' || !geo.coords) return;
     flewToUserOnce.current = true;
     setTimeout(() => {
       mapRef.current?.animateCameraTo({
@@ -186,7 +210,7 @@ export function MapScreen() {
         duration: 600,
       });
     }, 300);
-  }, [geo.status, geo.coords]);
+  }, [geo.status, geo.coords, mapStartPoolId, pools]);
 
   React.useEffect(() => {
     if (!pendingFocusPoolId) return;
@@ -222,17 +246,20 @@ export function MapScreen() {
   const mySchedules = useSwimSchedules((s) => s.schedules);
   const friends = useFriends((s) => s.friends);
   const blocked = useFriends((s) => s.blocked);
-  const poolStacks = React.useMemo(
+  // 설정 '지도에 수영 예정 친구 보기'=안 보기면 스택 전체 미표시(나 포함).
+  const poolStacks = React.useMemo<Map<string, PoolStack>>(
     () =>
-      buildPoolProfileStacks({
-        pools,
-        myProfile: profile,
-        mySchedules,
-        friends,
-        blocked,
-        otherSchedules: MOCK_OTHER_SCHEDULES,
-      }),
-    [pools, profile, mySchedules, friends, blocked],
+      showStack
+        ? buildPoolProfileStacks({
+            pools,
+            myProfile: profile,
+            mySchedules,
+            friends,
+            blocked,
+            otherSchedules: MOCK_OTHER_SCHEDULES,
+          })
+        : new Map(),
+    [pools, profile, mySchedules, friends, blocked, showStack],
   );
 
   /**

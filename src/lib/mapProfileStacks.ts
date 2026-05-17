@@ -1,8 +1,9 @@
 // 지도 수영장 마커 옆 프로필 스택 — 표시 대상 산출(순수 로직).
 //
 // 규칙 (사용자 확정 2026-05-18 / Figma 173:13595·13735·13797):
-//  · 대상 = 나 또는 내 친구 중, "24시간 이내 진행예정" 수영 일정이 있는 사용자.
-//  · 한 사용자가 24h 내 일정 2개+면 → 가장 임박한 일정의 수영장에 1회 배치.
+//  · 노출 시간 기준 = 일정 "시작 24시간 전 ~ 종료시각" 사이(사용자 확정).
+//    즉 now ∈ [slotStart - 24h, slotEnd] 인 일정 보유자.
+//  · 한 사용자가 해당 일정 2개+면 → 가장 임박한(시작 빠른) 일정의 수영장에 1회 배치.
 //  · 차단 사용자 제외. 친구는 useFriends(friends/blocked) 경유로만 노출
 //    (정적 isFriend 신뢰 X — block_policy_enforcement 메모리).
 //  · 친구의 비공개(private) 슬롯은 제외(participant_visibility_policy 일관 —
@@ -40,9 +41,9 @@ export const STACK_MAX = 29;
 const H24_MS = 24 * 60 * 60 * 1000;
 
 /** "YYYY-MM-DD" + "HH:MM" → epoch ms (로컬). swimSchedule.isSchedulePast 와 동일 파싱. */
-function slotStartMs(date: string, start: string): number {
+function slotMs(date: string, hhmm: string): number {
   const [y, m, d] = date.split('-').map(Number);
-  const [hh, mm] = start.split(':').map(Number);
+  const [hh, mm] = hhmm.split(':').map(Number);
   return new Date(y, m - 1, d, hh, mm, 0, 0).getTime();
 }
 
@@ -74,6 +75,7 @@ interface Cand {
   thumbUri?: string;
   poolId: string;
   startMs: number;
+  endMs: number;
 }
 
 /** 풀별 프로필 스택 산출. key=poolId, 마커 있는 풀만 포함. */
@@ -81,14 +83,14 @@ export function buildPoolProfileStacks(
   input: BuildStacksInput,
 ): Map<string, PoolStack> {
   const now = input.now ?? Date.now();
-  const windowEnd = now + H24_MS;
   const poolIds = new Set(input.pools.map((p) => p.id));
 
   // userId 당 가장 임박한 후보 1건만 유지(여러 슬롯 → 최임박 풀 배치).
   const best = new Map<string, Cand>();
   const consider = (c: Cand) => {
     if (!poolIds.has(c.poolId)) return; // 마커 없는 풀은 무시
-    if (c.startMs <= now || c.startMs > windowEnd) return; // 24h 내 진행예정만
+    // 노출창: 시작 24h 전 ~ 종료시각 (사용자 확정).
+    if (now < c.startMs - H24_MS || now > c.endMs) return;
     const prev = best.get(c.userId);
     if (!prev || c.startMs < prev.startMs) best.set(c.userId, c);
   };
@@ -103,7 +105,8 @@ export function buildPoolProfileStacks(
         photoUri: input.myProfile.photoUri,
         thumbUri: input.myProfile.photoThumbUri,
         poolId: s.poolId,
-        startMs: slotStartMs(s.date, s.start),
+        startMs: slotMs(s.date, s.start),
+        endMs: slotMs(s.date, s.end),
       });
     }
   }
@@ -121,7 +124,8 @@ export function buildPoolProfileStacks(
       relation: 'friend',
       photoUri: f.avatar, // 노출 아바타는 useFriends 소스 기준
       poolId: o.poolId,
-      startMs: slotStartMs(o.date, o.start),
+      startMs: slotMs(o.date, o.start),
+      endMs: slotMs(o.date, o.end),
     });
   }
 

@@ -26,6 +26,7 @@ import {
   type FriendRequest,
 } from '@/store/prefs';
 import { useProfile } from '@/store/profile';
+import { usePools } from '@/hooks/usePools';
 import { OptionSheet, type Option } from '@/components/ui/OptionSheet';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { ConfirmLogoutModal } from '@/components/settings/ConfirmLogoutModal';
@@ -75,6 +76,16 @@ const PROFILE_VIS_VALUE: Record<ProfileVisibility, string> = {
   friends: '친구만',
   public: '모두에게',
 };
+// 지도에 수영 예정 친구 보기 (Figma 179:4793) — prefs.showMapFriendStack(boolean) ↔ 'show'|'hide'
+type MapFriendShow = 'show' | 'hide';
+const MAP_FRIEND_OPTIONS: Option<MapFriendShow>[] = [
+  { value: 'show', label: '지도에 표시' },
+  { value: 'hide', label: '안 보기' },
+];
+const MAP_FRIEND_VALUE: Record<MapFriendShow, string> = {
+  show: '24시간 전부터 표시',
+  hide: '안 보기',
+};
 // 친구 신청 받기
 const FRIEND_REQ_OPTIONS: Option<FriendRequest>[] = [
   { value: 'off', label: '신청 안 받기' },
@@ -116,6 +127,19 @@ export function SettingsScreen() {
   const [inviteSheet, setInviteSheet] = React.useState(false);
   const [profileSheet, setProfileSheet] = React.useState(false);
   const [friendReqSheet, setFriendReqSheet] = React.useState(false);
+  const [mapFriendSheet, setMapFriendSheet] = React.useState(false);
+
+  // 지도 시작 위치 — 행 우측 표시값(내 위치 / 수영장명). 즐겨찾기 해제 시
+  // useFavorites가 prefs.mapStartPoolId를 null로 리셋.
+  const mapStartPoolId = usePrefs((s) => s.mapStartPoolId);
+  const showMapFriend = usePrefs((s) => s.showMapFriendStack);
+  const setShowMapFriend = usePrefs((s) => s.setShowMapFriendStack);
+  const { data: poolsData } = usePools();
+  const startPool = mapStartPoolId
+    ? (poolsData ?? []).find((p) => p.id === mapStartPoolId)
+    : null;
+  const startLocLabel = startPool?.name ?? '내 위치';
+  const mapFriendVal: MapFriendShow = showMapFriend ? 'show' : 'hide';
 
   // 프로필 '친구만' 공개면 다른 사람 일정 보기는 '친구 일정만'으로 강제 (전체 옵션 미노출)
   const viewOptions =
@@ -206,6 +230,22 @@ export function SettingsScreen() {
             icon={<IconEditPencil width={24} height={24} />}
             label="수영장 정보 수정 요청"
             onPress={() => navigation.navigate('PoolName', { mode: 'edit' })}
+          />
+        </Section>
+
+        {/* 지도 (Figma 179:4763) — 시작 위치(화면 이동) / 친구 스택 표시(시트) */}
+        <Section title="지도">
+          <Row
+            icon={<IconMapPin width={24} height={24} />}
+            label="지도 시작 위치"
+            value={startLocLabel}
+            onPress={() => navigation.navigate('MapStartLocation')}
+          />
+          <Row
+            icon={<IconPerson width={24} height={24} />}
+            label="지도에 수영 예정 친구 보기"
+            value={MAP_FRIEND_VALUE[mapFriendVal]}
+            onPress={() => setMapFriendSheet(true)}
           />
         </Section>
 
@@ -301,6 +341,14 @@ export function SettingsScreen() {
         options={FRIEND_REQ_OPTIONS}
         value={friendReq}
         onConfirm={(v) => setFriendReq(v)}
+      />
+      <OptionSheet<MapFriendShow>
+        visible={mapFriendSheet}
+        onClose={() => setMapFriendSheet(false)}
+        title="지도에 수영 예정 친구 보기"
+        options={MAP_FRIEND_OPTIONS}
+        value={mapFriendVal}
+        onConfirm={(v) => setShowMapFriend(v === 'show')}
       />
 
       <ConfirmLogoutModal
