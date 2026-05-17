@@ -699,8 +699,8 @@ const styles = StyleSheet.create({
     color: tokens.color.pdBlue,
   },
   schedThumb: {
-    width: 80,
-    height: 80,
+    width: 74,
+    height: 74,
     borderRadius: 6,
     backgroundColor: '#E2E8F0',
     overflow: 'hidden',

@@ -525,7 +525,7 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sansMedium,
     color: tokens.color.white,
   },
-  thumb: { width: 80, height: 80, borderRadius: 6, backgroundColor: '#E2E8F0' },
+  thumb: { width: 74, height: 74, borderRadius: 6, backgroundColor: '#E2E8F0' },
 
   divider: { height: 1, backgroundColor: tokens.color.lineDefault },
 
