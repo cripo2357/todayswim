@@ -127,6 +127,19 @@ export function FriendsTab() {
     return new Date(y, mo - 1, d);
   });
 
+  // 주간 캘린더 이동 범위 — 오늘 포함 30일(오늘 ~ 오늘+29) 정책과 일치.
+  const calMin = React.useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+  const calMax = React.useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 29);
+    return d;
+  }, []);
+
   const dayKey = dateKey(selectedDate);
   const daySlots = allFriendSlots.filter((s) => s.date === dayKey);
 
@@ -275,6 +288,8 @@ export function FriendsTab() {
             onSelectDate={setSelectedDate}
             markedKeys={friendDateKeys}
             dotColor={tokens.color.pdBlue}
+            minDate={calMin}
+            maxDate={calMax}
             headerDivider
           />
           <View style={styles.list}>
