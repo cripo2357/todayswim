@@ -143,7 +143,7 @@ const NONFRIEND_VIS: ScheduleVisibility[] = [
 
 // 20명 × 10 = 200. 5/23·5/24 7개 슬롯에 고루 분배(다양하게) →
 // 어느 슬롯을 등록해도 친구·비친구·가시성 섞인 참여자가 충분히 보임.
-export const MOCK_OTHER_SCHEDULES: OtherSchedule[] = OTHER_USERS.flatMap(
+const BASE_OTHER_SCHEDULES: OtherSchedule[] = OTHER_USERS.flatMap(
   (u, ui) =>
     Array.from({ length: 10 }, (_, j) => {
       const slot = TEST_SLOTS[(ui + j) % TEST_SLOTS.length];
@@ -165,3 +165,46 @@ export const MOCK_OTHER_SCHEDULES: OtherSchedule[] = OTHER_USERS.flatMap(
       };
     }),
 );
+
+// 2026-05-17 ~ 05-30 범위 추가 더미 30개 (친구 7명·비친구 일부 섞음).
+// 친구 일정은 대부분 public/friends라 친구 탭 주간달력에서 날짜별로 보임
+// (private 소수 포함 — 비공개 제외 필터 확인용). 풀=관악구민(실풀, '나도
+// 참여' 시 해당 풀 일정 시트가 정상 동작).
+const RANGE_SLOTS: { start: string; end: string }[] = [
+  { start: '06:00', end: '07:50' },
+  { start: '09:00', end: '10:50' },
+  { start: '12:00', end: '13:50' },
+  { start: '15:00', end: '16:50' },
+  { start: '19:00', end: '20:50' },
+];
+const RANGE_5_17_5_30: OtherSchedule[] = Array.from({ length: 30 }, (_, i) => {
+  const u = OTHER_USERS[(i * 3 + 1) % OTHER_USERS.length];
+  const day = 17 + (i % 14); // 05-17 ~ 05-30
+  const slot = RANGE_SLOTS[i % RANGE_SLOTS.length];
+  // 친구는 public/friends 위주(보이게), 5개당 1개만 private
+  const visibility: ScheduleVisibility = u.isFriend
+    ? i % 5 === 4
+      ? 'private'
+      : i % 2 === 0
+        ? 'public'
+        : 'friends'
+    : (NONFRIEND_VIS[i % 5] as ScheduleVisibility);
+  return {
+    id: `oth-range-${i + 1}`,
+    userId: u.id,
+    name: u.name,
+    avatar: u.avatar,
+    isFriend: u.isFriend,
+    poolId: GWANAK.id,
+    poolName: GWANAK.name,
+    date: `2026-05-${String(day).padStart(2, '0')}`,
+    start: slot.start,
+    end: slot.end,
+    visibility,
+  };
+});
+
+export const MOCK_OTHER_SCHEDULES: OtherSchedule[] = [
+  ...BASE_OTHER_SCHEDULES,
+  ...RANGE_5_17_5_30,
+];
