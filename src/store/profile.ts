@@ -84,13 +84,19 @@ export interface UserProfile {
   bio?: string; // 내 소개 (최대 20자)
   certifications?: Certification[]; // 자격증 (복수 선택)
   im100Record?: IM100Record; // IM100 기록 (단일 선택)
-  swimClasses?: SwimClass[]; // 수영 수업 시간 (정보 전용 — 초대 참고)
+  // 수영 레슨 (Figma 90:6622) — 레슨 받는 수영장 1곳 + 시간 슬롯 여러 개.
+  // 모델 변경: 과거 정보전용 → 이제 풀 연결 + 공개 시 지도 stack 노출.
+  swimClasses?: SwimClass[]; // 레슨 시간 슬롯 [{요일,시작,종료}]
+  lessonPoolId?: string; // 레슨 받는 수영장 id (없으면 레슨 미설정)
+  lessonPoolName?: string; // 표시용 풀명 캐시(풀 fetch 없이 프로필 표기)
   // 항목별 공개여부 (Figma 117:2556). undefined=기본값으로 해석:
-  // 기간/영법/IM100=공개, 자격증=비공개. 공개일 때만 다른 사용자에게 노출.
+  // 기간/영법/IM100/레슨=공개, 자격증=비공개. 공개일 때만 다른 사용자
+  // 프로필에 노출 + (레슨) 나·친구 지도 stack 표시.
   showServiceYears?: boolean;
   showStrokes?: boolean;
   showCerts?: boolean;
   showIm100?: boolean;
+  showSwimClasses?: boolean;
   createdAt: string;
 }
 
@@ -100,6 +106,7 @@ export const PROFILE_VIS_DEFAULT = {
   showStrokes: true,
   showCerts: false,
   showIm100: true,
+  showSwimClasses: true,
 } as const;
 
 interface ProfileState {

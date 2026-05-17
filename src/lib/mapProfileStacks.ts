@@ -3,7 +3,9 @@
 // 규칙 (사용자 확정 2026-05-18 / Figma 173:13595·13735·13797):
 //  · 노출 시간 기준 = 일정 "시작 24시간 전 ~ 종료시각" 사이(사용자 확정).
 //    즉 now ∈ [slotStart - 24h, slotEnd] 인 일정 보유자.
-//  · 한 사용자가 해당 일정 2개+면 → 가장 임박한(시작 빠른) 일정의 수영장에 1회 배치.
+//  · 대상 일정 = 수영 일정 + (공개)수영 레슨. 한 사용자는 일정·레슨 통틀어
+//    가장 임박한(시작 빠른) 1건의 수영장에만 1회 배치(2곳 이상 노출 금지).
+//    레슨은 주간 반복 → 다음 회차로 환산해 동일 노출창 적용.
 //  · 차단 사용자 제외. 친구는 useFriends(friends/blocked) 경유로만 노출
 //    (정적 isFriend 신뢰 X — block_policy_enforcement 메모리).
 //  · 친구의 비공개(private) 슬롯은 제외(participant_visibility_policy 일관 —
@@ -14,9 +16,14 @@
 //          resolveParticipants 와 동일 소스). 서버 친구 일정 적재는 Phase-2 갭.
 
 import type { Pool } from '@/types/pool';
-import type { UserProfile } from '@/store/profile';
+import type { UserProfile, SwimClass } from '@/store/profile';
 import type { MySwimSchedule } from '@/store/swimSchedule';
-import type { MockAccount, OtherSchedule } from '@/lib/mockData';
+import type {
+  MockAccount,
+  OtherSchedule,
+  OtherLesson,
+} from '@/lib/mockData';
+import { lessonOccurrenceMs } from '@/lib/swimClass';
 
 export type StackRelation = 'me' | 'friend';
 
@@ -64,6 +71,12 @@ export interface BuildStacksInput {
   friends: MockAccount[];
   blocked: readonly string[];
   otherSchedules: OtherSchedule[];
+  // 수영 레슨(주간 반복) — 공개 시 일정과 함께 stack 후보. 한 사용자는
+  // 레슨·일정 통틀어 최임박 1건만 노출(consider가 자동 보장).
+  myLessonPoolId?: string | null;
+  mySwimClasses?: SwimClass[];
+  showMyLessons?: boolean;
+  otherLessons?: OtherLesson[];
   /** 기준 시각(ms). 미지정 시 Date.now(). */
   now?: number;
 }
@@ -126,6 +139,41 @@ export function buildPoolProfileStacks(
       poolId: o.poolId,
       startMs: slotMs(o.date, o.start),
       endMs: slotMs(o.date, o.end),
+    });
+  }
+
+  // 나 — 수영 레슨(공개 시). 레슨풀 + 주간 슬롯 → 다음 회차로 consider.
+  // 일정과 같은 consider 라 userId당 최임박(레슨·일정 통합) 1건만 남음.
+  if (input.myProfile && input.showMyLessons && input.myLessonPoolId) {
+    const meId = input.myProfile.id || 'me';
+    for (const sc of input.mySwimClasses ?? []) {
+      const occ = lessonOccurrenceMs(sc.day, sc.start, sc.end, now);
+      consider({
+        userId: meId,
+        relation: 'me',
+        photoUri: input.myProfile.photoUri,
+        thumbUri: input.myProfile.photoThumbUri,
+        poolId: input.myLessonPoolId,
+        startMs: occ.startMs,
+        endMs: occ.endMs,
+      });
+    }
+  }
+
+  // 친구 — 공개 레슨만. useFriends 경유(차단·실친구), private 제외.
+  for (const o of input.otherLessons ?? []) {
+    if (blockedSet.has(o.userId)) continue;
+    const f = friendById.get(o.userId);
+    if (!f) continue;
+    if (o.visibility !== 'public') continue;
+    const occ = lessonOccurrenceMs(o.day, o.start, o.end, now);
+    consider({
+      userId: o.userId,
+      relation: 'friend',
+      photoUri: f.avatar,
+      poolId: o.poolId,
+      startMs: occ.startMs,
+      endMs: occ.endMs,
     });
   }
 

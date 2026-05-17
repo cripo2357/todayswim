@@ -35,7 +35,7 @@ import { useProfile } from '@/store/profile';
 import { useNotifications } from '@/store/notifications';
 import { useSwimSchedules } from '@/store/swimSchedule';
 import { useFriends } from '@/store/friends';
-import { MOCK_OTHER_SCHEDULES } from '@/lib/mockData';
+import { MOCK_OTHER_SCHEDULES, MOCK_OTHER_LESSONS } from '@/lib/mockData';
 import {
   buildPoolProfileStacks,
   type PoolStack,
@@ -257,6 +257,11 @@ export function MapScreen() {
             friends,
             blocked,
             otherSchedules: MOCK_OTHER_SCHEDULES,
+            // 수영 레슨(공개 시). 일정과 통합돼 userId당 최임박 1곳만 노출.
+            myLessonPoolId: profile?.lessonPoolId ?? null,
+            mySwimClasses: profile?.swimClasses ?? [],
+            showMyLessons: profile?.showSwimClasses ?? true,
+            otherLessons: MOCK_OTHER_LESSONS,
           })
         : new Map(),
     [pools, profile, mySchedules, friends, blocked, showStack],

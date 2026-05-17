@@ -5,6 +5,7 @@
 
 import type { MySwimSchedule, ScheduleVisibility } from '@/store/swimSchedule';
 import type { AvatarId } from '@/lib/avatars';
+import type { DayOfWeek } from '@/types/schedule';
 
 export interface MockAccount {
   id: string;
@@ -291,3 +292,49 @@ export const MOCK_OTHER_SCHEDULES: OtherSchedule[] = [
   ...GWANAK_24H_TEST,
   ...SADANG_0518,
 ];
+
+// ── 친구 수영 레슨 (Phase-1 mock) ──────────────────────────────
+// 주간 반복 레슨(요일+시간). 레슨 받는 수영장 1곳. 공개(visibility
+// 'public')일 때만 지도 stack 노출 — showSwimClasses 토글에 대응.
+// 서버 친구 레슨 적재는 Phase-2 갭. 노출/차단은 useFriends 경유
+// (mapProfileStacks). 관악구민(POOL_SEOUL_0005)에 요일 분산 배치 —
+// 테스트 요일 무관 일부가 24h 창에 들어오게.
+export interface OtherLesson {
+  id: string;
+  userId: string;
+  name: string;
+  avatar: AvatarId;
+  isFriend: boolean;
+  poolId: string;
+  poolName: string;
+  day: DayOfWeek;
+  start: string; // "HH:MM"
+  end: string;
+  visibility: ScheduleVisibility; // 공개='public'
+}
+const LESSON_DAYS: DayOfWeek[] = ['월', '화', '수', '목', '금', '토', '일'];
+const LESSON_SLOTS: { start: string; end: string }[] = [
+  { start: '06:00', end: '07:00' },
+  { start: '10:00', end: '11:00' },
+  { start: '14:00', end: '15:00' },
+  { start: '19:00', end: '20:00' },
+];
+export const MOCK_OTHER_LESSONS: OtherLesson[] = BASE_FRIENDS.map((u, i) => {
+  // idx%4===3 한 명꼴 private(stack 제외 검증). 나머지 public.
+  const visibility: ScheduleVisibility = i % 4 === 3 ? 'private' : 'public';
+  const day = LESSON_DAYS[i % LESSON_DAYS.length];
+  const slot = LESSON_SLOTS[i % LESSON_SLOTS.length];
+  return {
+    id: `oth-lesson-${u.id}`,
+    userId: u.id,
+    name: u.name,
+    avatar: u.avatar,
+    isFriend: true,
+    poolId: GWANAK.id,
+    poolName: GWANAK.name,
+    day,
+    start: slot.start,
+    end: slot.end,
+    visibility,
+  };
+});
