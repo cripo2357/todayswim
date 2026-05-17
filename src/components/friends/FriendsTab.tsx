@@ -11,6 +11,7 @@ import {
 } from 'lucide-react-native';
 import { MOCK_FRIENDS, MOCK_NON_FRIENDS } from '@/lib/mockData';
 import { BUNDLE_AVATARS, type AvatarId } from '@/lib/avatars';
+import { RejectFriendModal } from '@/components/friends/RejectFriendModal';
 import { tokens } from '@/styles/tokens';
 
 // ── 더미 데이터 (mockData) ────────────────────────────────────
@@ -53,8 +54,19 @@ const FRIENDS = MOCK_FRIENDS.map((f) => ({
 
 export function FriendsTab() {
   const [query, setQuery] = React.useState('');
+  const [requests, setRequests] = React.useState(NEW_REQUESTS);
+  // 거절 확인 모달 대상 (요청 1건) — null이면 모달 닫힘
+  const [rejectTarget, setRejectTarget] =
+    React.useState<(typeof NEW_REQUESTS)[number] | null>(null);
+
+  const confirmReject = () => {
+    if (!rejectTarget) return;
+    setRequests((prev) => prev.filter((r) => r.id !== rejectTarget.id));
+    setRejectTarget(null);
+  };
 
   return (
+    <>
     <ScrollView
       contentContainerStyle={styles.scroll}
       showsVerticalScrollIndicator={false}
@@ -65,7 +77,7 @@ export function FriendsTab() {
         <Text style={styles.sectionTitle}>새 친구</Text>
 
         <View style={styles.list}>
-          {NEW_REQUESTS.map((req) => (
+          {requests.map((req) => (
             <View key={req.id} style={styles.card}>
               <Avatar size={40} avatarId={req.avatar} />
               <View style={styles.cardBody}>
@@ -85,7 +97,12 @@ export function FriendsTab() {
                   </View>
                 </View>
                 <View style={styles.actions}>
-                  <Pressable style={styles.badgeOutline}>
+                  <Pressable
+                    style={styles.badgeOutline}
+                    onPress={() => setRejectTarget(req)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${req.name} 친구 추가 거절`}
+                  >
                     <X size={16} color="#4B5563" strokeWidth={2} />
                     <Text style={styles.badgeOutlineLabel}>거절</Text>
                   </Pressable>
@@ -154,6 +171,14 @@ export function FriendsTab() {
         </View>
       </View>
     </ScrollView>
+
+    <RejectFriendModal
+      visible={rejectTarget !== null}
+      name={rejectTarget?.name ?? ''}
+      onReject={confirmReject}
+      onLater={() => setRejectTarget(null)}
+    />
+    </>
   );
 }
 
