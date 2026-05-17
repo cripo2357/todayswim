@@ -20,6 +20,11 @@ import { tokens } from '@/styles/tokens';
 
 type Placement = 'top' | 'bottom';
 
+// Figma drop-shadow 정확값. 버블+꼬리 동일 적용 → Figma처럼 위/아래툴팁이
+// 꼬리 방향만 다르고 그림자는 같게(꼬리에 없으면 흰 배경서 떠 보임).
+const TOOLTIP_SHADOW =
+  '0px 12px 8px rgba(15, 23, 42, 0.08), 0px 4px 3px rgba(15, 23, 42, 0.03)';
+
 export function Tooltip({
   label,
   style,
@@ -52,8 +57,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 6,
-    boxShadow:
-      '0px 12px 8px rgba(15, 23, 42, 0.08), 0px 4px 3px rgba(15, 23, 42, 0.03)',
+    boxShadow: TOOLTIP_SHADOW,
   },
   // Figma I171:6758;1270:15179 — Bold 10/14 tracking -0.04 #1F2937 center
   text: {
@@ -74,6 +78,7 @@ const styles = StyleSheet.create({
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
     borderTopColor: '#FFFFFF',
+    boxShadow: TOOLTIP_SHADOW,
   },
   // 16x8 위로 향한 삼각형 — 아래툴팁(버블 위, 대상은 그 위)
   arrowUp: {
@@ -85,5 +90,6 @@ const styles = StyleSheet.create({
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
     borderBottomColor: '#FFFFFF',
+    boxShadow: TOOLTIP_SHADOW,
   },
 });
