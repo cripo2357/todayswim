@@ -5,7 +5,13 @@ import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 
 export type PickProfileImageResult =
-  | { status: 'ok'; uri: string; base64: string | null }
+  | {
+      status: 'ok';
+      uri: string;
+      base64: string | null;
+      /** 지도 스택 등 소형 노출용 64px JPEG base64 (avatar_thumb.jpg) */
+      thumbBase64: string | null;
+    }
   | { status: 'canceled' }
   | { status: 'denied' }
   | { status: 'error' };
@@ -34,7 +40,25 @@ export async function pickProfileImage(): Promise<PickProfileImageResult> {
       [{ resize: { width: 512 } }],
       { compress: 0.72, format: SaveFormat.JPEG, base64: true },
     );
-    return { status: 'ok', uri: resized.uri, base64: resized.base64 ?? null };
+    // 지도 스택은 20dp×최대29장×마커 비트맵 캡처라 512px 디코드가 느림.
+    // 512 결과를 입력으로 64px JPEG q0.6 추가 산출(디코드 ~1/64).
+    let thumbBase64: string | null = null;
+    try {
+      const thumb = await manipulateAsync(
+        resized.uri,
+        [{ resize: { width: 64, height: 64 } }],
+        { compress: 0.6, format: SaveFormat.JPEG, base64: true },
+      );
+      thumbBase64 = thumb.base64 ?? null;
+    } catch {
+      thumbBase64 = null; // 썸네일 실패해도 본본은 진행(스택은 원본 폴백)
+    }
+    return {
+      status: 'ok',
+      uri: resized.uri,
+      base64: resized.base64 ?? null,
+      thumbBase64,
+    };
   } catch {
     return { status: 'error' };
   }

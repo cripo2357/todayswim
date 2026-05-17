@@ -56,6 +56,9 @@ export function ProfileImageScreen() {
   );
   // 현재 선택된 사진 — 번들 AvatarId / 소셜 URL / 업로드 URI.
   const [photo, setPhoto] = React.useState<string>(initialPhoto);
+  const [photoThumb, setPhotoThumb] = React.useState<string | undefined>(
+    profile?.photoThumbUri,
+  );
   const [state, setState] = React.useState<State>('idle');
 
   // 갤러리 선택 → 512px JPEG 리사이즈 → Storage 업로드 (공용 유틸).
@@ -74,16 +77,20 @@ export function ProfileImageScreen() {
       return;
     }
     setPhoto(r.uri); // 낙관적 — 즉시 표시
+    setPhotoThumb(undefined); // 새 사진 — 옛 썸네일 잔상 방지(원본 폴백)
     setState('uploading');
-    const up = await uploadProfileAvatar(r.base64);
-    if (up.status === 'ok') setPhoto(up.url); // 로컬→공개 URL
+    const up = await uploadProfileAvatar(r.base64, r.thumbBase64);
+    if (up.status === 'ok') {
+      setPhoto(up.url); // 로컬→공개 URL
+      setPhotoThumb(up.thumbUrl); // 스택용 64px (없으면 원본 폴백)
+    }
     // skipped/error → 로컬 r.uri 유지 (가입 막지 않음)
     setState('idle');
   };
 
   const onComplete = async () => {
     if (!profile) return;
-    await saveProfile({ ...profile, photoUri: photo });
+    await saveProfile({ ...profile, photoUri: photo, photoThumbUri: photoThumb });
     navigation.replace('Welcome');
   };
 

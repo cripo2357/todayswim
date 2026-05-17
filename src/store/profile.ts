@@ -78,6 +78,9 @@ export interface UserProfile {
   experienceYears: number; // 0~30, 30은 "30년 이상"
   strokes: Stroke[];
   photoUri?: string; // 로컬 URI / 소셜 URL / 번들 AvatarId
+  // 소형 노출용 64px 썸네일 URL(avatar_thumb.jpg). 지도 스택 등 다수
+  // 소형 렌더 시 512px 디코드 회피용. 없으면 photoUri 폴백.
+  photoThumbUri?: string;
   bio?: string; // 내 소개 (최대 20자)
   certifications?: Certification[]; // 자격증 (복수 선택)
   im100Record?: IM100Record; // IM100 기록 (단일 선택)

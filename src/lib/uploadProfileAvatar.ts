@@ -13,7 +13,7 @@ import { decode } from 'base64-arraybuffer';
 import { supabase } from './supabase';
 
 export type UploadProfileAvatarResult =
-  | { status: 'ok'; url: string }
+  | { status: 'ok'; url: string; thumbUrl?: string }
   | { status: 'skipped' }
   | { status: 'error' };
 
@@ -21,6 +21,7 @@ const BUCKET = 'avatars';
 
 export async function uploadProfileAvatar(
   base64: string | null,
+  thumbBase64?: string | null,
 ): Promise<UploadProfileAvatarResult> {
   if (!base64) return { status: 'error' };
 
@@ -42,6 +43,27 @@ export async function uploadProfileAvatar(
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
   if (!data?.publicUrl) return { status: 'error' };
 
+  const v = Date.now();
+
+  // 소형 노출용 64px 썸네일 — 같은 폴더에 avatar_thumb.jpg upsert.
+  // 실패해도 본본 성공이면 ok(스택은 원본 폴백) — 가입/변경 막지 않음.
+  let thumbUrl: string | undefined;
+  if (thumbBase64) {
+    const thumbPath = `${uid}/avatar_thumb.jpg`;
+    const { error: tErr } = await supabase.storage
+      .from(BUCKET)
+      .upload(thumbPath, decode(thumbBase64), {
+        contentType: 'image/jpeg',
+        upsert: true,
+      });
+    if (!tErr) {
+      const { data: tData } = supabase.storage
+        .from(BUCKET)
+        .getPublicUrl(thumbPath);
+      if (tData?.publicUrl) thumbUrl = `${tData.publicUrl}?v=${v}`;
+    }
+  }
+
   // 경로 고정 → CDN이 옛 이미지를 캐싱하므로 버전 쿼리로 강제 갱신.
-  return { status: 'ok', url: `${data.publicUrl}?v=${Date.now()}` };
+  return { status: 'ok', url: `${data.publicUrl}?v=${v}`, thumbUrl };
 }

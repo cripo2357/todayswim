@@ -34,7 +34,7 @@ function cellPos(i: number): { left: number; top: number; z: number } {
   return { left: c * STEP, top: STACK_H - AV - r * ROW_H, z: c };
 }
 
-export function MapProfileStack({
+function MapProfileStackBase({
   entries,
   overflow,
 }: {
@@ -50,7 +50,12 @@ export function MapProfileStack({
             key={e.userId}
             style={[styles.cell, { left, top, zIndex: z }]}
           >
-            <Avatar photoUri={e.photoUri} size={AV} relation={e.relation} />
+            <Avatar
+              photoUri={e.photoUri}
+              thumbUri={e.thumbUri}
+              size={AV}
+              relation={e.relation}
+            />
           </View>
         );
       })}
@@ -72,6 +77,9 @@ export function MapProfileStack({
     </View>
   );
 }
+
+/** 마커 비트맵 캡처 재렌더 절감 — entries/overflow 동일 시 스킵. */
+export const MapProfileStack = React.memo(MapProfileStackBase);
 
 const styles = StyleSheet.create({
   box: { width: STACK_W, height: STACK_H },

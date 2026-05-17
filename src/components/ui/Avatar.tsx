@@ -6,9 +6,12 @@
 // 사진 소스: 번들 아바타(AvatarId) / 업로드·소셜 URI / 없으면 기본 아이콘.
 // shared_ui_library 메모리에 따라 단일 출처로 추출 — 신규 노출은 이걸 사용.
 //
-// Figma get_design_context 가 반복 타임아웃이라 외곽선 두께는 디자인 컨텍스트
-// 미확보. 기존 CalendarTab ptAvatar(1px)와 동급으로 20px에서도 보이게 1.5
-// 기본값(호출부에서 borderWidth 로 조정 가능).
+// 성능: 지도 스택처럼 소형·다수 노출은 thumbUri(64px avatar_thumb.jpg)를
+// 우선 사용해 512px 디코드를 피한다. 썸네일 로드 실패(레거시·미존재)면
+// onError 로 원본(photoUri) 1회 폴백. React.memo 로 마커 캡처 재렌더 절감.
+//
+// 외곽선 두께는 Figma 173-13735 가 border-0 이나 전역 정책 우선 — 얇게 1.5
+// 기본(호출부 borderWidth 로 조정/0 가능).
 
 import React from 'react';
 import {
@@ -29,8 +32,9 @@ const BORDER: Record<AvatarRelation, string> = {
   other: tokens.color.pdGray,
 };
 
-export function Avatar({
+function AvatarBase({
   photoUri,
+  thumbUri,
   size,
   relation,
   borderWidth = 1.5,
@@ -38,14 +42,28 @@ export function Avatar({
 }: {
   /** 번들 AvatarId / 업로드·소셜 URI / undefined(기본 아이콘) */
   photoUri?: string;
+  /** 소형 노출용 64px 썸네일. 실패 시 photoUri 폴백. */
+  thumbUri?: string;
   size: number;
   relation: AvatarRelation;
   borderWidth?: number;
   style?: StyleProp<ViewStyle>;
 }) {
+  const [thumbFailed, setThumbFailed] = React.useState(false);
+  // 소스가 바뀌면 폴백 상태 초기화(뷰 재사용 대비).
+  React.useEffect(() => {
+    setThumbFailed(false);
+  }, [thumbUri, photoUri]);
+
+  const isBundle = isBundleAvatar(photoUri);
+  const photoSrc = isBundle
+    ? undefined
+    : thumbUri && !thumbFailed
+      ? thumbUri
+      : photoUri;
+
   // Figma 173-13735: 이미지는 원을 꽉 채우고(inset-0 size-full), 관계 링은
-  // 이미지를 줄이지 않는 오버레이로. 그래야 -2px 겹침이 실제로 보인다
-  // (이미지를 border만큼 줄이면 겹침이 사라져 여백처럼 보임).
+  // 이미지를 줄이지 않는 오버레이로. 그래야 -2px 겹침이 실제로 보인다.
   return (
     <View
       style={[
@@ -59,13 +77,20 @@ export function Avatar({
         style,
       ]}
     >
-      {isBundleAvatar(photoUri) ? (
-        React.createElement(BUNDLE_AVATARS[photoUri], {
+      {isBundle ? (
+        React.createElement(BUNDLE_AVATARS[photoUri as keyof typeof BUNDLE_AVATARS], {
           width: size,
           height: size,
         })
-      ) : photoUri ? (
-        <Image source={{ uri: photoUri }} style={{ width: size, height: size }} />
+      ) : photoSrc ? (
+        <Image
+          source={{ uri: photoSrc }}
+          style={{ width: size, height: size }}
+          onError={() => {
+            // 썸네일 실패(레거시·미존재) → 원본으로 1회 폴백.
+            if (thumbUri && !thumbFailed) setThumbFailed(true);
+          }}
+        />
       ) : (
         <View
           style={{
@@ -100,3 +125,6 @@ export function Avatar({
     </View>
   );
 }
+
+/** 다수 소형 노출(지도 스택)에서 마커 비트맵 캡처 재렌더 절감. */
+export const Avatar = React.memo(AvatarBase);

@@ -173,9 +173,12 @@ export function ProfileTab({
       return;
     }
     if (r.status !== 'ok') return; // canceled / error
-    patch({ photoUri: r.uri }); // 낙관적 — 즉시 표시
-    const up = await uploadProfileAvatar(r.base64);
-    if (up.status === 'ok') patch({ photoUri: up.url }); // 로컬→공개 URL
+    // 낙관적 표시 + 옛 썸네일 잔상 제거(스택은 원본 폴백)
+    patch({ photoUri: r.uri, photoThumbUri: undefined });
+    const up = await uploadProfileAvatar(r.base64, r.thumbBase64);
+    if (up.status === 'ok') {
+      patch({ photoUri: up.url, photoThumbUri: up.thumbUrl }); // 로컬→공개 URL
+    }
     // skipped/error → 로컬 URI 유지 (무손실, 현행 동작)
   };
   const [bio, setBio] = React.useState(profile.bio ?? '');

@@ -22,6 +22,8 @@ export type StackRelation = 'me' | 'friend';
 export interface StackEntry {
   userId: string;
   photoUri?: string;
+  /** 소형 노출용 64px 썸네일(있으면). 없으면 Avatar가 photoUri 폴백. */
+  thumbUri?: string;
   relation: StackRelation;
 }
 
@@ -69,6 +71,7 @@ interface Cand {
   userId: string;
   relation: StackRelation;
   photoUri?: string;
+  thumbUri?: string;
   poolId: string;
   startMs: number;
 }
@@ -98,6 +101,7 @@ export function buildPoolProfileStacks(
         userId: meId,
         relation: 'me',
         photoUri: input.myProfile.photoUri,
+        thumbUri: input.myProfile.photoThumbUri,
         poolId: s.poolId,
         startMs: slotStartMs(s.date, s.start),
       });
@@ -141,6 +145,7 @@ export function buildPoolProfileStacks(
       entries: ordered.slice(0, STACK_MAX).map((c) => ({
         userId: c.userId,
         photoUri: c.photoUri,
+        thumbUri: c.thumbUri,
         relation: c.relation,
       })),
     });
