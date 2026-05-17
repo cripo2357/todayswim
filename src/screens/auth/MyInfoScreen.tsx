@@ -19,7 +19,6 @@ import IconChevronDown from '@assets/icons/chevron-down.svg';
 import IconIntro from '@assets/icons/intro.svg';
 import IconIdChange from '@assets/icons/id-change.svg';
 import IconIdCopy from '@assets/icons/id-copy.svg';
-import * as Clipboard from 'expo-clipboard';
 import { isNicknameTaken, claimNickname, sanitizeNickname } from '@/lib/nicknames';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { IdChangeModal, IdChangeDoneModal } from '@/components/profile/IdChangeModals';
@@ -196,6 +195,10 @@ export function ProfileTab({
   );
   const onCopyId = async () => {
     try {
+      // 지연 import — expo-clipboard는 import 시점에 requireNativeModule을
+      // 실행해 네이티브 미빌드(현 dev 클라이언트) 시 throw → top-level import
+      // 하면 런타임 전체 크래시("Runtime not ready"). 동적 import로 격리.
+      const Clipboard = await import('expo-clipboard');
       await Clipboard.setStringAsync(profile.id);
     } catch {
       // 네이티브 모듈 미빌드 시에도 툴팁은 노출(다음 EAS 빌드 후 정상).
