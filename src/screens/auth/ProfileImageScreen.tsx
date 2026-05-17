@@ -72,14 +72,8 @@ export function ProfileImageScreen() {
       return;
     }
     if (r.status === 'canceled') return;
-    if (r.status === 'too_large') {
-      Alert.alert(
-        '사진이 너무 큽니다',
-        '더 작은 사진을 선택하거나 사진 앱에서 크기를 줄여 다시 시도해주세요.',
-      );
-      return;
-    }
-    if (r.status === 'error') {
+    if (r.status === 'too_large' || r.status === 'error') {
+      // 너무 큰 사진/처리 실패 모두 업로드 실패 화면(Figma 110:3337)으로.
       setState('error');
       return;
     }
@@ -359,19 +353,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  errorTextBlock: { alignItems: 'center', gap: 12 },
+  // Figma 110:3340 — 텍스트 블록 gap 16
+  errorTextBlock: { alignItems: 'center', gap: 16 },
+  // Figma 110:3341 Heading xs/Bold 24/32 tracking -0.288 (#1F2937→ink900)
   errorTitle: {
     fontSize: 24,
     lineHeight: 32,
-    letterSpacing: -0.24,
+    letterSpacing: -0.288,
     fontFamily: tokens.font.sansBold,
     color: tokens.color.ink900,
   },
+  // Figma 110:3342 Paragraph/md 16 / lineHeight 1.6(≈26) (#4B5563→ink700)
   errorSub: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 16,
+    lineHeight: 26,
     fontFamily: tokens.font.sans,
-    color: tokens.color.ink500,
+    color: tokens.color.ink700,
     textAlign: 'center',
   },
 
@@ -388,11 +385,12 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 343,
   },
+  // Figma I110:3343 Text md/SemiBold 16/22 tracking -0.112
   ctaLabel: {
     fontSize: 16,
     lineHeight: 22,
     letterSpacing: -0.112,
-    fontFamily: tokens.font.sansBold,
+    fontFamily: tokens.font.sansSemibold,
     color: tokens.color.black,
   },
 });
