@@ -110,6 +110,12 @@ export function FriendsTab() {
   const dayKey = dateKey(selectedDate);
   const daySlots = allFriendSlots.filter((s) => s.date === dayKey);
 
+  // 친구 일정 있는 날짜만 캘린더에 dot (Figma 167:3714).
+  const friendDateKeys = React.useMemo(
+    () => new Set(allFriendSlots.map((s) => s.date)),
+    [allFriendSlots],
+  );
+
   // ── 친구 목록 검색 — 열면 친구목록을 상단으로 스크롤 후 그 자리에 float ──
   const scrollRef = React.useRef<ScrollView>(null);
   const [sectionY, setSectionY] = React.useState(0); // 친구목록 섹션 y(스크롤 콘텐츠 기준)
@@ -229,6 +235,7 @@ export function FriendsTab() {
           <WeekCalendar
             selectedDate={selectedDate}
             onSelectDate={setSelectedDate}
+            markedKeys={friendDateKeys}
             headerDivider
           />
           <View style={styles.list}>

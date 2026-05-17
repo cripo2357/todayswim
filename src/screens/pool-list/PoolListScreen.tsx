@@ -650,8 +650,10 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 9999,
   },
+  // Figma 163:10807 — [이름] gap [하트]. flexShrink만(콘텐츠 너비, 길면
+  // 말줄임) → 하트가 텍스트 바로 옆(맨 오른쪽 끝 아님). AddScheduleSheet와 동일.
   poolItemText: {
-    flex: 1,
+    flexShrink: 1,
     fontSize: 16,
     lineHeight: 22,
     letterSpacing: -0.112,
