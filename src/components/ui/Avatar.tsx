@@ -21,8 +21,16 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { User } from 'lucide-react-native';
-import { BUNDLE_AVATARS, isBundleAvatar } from '@/lib/avatars';
+import {
+  BUNDLE_AVATARS,
+  BUNDLE_AVATAR_THUMBS,
+  isBundleAvatar,
+  type AvatarId,
+} from '@/lib/avatars';
 import { tokens } from '@/styles/tokens';
+
+// 번들 PNG 래스터 네이티브 크기. 이 이하면 PNG(가벼움), 초과면 SVG(선명).
+const BUNDLE_RASTER_MAX = 64;
 
 export type AvatarRelation = 'me' | 'friend' | 'other';
 
@@ -78,10 +86,18 @@ function AvatarBase({
       ]}
     >
       {isBundle ? (
-        React.createElement(BUNDLE_AVATARS[photoUri as keyof typeof BUNDLE_AVATARS], {
-          width: size,
-          height: size,
-        })
+        size <= BUNDLE_RASTER_MAX ? (
+          // 소형(스택 등): SVG 벡터 트리 대신 64px PNG — 캡처/렌더 경량.
+          <Image
+            source={BUNDLE_AVATAR_THUMBS[photoUri as AvatarId]}
+            style={{ width: size, height: size }}
+          />
+        ) : (
+          React.createElement(BUNDLE_AVATARS[photoUri as AvatarId], {
+            width: size,
+            height: size,
+          })
+        )
       ) : photoSrc ? (
         <Image
           source={{ uri: photoSrc }}

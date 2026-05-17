@@ -4,6 +4,7 @@
 
 import type { FC } from 'react';
 import type { SvgProps } from 'react-native-svg';
+import type { ImageSourcePropType } from 'react-native';
 import type { Gender } from '@/store/profile';
 
 import AvatarMale1 from '@assets/avatars/avatar-male-1.svg';
@@ -38,6 +39,24 @@ export const BUNDLE_AVATARS: Record<AvatarId, FC<SvgProps>> = {
   'avatar-female-4': AvatarFemale4,
   'avatar-female-5': AvatarFemale5,
   'avatar-female-6': AvatarFemale6,
+};
+
+// 지도 스택 등 소형·다수 노출용 64px PNG (SVG 벡터 트리 × 다수 × 마커
+// 비트맵 캡처 비용 회피). repo SVG를 sharp로 래스터화 — assets/avatars/thumb/.
+// 큰 노출(≳64px)은 BUNDLE_AVATARS(SVG)로 선명도 유지. Avatar가 size로 분기.
+export const BUNDLE_AVATAR_THUMBS: Record<AvatarId, ImageSourcePropType> = {
+  'avatar-male-1': require('@assets/avatars/thumb/avatar-male-1.png'),
+  'avatar-male-2': require('@assets/avatars/thumb/avatar-male-2.png'),
+  'avatar-male-3': require('@assets/avatars/thumb/avatar-male-3.png'),
+  'avatar-male-4': require('@assets/avatars/thumb/avatar-male-4.png'),
+  'avatar-male-5': require('@assets/avatars/thumb/avatar-male-5.png'),
+  'avatar-male-6': require('@assets/avatars/thumb/avatar-male-6.png'),
+  'avatar-female-1': require('@assets/avatars/thumb/avatar-female-1.png'),
+  'avatar-female-2': require('@assets/avatars/thumb/avatar-female-2.png'),
+  'avatar-female-3': require('@assets/avatars/thumb/avatar-female-3.png'),
+  'avatar-female-4': require('@assets/avatars/thumb/avatar-female-4.png'),
+  'avatar-female-5': require('@assets/avatars/thumb/avatar-female-5.png'),
+  'avatar-female-6': require('@assets/avatars/thumb/avatar-female-6.png'),
 };
 
 const MALE_AVATAR_IDS: AvatarId[] = [
