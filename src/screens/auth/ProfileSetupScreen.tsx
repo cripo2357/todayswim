@@ -19,6 +19,7 @@ import {
   claimNickname,
   sanitizeNickname,
   nicknameBlockReason,
+  nicknameBlockReasonRemote,
   NICKNAME_NOTICE,
 } from '@/lib/nicknames';
 import type { RootStackParamList } from '@/navigation/types';
@@ -79,6 +80,12 @@ export function ProfileSetupScreen() {
     }
     setNickStatus('checking');
     (async () => {
+      const remote = await nicknameBlockReasonRemote(initial);
+      if (nameRef.current.trim() !== initial) return;
+      if (remote) {
+        setNickStatus(remote);
+        return;
+      }
       const taken = await isNicknameTaken(initial);
       if (nameRef.current.trim() !== initial) return;
       setNickStatus(taken ? 'taken' : 'ok');
@@ -104,6 +111,13 @@ export function ProfileSetupScreen() {
     }
     setNickStatus('checking');
     nickTimerRef.current = setTimeout(async () => {
+      // 변경 적용 시점 서버 차단어 검사(최신 nickname_blocklist) → 중복 검사.
+      const remote = await nicknameBlockReasonRemote(trimmed);
+      if (nameRef.current.trim() !== trimmed) return;
+      if (remote) {
+        setNickStatus(remote);
+        return;
+      }
       const taken = await isNicknameTaken(trimmed);
       // await 동안 입력이 더 바뀌었으면 결과 폐기 (stale).
       if (nameRef.current.trim() !== trimmed) return;
@@ -144,6 +158,11 @@ export function ProfileSetupScreen() {
       birthDate,
       experienceYears: exp,
       strokes: Array.from(strokes),
+      // 자격증/IM100은 가입 단계에서 입력받지 않음 — "아무것도 선택 안 됨"
+      // 상태가 생기지 않도록 기본값을 명시 저장(자격증='없음', IM100='기록 없음').
+      // 이후 내 정보 화면에서 변경.
+      certifications: ['없음'],
+      im100Record: '기록 없음',
       // 이미지는 다음 단계(ProfileImage 화면)에서 추가.
       createdAt: new Date().toISOString(),
     });

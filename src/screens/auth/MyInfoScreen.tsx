@@ -24,6 +24,7 @@ import {
   claimNickname,
   sanitizeNickname,
   nicknameBlockReason,
+  nicknameBlockReasonRemote,
   NICKNAME_NOTICE,
 } from '@/lib/nicknames';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -292,9 +293,17 @@ export function ProfileTab({
       return;
     }
     if (next.length < 2 || next.length > 6) return; // 안내문이 가이드
+    // 1차: 즉시·오프라인 정적 검사
     const reason = nicknameBlockReason(next);
     if (reason) {
       setNickErr(NICKNAME_NOTICE[reason]);
+      return;
+    }
+    // 변경 적용 시점 서버 차단어 검사 — 운영자가 갱신한 nickname_blocklist
+    // 를 그 자리에서 조회(최신). 조회 실패 시 null(fail-open).
+    const remoteReason = await nicknameBlockReasonRemote(next);
+    if (remoteReason) {
+      setNickErr(NICKNAME_NOTICE[remoteReason]);
       return;
     }
     if (await isNicknameTaken(next)) {

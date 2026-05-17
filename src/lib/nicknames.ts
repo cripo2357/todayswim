@@ -39,8 +39,10 @@ const PROFANITY = [
 ];
 
 /**
- * 닉네임 정책 위반 사유 — 운영 사칭 / 욕설. 없으면 null.
- * isNicknameTaken(중복)과 별개. 정규화 후 substring 검사.
+ * 닉네임 정책 위반 사유(즉시·오프라인 1차 필터) — 운영 사칭 / 욕설. 없으면 null.
+ * 입력 중 즉시 피드백용 정적 검사. 최종 권위는 "변경 적용 시점"의
+ * nicknameBlockReasonRemote(서버 nickname_blocklist 그 자리 조회) —
+ * isNicknameTaken(중복)이 제출 시 서버 조회하는 것과 동일 톤.
  */
 export function nicknameBlockReason(
   nickname: string,
@@ -50,6 +52,32 @@ export function nicknameBlockReason(
   if (RESERVED.some((w) => n.includes(w))) return 'reserved';
   if (PROFANITY.some((w) => n.includes(w))) return 'profanity';
   return null;
+}
+
+/**
+ * 변경 적용 시점 서버 차단어 검사 — public.nickname_blocklist 를 그 자리에서
+ * 조회(항상 최신; 운영자가 코드 배포 없이 추가/삭제 가능). DB 트리거(0043)와
+ * 동일 정규화: 소문자화 후 substring 포함. profanity 우선 판정.
+ * 네트워크/조회 실패 시 null(fail-open) — 정적 nicknameBlockReason 이 1차 방어선.
+ */
+export async function nicknameBlockReasonRemote(
+  nickname: string,
+): Promise<'reserved' | 'profanity' | null> {
+  const n = nickname.trim().toLowerCase();
+  if (!n) return null;
+  const { data, error } = await supabase
+    .from('nickname_blocklist')
+    .select('term, kind');
+  if (error || !data) return null;
+  let reserved = false;
+  for (const row of data as { term: string; kind: 'reserved' | 'profanity' }[]) {
+    const t = row.term.trim().toLowerCase();
+    if (t && n.includes(t)) {
+      if (row.kind === 'profanity') return 'profanity';
+      reserved = true;
+    }
+  }
+  return reserved ? 'reserved' : null;
 }
 
 /** 닉네임 위반 안내문구 (UI 표시용 단일 출처) */
