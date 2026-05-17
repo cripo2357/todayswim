@@ -14,6 +14,7 @@ import {
   Check, Calendar as LucideCalendar, Mail, XCircle,
 } from 'lucide-react-native';
 import IconChevronDown from '@assets/icons/chevron-down.svg';
+import HeartFilled from '@assets/icons/heart-filled.svg';
 import { usePools } from '@/hooks/usePools';
 import { useSchedules } from '@/hooks/useSchedules';
 import {
@@ -594,6 +595,10 @@ export function AddScheduleSheet({
                               >
                                 {p.name}
                               </Text>
+                              {/* 즐겨찾기 표시(읽기 전용 — 상위 노출 규칙 인지용) */}
+                              {favIds.includes(p.id) ? (
+                                <HeartFilled width={20} height={20} />
+                              ) : null}
                             </Pressable>
                           ))}
                           {filteredPools.length === 0 ? (
@@ -748,13 +753,16 @@ const styles = StyleSheet.create({
   poolListContent: { gap: 4 },
   // Figma 147:5330 — 아이템 알약 minH40 p8
   poolItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     minHeight: 40,
     padding: 8,
     borderRadius: 9999,
-    justifyContent: 'center',
   },
   // Figma I147:5330;5544:288 — Medium 16/22 -0.112 #4B5563
   poolItemText: {
+    flex: 1,
     fontSize: 16,
     lineHeight: 22,
     letterSpacing: -0.112,
