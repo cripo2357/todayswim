@@ -32,12 +32,13 @@ type State = 'idle' | 'uploading' | 'error';
 // 실패 사유 — Figma 110:3337 동일 레이아웃, 타이틀/안내문구만 분기.
 type ErrorReason = 'format' | 'too_large';
 const ERROR_COPY: Record<ErrorReason, { title: string; sub: string }> = {
-  // 형식/확장자 또는 처리 실패 (Figma 110:3337 원 카피)
+  // 타이틀은 사유 무관 동일, sub만 분기 (사용자 확정 2026-05-18).
+  // 형식/확장자 또는 처리 실패
   format: {
-    title: '잘못된 형식!',
-    sub: '프로필 이미지로 등록할 수 없는 확장자 파일입니다.',
+    title: '이미지 업로드 실패',
+    sub: '등록할 수 없는 형식의 이미지 파일입니다.',
   },
-  // 용량 초과 (사용자 확정 카피 2026-05-18)
+  // 용량 초과
   too_large: {
     title: '이미지 업로드 실패',
     sub: '이미지 파일의 용량이 너무 큽니다.',
