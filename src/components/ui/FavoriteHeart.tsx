@@ -50,7 +50,11 @@ export function FavoriteHeart({
           103:2598): 버블이 하트 오른쪽, 삼각형(꼬리)이 버블 왼쪽에서
           하트를 가리킴. 세로는 하트 중앙 정렬. */}
       {tip ? (
-        <Tooltip label={tip} placement="right" style={styles.tooltip} />
+        <Tooltip
+          label={tip}
+          placement="right"
+          style={[styles.tooltip, { left: size + 4 }]}
+        />
       ) : null}
       {isFav ? (
         <HeartFilled width={size} height={size} />
@@ -67,21 +71,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // 공통 Tooltip 위치 — 하트 오른쪽, 세로 중앙.
-  // width 200 필수: absolute(left:'100%')는 부모(20px)에 폭이 수렴해
-  // 행이 붕괴 → 글자 세로·삼각형 소멸. top/bottom이 쓰던 width:200과
-  // 동일 원리(여기선 가운데 정렬 안 하므로 음수 marginLeft 없음).
-  // 세로 중앙: top:'50%' + height 48 + marginTop -24 (row+alignItems
-  // center라 버블/꼬리가 48 안에서 세로 중앙). zIndex 10.
+  // 공통 Tooltip 위치 — 하트 오른쪽, 세로 중앙. left는 호출부에서
+  // size+4(하트 오른쪽 끝 + 꼬리 gap, 숫자라 폭 수렴 없음). 세로 중앙:
+  // top:'50%'(하트 중앙) + marginTop -13(버블 높이 26의 절반).
+  // 버블은 콘텐츠 크기(numberOfLines 1 + flexShrink 0). zIndex 10.
   // elevation은 Android halo라 미사용.
   tooltip: {
     position: 'absolute',
-    left: '100%',
-    marginLeft: 4,
     top: '50%',
-    height: 48,
-    marginTop: -24,
-    width: 200,
+    marginTop: -13,
     zIndex: 10,
   },
 });
