@@ -204,7 +204,42 @@ const RANGE_5_17_5_30: OtherSchedule[] = Array.from({ length: 30 }, (_, i) => {
   };
 });
 
+// ── 지도 프로필 스택 테스트 전용 (Figma 173:13595 등) ──────────
+// 친구 10명 전원, 2026-05-18·19 관악구민(POOL_SEOUL_0005) 자유수영.
+// "24h 내 진행예정" 윈도가 롤링(now ~ now+24h)이라, 18·19 두 날에
+// 시간대를 흩뿌려 18일 어느 시각에 테스트해도 일부가 잡히게 함.
+// 5명 중 1명꼴(idx%5===4 → fr5·fr10) private = 스택 제외 검증용.
+// (친구 roster가 10명뿐이라 "… more"(29 초과)는 이 데이터로는 미발생.)
+const MAP_STACK_TEST_TIMES: { start: string; end: string }[] = [
+  { start: '06:00', end: '07:50' },
+  { start: '09:00', end: '10:50' },
+  { start: '12:00', end: '13:50' },
+  { start: '15:00', end: '16:50' },
+  { start: '18:00', end: '19:50' },
+  { start: '20:00', end: '21:50' },
+];
+const GWANAK_24H_TEST: OtherSchedule[] = MOCK_FRIENDS.flatMap((u, i) => {
+  const visibility: ScheduleVisibility =
+    i % 5 === 4 ? 'private' : i % 2 === 0 ? 'public' : 'friends';
+  const t18 = MAP_STACK_TEST_TIMES[i % MAP_STACK_TEST_TIMES.length];
+  const t19 = MAP_STACK_TEST_TIMES[(i + 3) % MAP_STACK_TEST_TIMES.length];
+  const base = {
+    userId: u.id,
+    name: u.name,
+    avatar: u.avatar,
+    isFriend: true,
+    poolId: GWANAK.id,
+    poolName: GWANAK.name,
+    visibility,
+  };
+  return [
+    { ...base, id: `oth-map18-${u.id}`, date: '2026-05-18', start: t18.start, end: t18.end },
+    { ...base, id: `oth-map19-${u.id}`, date: '2026-05-19', start: t19.start, end: t19.end },
+  ];
+});
+
 export const MOCK_OTHER_SCHEDULES: OtherSchedule[] = [
   ...BASE_OTHER_SCHEDULES,
   ...RANGE_5_17_5_30,
+  ...GWANAK_24H_TEST,
 ];
