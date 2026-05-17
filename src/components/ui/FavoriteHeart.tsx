@@ -68,12 +68,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   // 하트 위 가운데 — 래퍼 width 200(ml -100), 호출 시 left=size/2 적용.
+  // z-index 최대(인접 카드 위). elevation은 Android halo 유발이라 미사용.
   tooltip: {
     position: 'absolute',
     bottom: '100%',
     marginBottom: 4,
     marginLeft: -100,
     width: 200,
-    zIndex: 10,
+    zIndex: 9999,
   },
 });

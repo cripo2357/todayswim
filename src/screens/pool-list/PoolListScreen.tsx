@@ -709,6 +709,8 @@ const styles = StyleSheet.create({
 
   listContent: {
     paddingHorizontal: 16,
+    // 상단 카드의 즐겨찾기 툴팁(위로 뜸)이 FlatList 상단에 잘리지 않도록 여백.
+    paddingTop: 32,
     paddingBottom: 32,
     // Figma 103:1834 — 카드 사이 gap 32
     gap: 32,
