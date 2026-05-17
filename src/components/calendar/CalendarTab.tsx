@@ -62,6 +62,15 @@ function formatScheduleLine(iso: string, start: string): string {
   return `${y}년 ${m}월 ${d}일(${dow}), ${ampm} ${h12}:${mm}`;
 }
 
+/** 과거 날짜면 오늘로 — 일정 추가 시트는 과거 날짜 기본값 금지 */
+function clampToToday(d: Date): Date {
+  const t = new Date();
+  t.setHours(0, 0, 0, 0);
+  const dd = new Date(d);
+  dd.setHours(0, 0, 0, 0);
+  return dd.getTime() < t.getTime() ? t : d;
+}
+
 export function CalendarTab() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const profile = useProfile((s) => s.profile);
@@ -371,7 +380,7 @@ export function CalendarTab() {
       <AddScheduleSheet
         visible={sheetOpen}
         onClose={() => setSheetOpen(false)}
-        initialDate={date}
+        initialDate={clampToToday(date)}
       />
 
       {/* 일정 관리(예정) — '일정 취소' 선택 시 confirm Alert → 삭제,
