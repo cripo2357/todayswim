@@ -1,39 +1,33 @@
 // Figma 163:10420 — 친구 추가 거절 확인 모달.
 // dim backdrop + 흰 카드(r32 p16 gap24 w343) + 일러스트 + 제목/설명
 // + 거절(destructive) 버튼 + "나중에 결정하겠습니다" 텍스트 버튼.
-//
-// 일러스트(혼란/비밀번호 화면): Figma에서 60+ 조각 벡터라 단일 export 불가 →
-// 사용자가 Figma에서 SVG로 export해 assets/illustrations/ 에 추가 후
-// `illustration` prop으로 주입(없으면 미렌더 — 가짜 그림 발명 금지).
-// 동일 일러스트가 ID 변경 모달(163:6737)에도 재사용됨.
+// 일러스트(혼란/비밀번호)는 ID 변경 모달(163:6737)과 동일 에셋 공유.
 
 import React from 'react';
 import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
 import { XCircle, Hourglass } from 'lucide-react-native';
 import { tokens } from '@/styles/tokens';
+import IllustConfused from '@assets/illustrations/confused-password.svg';
 
 export function RejectFriendModal({
   visible,
   name,
   onReject,
   onLater,
-  illustration,
 }: {
   visible: boolean;
   name: string;
   onReject: () => void;
   onLater: () => void;
-  /** 혼란/비밀번호 일러스트 (Figma export 후 주입) */
-  illustration?: React.ReactNode;
 }) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onLater}>
       <View style={styles.root}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onLater} />
         <View style={styles.card}>
-          {illustration ? (
-            <View style={styles.illustWrap}>{illustration}</View>
-          ) : null}
+          <View style={styles.illustWrap}>
+            <IllustConfused width="100%" height="100%" />
+          </View>
 
           <View style={styles.textGroup}>
             <Text style={styles.title}>친구 추가 거절</Text>
@@ -93,12 +87,10 @@ const styles = StyleSheet.create({
     gap: 24,
     alignItems: 'center',
   },
-  // Figma 163:10425 — 일러스트 h223 풀폭
+  // Figma 163:10425 — 일러스트 풀폭 (원본 343x227 비율 유지)
   illustWrap: {
     width: '100%',
-    height: 223,
-    alignItems: 'center',
-    justifyContent: 'center',
+    aspectRatio: 343 / 227,
   },
   // Figma 163:10576 — gap12 center
   textGroup: { gap: 12, alignItems: 'center', alignSelf: 'stretch' },

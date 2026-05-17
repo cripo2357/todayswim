@@ -1,32 +1,31 @@
 // Figma 163:6737 (ID 변경 확인) / 163:6885 (ID 변경 완료).
 // dim backdrop + 흰 카드(r32 p16 gap24) + 일러스트 + 제목/설명 + 액션.
-//
-// 일러스트(163:7149 혼란/비밀번호 = 친구거절 163:10420과 동일,
-// 163:6885 비둘기/편지)는 Figma 다수 조각이라 단일 export 불가 →
-// illustration prop 슬롯만 마련(가짜 그림 미발명, 사용자 export 대기).
+// 163:6737 일러스트(혼란/비밀번호)는 친구거절 163:10420과 동일 에셋 공유.
 
 import React from 'react';
-import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
+import { Modal, View, Text, Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import { Mail } from 'lucide-react-native';
 import { tokens } from '@/styles/tokens';
 import IconIdBadge from '@assets/icons/id-badge.svg';
+import IllustConfused from '@assets/illustrations/confused-password.svg';
+import IllustIdDone from '@assets/illustrations/id-change-done.svg';
 
 function ModalShell({
   children,
   onRequestClose,
   illustration,
+  illustStyle,
 }: {
   children: React.ReactNode;
   onRequestClose: () => void;
-  illustration?: React.ReactNode;
+  illustration: React.ReactNode;
+  illustStyle: StyleProp<ViewStyle>;
 }) {
   return (
     <View style={styles.root}>
       <Pressable style={StyleSheet.absoluteFill} onPress={onRequestClose} />
       <View style={styles.card}>
-        {illustration ? (
-          <View style={styles.illustWrap}>{illustration}</View>
-        ) : null}
+        <View style={[styles.illustWrap, illustStyle]}>{illustration}</View>
         {children}
       </View>
     </View>
@@ -38,18 +37,20 @@ export function IdChangeModal({
   visible,
   onKeep,
   onChange,
-  illustration,
 }: {
   visible: boolean;
   /** 변경하지 않음 (닫기) */
   onKeep: () => void;
   /** ID 변경 진행 */
   onChange: () => void;
-  illustration?: React.ReactNode;
 }) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onKeep}>
-      <ModalShell onRequestClose={onKeep} illustration={illustration}>
+      <ModalShell
+        onRequestClose={onKeep}
+        illustration={<IllustConfused width="100%" height="100%" />}
+        illustStyle={styles.illustConfused}
+      >
         <View style={styles.textGroup}>
           <Text style={styles.title}>ID 변경</Text>
           <Text style={styles.desc}>내 계정의 ID를 변경하겠습니까?</Text>
@@ -83,15 +84,17 @@ export function IdChangeModal({
 export function IdChangeDoneModal({
   visible,
   onConfirm,
-  illustration,
 }: {
   visible: boolean;
   onConfirm: () => void;
-  illustration?: React.ReactNode;
 }) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onConfirm}>
-      <ModalShell onRequestClose={onConfirm} illustration={illustration}>
+      <ModalShell
+        onRequestClose={onConfirm}
+        illustration={<IllustIdDone width="100%" height="100%" />}
+        illustStyle={styles.illustDone}
+      >
         <View style={styles.textGroup}>
           <Text style={styles.title}>ID 변경 완료</Text>
           <Text style={styles.desc}>
@@ -132,13 +135,10 @@ const styles = StyleSheet.create({
     gap: 24,
     alignItems: 'center',
   },
-  // Figma 163:7149 — 일러스트 h223 풀폭
-  illustWrap: {
-    width: '100%',
-    height: 223,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  // Figma 163:7149 — 일러스트 풀폭(원본 비율 유지)
+  illustWrap: { width: '100%' },
+  illustConfused: { aspectRatio: 343 / 227 },
+  illustDone: { aspectRatio: 343 / 250 },
   // Figma 163:6814 — 제목/설명 그룹
   textGroup: { gap: 12, alignItems: 'center', alignSelf: 'stretch' },
   // Figma 163:6815 — Bold 24/32 -0.288 #1F2937
