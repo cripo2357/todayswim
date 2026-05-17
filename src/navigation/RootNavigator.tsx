@@ -10,6 +10,7 @@ import { PoolDoneScreen } from '@/screens/pool-submit/PoolDoneScreen';
 import { AnnouncementsScreen } from '@/screens/announcement/AnnouncementsScreen';
 import { PoolFilterScreen } from '@/screens/filter/PoolFilterScreen';
 import { PoolListScreen } from '@/screens/pool-list/PoolListScreen';
+import { FavoritePoolsScreen } from '@/screens/pool-list/FavoritePoolsScreen';
 import { LoginScreen } from '@/screens/auth/LoginScreen';
 import { TermsAgreementScreen } from '@/screens/auth/TermsAgreementScreen';
 import { TermsServiceScreen } from '@/screens/auth/TermsServiceScreen';
@@ -89,6 +90,7 @@ export function RootNavigator() {
       <Stack.Screen name="PoolFilter" component={PoolFilterScreen} />
 
       <Stack.Screen name="PoolList" component={PoolListScreen} />
+      <Stack.Screen name="FavoritePools" component={FavoritePoolsScreen} />
 
       {/* 인증 / 약관 */}
       <Stack.Screen name="Login" component={LoginScreen} options={{ animation: 'fade' }} />

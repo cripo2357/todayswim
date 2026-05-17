@@ -238,8 +238,8 @@ export function SettingsScreen() {
         <Section title="수영장">
           <Row
             icon={<IconHeart width={24} height={24} />}
-            label="수영장 즐겨찾기"
-            onPress={() => navigation.navigate('PoolList')}
+            label="즐겨찾는 수영장"
+            onPress={() => navigation.navigate('FavoritePools')}
           />
           <Row
             icon={<IconLifeBuoy width={24} height={24} />}
