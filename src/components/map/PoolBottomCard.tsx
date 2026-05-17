@@ -211,7 +211,10 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   // Figma 93:10604 — width 153, gap-4 between text lines
-  textCol: { flex: 1, gap: 4 },
+  // zIndex 1: headerRow에서 섬네일(Image, 뒤 형제)보다 위로 페인트 →
+  // 하트 툴팁(textCol 안, 오른쪽으로 뻗어 섬네일과 겹침)이 섬네일 위에
+  // 보이도록(PoolListScreen과 동일). elevation은 Android halo라 미사용.
+  textCol: { flex: 1, gap: 4, zIndex: 1 },
   // Figma 93:10610 — image 1:1, radius 6, self-stretch (텍스트 4줄 높이 ≈ 80px)
   photo: {
     width: 80,
