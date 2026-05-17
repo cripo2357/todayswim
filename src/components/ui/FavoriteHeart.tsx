@@ -53,7 +53,7 @@ export function FavoriteHeart({
         <Tooltip
           label={tip}
           placement="right"
-          style={[styles.tooltip, { left: size - 6 }]}
+          style={[styles.tooltip, { left: size - 14 }]}
         />
       ) : null}
       {isFav ? (
@@ -72,8 +72,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   // 공통 Tooltip 위치 — 하트 오른쪽, 세로 중앙. left는 호출부에서
-  // size-6 (하트 오른쪽 끝 기준 -6 — 사용자 조정: 기존 size+4에서
-  // 10px 왼쪽으로 옮겨 삼각형 끝이 하트에 닿도록, 숫자라 폭 수렴 없음).
+  // size-14 (하트 오른쪽 끝 기준 -14 — 사용자 조정: size+4 → -10px
+  // → 추가 -8px, 삼각형 끝이 하트에 닿도록. 숫자라 폭 수렴 없음).
   // 세로 중앙: top:'50%'(하트 중앙) + marginTop -13(버블 높이 26의 절반).
   // 버블은 콘텐츠 크기(numberOfLines 1 + flexShrink 0). zIndex 10.
   // elevation은 Android halo라 미사용.
