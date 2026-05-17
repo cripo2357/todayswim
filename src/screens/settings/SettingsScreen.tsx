@@ -88,9 +88,11 @@ const FRIEND_REQ_VALUE: Record<Exclude<FriendRequest, 'id'>, string> = {
   all: '모든 사람에게',
 };
 /**
- * 행 우측 표시값 — 'id'는 내 계정 ID 포함 문구.
- * ID는 시스템이 계정 생성 시 발급(+기존 계정 hydrate 백필)하는 불변값이라
- * 항상 존재 → 별도 없음 처리 분기 두지 않음.
+ * 행 우측 표시값 — 'id'는 내 친구 코드(ID) 포함 문구.
+ * ID는 시스템 계정 식별 UUID와 별개로, 사용자가 다른 사용자와 친구 맺기
+ * 위해 쓰는 코드. 시스템이 계정 생성 시 발급(기존 계정은 hydrate 백필)하고
+ * 사용자가 변경할 수 있음 — 값은 바뀌어도 '항상 존재'하므로
+ * 없음 처리 분기는 두지 않음(불변이라서가 아니라 항상 발급되므로).
  */
 function friendReqValue(v: FriendRequest, id: string): string {
   if (v !== 'id') return FRIEND_REQ_VALUE[v];
