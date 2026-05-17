@@ -46,13 +46,14 @@ export function FavoriteHeart({
       accessibilityState={{ selected: isFav }}
       style={[styles.wrap, { width: size, height: size }, style]}
     >
-      {/* 아래방향 공통 Tooltip(Figma 168:5641) — placement='bottom':
-          버블이 하트 아래, 위 화살표가 하트를 가리킴. 위치는 라이브러리
-          표준(width200 + ml-100 + left=대상중앙)으로 styles.tooltip에서. */}
+      {/* 공통 Tooltip 라이브러리 표준(PoolBottomCard/PoolListScreen과 동일):
+          placement='top' — 버블이 하트 위, 아래 방향 삼각형(꼬리)이 하트를
+          가리킴. 위치 규칙도 라이브러리 표준(bottom:'100%' + width200 +
+          ml-100 + left=대상중앙)으로 styles.tooltip에서. */}
       {tip ? (
         <Tooltip
           label={tip}
-          placement="bottom"
+          placement="top"
           style={[styles.tooltip, { left: size / 2 }]}
         />
       ) : null}
@@ -72,13 +73,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   // 공통 Tooltip 위치 — 라이브러리 표준(PoolBottomCard/PoolListScreen과
-  // 동일 규칙): wrapper width 200 + marginLeft -100 + left=대상중앙(size/2),
-  // gap 4, zIndex 10. 아래방향이라 top:'100%'+marginTop(위 변형은
-  // bottom:'100%'+marginBottom). elevation은 Android halo라 미사용.
+  // 완전 동일): 하트 위 가운데. bottom:'100%' + marginBottom 4(gap) +
+  // wrapper width 200 + marginLeft -100 + left=대상중앙(size/2), zIndex 10.
+  // placement='top'이라 삼각형(꼬리)이 버블 하단에서 하트를 가리킴(아래 방향).
+  // elevation은 Android halo라 미사용.
   tooltip: {
     position: 'absolute',
-    top: '100%',
-    marginTop: 4,
+    bottom: '100%',
+    marginBottom: 4,
     marginLeft: -100,
     width: 200,
     zIndex: 10,
