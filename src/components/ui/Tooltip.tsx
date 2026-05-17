@@ -19,17 +19,21 @@ import { tokens } from '@/styles/tokens';
 export function Tooltip({
   label,
   style,
+  placement = 'top',
 }: {
   label: string;
   /** 위치 지정 등 래퍼 추가 스타일 (보통 position:absolute) */
   style?: StyleProp<ViewStyle>;
+  /** 'top'=대상 위(아래 화살표, 기본) / 'bottom'=대상 아래(위 화살표) */
+  placement?: 'top' | 'bottom';
 }) {
   return (
     <View style={[styles.wrap, style]} pointerEvents="none">
+      {placement === 'bottom' ? <View style={styles.arrowUp} /> : null}
       <View style={styles.bubble}>
         <Text style={styles.text}>{label}</Text>
       </View>
-      <View style={styles.arrow} />
+      {placement === 'top' ? <View style={styles.arrow} /> : null}
     </View>
   );
 }
@@ -53,7 +57,7 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     textAlign: 'center',
   },
-  // Figma I147:5763;5567:11060 — 아래로 향하는 16x8 흰 삼각형
+  // Figma I147:5763;5567:11060 — 아래로 향하는 16x8 흰 삼각형(대상 위에 뜰 때)
   arrow: {
     width: 0,
     height: 0,
@@ -63,5 +67,16 @@ const styles = StyleSheet.create({
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
     borderTopColor: '#FFFFFF',
+  },
+  // 위로 향하는 삼각형(대상 아래에 뜰 때 — 버블 위에 위치)
+  arrowUp: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 8,
+    borderRightWidth: 8,
+    borderBottomWidth: 8,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: '#FFFFFF',
   },
 });

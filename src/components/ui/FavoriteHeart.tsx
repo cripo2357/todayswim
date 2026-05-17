@@ -49,6 +49,7 @@ export function FavoriteHeart({
       {tip ? (
         <Tooltip
           label={tip}
+          placement="bottom"
           style={[styles.tooltip, { left: size / 2 }]}
         />
       ) : null}
@@ -67,13 +68,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // 하트 위 가운데 — 래퍼 width 200(ml -100), 호출 시 left=size/2 적용.
-  // marginBottom 음수 = 툴팁을 아래로 내려 위로 덜 튀어나오게(첫 카드도
-  // FlatList 상단에 안 잘림). z-index 최대. elevation은 Android halo라 미사용.
+  // 하트 아래 가운데 — 래퍼 width 200(ml -100), 호출 시 left=size/2 적용.
+  // placement='bottom'(위 화살표)와 함께 대상(하트) 아래에 표시.
+  // z-index 최대. elevation은 Android halo라 미사용.
   tooltip: {
     position: 'absolute',
-    bottom: '100%',
-    marginBottom: -6,
+    top: '100%',
+    marginTop: 4,
     marginLeft: -100,
     width: 200,
     zIndex: 9999,
