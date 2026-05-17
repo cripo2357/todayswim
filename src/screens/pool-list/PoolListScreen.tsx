@@ -129,15 +129,33 @@ export function PoolListScreen() {
     ];
   }, [filteredPools, draft, favIds]);
 
-  // 확정 검색어로 목록 필터 (빈 값이면 전체)
+  // 확정 검색어로 목록 필터. 검색 중이면 결과를 즐겨찾기 먼저(가나다)
+  // → 일반(가나다)로 정렬. 빈 값이면 전체(거리순/이름순 그대로).
   const searchedPools = React.useMemo(() => {
     const q = query.trim().toLowerCase();
-    return q ? sortedPools.filter((p) => p.name.toLowerCase().includes(q)) : sortedPools;
-  }, [sortedPools, query]);
+    if (!q) return sortedPools;
+    const matched = sortedPools.filter((p) =>
+      p.name.toLowerCase().includes(q),
+    );
+    const favSet = new Set(favIds);
+    const byKo = (a: Pool, b: Pool) => a.name.localeCompare(b.name, 'ko');
+    return [
+      ...matched.filter((p) => favSet.has(p.id)).sort(byKo),
+      ...matched.filter((p) => !favSet.has(p.id)).sort(byKo),
+    ];
+  }, [sortedPools, query, favIds]);
 
+  // 검색어 입력 후 키보드 [완료]/Enter → 전체 일치 결과를 목록에 적용
+  // (1개만 지정할 필요 없음. 0개면 빈 상태 노출).
+  const onSubmitSearch = () => {
+    setQuery(draft.trim());
+    setSearchOpen(false);
+  };
+
+  // 드롭다운에서 특정 수영장을 고르면 그 이름으로 확정(편의 — 필수 아님)
   const onSelectSearch = (pool: Pool) => {
     setQuery(pool.name);
-    setDraft('');
+    setDraft(pool.name);
     setSearchOpen(false);
   };
 
@@ -272,6 +290,8 @@ export function PoolListScreen() {
                     autoFocus
                     value={draft}
                     onChangeText={setDraft}
+                    onSubmitEditing={onSubmitSearch}
+                    returnKeyType="search"
                     style={styles.poolSearchInput}
                   />
                   {draft.length === 0 ? (
