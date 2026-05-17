@@ -19,6 +19,8 @@ import IconIdBadgeWhite from '@assets/icons/id-badge-white.svg';
 import { MOCK_OTHER_SCHEDULES } from '@/lib/mockData';
 import { BUNDLE_AVATARS, type AvatarId } from '@/lib/avatars';
 import { RejectFriendModal } from '@/components/friends/RejectFriendModal';
+import { AddFriendSheet } from '@/components/friends/AddFriendSheet';
+import { FriendRequestSentModal } from '@/components/friends/FriendRequestSentModal';
 import { dispatchMessage } from '@/lib/messages/dispatch';
 import { WeekCalendar } from '@/components/calendar/WeekCalendar';
 import { useFriends, type FriendRequest } from '@/store/friends';
@@ -58,6 +60,9 @@ export function FriendsTab() {
   const reject = useFriends((s) => s.reject);
   const friends = useFriends((s) => s.friends);
   const blockedIds = useFriends((s) => s.blocked);
+  // 새 친구 추가 시트 + 요청완료 모달(169:5727 재사용) 상태
+  const [addOpen, setAddOpen] = React.useState(false);
+  const [sentName, setSentName] = React.useState<string | null>(null);
   const mySchedules = useSwimSchedules((s) => s.schedules);
   const setIntent = useAddScheduleIntent((s) => s.setIntent);
   const { data: pools } = usePools();
@@ -267,13 +272,14 @@ export function FriendsTab() {
             </View>
           ) : null}
 
-          {/* 친구 추가(요청 보내기) — Phase 2. 디자인대로 노출, 동작은 추후. */}
+          {/* 새 친구 추가 — 시트 오픈 (Figma 134:9837 / 168:7488) */}
           <Pressable
-            style={styles.cta}
+            onPress={() => setAddOpen(true)}
+            style={({ pressed }) => [styles.cta, pressed && { opacity: 0.85 }]}
             accessibilityRole="button"
-            accessibilityLabel="친구 추가"
+            accessibilityLabel="새 친구 추가"
           >
-            <Text style={styles.ctaLabel}>친구 추가</Text>
+            <Text style={styles.ctaLabel}>새 친구 추가</Text>
             <IconUserDouble width={20} height={20} />
           </Pressable>
         </View>
@@ -527,6 +533,20 @@ export function FriendsTab() {
         name={rejectTarget?.name ?? ''}
         onReject={confirmReject}
         onLater={() => setRejectTarget(null)}
+      />
+
+      <AddFriendSheet
+        visible={addOpen}
+        onClose={() => setAddOpen(false)}
+        onSent={(name) => {
+          setAddOpen(false);
+          setSentName(name);
+        }}
+      />
+      <FriendRequestSentModal
+        visible={sentName !== null}
+        name={sentName ?? ''}
+        onClose={() => setSentName(null)}
       />
     </>
   );
