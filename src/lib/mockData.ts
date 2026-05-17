@@ -16,8 +16,8 @@ export interface MockAccount {
   avatar: AvatarId;
 }
 
-// ── 친구 10명 ────────────────────────────────────────────────
-export const MOCK_FRIENDS: MockAccount[] = [
+// ── 친구 10명 (기본) ──────────────────────────────────────────
+const BASE_FRIENDS: MockAccount[] = [
   { id: 'fr1', name: '강두형', nickname: '물개왕', status: '오늘도 1km 완영', code: 'POOL-1A2B', avatar: 'avatar-male-1' },
   { id: 'fr2', name: '이수진', nickname: '자유형장인', status: '접영 연습 중', code: 'POOL-3C4D', avatar: 'avatar-female-1' },
   { id: 'fr3', name: 'Joshua Smith', nickname: 'josh', status: '수영 더 열심히', code: 'POOL-5E6F', avatar: 'avatar-male-2' },
@@ -28,6 +28,32 @@ export const MOCK_FRIENDS: MockAccount[] = [
   { id: 'fr8', name: 'Daniel Park', nickname: 'danp', status: '주 5회 수영', code: 'POOL-5O6P', avatar: 'avatar-male-5' },
   { id: 'fr9', name: '한지우', nickname: '잠수왕', status: '숨 참기 2분', code: 'POOL-7Q8R', avatar: 'avatar-female-4' },
   { id: 'fr10', name: '오세영', nickname: '수영바보', status: '수영장이 내 집', code: 'POOL-9S0T', avatar: 'avatar-male-6' },
+];
+
+// 사당문화회관 오버플로우 테스트용 친구 30명 — 전원 1개 슬롯 참여 →
+// 참여자 "더보기" / 지도 "… more"(29 초과) 검증. 기존 GWANAK/RANGE
+// 생성기엔 안 섞음(BASE_FRIENDS만 사용)이라 다른 화면 영향 없음.
+const TEST_AVATAR_IDS: AvatarId[] = [
+  'avatar-male-1', 'avatar-male-2', 'avatar-male-3',
+  'avatar-male-4', 'avatar-male-5', 'avatar-male-6',
+  'avatar-female-1', 'avatar-female-2', 'avatar-female-3',
+  'avatar-female-4', 'avatar-female-5', 'avatar-female-6',
+];
+const SADANG_TEST_FRIENDS: MockAccount[] = Array.from({ length: 30 }, (_, i) => {
+  const n = i + 11;
+  return {
+    id: `fr${n}`,
+    name: `테스트친구${n}`,
+    nickname: `tester${n}`,
+    status: '사당 13시 자유수영',
+    code: `POOL-T${String(n).padStart(3, '0')}`,
+    avatar: TEST_AVATAR_IDS[i % TEST_AVATAR_IDS.length],
+  };
+});
+
+export const MOCK_FRIENDS: MockAccount[] = [
+  ...BASE_FRIENDS,
+  ...SADANG_TEST_FRIENDS,
 ];
 
 // ── 친구 아닌 계정 10개 ──────────────────────────────────────
@@ -129,7 +155,7 @@ const TEST_SLOTS: { date: string; start: string; end: string }[] = [
 ];
 
 const OTHER_USERS = [
-  ...MOCK_FRIENDS.map((u) => ({ ...u, isFriend: true })),
+  ...BASE_FRIENDS.map((u) => ({ ...u, isFriend: true })),
   ...MOCK_NON_FRIENDS.map((u) => ({ ...u, isFriend: false })),
 ];
 
@@ -218,7 +244,7 @@ const MAP_STACK_TEST_TIMES: { start: string; end: string }[] = [
   { start: '18:00', end: '19:50' },
   { start: '20:00', end: '21:50' },
 ];
-const GWANAK_24H_TEST: OtherSchedule[] = MOCK_FRIENDS.flatMap((u, i) => {
+const GWANAK_24H_TEST: OtherSchedule[] = BASE_FRIENDS.flatMap((u, i) => {
   const visibility: ScheduleVisibility =
     i % 5 === 4 ? 'private' : i % 2 === 0 ? 'public' : 'friends';
   const t18 = MAP_STACK_TEST_TIMES[i % MAP_STACK_TEST_TIMES.length];
@@ -238,8 +264,30 @@ const GWANAK_24H_TEST: OtherSchedule[] = MOCK_FRIENDS.flatMap((u, i) => {
   ];
 });
 
+// ── 사당문화회관 오버플로우 테스트 (사용자 요청) ───────────────
+// 친구 30명 전원, 2026-05-16(토) 13:00~14:50 사당문화회관(POOL_SEOUL_0006)
+// 자유수영 슬롯에 참여(가시성 public). 토 13:00 슬롯 = 13:00~14:50
+// (migration 0029 — by_day "토"). 같은 슬롯에 내가 등록하면 30명이
+// 참여자로 잡혀 "더보기"/스택 "… more"(29 초과) 검증 가능.
+// 주의: 05-16은 지난 날짜 → 지도 스택(24h 내 진행예정)에는 안 뜸.
+// 지도 "… more"까지 보려면 기기 시계를 05-16 13:00 이전으로.
+const SADANG_0516: OtherSchedule[] = SADANG_TEST_FRIENDS.map((u) => ({
+  id: `oth-sadang-${u.id}`,
+  userId: u.id,
+  name: u.name,
+  avatar: u.avatar,
+  isFriend: true,
+  poolId: 'POOL_SEOUL_0006',
+  poolName: '사당문화회관',
+  date: '2026-05-16',
+  start: '13:00',
+  end: '14:50',
+  visibility: 'public',
+}));
+
 export const MOCK_OTHER_SCHEDULES: OtherSchedule[] = [
   ...BASE_OTHER_SCHEDULES,
   ...RANGE_5_17_5_30,
   ...GWANAK_24H_TEST,
+  ...SADANG_0516,
 ];
