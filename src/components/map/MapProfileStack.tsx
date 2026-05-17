@@ -12,7 +12,7 @@ import type { StackEntry } from '@/lib/mapProfileStacks';
 import { tokens } from '@/styles/tokens';
 
 const AV = 20; // 아바타 지름 (Figma 173:13711)
-const STEP = 18; // 가로 배치 간격 (2px 겹침)
+const STEP = 17; // 가로 배치 간격 (3px 겹침 — 사용자 튜닝)
 const ROW_H = 20; // 행 높이 (세로 비겹침)
 const COLS = 6;
 const ROWS = 5;
@@ -22,7 +22,11 @@ export const STACK_W = (COLS - 1) * STEP + AV; // 110
 export const STACK_H = ROWS * ROW_H; // 100
 
 /** index → 셀 위치. r=0 이 맨 아래 행, 행 안에서는 왼→오.
- *  Figma 173:13745 flex + mr-[-2px]: 뒤(오른쪽) 아바타가 앞을 덮음 → z=c. */
+ *  레이어(사용자 확정): 한 줄 6명 중 맨 오른쪽(c=5)이 최상단,
+ *  왼쪽으로 갈수록 한 단계씩 아래, 맨 왼쪽(c=0)이 최하단.
+ *  → zIndex=c. 렌더 순서도 왼→오라 오른쪽이 마지막에 그려져
+ *  paint 순서로도 동일(캡처 방식 무관 결정적). Figma 173:13745
+ *  flex + mr-[-2px] 와 일치. */
 function cellPos(i: number): { left: number; top: number; z: number } {
   const r = Math.floor(i / COLS);
   const c = i % COLS;
