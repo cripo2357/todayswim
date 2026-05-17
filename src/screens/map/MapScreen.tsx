@@ -438,7 +438,7 @@ export function MapScreen() {
         })}
       </NaverMapView>
 
-      {/* Figma 38:1203 — 우측 FAB 3개: 필터 / 작성(More) / 위치 */}
+      {/* Figma 38:1203 — 우측 FAB: 필터 / 내 위치 / 프로필 */}
       <View
         style={[styles.controls, { top: insets.top + 80 }]}
         pointerEvents="box-none"

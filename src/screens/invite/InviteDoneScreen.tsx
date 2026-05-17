@@ -1,6 +1,7 @@
 // Figma 129:3779 — 수영 초대장 보내기 완료 (dim 모달, 가운데 카드).
-// 공통 RequestComplete는 다른 완료 화면(시간표/수영장/정보수정)도 쓰므로
-// 건드리지 않고, 이 화면만 129:3779 스펙에 정확히 맞춰 전용 구현.
+// 공통 RequestComplete는 수영장 추가/정보 수정 요청 완료(PoolDoneScreen)에
+// 쓰이므로 건드리지 않고, 이 화면만 129:3779 스펙에 맞춰 전용 구현.
+// (자유수영 시간표 요청 기능은 제거됨 — 관련 완료 화면 없음.)
 
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';

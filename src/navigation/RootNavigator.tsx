@@ -7,7 +7,6 @@ import { MapScreen } from '@/screens/map/MapScreen';
 import { ScheduleViewScreen } from '@/screens/schedule/ScheduleViewScreen';
 import { PoolNameScreen } from '@/screens/pool-submit/PoolNameScreen';
 import { PoolDoneScreen } from '@/screens/pool-submit/PoolDoneScreen';
-import { MoreScreen } from '@/screens/more/MoreScreen';
 import { AnnouncementsScreen } from '@/screens/announcement/AnnouncementsScreen';
 import { PoolFilterScreen } from '@/screens/filter/PoolFilterScreen';
 import { PoolListScreen } from '@/screens/pool-list/PoolListScreen';
@@ -85,11 +84,6 @@ export function RootNavigator() {
         options={DIM_MODAL_OPTIONS}
       />
 
-      <Stack.Screen
-        name="More"
-        component={MoreScreen}
-        options={DIM_MODAL_OPTIONS}
-      />
       <Stack.Screen name="Announcements" component={AnnouncementsScreen} />
 
       <Stack.Screen name="PoolFilter" component={PoolFilterScreen} />

@@ -50,8 +50,8 @@ export type RootStackParamList = {
   PoolName: { mode: 'create' | 'edit'; poolId?: string };
   PoolDone: { mode: 'create' | 'edit' };
 
-  // 부가 기능
-  More: undefined;
+  // 공지사항 (설정 > 공지사항 → 진입). 구 '부가 기능(More)' 화면은 제거됨 —
+  // 기능은 모두 설정으로 이관(수영장 추가/수정 요청·공지사항·의견 메일).
   Announcements: undefined;
 
   // 수영장 검색 필터
