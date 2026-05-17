@@ -21,11 +21,12 @@ const ROWS = 5;
 export const STACK_W = (COLS - 1) * STEP + AV; // 110
 export const STACK_H = ROWS * ROW_H; // 100
 
-/** index → 셀 위치. r=0 이 맨 아래 행, 행 안에서는 왼→오. 왼쪽이 위층. */
+/** index → 셀 위치. r=0 이 맨 아래 행, 행 안에서는 왼→오.
+ *  Figma 173:13745 flex + mr-[-2px]: 뒤(오른쪽) 아바타가 앞을 덮음 → z=c. */
 function cellPos(i: number): { left: number; top: number; z: number } {
   const r = Math.floor(i / COLS);
   const c = i % COLS;
-  return { left: c * STEP, top: STACK_H - AV - r * ROW_H, z: COLS - c };
+  return { left: c * STEP, top: STACK_H - AV - r * ROW_H, z: c };
 }
 
 export function MapProfileStack({
@@ -49,8 +50,8 @@ export function MapProfileStack({
         );
       })}
       {overflow ? (
-        // 30번째 칸(맨 윗줄 6번째 = 우상단). Figma 173:13725 —
-        // 원 + 흰 점 3개("… more"). 색은 Figma 변수 pd-blue.
+        // 30번째 칸(맨 윗줄 6번째 = 우상단). Figma 173:13752 —
+        // pd-mint 원 + 점 3개("… more"). bg=pd-mint(Figma 확정).
         <View
           style={[
             styles.cell,
@@ -72,7 +73,7 @@ const styles = StyleSheet.create({
   cell: { position: 'absolute', width: AV, height: AV },
   more: {
     borderRadius: AV / 2,
-    backgroundColor: tokens.color.pdBlue,
+    backgroundColor: tokens.color.pdMint,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

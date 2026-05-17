@@ -479,7 +479,10 @@ export function MapScreen() {
                   longitude={p.lng}
                   width={Math.round(size / 2 + STACK_PIN_GAP + STACK_W)}
                   height={STACK_H}
-                  anchor={{ x: 0, y: 0.5 }}
+                  // Figma 173:13735 frame=flex items-end → 스택을 핀 '바텀'에
+                  // 정렬. 핀은 anchor 중앙(0.5)이라 핀 하단 = 좌표 + size/2.
+                  // 스택 박스(STACK_H) 하단이 핀 하단에 오도록 anchor.y 보정.
+                  anchor={{ x: 0, y: 1 - size / (2 * STACK_H) }}
                   zIndex={isSelected ? 9 : 2}
                 >
                   <View

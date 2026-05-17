@@ -43,7 +43,9 @@ export function Avatar({
   borderWidth?: number;
   style?: StyleProp<ViewStyle>;
 }) {
-  const inner = size - borderWidth * 2;
+  // Figma 173-13735: 이미지는 원을 꽉 채우고(inset-0 size-full), 관계 링은
+  // 이미지를 줄이지 않는 오버레이로. 그래야 -2px 겹침이 실제로 보인다
+  // (이미지를 border만큼 줄이면 겹침이 사라져 여백처럼 보임).
   return (
     <View
       style={[
@@ -51,33 +53,50 @@ export function Avatar({
           width: size,
           height: size,
           borderRadius: size / 2,
-          borderWidth,
-          borderColor: BORDER[relation],
           backgroundColor: tokens.color.bgPaper,
           overflow: 'hidden',
-          alignItems: 'center',
-          justifyContent: 'center',
         },
         style,
       ]}
     >
       {isBundleAvatar(photoUri) ? (
         React.createElement(BUNDLE_AVATARS[photoUri], {
-          width: inner,
-          height: inner,
+          width: size,
+          height: size,
         })
       ) : photoUri ? (
-        <Image
-          source={{ uri: photoUri }}
-          style={{ width: inner, height: inner }}
-        />
+        <Image source={{ uri: photoUri }} style={{ width: size, height: size }} />
       ) : (
-        <User
-          size={Math.round(inner * 0.6)}
-          color={tokens.color.ink400}
-          strokeWidth={2}
-        />
+        <View
+          style={{
+            width: size,
+            height: size,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <User
+            size={Math.round(size * 0.55)}
+            color={tokens.color.ink400}
+            strokeWidth={2}
+          />
+        </View>
       )}
+      {borderWidth > 0 ? (
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            right: 0,
+            bottom: 0,
+            borderRadius: size / 2,
+            borderWidth,
+            borderColor: BORDER[relation],
+          }}
+        />
+      ) : null}
     </View>
   );
 }
