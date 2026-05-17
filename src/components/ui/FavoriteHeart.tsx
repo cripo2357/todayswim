@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
   tooltip: {
     position: 'absolute',
     bottom: '100%',
-    marginBottom: -13,
+    marginBottom: -6,
     marginLeft: -100,
     width: 200,
     zIndex: 9999,
