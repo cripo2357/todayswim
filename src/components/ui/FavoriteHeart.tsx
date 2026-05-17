@@ -78,11 +78,11 @@ const styles = StyleSheet.create({
   // 붙임. left=size+8 → 회전 꼬리 끝이 하트 오른쪽 끝에 닿음(≈8.5px 돌출).
   // 세로 중앙: top:'50%'(하트 중앙) + marginTop -13(버블 높이 26 절반).
   // left는 호출부에서 size+4 (size 가변이라 인라인 — 사용자 조정: 기준
-  // size+8에서 왼쪽 4px). marginTop -15 = 세로중앙(-13) + 위로 2px.
+  // size+8에서 왼쪽 4px). marginTop -14 = 세로중앙(-13) + 위 2px - 아래 1px.
   tooltip: {
     position: 'absolute',
     top: '50%',
-    marginTop: -15,
+    marginTop: -14,
     width: 200,
     alignItems: 'flex-start',
     zIndex: 10,
