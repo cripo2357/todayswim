@@ -70,7 +70,7 @@ const ZOOM_DESELECT_LEVELS = 1.0;
 
 // 마커 핀과 프로필 스택 사이 간격(px). Figma 173:13595 기준 스택이 핀 우측에
 // 살짝 겹쳐 붙음 — 음수 = 핀 쪽으로 tuck.
-const STACK_PIN_GAP = -2;
+const STACK_PIN_GAP = -7;
 
 // 단순 평면 근사 거리(m). 짧은 거리/한국 위도에선 haversine과 차이 무시 가능.
 function approxDistanceMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
