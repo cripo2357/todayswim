@@ -65,10 +65,14 @@ export function RootNavigator() {
         component={SplashScreen}
         options={{ animation: 'fade' }}
       />
+      {/* freezeOnBlur: MyInfo 등이 위로 push돼 지도가 가려지면 MapScreen
+       *  React 서브트리 동결 → 공유 store 변경 시 백그라운드 리렌더/재계산
+       *  (buildPoolProfileStacks·supercluster) 정지. 복귀 시 1회 리렌더로
+       *  store 최신값 반영. 전역 아님 — transparentModal(뒤 화면 보임)엔 미적용. */}
       <Stack.Screen
         name="MapMain"
         component={MapScreen}
-        options={{ animation: 'fade' }}
+        options={{ animation: 'fade', freezeOnBlur: true }}
       />
 
       {/* Dim 모달 오버레이 — 뒤 화면이 비치게 transparentModal + contentStyle transparent */}
