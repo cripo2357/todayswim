@@ -26,6 +26,7 @@ import {
 } from '@/lib/mockData';
 import { BUNDLE_AVATARS } from '@/lib/avatars';
 import { useSentInvites, inviteSlotKey } from '@/store/sentInvites';
+import { dispatchMessage } from '@/lib/messages/dispatch';
 import { tokens } from '@/styles/tokens';
 
 const SCREEN_H = Dimensions.get('window').height;
@@ -109,6 +110,17 @@ export function InviteFriendsScreen() {
     if (selected.length === 0) return;
     // 보낸 초대 기록 → 다음에 같은 슬롯 열면 검색 대상에서 제외.
     markInvited(slotKey, selected.map((f) => f.id));
+    // 발송 이력 적재 (Rule: invite_sent)
+    void dispatchMessage(
+      'invite_sent',
+      {
+        name: selected.length === 1 ? selected[0].name : undefined,
+        count: selected.length,
+        pool: poolName,
+        when: formatScheduleLine(date, start),
+      },
+      { poolId, date, start, end },
+    );
     // BottomSheet는 RN Modal — navigate면 그 Modal이 위에 떠 완료 화면을
     // 가림. replace로 이 화면(시트 Modal)을 닫고 완료 화면을 노출.
     navigation.replace('InviteDone', { count: selected.length });

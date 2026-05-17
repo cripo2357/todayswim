@@ -12,6 +12,7 @@ import {
 import { MOCK_FRIENDS, MOCK_NON_FRIENDS } from '@/lib/mockData';
 import { BUNDLE_AVATARS, type AvatarId } from '@/lib/avatars';
 import { RejectFriendModal } from '@/components/friends/RejectFriendModal';
+import { dispatchMessage } from '@/lib/messages/dispatch';
 import { tokens } from '@/styles/tokens';
 
 // ── 더미 데이터 (mockData) ────────────────────────────────────
@@ -61,6 +62,7 @@ export function FriendsTab() {
 
   const confirmReject = () => {
     if (!rejectTarget) return;
+    void dispatchMessage('friend_request_rejected', { name: rejectTarget.name });
     setRequests((prev) => prev.filter((r) => r.id !== rejectTarget.id));
     setRejectTarget(null);
   };
