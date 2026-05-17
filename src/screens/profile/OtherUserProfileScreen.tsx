@@ -28,6 +28,7 @@ import { useAddScheduleIntent } from '@/store/addScheduleIntent';
 import { usePools } from '@/hooks/usePools';
 import { BUNDLE_AVATARS } from '@/lib/avatars';
 import { ConfirmFriendActionModal } from '@/components/friends/ConfirmFriendActionModal';
+import { FriendRequestSentModal } from '@/components/friends/FriendRequestSentModal';
 import { tokens } from '@/styles/tokens';
 
 const DOW = ['일', '월', '화', '수', '목', '금', '토'];
@@ -87,6 +88,8 @@ export function OtherUserProfileScreen() {
   const poolPhoto = (id: string) => pools?.find((p) => p.id === id)?.photoUrl;
 
   const [modal, setModal] = React.useState<null | 'block' | 'delete'>(null);
+  // 친구 신청 직후 '친구 추가 요청 완료'(169:5727) 표시
+  const [sentOpen, setSentOpen] = React.useState(false);
   const close = () => navigation.goBack();
 
   if (!profile || rel === 'blocked') {
@@ -102,8 +105,10 @@ export function OtherUserProfileScreen() {
 
   const cta = ctaConfig(rel);
   const onCta = () => {
-    if (cta.action === 'send') fStore.sendRequest(userId);
-    else if (cta.action === 'accept') fStore.accept(userId);
+    if (cta.action === 'send') {
+      fStore.sendRequest(userId);
+      setSentOpen(true);
+    } else if (cta.action === 'accept') fStore.accept(userId);
   };
   const onJoin = (poolId: string, date: string, start: string, end: string) => {
     setIntent({ poolId, date, start, end });
@@ -304,6 +309,14 @@ export function OtherUserProfileScreen() {
         secondaryIcon="ban"
         onSecondary={() => setModal('block')}
         onClose={() => setModal(null)}
+      />
+      <FriendRequestSentModal
+        visible={sentOpen}
+        name={profile.name}
+        onClose={() => {
+          setSentOpen(false);
+          close();
+        }}
       />
     </View>
   );

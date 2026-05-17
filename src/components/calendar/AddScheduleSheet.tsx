@@ -331,7 +331,7 @@ export function AddScheduleSheet({
               <ScheduleCompleteIllust width={311} height={228} />
             </View>
             <View style={styles.doneTextBlock}>
-              <Text style={styles.doneTitle}>수영 일정 등록</Text>
+              <Text style={styles.doneTitle}>수영 일정 추가 완료</Text>
               <Text style={styles.doneSub}>
                 즐거운 수영 일정이 등록되었습니다.
               </Text>
