@@ -6,6 +6,7 @@
  */
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { DayOfWeek } from '@/types/schedule';
 
 export type Gender = 'male' | 'female' | 'other';
 export type Stroke = '자유형' | '배영' | '접영' | '평영';
@@ -57,6 +58,18 @@ export function genProfileId(): string {
   return s;
 }
 
+/**
+ * 수영 수업 시간 — 친구가 프로필을 보고 초대 시 참고용(정보 전용).
+ * 일정 초대 차단/캘린더 노출 같은 시스템 연동은 의도적으로 안 함.
+ * 한 요일에 여러 개 가능. start/end는 "HH:MM"(24h).
+ */
+export interface SwimClass {
+  id: string;
+  day: DayOfWeek;
+  start: string; // "HH:MM"
+  end: string; // "HH:MM"
+}
+
 export interface UserProfile {
   id: string; // 친구 추가용 계정 ID (계정 생성 시 발급, 변경 가능)
   name: string;
@@ -68,6 +81,7 @@ export interface UserProfile {
   bio?: string; // 내 소개 (최대 20자)
   certifications?: Certification[]; // 자격증 (복수 선택)
   im100Record?: IM100Record; // IM100 기록 (단일 선택)
+  swimClasses?: SwimClass[]; // 수영 수업 시간 (정보 전용 — 초대 참고)
   createdAt: string;
 }
 

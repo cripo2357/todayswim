@@ -25,6 +25,9 @@ export type RootStackParamList = {
   // 프로필 (설정 > 프로필 → 진입). Figma 117:2556 — 기능은 MyInfo 프로필 탭과 동일
   Profile: undefined;
 
+  // 수영 수업 시간 등록 (프로필 > 수영 수업 > 수업 시간 추가). Figma 90:6622
+  SwimClassRegister: undefined;
+
   // 친구 초대 (일정 확정 → 초대 대상만 추가). Figma 150:8692 / 154:3850 / 129:3779
   InviteFriends: {
     poolId: string;

@@ -33,6 +33,7 @@ import {
   type IM100Record,
 } from '@/store/profile';
 import { isBundleAvatar, BUNDLE_AVATARS } from '@/lib/avatars';
+import { DAY_ORDER, groupByDay, formatClassChip } from '@/lib/swimClass';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
 import { CalendarSheet } from '@/components/auth/CalendarSheet';
@@ -149,6 +150,8 @@ export function ProfileTab({
   profile: UserProfile;
   patch: (p: Partial<UserProfile>) => void;
 }) {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   // 내 정보에서는 ProfileImage 화면을 거치지 않고 바로 파일 선택기 → 즉시 반영.
   const onPickPhoto = async () => {
     const r = await pickProfileImage();
@@ -512,6 +515,29 @@ export function ProfileTab({
         }}
         max={EXP_MAX}
       />
+
+      {/* Figma 166:8233 — 수영 수업 (정보 전용, 초대 참고). 등록 칩 + 추가 */}
+      <Text style={[styles.subLabel, { marginTop: 24 }]}>수영 수업</Text>
+      <View style={styles.swimClassWrap}>
+        {DAY_ORDER.flatMap((d) => groupByDay(profile.swimClasses ?? [])[d]).map(
+          (c) => (
+            <View key={c.id} style={styles.swimClassChip}>
+              <Text style={styles.swimClassChipText}>{formatClassChip(c)}</Text>
+            </View>
+          ),
+        )}
+        <Pressable
+          onPress={() => navigation.navigate('SwimClassRegister')}
+          style={({ pressed }) => [
+            styles.swimClassAdd,
+            pressed && { opacity: 0.6 },
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="수업 시간 추가"
+        >
+          <Text style={styles.swimClassAddText}>수업 시간 추가</Text>
+        </Pressable>
+      </View>
 
       <Text style={[styles.subLabel, { marginTop: 24 }]}>가능 영법</Text>
       <ChipRow>
@@ -990,6 +1016,46 @@ const styles = StyleSheet.create({
   },
 
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+
+  // Figma 166:8235 — 수영 수업 칩 wrap (gap 8)
+  swimClassWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  // Figma 166:8237 — 등록된 수업 칩: pd-mint bg+border, r9 px10 py4
+  swimClassChip: {
+    backgroundColor: tokens.color.pdMint,
+    borderWidth: 1,
+    borderColor: tokens.color.pdMint,
+    borderRadius: 9,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Figma I166:8237 — Medium 14/20 -0.084 white
+  swimClassChipText: {
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: -0.084,
+    fontFamily: tokens.font.sansMedium,
+    color: tokens.color.white,
+  },
+  // Figma 166:8236 — 수업 시간 추가: outline #CBD5E1, r9 px10 py4
+  swimClassAdd: {
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 9,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Figma I166:8236 — Medium 14/20 -0.084 #4B5563
+  swimClassAddText: {
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: -0.084,
+    fontFamily: tokens.font.sansMedium,
+    color: '#4B5563',
+  },
   // Figma Badge Text — px10 py4, radius 9, border #CBD5E1
   chip: {
     paddingHorizontal: 10,
