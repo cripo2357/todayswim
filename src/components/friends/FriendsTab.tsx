@@ -8,6 +8,9 @@ import React from 'react';
 import {
   View, Text, StyleSheet, Pressable, ScrollView, TextInput, Dimensions, Image,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '@/navigation/types';
 import { XCircle, Plus, User } from 'lucide-react-native';
 import IconChevronDown from '@assets/icons/chevron-down.svg';
 import IconUserDouble from '@assets/icons/user-double.svg';
@@ -44,10 +47,12 @@ interface FriendSlot {
   date: string;
   start: string;
   end: string;
-  participants: { name: string; avatar: AvatarId }[];
+  participants: { userId: string; name: string; avatar: AvatarId }[];
 }
 
 export function FriendsTab() {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const requests = useFriends((s) => s.requests);
   const accept = useFriends((s) => s.accept);
   const reject = useFriends((s) => s.reject);
@@ -92,7 +97,11 @@ export function FriendsTab() {
         m.set(key, g);
       }
       if (!g.participants.some((p) => p.name === o.name)) {
-        g.participants.push({ name: o.name, avatar: o.avatar });
+        g.participants.push({
+          userId: o.userId,
+          name: o.name,
+          avatar: o.avatar,
+        });
       }
     }
     return [...m.values()].sort(
@@ -176,7 +185,17 @@ export function FriendsTab() {
             <View style={styles.list}>
               {requests.map((req) => (
                 <View key={req.id} style={styles.card}>
-                  <Avatar size={40} avatarId={req.avatar} />
+                  <Pressable
+                    onPress={() =>
+                      navigation.navigate('OtherUserProfile', {
+                        userId: req.id,
+                      })
+                    }
+                    accessibilityRole="button"
+                    accessibilityLabel={`${req.name} 프로필 보기`}
+                  >
+                    <Avatar size={40} avatarId={req.avatar} />
+                  </Pressable>
                   <View style={styles.cardBody}>
                     <View style={styles.cardHeadGroup}>
                       <View style={styles.cardHead}>
@@ -287,7 +306,17 @@ export function FriendsTab() {
                     {s.participants.map((p, i) => {
                       const Bundle = BUNDLE_AVATARS[p.avatar];
                       return (
-                        <View key={i} style={styles.miniRow}>
+                        <Pressable
+                          key={i}
+                          style={styles.miniRow}
+                          onPress={() =>
+                            navigation.navigate('OtherUserProfile', {
+                              userId: p.userId,
+                            })
+                          }
+                          accessibilityRole="button"
+                          accessibilityLabel={`${p.name} 프로필 보기`}
+                        >
                           <View style={styles.miniAvatar}>
                             {Bundle ? (
                               <Bundle width={24} height={24} />
@@ -302,7 +331,7 @@ export function FriendsTab() {
                           <Text style={styles.miniName} numberOfLines={1}>
                             {p.name}
                           </Text>
-                        </View>
+                        </Pressable>
                       );
                     })}
                   </View>
@@ -346,7 +375,15 @@ export function FriendsTab() {
           <View style={styles.list}>
             {listFriends.map((f) => (
               <View key={f.id} style={styles.friendRow}>
-                <Avatar size={48} avatarId={f.avatar} />
+                <Pressable
+                  onPress={() =>
+                    navigation.navigate('OtherUserProfile', { userId: f.id })
+                  }
+                  accessibilityRole="button"
+                  accessibilityLabel={`${f.name} 프로필 보기`}
+                >
+                  <Avatar size={48} avatarId={f.avatar} />
+                </Pressable>
                 <View style={styles.friendInfo}>
                   <Text style={styles.friendName} numberOfLines={1}>
                     {f.name}
@@ -360,6 +397,9 @@ export function FriendsTab() {
                 </View>
                 <Pressable
                   style={styles.profileBtn}
+                  onPress={() =>
+                    navigation.navigate('OtherUserProfile', { userId: f.id })
+                  }
                   accessibilityRole="button"
                   accessibilityLabel={`${f.name} 프로필`}
                 >

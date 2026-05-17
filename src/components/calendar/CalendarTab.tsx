@@ -251,7 +251,17 @@ export function CalendarTab() {
                         <View style={styles.divider} />
                         <View style={styles.ptGrid}>
                           {pg.friends.map((o) => (
-                            <View key={o.id} style={styles.ptCell}>
+                            <Pressable
+                              key={o.id}
+                              style={styles.ptCell}
+                              onPress={() =>
+                                navigation.navigate('OtherUserProfile', {
+                                  userId: o.userId,
+                                })
+                              }
+                              accessibilityRole="button"
+                              accessibilityLabel={`${o.name} 프로필 보기`}
+                            >
                               <View
                                 style={[
                                   styles.ptAvatar,
@@ -266,7 +276,7 @@ export function CalendarTab() {
                               <Text style={styles.ptName} numberOfLines={1}>
                                 {o.name}
                               </Text>
-                            </View>
+                            </Pressable>
                           ))}
                           {!past ? (
                             <Pressable
@@ -310,7 +320,17 @@ export function CalendarTab() {
                         <View style={styles.divider} />
                         <View style={styles.ptGrid}>
                           {pg.others.map((o) => (
-                            <View key={o.id} style={styles.ptCell}>
+                            <Pressable
+                              key={o.id}
+                              style={styles.ptCell}
+                              onPress={() =>
+                                navigation.navigate('OtherUserProfile', {
+                                  userId: o.userId,
+                                })
+                              }
+                              accessibilityRole="button"
+                              accessibilityLabel={`${o.name} 프로필 보기`}
+                            >
                               <View
                                 style={[
                                   styles.ptAvatar,
@@ -325,7 +345,7 @@ export function CalendarTab() {
                               <Text style={styles.ptName} numberOfLines={1}>
                                 {o.name}
                               </Text>
-                            </View>
+                            </Pressable>
                           ))}
                         </View>
                       </>
