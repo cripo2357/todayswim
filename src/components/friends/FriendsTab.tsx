@@ -1,191 +1,417 @@
-// Figma 134:9837 — 내 정보 > 친구 탭.
+// Figma 134:9837 / 168:3794 — 내 정보 > 친구 탭.
 //
-// 백엔드 미연동 단계 — Figma 샘플 콘텐츠를 그대로 렌더(디자인 임의 생성 금지).
-// 아이콘은 lucide 근사치, 아바타/수영장 사진은 실데이터 없어 중립 placeholder
-// (가짜 이미지 발명 안 함). 추후 Figma export SVG/실데이터 연동 시 교체.
+// 3섹션: ① 새 친구(요청 수락/거절 + 친구 추가 CTA) ② 친구들의 수영 일정
+// (주간 달력 + 비공개 제외, '나도 참여' → 일정 추가) ③ 친구 목록(검색).
+// 백엔드 미연동(Phase1): friends store 메모리. 친구 요청 보내기는 Phase2.
 
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, TextInput } from 'react-native';
 import {
-  X, Check, Users, ChevronDown, Plus, MessageCircle, User,
-} from 'lucide-react-native';
-import { MOCK_FRIENDS, MOCK_NON_FRIENDS } from '@/lib/mockData';
+  View, Text, StyleSheet, Pressable, ScrollView, TextInput,
+} from 'react-native';
+import { XCircle, Plus, User } from 'lucide-react-native';
+import IconChevronDown from '@assets/icons/chevron-down.svg';
+import IconUserDouble from '@assets/icons/user-double.svg';
+import IconChatSmile from '@assets/icons/chat-bubble-smile.svg';
+import IconIdBadgeWhite from '@assets/icons/id-badge-white.svg';
+import { MOCK_OTHER_SCHEDULES } from '@/lib/mockData';
 import { BUNDLE_AVATARS, type AvatarId } from '@/lib/avatars';
 import { RejectFriendModal } from '@/components/friends/RejectFriendModal';
 import { dispatchMessage } from '@/lib/messages/dispatch';
+import { WeekCalendar } from '@/components/calendar/WeekCalendar';
+import { useFriends, type FriendRequest } from '@/store/friends';
+import { useSwimSchedules, dateKey } from '@/store/swimSchedule';
+import { useAddScheduleIntent } from '@/store/addScheduleIntent';
 import { tokens } from '@/styles/tokens';
 
-// ── 더미 데이터 (mockData) ────────────────────────────────────
-// 새 친구 요청: 친구아닌 계정 일부가 친구 요청한 상태(목)
-const NEW_REQUESTS = MOCK_NON_FRIENDS.slice(0, 2).map((a, i) => ({
-  id: a.id,
-  name: a.name,
-  avatar: a.avatar,
-  time: i === 0 ? '26.05.11 오전 3:23' : '26.05.10 오후 9:12',
-  lines: [`${a.name}님이 친구가 되고 싶어합니다.`, '서로 친구로 추가하겠습니까?'],
-}));
+const DOW = ['일', '월', '화', '수', '목', '금', '토'];
 
-// 친구들 수영 일정(목) — 친구 닉네임 활용
-const SCHEDULES = [
-  {
-    id: 's1',
-    pool: '올림픽 수영장',
-    when: '2026년 1월 23일 목요일, 오전 6시00분',
-    chip: { label: '친구에게만 일정 공개', kind: 'select' as const },
-    me: '내 닉네임',
-    friends: MOCK_FRIENDS.slice(0, 4).map((f) => f.nickname),
-  },
-  {
-    id: 's2',
-    pool: '강남구민체육센터',
-    when: '2026년 1월 24일 금요일, 오후 8시00분',
-    chip: { label: '나도 참여', kind: 'join' as const },
-    me: '내 닉네임',
-    friends: MOCK_FRIENDS.slice(4, 7).map((f) => f.nickname),
-  },
-];
+/** "YYYY-MM-DD","HH:MM" → "YYYY년 M월 D일(요일), 오전/오후 H:MM" */
+function formatWhen(date: string, start: string): string {
+  const [y, m, d] = date.split('-').map(Number);
+  const dow = DOW[new Date(y, m - 1, d).getDay()];
+  const [hh, mm] = start.split(':').map(Number);
+  const ampm = hh < 12 ? '오전' : '오후';
+  const h12 = hh % 12 === 0 ? 12 : hh % 12;
+  return `${y}년 ${m}월 ${d}일(${dow}), ${ampm} ${h12}:${String(mm).padStart(2, '0')}`;
+}
 
-// 친구 목록 — 친구 10명
-const FRIENDS = MOCK_FRIENDS.map((f) => ({
-  id: f.id,
-  name: f.name,
-  status: f.status,
-  avatar: f.avatar,
-}));
+interface FriendSlot {
+  key: string;
+  poolId: string;
+  poolName: string;
+  date: string;
+  start: string;
+  end: string;
+  names: string[];
+}
 
 export function FriendsTab() {
+  const requests = useFriends((s) => s.requests);
+  const accept = useFriends((s) => s.accept);
+  const reject = useFriends((s) => s.reject);
+  const friends = useFriends((s) => s.friends);
+  const mySchedules = useSwimSchedules((s) => s.schedules);
+  const setIntent = useAddScheduleIntent((s) => s.setIntent);
+
+  const [rejectTarget, setRejectTarget] = React.useState<FriendRequest | null>(
+    null,
+  );
+
+  // 내가 이미 참여한 슬롯 키 — 친구 일정에서 제외
+  const mySlots = React.useMemo(
+    () =>
+      new Set(
+        mySchedules.map((s) => `${s.poolId}|${s.date}|${s.start}|${s.end}`),
+      ),
+    [mySchedules],
+  );
+
+  // 친구의 '비공개 아님' 일정 슬롯(중복 참여자 묶음) — 내가 미참여인 것만
+  const allFriendSlots = React.useMemo<FriendSlot[]>(() => {
+    const m = new Map<string, FriendSlot>();
+    for (const o of MOCK_OTHER_SCHEDULES) {
+      if (!o.isFriend || o.visibility === 'private') continue;
+      const key = `${o.poolId}|${o.date}|${o.start}|${o.end}`;
+      if (mySlots.has(key)) continue;
+      let g = m.get(key);
+      if (!g) {
+        g = {
+          key,
+          poolId: o.poolId,
+          poolName: o.poolName,
+          date: o.date,
+          start: o.start,
+          end: o.end,
+          names: [],
+        };
+        m.set(key, g);
+      }
+      if (!g.names.includes(o.name)) g.names.push(o.name);
+    }
+    return [...m.values()].sort(
+      (a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start),
+    );
+  }, [mySlots]);
+
+  // 기본 선택일 = 가장 이른 친구 일정 날짜(없으면 오늘)
+  const [selectedDate, setSelectedDate] = React.useState<Date>(() => {
+    if (allFriendSlots.length === 0) return new Date();
+    const [y, mo, d] = allFriendSlots[0].date.split('-').map(Number);
+    return new Date(y, mo - 1, d);
+  });
+
+  const dayKey = dateKey(selectedDate);
+  const daySlots = allFriendSlots.filter((s) => s.date === dayKey);
+
+  // ── 친구 목록 검색 (수영 일정 추가의 풀 검색과 동일 float 패턴) ──
+  const [searchOpen, setSearchOpen] = React.useState(false);
+  const [draft, setDraft] = React.useState('');
   const [query, setQuery] = React.useState('');
-  const [requests, setRequests] = React.useState(NEW_REQUESTS);
-  // 거절 확인 모달 대상 (요청 1건) — null이면 모달 닫힘
-  const [rejectTarget, setRejectTarget] =
-    React.useState<(typeof NEW_REQUESTS)[number] | null>(null);
+  const [triggerY, setTriggerY] = React.useState(0);
+
+  const draftQ = draft.trim().toLowerCase();
+  const dropdownFriends = draftQ
+    ? friends.filter(
+        (f) =>
+          f.nickname.toLowerCase().includes(draftQ) ||
+          f.name.toLowerCase().includes(draftQ),
+      )
+    : friends;
+  const committedQ = query.trim().toLowerCase();
+  const listFriends = committedQ
+    ? friends.filter(
+        (f) =>
+          f.nickname.toLowerCase().includes(committedQ) ||
+          f.name.toLowerCase().includes(committedQ),
+      )
+    : friends;
 
   const confirmReject = () => {
     if (!rejectTarget) return;
     void dispatchMessage('friend_request_rejected', { name: rejectTarget.name });
-    setRequests((prev) => prev.filter((r) => r.id !== rejectTarget.id));
+    reject(rejectTarget.id);
     setRejectTarget(null);
   };
 
   return (
     <>
-    <ScrollView
-      contentContainerStyle={styles.scroll}
-      showsVerticalScrollIndicator={false}
-      keyboardShouldPersistTaps="handled"
-    >
-      {/* 새 친구 */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>새 친구</Text>
-
-        <View style={styles.list}>
-          {requests.map((req) => (
-            <View key={req.id} style={styles.card}>
-              <Avatar size={40} avatarId={req.avatar} />
-              <View style={styles.cardBody}>
-                <View style={styles.cardHeadGroup}>
-                  <View style={styles.cardHead}>
-                    <Text style={styles.notifTitle} numberOfLines={1}>
-                      {req.name}
-                    </Text>
-                    <Text style={styles.time}>{req.time}</Text>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        scrollEnabled={!searchOpen}
+      >
+        {/* ── 새 친구 ── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>새 친구</Text>
+          {requests.length > 0 ? (
+            <View style={styles.list}>
+              {requests.map((req) => (
+                <View key={req.id} style={styles.card}>
+                  <Avatar size={40} avatarId={req.avatar} />
+                  <View style={styles.cardBody}>
+                    <View style={styles.cardHeadGroup}>
+                      <View style={styles.cardHead}>
+                        <Text style={styles.notifTitle} numberOfLines={1}>
+                          {req.name}
+                        </Text>
+                        <Text style={styles.time}>{req.time}</Text>
+                      </View>
+                      <View style={styles.lines}>
+                        <Text style={styles.line}>
+                          {req.name}님이 친구가 되고 싶어합니다.
+                        </Text>
+                        <Text style={styles.line}>
+                          서로 친구로 추가하겠습니까?
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.actions}>
+                      <Pressable
+                        style={styles.badgeOutline}
+                        onPress={() => setRejectTarget(req)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${req.name} 친구 요청 거절`}
+                      >
+                        <XCircle size={16} color="#4B5563" strokeWidth={2} />
+                        <Text style={styles.badgeOutlineLabel}>거절</Text>
+                      </Pressable>
+                      <Pressable
+                        style={styles.badgeOutline}
+                        onPress={() => accept(req.id)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${req.name} 친구로 등록`}
+                      >
+                        <IconUserDouble width={16} height={16} />
+                        <Text style={styles.badgeOutlineLabel}>친구로 등록</Text>
+                      </Pressable>
+                    </View>
                   </View>
-                  <View style={styles.lines}>
-                    {req.lines.map((l, i) => (
-                      <Text key={i} style={styles.line}>
-                        {l}
-                      </Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          {/* 친구 추가(요청 보내기) — Phase 2. 디자인대로 노출, 동작은 추후. */}
+          <Pressable
+            style={styles.cta}
+            accessibilityRole="button"
+            accessibilityLabel="친구 추가"
+          >
+            <Text style={styles.ctaLabel}>친구 추가</Text>
+            <IconUserDouble width={20} height={20} />
+          </Pressable>
+        </View>
+
+        {/* ── 친구들의 수영 일정 ── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            친구들의 수영 일정 ({allFriendSlots.length})
+          </Text>
+          <WeekCalendar
+            selectedDate={selectedDate}
+            onSelectDate={setSelectedDate}
+            headerDivider
+          />
+          <View style={styles.list}>
+            {daySlots.length > 0 ? (
+              daySlots.map((s) => (
+                <View key={s.key} style={styles.schedCard}>
+                  <View style={styles.schedTop}>
+                    <View style={styles.schedInfo}>
+                      <View style={styles.schedTitleBlock}>
+                        <Text style={styles.schedPool} numberOfLines={1}>
+                          {s.poolName}
+                        </Text>
+                        <Text style={styles.schedWhen} numberOfLines={1}>
+                          {formatWhen(s.date, s.start)}
+                        </Text>
+                      </View>
+                      <Pressable
+                        style={styles.joinChip}
+                        onPress={() =>
+                          setIntent({
+                            poolId: s.poolId,
+                            date: s.date,
+                            start: s.start,
+                            end: s.end,
+                          })
+                        }
+                        accessibilityRole="button"
+                        accessibilityLabel={`${s.poolName} ${formatWhen(s.date, s.start)} 나도 참여`}
+                      >
+                        <Text style={styles.joinChipLabel}>나도 참여</Text>
+                        <Plus size={12} color={tokens.color.pdBlue} strokeWidth={2.4} />
+                      </Pressable>
+                    </View>
+                    <View style={styles.schedThumb} />
+                  </View>
+                  <View style={styles.schedDivider} />
+                  <View style={styles.schedFriends}>
+                    {s.names.map((n, i) => (
+                      <View key={i} style={styles.miniRow}>
+                        <View style={styles.miniAvatar}>
+                          <User
+                            size={12}
+                            color={tokens.color.ink400}
+                            strokeWidth={2}
+                          />
+                        </View>
+                        <Text style={styles.miniName} numberOfLines={1}>
+                          {n}
+                        </Text>
+                      </View>
                     ))}
                   </View>
                 </View>
-                <View style={styles.actions}>
-                  <Pressable
-                    style={styles.badgeOutline}
-                    onPress={() => setRejectTarget(req)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${req.name} 친구 추가 거절`}
-                  >
-                    <X size={16} color="#4B5563" strokeWidth={2} />
-                    <Text style={styles.badgeOutlineLabel}>거절</Text>
-                  </Pressable>
-                  <Pressable style={styles.badgeOutline}>
-                    <Check size={16} color="#4B5563" strokeWidth={2} />
-                    <Text style={styles.badgeOutlineLabel}>친구로 등록</Text>
-                  </Pressable>
-                </View>
-              </View>
-            </View>
-          ))}
+              ))
+            ) : (
+              <Text style={styles.empty}>
+                선택한 날짜에 친구들의 수영 일정이 없어요.
+              </Text>
+            )}
+          </View>
         </View>
 
-        <Pressable style={styles.cta}>
-          <Text style={styles.ctaLabel}>친구 추가</Text>
-          <Users size={20} color={tokens.color.black} strokeWidth={2} />
-        </Pressable>
-      </View>
+        {/* ── 친구 목록 ── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>친구 목록 ({friends.length})</Text>
+          <View onLayout={(e) => setTriggerY(e.nativeEvent.layout.y)}>
+            <Pressable
+              onPress={() => setSearchOpen(true)}
+              style={styles.searchTrigger}
+              accessibilityRole="button"
+              accessibilityLabel="닉네임으로 친구 검색"
+            >
+              <Text
+                style={[
+                  styles.searchTriggerText,
+                  !query && styles.searchTriggerPlaceholder,
+                ]}
+                numberOfLines={1}
+              >
+                {query || '닉네임'}
+              </Text>
+              <IconChevronDown width={20} height={20} />
+            </Pressable>
+          </View>
 
-      {/* 친구들 수영 일정 (N) */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>
-          친구들 수영 일정 ({SCHEDULES.length})
-        </Text>
-        <View style={styles.list}>
-          {SCHEDULES.map((s) => (
-            <ScheduleCard key={s.id} item={s} />
-          ))}
-        </View>
-      </View>
-
-      {/* 친구 목록 */}
-      <View style={styles.section}>
-        <Text style={styles.dropdownLabel}>친구 목록</Text>
-        <View style={styles.searchBox}>
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder="닉네임 입력"
-            placeholderTextColor="#4B5563"
-            style={styles.searchInput}
-          />
-          <ChevronDown size={20} color="#4B5563" strokeWidth={2} />
-        </View>
-
-        <View style={styles.list}>
-          {FRIENDS.map((f) => (
-            <View key={f.id} style={styles.friendRow}>
-              <Avatar size={48} avatarId={f.avatar} />
-              <View style={styles.friendInfo}>
-                <Text style={styles.friendName} numberOfLines={1}>
-                  {f.name}
-                </Text>
-                <View style={styles.friendStatusRow}>
-                  <MessageCircle size={20} color="#4B5563" strokeWidth={2} />
-                  <Text style={styles.friendStatus} numberOfLines={1}>
-                    {f.status}
+          <View style={styles.list}>
+            {listFriends.map((f) => (
+              <View key={f.id} style={styles.friendRow}>
+                <Avatar size={48} avatarId={f.avatar} />
+                <View style={styles.friendInfo}>
+                  <Text style={styles.friendName} numberOfLines={1}>
+                    {f.name}
                   </Text>
+                  <View style={styles.friendStatusRow}>
+                    <IconChatSmile width={20} height={20} />
+                    <Text style={styles.friendStatus} numberOfLines={1}>
+                      {f.status}
+                    </Text>
+                  </View>
                 </View>
+                <Pressable
+                  style={styles.profileBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${f.name} 프로필`}
+                >
+                  <Text style={styles.profileBtnLabel}>프로필</Text>
+                  <IconIdBadgeWhite width={16} height={16} />
+                </Pressable>
               </View>
-              <Pressable style={styles.detailBtn}>
-                <Text style={styles.detailBtnLabel}>자세히 보기</Text>
-              </Pressable>
-            </View>
-          ))}
-        </View>
-      </View>
-    </ScrollView>
+            ))}
+            {listFriends.length === 0 ? (
+              <Text style={styles.empty}>검색 결과가 없어요.</Text>
+            ) : null}
+          </View>
 
-    <RejectFriendModal
-      visible={rejectTarget !== null}
-      name={rejectTarget?.name ?? ''}
-      onReject={confirmReject}
-      onLater={() => setRejectTarget(null)}
-    />
+          {/* 검색 float — 섹션 마지막 자식 + absolute(트리거 y) */}
+          {searchOpen ? (
+            <>
+              <Pressable
+                style={styles.searchBackdrop}
+                onPress={() => setSearchOpen(false)}
+                accessibilityRole="button"
+                accessibilityLabel="친구 검색 닫기"
+              />
+              <View style={[styles.searchPanel, { top: triggerY }]}>
+                <View style={styles.searchPill}>
+                  <View style={styles.searchInputWrap}>
+                    <TextInput
+                      autoFocus
+                      value={draft}
+                      onChangeText={setDraft}
+                      onSubmitEditing={() => {
+                        setQuery(draft.trim());
+                        setSearchOpen(false);
+                      }}
+                      returnKeyType="search"
+                      style={styles.searchInput}
+                    />
+                    {draft.length === 0 ? (
+                      <Text style={styles.searchPlaceholder} pointerEvents="none">
+                        닉네임
+                      </Text>
+                    ) : null}
+                  </View>
+                  {draft.length > 0 ? (
+                    <Pressable
+                      onPress={() => setDraft('')}
+                      hitSlop={8}
+                      accessibilityRole="button"
+                      accessibilityLabel="검색어 지우기"
+                    >
+                      <XCircle size={20} color="#94A3B8" strokeWidth={2} />
+                    </Pressable>
+                  ) : null}
+                </View>
+                <ScrollView
+                  style={styles.searchList}
+                  contentContainerStyle={styles.searchListContent}
+                  nestedScrollEnabled
+                  keyboardShouldPersistTaps="always"
+                >
+                  {dropdownFriends.map((f) => (
+                    <Pressable
+                      key={f.id}
+                      style={styles.searchItem}
+                      onPress={() => {
+                        setQuery(f.name);
+                        setDraft(f.name);
+                        setSearchOpen(false);
+                      }}
+                    >
+                      <Avatar size={32} avatarId={f.avatar} />
+                      <Text style={styles.searchItemName} numberOfLines={1}>
+                        {f.name}
+                      </Text>
+                      <Text style={styles.searchItemSub} numberOfLines={1}>
+                        {f.status}
+                      </Text>
+                    </Pressable>
+                  ))}
+                  {dropdownFriends.length === 0 ? (
+                    <Text style={styles.empty}>검색 결과가 없어요.</Text>
+                  ) : null}
+                </ScrollView>
+              </View>
+            </>
+          ) : null}
+        </View>
+      </ScrollView>
+
+      <RejectFriendModal
+        visible={rejectTarget !== null}
+        name={rejectTarget?.name ?? ''}
+        onReject={confirmReject}
+        onLater={() => setRejectTarget(null)}
+      />
     </>
   );
 }
 
 function Avatar({ size, avatarId }: { size: number; avatarId?: AvatarId }) {
-  // 번들 프로필 아바타(있으면) / 없으면 user 글리프 fallback. pdMint 2px ring.
   const Bundle = avatarId ? BUNDLE_AVATARS[avatarId] : null;
   return (
     <View
@@ -203,59 +429,6 @@ function Avatar({ size, avatarId }: { size: number; avatarId?: AvatarId }) {
   );
 }
 
-function MiniAvatar({ name, mine }: { name: string; mine?: boolean }) {
-  return (
-    <View style={styles.miniRow}>
-      <View style={[styles.miniAvatar, mine ? styles.miniMine : styles.miniFriend]}>
-        <User size={12} color={tokens.color.ink400} strokeWidth={2} />
-      </View>
-      <Text style={styles.miniName} numberOfLines={1}>
-        {name}
-      </Text>
-    </View>
-  );
-}
-
-function ScheduleCard({
-  item,
-}: {
-  item: (typeof SCHEDULES)[number];
-}) {
-  return (
-    <View style={styles.schedCard}>
-      <View style={styles.schedTop}>
-        <View style={styles.schedInfo}>
-          <Text style={styles.schedPool} numberOfLines={1}>
-            {item.pool}
-          </Text>
-          <Text style={styles.schedWhen} numberOfLines={1}>
-            {item.when}
-          </Text>
-          <Pressable style={styles.schedChip}>
-            <Text style={styles.schedChipLabel}>{item.chip.label}</Text>
-            {item.chip.kind === 'join' ? (
-              <Plus size={12} color={tokens.color.pdBlue} strokeWidth={2} />
-            ) : (
-              <ChevronDown size={12} color={tokens.color.pdBlue} strokeWidth={2} />
-            )}
-          </Pressable>
-        </View>
-        <View style={styles.schedThumb} />
-      </View>
-
-      <View style={styles.schedPeople}>
-        <MiniAvatar name={item.me} mine />
-        <View style={styles.schedDivider} />
-        <View style={styles.schedFriends}>
-          {item.friends.map((f, i) => (
-            <MiniAvatar key={i} name={f} />
-          ))}
-        </View>
-      </View>
-    </View>
-  );
-}
-
 const SHADOW_MD = {
   shadowColor: '#0F172A',
   shadowOffset: { width: 0, height: 4 },
@@ -266,9 +439,7 @@ const SHADOW_MD = {
 
 const styles = StyleSheet.create({
   scroll: { padding: 16, gap: 32 },
-
-  section: { gap: 12 },
-  // Section Header — Bold 14/20 -0.084 #1F2937
+  section: { gap: 12, position: 'relative' },
   sectionTitle: {
     fontSize: 14,
     lineHeight: 20,
@@ -277,6 +448,14 @@ const styles = StyleSheet.create({
     color: '#1F2937',
   },
   list: { gap: 12 },
+  empty: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: tokens.font.sans,
+    color: tokens.color.ink500,
+    textAlign: 'center',
+    paddingVertical: 16,
+  },
 
   // 새 친구 카드 — white r24 p16 Shadow/md
   card: {
@@ -331,7 +510,6 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sansMedium,
     color: '#4B5563',
   },
-
   // 친구 추가 CTA — pdByellow h48 r14
   cta: {
     height: 48,
@@ -351,7 +529,6 @@ const styles = StyleSheet.create({
     color: tokens.color.black,
   },
 
-  // 아바타 placeholder — pdMint 2px ring
   avatar: {
     borderWidth: 2,
     borderColor: tokens.color.pdMint,
@@ -361,20 +538,17 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 
-  // 친구들 수영 일정 카드 — white r16 p16 Shadow/lg
+  // 친구 일정 카드 — white r16 p16 Shadow/lg, gap8
   schedCard: {
     backgroundColor: tokens.color.bgPaper,
     borderRadius: 16,
     padding: 16,
-    gap: 7,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    elevation: 4,
+    gap: 8,
+    ...tokens.shadow.lg,
   },
   schedTop: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
-  schedInfo: { flex: 1, gap: 10 },
+  schedInfo: { flex: 1, gap: 10, alignItems: 'flex-start' },
+  schedTitleBlock: { gap: 4 },
   schedPool: {
     fontSize: 14,
     lineHeight: 20,
@@ -389,8 +563,8 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sans,
     color: '#1F2937',
   },
-  schedChip: {
-    alignSelf: 'flex-start',
+  // Figma 167:3528 — 나도 참여: border pd-blue r8 px8 py4, Medium 12
+  joinChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
@@ -400,7 +574,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  schedChipLabel: {
+  joinChipLabel: {
     fontSize: 12,
     lineHeight: 16,
     letterSpacing: -0.06,
@@ -413,13 +587,13 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: '#E2E8F0',
   },
-  schedPeople: { gap: 7 },
   schedDivider: { height: 1, backgroundColor: tokens.color.lineDefault },
   schedFriends: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
   miniRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    width: 98,
     maxWidth: 120,
   },
   miniAvatar: {
@@ -427,13 +601,14 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 1,
+    borderColor: tokens.color.pdMint,
     backgroundColor: '#F8FAFC',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
-  miniMine: { borderColor: tokens.color.pdByellow },
-  miniFriend: { borderColor: tokens.color.pdMint },
   miniName: {
+    flex: 1,
     fontSize: 10,
     lineHeight: 14,
     letterSpacing: -0.04,
@@ -441,15 +616,8 @@ const styles = StyleSheet.create({
     color: '#1F2937',
   },
 
-  // 친구 목록 검색 — white border #94A3B8 r14
-  dropdownLabel: {
-    fontSize: 14,
-    lineHeight: 20,
-    letterSpacing: -0.084,
-    fontFamily: tokens.font.sansBold,
-    color: '#1F2937',
-  },
-  searchBox: {
+  // 친구 목록 검색 트리거 — border #94A3B8 r14 minH48
+  searchTrigger: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -460,17 +628,88 @@ const styles = StyleSheet.create({
     borderColor: '#94A3B8',
     backgroundColor: tokens.color.bgPaper,
   },
-  searchInput: {
+  searchTriggerText: {
     flex: 1,
     fontSize: 16,
     lineHeight: 22,
     letterSpacing: -0.112,
     fontFamily: tokens.font.sans,
     color: '#1F2937',
+  },
+  searchTriggerPlaceholder: { color: '#4B5563' },
+  searchBackdrop: { ...StyleSheet.absoluteFillObject },
+  searchPanel: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
+    backgroundColor: tokens.color.white,
+    padding: 8,
+    gap: 4,
+    ...tokens.shadow.lg,
+  },
+  searchPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    minHeight: 40,
+    padding: 8,
+    borderRadius: 9999,
+    backgroundColor: '#F8FAFC',
+  },
+  searchInputWrap: { flex: 1, justifyContent: 'center' },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sansMedium,
+    color: '#4B5563',
     padding: 0,
   },
+  searchPlaceholder: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    textAlignVertical: 'center',
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sansMedium,
+    color: '#4B5563',
+    includeFontPadding: false,
+  },
+  searchList: { maxHeight: 260 },
+  searchListContent: { gap: 4 },
+  searchItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    minHeight: 44,
+    padding: 8,
+    borderRadius: 12,
+  },
+  searchItemName: {
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: -0.084,
+    fontFamily: tokens.font.sansSemibold,
+    color: '#1F2937',
+  },
+  searchItemSub: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: -0.06,
+    fontFamily: tokens.font.sans,
+    color: '#94A3B8',
+  },
 
-  // 친구 행 — white r24 p12 h72 Shadow/md
+  // 친구 행 (168:3855) — white r24 p12 h72 Shadow/md
   friendRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -498,17 +737,21 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sans,
     color: '#4B5563',
   },
-  detailBtn: {
+  // Figma 168:3872 — pd-mint bg r8 px10 py4
+  profileBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     backgroundColor: tokens.color.pdMint,
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  detailBtnLabel: {
+  profileBtnLabel: {
     fontSize: 12,
     lineHeight: 16,
     letterSpacing: -0.06,
-    fontFamily: tokens.font.sansSemibold,
+    fontFamily: tokens.font.sansBold,
     color: tokens.color.white,
   },
 });
