@@ -76,14 +76,14 @@ const PROFILE_VIS_VALUE: Record<ProfileVisibility, string> = {
   friends: '친구만',
   public: '모두에게',
 };
-// 지도에 수영 예정 친구 보기 (Figma 179:4793) — prefs.showMapFriendStack(boolean) ↔ 'show'|'hide'
+// 수영 예정 친구 보기 (Figma 179:4793) — prefs.showMapFriendStack(boolean) ↔ 'show'|'hide'
 type MapFriendShow = 'show' | 'hide';
 const MAP_FRIEND_OPTIONS: Option<MapFriendShow>[] = [
-  { value: 'show', label: '지도에 표시' },
+  { value: 'show', label: '지도에서 보기' },
   { value: 'hide', label: '안 보기' },
 ];
 const MAP_FRIEND_VALUE: Record<MapFriendShow, string> = {
-  show: '24시간 전부터 표시',
+  show: '일정 1일 전부터 보기',
   hide: '안 보기',
 };
 // 친구 신청 받기
@@ -243,7 +243,7 @@ export function SettingsScreen() {
           />
           <Row
             icon={<IconPerson width={24} height={24} />}
-            label="지도에 수영 예정 친구 보기"
+            label="수영 예정 친구 보기"
             value={MAP_FRIEND_VALUE[mapFriendVal]}
             onPress={() => setMapFriendSheet(true)}
           />
@@ -345,7 +345,7 @@ export function SettingsScreen() {
       <OptionSheet<MapFriendShow>
         visible={mapFriendSheet}
         onClose={() => setMapFriendSheet(false)}
-        title="지도에 수영 예정 친구 보기"
+        title="수영 예정 친구 보기"
         options={MAP_FRIEND_OPTIONS}
         value={mapFriendVal}
         onConfirm={(v) => setShowMapFriend(v === 'show')}
