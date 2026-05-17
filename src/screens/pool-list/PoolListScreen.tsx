@@ -21,6 +21,7 @@ import HeartFilled from '@assets/icons/heart-filled.svg';
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { FavoriteHeart } from '@/components/ui/FavoriteHeart';
 import { useFavorites } from '@/store/favorites';
 import { usePools } from '@/hooks/usePools';
 import { useSchedules } from '@/hooks/useSchedules';
@@ -407,7 +408,13 @@ function PoolListCard({
       <View style={styles.innerCol}>
         <View style={styles.headerRow}>
           <View style={styles.textCol}>
-            <Text style={styles.name} numberOfLines={1}>{pool.name}</Text>
+            {/* Figma 166:9726 — 이름 + 즐겨찾기 하트(gap 4, 20x20) */}
+            <View style={styles.nameRow}>
+              <Text style={[styles.name, styles.nameFlex]} numberOfLines={1}>
+                {pool.name}
+              </Text>
+              <FavoriteHeart poolId={pool.id} size={20} />
+            </View>
             <Text style={styles.addr} numberOfLines={1}>
               {pool.address}
               {distanceKm !== undefined ? ` (${formatDistance(distanceKm)})` : ''}
@@ -734,6 +741,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   textCol: { flex: 1, gap: 4 },
+  // Figma 166:9726 — 이름 + 하트 한 줄(gap 4)
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  nameFlex: { flexShrink: 1 },
   photo: {
     width: 80,
     height: 80,
