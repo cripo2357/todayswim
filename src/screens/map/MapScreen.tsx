@@ -33,6 +33,15 @@ import { usePoolFilter, isFilterActive, filterPools } from '@/store/poolFilter';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useProfile } from '@/store/profile';
 import { useNotifications } from '@/store/notifications';
+import { useSwimSchedules } from '@/store/swimSchedule';
+import { useFriends } from '@/store/friends';
+import { MOCK_OTHER_SCHEDULES } from '@/lib/mockData';
+import { buildPoolProfileStacks } from '@/lib/mapProfileStacks';
+import {
+  MapProfileStack,
+  STACK_W,
+  STACK_H,
+} from '@/components/map/MapProfileStack';
 import { BUNDLE_AVATARS, isBundleAvatar } from '@/lib/avatars';
 import { tokens } from '@/styles/tokens';
 
@@ -58,6 +67,10 @@ const PAN_DESELECT_M = 500;
 // 선택 시점의 zoom 기준 이 값 이상 핀치로 변하면 deselect.
 // Naver zoom 1단계 = 2배 축척. 1.0 = 사용자가 명확히 줌인/줌아웃 의도한 수준.
 const ZOOM_DESELECT_LEVELS = 1.0;
+
+// 마커 핀과 프로필 스택 사이 간격(px). Figma 173:13595 기준 스택이 핀 우측에
+// 살짝 겹쳐 붙음 — 음수 = 핀 쪽으로 tuck.
+const STACK_PIN_GAP = -2;
 
 // 단순 평면 근사 거리(m). 짧은 거리/한국 위도에선 haversine과 차이 무시 가능.
 function approxDistanceMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -198,6 +211,25 @@ export function MapScreen() {
   const scheduleByPool = React.useMemo(
     () => new Map(schedules.map((s) => [s.poolId, s])),
     [schedules],
+  );
+
+  // 풀별 프로필 스택 — 나/친구 중 24h 내 진행예정 일정자(Figma 173:13595 등).
+  // Phase-1: 친구 일정 소스 = 기존 participant 데이터(MOCK_OTHER_SCHEDULES),
+  // 노출/차단은 useFriends 경유. 서버 친구 일정 적재는 Phase-2 갭.
+  const mySchedules = useSwimSchedules((s) => s.schedules);
+  const friends = useFriends((s) => s.friends);
+  const blocked = useFriends((s) => s.blocked);
+  const poolStacks = React.useMemo(
+    () =>
+      buildPoolProfileStacks({
+        pools,
+        myProfile: profile,
+        mySchedules,
+        friends,
+        blocked,
+        otherSchedules: MOCK_OTHER_SCHEDULES,
+      }),
+    [pools, profile, mySchedules, friends, blocked],
   );
 
   /**
@@ -418,25 +450,60 @@ export function MapScreen() {
           // 호텔 우선 → 50m 큰 풀 → 25m 작은 풀
           const img = isHotel ? MARKER_HOTEL : isBig ? MARKER_BIG : MARKER_SMALL;
           const size = isBig && !isHotel ? 50 : 47;
+          const stack = poolStacks.get(p.id);
+          // 핀(기존 그대로) + 같은 좌표에 스택 오버레이를 우측에 별도로 얹음.
+          // 스택 오버레이 anchor={x:0,y:0.5}=좌-중앙이 좌표에 위치 → 투명
+          // 스페이서(핀 절반+gap)만큼 우측으로 밀어 핀 오른쪽에 배치.
           return (
-            <NaverMapMarkerOverlay
-              key={p.id}
-              latitude={p.lat}
-              longitude={p.lng}
-              image={img}
-              width={size}
-              height={size}
-              anchor={{ x: 0.5, y: 0.5 }}
-              zIndex={isSelected ? 10 : 1}
-              caption={{
-                text: p.name,
-                textSize: 14,
-                color: tokens.color.ink900,
-                haloColor: tokens.color.white,
-                minZoom: 11,
-              }}
-              onTap={() => onMarkerPress(p.id)}
-            />
+            <React.Fragment key={p.id}>
+              <NaverMapMarkerOverlay
+                latitude={p.lat}
+                longitude={p.lng}
+                image={img}
+                width={size}
+                height={size}
+                anchor={{ x: 0.5, y: 0.5 }}
+                zIndex={isSelected ? 10 : 1}
+                caption={{
+                  text: p.name,
+                  textSize: 14,
+                  color: tokens.color.ink900,
+                  haloColor: tokens.color.white,
+                  minZoom: 11,
+                }}
+                onTap={() => onMarkerPress(p.id)}
+              />
+              {stack && stack.entries.length > 0 ? (
+                <NaverMapMarkerOverlay
+                  latitude={p.lat}
+                  longitude={p.lng}
+                  width={Math.round(size / 2 + STACK_PIN_GAP + STACK_W)}
+                  height={STACK_H}
+                  anchor={{ x: 0, y: 0.5 }}
+                  zIndex={isSelected ? 9 : 2}
+                >
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      width: Math.round(size / 2 + STACK_PIN_GAP + STACK_W),
+                      height: STACK_H,
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: Math.round(size / 2 + STACK_PIN_GAP),
+                        height: STACK_H,
+                      }}
+                    />
+                    <MapProfileStack
+                      entries={stack.entries}
+                      overflow={stack.overflow}
+                    />
+                  </View>
+                </NaverMapMarkerOverlay>
+              ) : null}
+            </React.Fragment>
           );
         })}
       </NaverMapView>
