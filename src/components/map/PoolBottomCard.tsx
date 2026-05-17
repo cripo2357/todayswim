@@ -1,7 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
+import { View, Text, StyleSheet, Image } from 'react-native';
 import { Button } from '@/components/ui/Button';
-import { Tooltip } from '@/components/ui/Tooltip';
 import { FavoriteHeart } from '@/components/ui/FavoriteHeart';
 import type { Pool } from '@/types/pool';
 import { tokens } from '@/styles/tokens';
@@ -27,10 +26,7 @@ interface Props {
   onPressScheduleAction?: () => void;
 }
 
-type TipId = 'lane' | 'length' | 'depth' | 'kids' | 'diving' | 'hotel';
-
-// Figma 93:10597 풀 카드. stat/chip 라벨은 평소 숨김, 탭하면 위툴팁
-// (Tooltip placement 기본 'top')으로 5초 표시. styles.tooltip = 위치만.
+// Figma 93:10597 풀 카드.
 
 export function PoolBottomCard({
   pool,
@@ -41,15 +37,6 @@ export function PoolBottomCard({
   const hasDiving = !!pool.hasDivingPool;
   const isHotel = !!pool.isHotelPool;
   const showChips = hasKids || hasDiving || isHotel;
-
-  // 5초 자동 숨김 툴팁 — 한 번에 하나만(새 탭 시 기존 즉시 교체).
-  const [activeTip, setActiveTip] = React.useState<TipId | null>(null);
-  React.useEffect(() => {
-    if (!activeTip) return;
-    const t = setTimeout(() => setActiveTip(null), 5000);
-    return () => clearTimeout(t);
-  }, [activeTip]);
-  const showTip = (id: TipId) => () => setActiveTip(id);
 
   return (
     <View style={styles.card}>
@@ -81,89 +68,47 @@ export function PoolBottomCard({
           ) : null}
         </View>
 
-        {/* 인라인 stat + chip — 한 row, gap 12. 탭 → 위툴팁 5초. */}
+        {/* 인라인 stat + chip — 한 row, gap 12 */}
         <View style={styles.statChipRow}>
           {pool.laneCount ? (
-            <Pressable
-              style={styles.stat}
-              onPress={showTip('lane')}
-              accessibilityRole="button"
-              accessibilityLabel="레인수"
-              hitSlop={4}
-            >
-              {activeTip === 'lane' ? <Tooltip label="레인수" style={styles.tooltip} /> : null}
+            <View style={styles.stat}>
               <Swimmer width={20} height={20} />
               <Text style={styles.statValue}>{pool.laneCount}레인</Text>
-            </Pressable>
+            </View>
           ) : null}
           {pool.poolLength ? (
-            <Pressable
-              style={styles.stat}
-              onPress={showTip('length')}
-              accessibilityRole="button"
-              accessibilityLabel="레인 길이"
-              hitSlop={4}
-            >
-              {activeTip === 'length' ? <Tooltip label="레인 길이" style={styles.tooltip} /> : null}
+            <View style={styles.stat}>
               <ArrowH width={20} height={20} />
               <Text style={styles.statValue}>{pool.poolLength}m</Text>
-            </Pressable>
+            </View>
           ) : null}
           {pool.depthMin && pool.depthMax ? (
-            <Pressable
-              style={styles.stat}
-              onPress={showTip('depth')}
-              accessibilityRole="button"
-              accessibilityLabel="수심"
-              hitSlop={4}
-            >
-              {activeTip === 'depth' ? <Tooltip label="수심" style={styles.tooltip} /> : null}
+            <View style={styles.stat}>
               <IconDepth width={20} height={20} />
               <Text style={styles.statValue}>
                 {pool.depthMin === pool.depthMax
                   ? `${pool.depthMin}m`
                   : `${pool.depthMin}~${pool.depthMax}m`}
               </Text>
-            </Pressable>
+            </View>
           ) : null}
 
           {showChips ? (
             <View style={styles.chipGroup}>
               {hasKids ? (
-                <Pressable
-                  style={styles.chip}
-                  onPress={showTip('kids')}
-                  accessibilityRole="button"
-                  accessibilityLabel="유아풀"
-                  hitSlop={4}
-                >
-                  {activeTip === 'kids' ? <Tooltip label="유아풀" style={styles.tooltip} /> : null}
+                <View style={styles.chip}>
                   <IconKids width={16} height={16} />
-                </Pressable>
+                </View>
               ) : null}
               {hasDiving ? (
-                <Pressable
-                  style={styles.chip}
-                  onPress={showTip('diving')}
-                  accessibilityRole="button"
-                  accessibilityLabel="다이빙풀"
-                  hitSlop={4}
-                >
-                  {activeTip === 'diving' ? <Tooltip label="다이빙풀" style={styles.tooltip} /> : null}
+                <View style={styles.chip}>
                   <IconDiving width={16} height={16} />
-                </Pressable>
+                </View>
               ) : null}
               {isHotel ? (
-                <Pressable
-                  style={styles.chip}
-                  onPress={showTip('hotel')}
-                  accessibilityRole="button"
-                  accessibilityLabel="호텔"
-                  hitSlop={4}
-                >
-                  {activeTip === 'hotel' ? <Tooltip label="호텔" style={styles.tooltip} /> : null}
+                <View style={styles.chip}>
                   <IconHotel width={16} height={16} />
-                </Pressable>
+                </View>
               ) : null}
             </View>
           ) : null}
@@ -267,7 +212,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    position: 'relative',
   },
   // Figma 93:10614 — Plus Jakarta Regular 14/20 -0.084 #1F2937
   statValue: {
@@ -276,9 +220,6 @@ const styles = StyleSheet.create({
     letterSpacing: -0.084,
     fontFamily: tokens.font.sans,
     color: '#1F2937',
-    // 행 높이를 아이콘(20)과 동일하게 — Android 폰트패딩이 행을 키워
-    // chip(고정 20)보다 커지면 bottom:'100%' 툴팁이 더 위로 떠 간격 불일치.
-    includeFontPadding: false,
   },
 
   // Figma 93:10622 — chip group gap 6
@@ -296,20 +237,7 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.color.pdMint,
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
     ...tokens.shadow.lg,
-  },
-
-  // 위툴팁 위치 — stat/chip 아이콘 위 가운데. bottom:'100%'+marginBottom 4,
-  // wrapper width 200 + marginLeft -100 + left 10(아이콘 중앙). zIndex 10.
-  tooltip: {
-    position: 'absolute',
-    bottom: '100%',
-    marginBottom: 4,
-    left: 10,
-    marginLeft: -100,
-    width: 200,
-    zIndex: 10,
   },
 
   // 'impossible' / 'no_schedule' 공통 disabled CTA
