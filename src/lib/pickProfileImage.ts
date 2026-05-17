@@ -14,7 +14,15 @@ export type PickProfileImageResult =
     }
   | { status: 'canceled' }
   | { status: 'denied' }
+  /** 픽셀/용량 상한 초과 — 디코드 OOM 사전 차단(사용자 안내용) */
+  | { status: 'too_large' }
   | { status: 'error' };
+
+// 1:1 크롭된 입력 기준 상한. resize 전 manipulateAsync 가 소스를 메모리에
+// 디코드하므로, 병적으로 큰 입력만 사전 차단(일반 플래그십 사진은 통과).
+// RGBA 디코드 ≈ px×4 byte → 40MP ≈ ~160MB. 필요 시 이 값만 조정.
+const MAX_SOURCE_PIXELS = 40_000_000; // 40 MP (예: ~6300×6300 1:1)
+const MAX_SOURCE_BYTES = 40 * 1024 * 1024; // 40 MB (fileSize 제공 시에만)
 
 export async function pickProfileImage(): Promise<PickProfileImageResult> {
   const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -30,6 +38,14 @@ export async function pickProfileImage(): Promise<PickProfileImageResult> {
 
   const asset = result.assets[0];
   if (!asset?.uri) return { status: 'error' };
+
+  // resize 전 디코드 OOM 사전 차단 — 1:1 크롭된 asset의 픽셀수/용량 검사.
+  // width/height 미제공 플랫폼은 px=0 → 통과(기존 try/catch 가 최종 안전망).
+  const px = (asset.width ?? 0) * (asset.height ?? 0);
+  if (px > MAX_SOURCE_PIXELS) return { status: 'too_large' };
+  if (asset.fileSize && asset.fileSize > MAX_SOURCE_BYTES) {
+    return { status: 'too_large' };
+  }
 
   try {
     // 원본이 수 MB일 수 있어 프로필용 512px / JPEG q0.72로 축소.

@@ -172,6 +172,13 @@ export function ProfileTab({
       );
       return;
     }
+    if (r.status === 'too_large') {
+      Alert.alert(
+        '사진이 너무 큽니다',
+        '더 작은 사진을 선택하거나 사진 앱에서 크기를 줄여 다시 시도해주세요.',
+      );
+      return;
+    }
     if (r.status !== 'ok') return; // canceled / error
     // 낙관적 표시 + 옛 썸네일 잔상 제거(스택은 원본 폴백)
     patch({ photoUri: r.uri, photoThumbUri: undefined });

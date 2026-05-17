@@ -72,6 +72,13 @@ export function ProfileImageScreen() {
       return;
     }
     if (r.status === 'canceled') return;
+    if (r.status === 'too_large') {
+      Alert.alert(
+        '사진이 너무 큽니다',
+        '더 작은 사진을 선택하거나 사진 앱에서 크기를 줄여 다시 시도해주세요.',
+      );
+      return;
+    }
     if (r.status === 'error') {
       setState('error');
       return;
