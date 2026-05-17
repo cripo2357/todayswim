@@ -444,7 +444,7 @@ export function CalendarTab() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  scroll: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24, gap: 16 },
+  scroll: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24, gap: 12 },
   calBox: {
     paddingVertical: 12,
     borderBottomWidth: 1,
