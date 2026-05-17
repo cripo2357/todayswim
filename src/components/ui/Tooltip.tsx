@@ -20,10 +20,12 @@ import { tokens } from '@/styles/tokens';
 
 type Placement = 'top' | 'bottom';
 
-// Figma drop-shadow 정확값. 버블+꼬리 동일 적용 → Figma처럼 위/아래툴팁이
-// 꼬리 방향만 다르고 그림자는 같게(꼬리에 없으면 흰 배경서 떠 보임).
+// 무방향(offset 0 + blur) 그림자 — 버블+꼬리 동일 적용. 방향 offset이면
+// 아래툴팁 꼬리(버블 위)의 그림자가 버블 윗변/텍스트로 드리워져 위 패딩이
+// 줄어 보임. 무방향이라 위/아래툴팁이 균일한 헤일로로 완전 동일하게 보이고
+// Figma 실루엣 drop-shadow 의도에 더 부합. 흰 카드 위 윤곽도 잡힘.
 const TOOLTIP_SHADOW =
-  '0px 12px 8px rgba(15, 23, 42, 0.08), 0px 4px 3px rgba(15, 23, 42, 0.03)';
+  '0px 0px 8px rgba(15, 23, 42, 0.16), 0px 0px 2px rgba(15, 23, 42, 0.12)';
 
 export function Tooltip({
   label,
