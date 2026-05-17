@@ -141,13 +141,17 @@ export function FriendsTab() {
       )
     : friends;
   const committedQ = query.trim().toLowerCase();
-  const listFriends = committedQ
-    ? friends.filter(
-        (f) =>
-          f.nickname.toLowerCase().includes(committedQ) ||
-          f.name.toLowerCase().includes(committedQ),
-      )
-    : friends;
+  // 친구 목록은 항상 이름 가나다순 (검색 필터 후에도 동일).
+  const listFriends = React.useMemo(() => {
+    const base = committedQ
+      ? friends.filter(
+          (f) =>
+            f.nickname.toLowerCase().includes(committedQ) ||
+            f.name.toLowerCase().includes(committedQ),
+        )
+      : friends;
+    return [...base].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+  }, [committedQ, friends]);
 
   const confirmReject = () => {
     if (!rejectTarget) return;
@@ -286,7 +290,7 @@ export function FriendsTab() {
                         <View key={i} style={styles.miniRow}>
                           <View style={styles.miniAvatar}>
                             {Bundle ? (
-                              <Bundle width={22} height={22} />
+                              <Bundle width={24} height={24} />
                             ) : (
                               <User
                                 size={12}
@@ -632,31 +636,35 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   schedDivider: { height: 1, backgroundColor: tokens.color.lineDefault },
-  schedFriends: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
+  // 참여자 목록 — 캘린더 일정 카드(CalendarTab ptGrid/ptCell)와 동일.
+  // 1행 3명 고정(정확히 1/3 폭 → 화면 너비 무관, 좁은 기기 2열 붕괴 방지).
+  schedFriends: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 8 },
   miniRow: {
+    width: '33.333%',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    width: 98,
-    maxWidth: 120,
+    paddingRight: 8, // 열 간격(1/3 폭 유지 위해 내부 패딩)
   },
+  // 프로필 테두리 정책 — 친구이므로 pd-mint. 테두리 항상 1px.
   miniAvatar: {
     width: 24,
     height: 24,
     borderRadius: 12,
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: tokens.color.pdMint,
     backgroundColor: '#F8FAFC',
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
   },
+  // CalendarTab ptName과 동일 — Medium 12/16 -0.06 #1F2937
   miniName: {
     flex: 1,
-    fontSize: 10,
-    lineHeight: 14,
-    letterSpacing: -0.04,
-    fontFamily: tokens.font.sansBold,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: -0.06,
+    fontFamily: tokens.font.sansMedium,
     color: '#1F2937',
   },
 
