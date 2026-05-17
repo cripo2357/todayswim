@@ -84,7 +84,7 @@ const FRIEND_REQ_OPTIONS: Option<FriendRequest>[] = [
 ];
 const FRIEND_REQ_VALUE: Record<Exclude<FriendRequest, 'id'>, string> = {
   off: '안 받음',
-  nickname: '닉네임 아는 사람에게만',
+  nickname: '닉네임으로만',
   all: '모든 사람에게',
 };
 /**
@@ -96,7 +96,7 @@ const FRIEND_REQ_VALUE: Record<Exclude<FriendRequest, 'id'>, string> = {
  */
 function friendReqValue(v: FriendRequest, id: string): string {
   if (v !== 'id') return FRIEND_REQ_VALUE[v];
-  return `내 ID(${id}) 아는 사람에게만 받기`;
+  return `ID(${id})로만`;
 }
 // 나이 공개 (Figma 129:6006) — 선택 옵션
 const AGE_VIS_OPTIONS: Option<AgeVisibility>[] = [
@@ -222,7 +222,7 @@ export function SettingsScreen() {
           />
           <Row
             icon={<IconPerson width={24} height={24} />}
-            label="친구 신청"
+            label="친구 신청 받기"
             value={friendReqValue(friendReq, profile?.id ?? '')}
             onPress={() => setFriendReqSheet(true)}
           />
@@ -341,7 +341,7 @@ export function SettingsScreen() {
       <OptionSheet<FriendRequest>
         visible={friendReqSheet}
         onClose={() => setFriendReqSheet(false)}
-        title="친구 신청"
+        title="친구 신청 받기"
         options={FRIEND_REQ_OPTIONS}
         value={friendReq}
         onConfirm={(v) => setFriendReq(v)}
