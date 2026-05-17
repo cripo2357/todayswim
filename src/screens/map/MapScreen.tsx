@@ -72,6 +72,9 @@ const ZOOM_DESELECT_LEVELS = 1.0;
 // 살짝 겹쳐 붙음 — 음수 = 핀 쪽으로 tuck.
 const STACK_PIN_GAP = -7;
 
+// 프로필 스택을 핀 바텀 정렬 기준에서 위로 올리는 양(px). 양수=위로.
+const STACK_LIFT = 5;
+
 // 단순 평면 근사 거리(m). 짧은 거리/한국 위도에선 haversine과 차이 무시 가능.
 function approxDistanceMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const dLat = (lat2 - lat1) * 111_000;
@@ -481,8 +484,9 @@ export function MapScreen() {
                   height={STACK_H}
                   // Figma 173:13735 frame=flex items-end → 스택을 핀 '바텀'에
                   // 정렬. 핀은 anchor 중앙(0.5)이라 핀 하단 = 좌표 + size/2.
-                  // 스택 박스(STACK_H) 하단이 핀 하단에 오도록 anchor.y 보정.
-                  anchor={{ x: 0, y: 1 - size / (2 * STACK_H) }}
+                  // 스택 박스(STACK_H) 하단이 핀 하단에 오도록 anchor.y 보정
+                  // + STACK_LIFT 만큼 위로.
+                  anchor={{ x: 0, y: 1 - (size / 2 - STACK_LIFT) / STACK_H }}
                   zIndex={isSelected ? 9 : 2}
                 >
                   <View
