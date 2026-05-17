@@ -53,7 +53,7 @@ export function FavoriteHeart({
         <Tooltip
           label={tip}
           placement="right"
-          style={[styles.tooltip, { left: size - 14 }]}
+          style={[styles.tooltip, { left: size + 8 }]}
         />
       ) : null}
       {isFav ? (
@@ -71,16 +71,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // 공통 Tooltip 위치 — 하트 오른쪽, 세로 중앙. left는 호출부에서
-  // size-14 (하트 오른쪽 끝 기준 -14 — 사용자 조정: size+4 → -10px
-  // → 추가 -8px, 삼각형 끝이 하트에 닿도록. 숫자라 폭 수렴 없음).
-  // 세로 중앙: top:'50%'(하트 중앙) + marginTop -13(버블 높이 26의 절반).
-  // 버블은 콘텐츠 크기(numberOfLines 1 + flexShrink 0). zIndex 10.
-  // elevation은 Android halo라 미사용.
+  // 공통 Tooltip 위치 — 하트 오른쪽, 세로 중앙.
+  // width 200 필수: absolute+left가 좁은 부모(20px)에 폭 수렴 → 라벨이
+  // truncate되어 안 보이던 문제 방지(=top/bottom 툴팁이 쓰던 값과 동일).
+  // alignItems flex-start: 기본 center를 덮어 버블을 wrap 왼쪽(하트 옆)에
+  // 붙임. left=size+8 → 회전 꼬리 끝이 하트 오른쪽 끝에 닿음(≈8.5px 돌출).
+  // 세로 중앙: top:'50%'(하트 중앙) + marginTop -13(버블 높이 26 절반).
+  // left는 호출부에서 size+8 (size 가변이라 인라인).
   tooltip: {
     position: 'absolute',
     top: '50%',
     marginTop: -13,
+    width: 200,
+    alignItems: 'flex-start',
     zIndex: 10,
   },
 });
