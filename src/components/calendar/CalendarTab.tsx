@@ -53,7 +53,7 @@ const PAST_OPTIONS: Option<PastAction>[] = [
   { value: 'delete', label: '일정 삭제' },
 ];
 
-// Figma 120:3701 — "2026년 1월 23일(목), 오전 11:00" (날짜+시작시각 12h)
+// Figma 120:3701 — "2026년 1월 23일(목) 오전 11:00" (날짜+시작시각 12h)
 function formatScheduleLine(iso: string, start: string): string {
   const [y, m, d] = iso.split('-').map(Number);
   const dow = DOW_KR[new Date(y, m - 1, d).getDay()];
@@ -61,7 +61,7 @@ function formatScheduleLine(iso: string, start: string): string {
   const hh = Number(hhStr);
   const ampm = hh < 12 ? '오전' : '오후';
   const h12 = hh % 12 || 12;
-  return `${y}년 ${m}월 ${d}일(${dow}), ${ampm} ${h12}:${mm}`;
+  return `${y}년 ${m}월 ${d}일(${dow}) ${ampm} ${h12}:${mm}`;
 }
 
 /** 과거 날짜면 오늘로 — 일정 추가 시트는 과거 날짜 기본값 금지 */
