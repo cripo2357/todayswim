@@ -22,7 +22,9 @@ import {
   type ScheduleVisibility,
 } from '@/store/swimSchedule';
 import { usePrefs } from '@/store/prefs';
+import { useFavorites } from '@/store/favorites';
 import type { DayOfWeek, TimeSlot } from '@/types/schedule';
+import type { Pool } from '@/types/pool';
 import {
   resolveSeasonSlots,
   isSeasonTransitionMonth,
@@ -263,11 +265,16 @@ export function AddScheduleSheet({
   }, []);
 
   const selectedPool = pools.find((p) => p.id === poolId) ?? null;
-  // 가나다 정렬 + 대소문자 무시 부분일치 검색
-  const sortedPools = React.useMemo(
-    () => [...pools].sort((a, b) => a.name.localeCompare(b.name, 'ko')),
-    [pools],
-  );
+  // 즐겨찾기 먼저(가나다), 그 다음 일반(가나다) — 모든 수영장 검색 공통 규칙
+  const favIds = useFavorites((s) => s.ids);
+  const sortedPools = React.useMemo(() => {
+    const favSet = new Set(favIds);
+    const byKo = (a: Pool, b: Pool) => a.name.localeCompare(b.name, 'ko');
+    return [
+      ...pools.filter((p) => favSet.has(p.id)).sort(byKo),
+      ...pools.filter((p) => !favSet.has(p.id)).sort(byKo),
+    ];
+  }, [pools, favIds]);
   const poolQ = poolQuery.trim().toLowerCase();
   const filteredPools = poolQ
     ? sortedPools.filter((p) => p.name.toLowerCase().includes(poolQ))
