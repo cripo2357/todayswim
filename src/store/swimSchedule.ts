@@ -19,6 +19,8 @@ export interface MySwimSchedule {
   start: string; // "15:00"
   end: string; // "18:00"
   visibility: ScheduleVisibility;
+  /** 지난 일정 "수영 완료" 확정 여부 (일정 관리 시트에서 선택) */
+  completed?: boolean;
   createdAt: string;
 }
 
@@ -29,6 +31,8 @@ interface SwimScheduleState {
   add: (s: Omit<MySwimSchedule, 'id' | 'createdAt'>) => Promise<void>;
   remove: (id: string) => Promise<void>;
   setVisibility: (id: string, visibility: ScheduleVisibility) => Promise<void>;
+  /** 지난 일정 "수영 완료" 확정/해제 */
+  setCompleted: (id: string, completed: boolean) => Promise<void>;
   /** 다른 사람 일정 보기 '친구 일정만' 전환 시 — 예정 일정 중 public → friends 강등 */
   downgradePublicToFriends: () => Promise<void>;
 }
@@ -82,6 +86,14 @@ export const useSwimSchedules = create<SwimScheduleState>((set, get) => ({
   setVisibility: async (id, visibility) => {
     const next = get().schedules.map((x) =>
       x.id === id ? { ...x, visibility } : x,
+    );
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    set({ schedules: next });
+  },
+
+  setCompleted: async (id, completed) => {
+    const next = get().schedules.map((x) =>
+      x.id === id ? { ...x, completed } : x,
     );
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     set({ schedules: next });

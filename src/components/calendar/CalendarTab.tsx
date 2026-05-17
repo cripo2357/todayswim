@@ -44,6 +44,13 @@ const MANAGE_OPTIONS: Option<ManageAction>[] = [
   { value: 'public', label: VIS_LABEL.public },
 ];
 
+// 지난 일정 관리 시트 — 수영 완료 확정 / 일정 삭제
+type PastAction = 'complete' | 'delete';
+const PAST_OPTIONS: Option<PastAction>[] = [
+  { value: 'complete', label: '수영 완료' },
+  { value: 'delete', label: '일정 삭제' },
+];
+
 // Figma 120:3701 — "2026년 1월 23일(목), 오전 11:00" (날짜+시작시각 12h)
 function formatScheduleLine(iso: string, start: string): string {
   const [y, m, d] = iso.split('-').map(Number);
@@ -61,6 +68,7 @@ export function CalendarTab() {
   const schedules = useSwimSchedules((s) => s.schedules);
   const remove = useSwimSchedules((s) => s.remove);
   const setVisibility = useSwimSchedules((s) => s.setVisibility);
+  const setCompleted = useSwimSchedules((s) => s.setCompleted);
   const viewPref = usePrefs((s) => s.othersScheduleView);
   // 다른 사람 일정 보기가 '친구 일정만'이면 일정 관리 시트에서 '전체 공개' 미노출
   const manageOptions = React.useMemo(
@@ -74,6 +82,8 @@ export function CalendarTab() {
   const [sheetOpen, setSheetOpen] = React.useState(false);
   // 공개여부 변경 시트 대상 일정 id (null = 닫힘)
   const [visEditId, setVisEditId] = React.useState<string | null>(null);
+  // 지난 일정 관리 시트 대상 일정 id (null = 닫힘)
+  const [pastEditId, setPastEditId] = React.useState<string | null>(null);
   // 시간표 더블탭(프리필) 진입은 전역 GlobalAddScheduleSheet가 처리 —
   // 여기 시트는 "수영 일정 추가" 버튼의 수동 추가 전용(빈 상태).
 
@@ -106,6 +116,13 @@ export function CalendarTab() {
     Alert.alert('수영 취소', '이 수영 일정을 취소할까요?', [
       { text: '닫기', style: 'cancel' },
       { text: '취소하기', style: 'destructive', onPress: () => remove(id) },
+    ]);
+  };
+
+  const onDeletePast = (id: string) => {
+    Alert.alert('일정 삭제', '이 지난 수영 일정을 삭제할까요?', [
+      { text: '닫기', style: 'cancel' },
+      { text: '삭제하기', style: 'destructive', onPress: () => remove(id) },
     ]);
   };
 
@@ -149,14 +166,22 @@ export function CalendarTab() {
                   </Text>
                   {(() => {
                     const past = isSchedulePast(s);
-                    // 지난 일정 — Figma 120:3706: "수영 완료" 상태 배지
-                    // (border·텍스트 #4B5563 + 수영 아이콘, 비대화형).
+                    // 지난 일정 — "수영 완료" 배지(Figma 133:3874). 탭하면
+                    // 일정 관리 시트(수영 완료 / 일정 삭제). 완료 확정 시
+                    // 라벨 "수영 완료" → "수영완료".
                     if (past) {
                       return (
-                        <View style={styles.doneChip}>
-                          <Text style={styles.doneChipLabel}>수영 완료</Text>
+                        <Pressable
+                          onPress={() => setPastEditId(s.id)}
+                          style={styles.doneChip}
+                          accessibilityRole="button"
+                          accessibilityLabel="지난 일정 관리"
+                        >
+                          <Text style={styles.doneChipLabel}>
+                            {s.completed ? '수영완료' : '수영 완료'}
+                          </Text>
                           <IconSwim width={12} height={12} />
-                        </View>
+                        </Pressable>
                       );
                     }
                     return (
@@ -329,8 +354,8 @@ export function CalendarTab() {
         initialDate={date}
       />
 
-      {/* 일정 관리 — 지난 일정은 칩 자체가 비활성이라 여기 안 열림.
-          '일정 취소' 선택 시 confirm Alert → 삭제, 그 외는 공개여부 변경. */}
+      {/* 일정 관리(예정) — '일정 취소' 선택 시 confirm Alert → 삭제,
+          그 외는 공개여부 변경. */}
       <OptionSheet<ManageAction>
         visible={visEditId !== null}
         onClose={() => setVisEditId(null)}
@@ -343,6 +368,24 @@ export function CalendarTab() {
           if (!visEditId) return;
           if (v === 'cancel') onCancel(visEditId);
           else setVisibility(visEditId, v);
+        }}
+      />
+
+      {/* 일정 관리(지난) — 수영 완료 확정 / 일정 삭제(confirm Alert). */}
+      <OptionSheet<PastAction>
+        visible={pastEditId !== null}
+        onClose={() => setPastEditId(null)}
+        title="일정 관리"
+        options={PAST_OPTIONS}
+        value={
+          schedules.find((x) => x.id === pastEditId)?.completed
+            ? 'complete'
+            : null
+        }
+        onConfirm={(v) => {
+          if (!pastEditId) return;
+          if (v === 'complete') setCompleted(pastEditId, true);
+          else onDeletePast(pastEditId);
         }}
       />
     </View>
