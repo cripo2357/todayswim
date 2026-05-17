@@ -55,3 +55,6 @@ design-refs/
 # Figma MCP 디버그 캐시 (로컬에서만 사용)
 .tmp_*
 data/raw/
+
+# 일러스트 라이브러리 썸네일(생성물)
+assets/library/.catalog/
