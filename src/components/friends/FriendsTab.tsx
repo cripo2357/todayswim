@@ -279,7 +279,7 @@ export function FriendsTab() {
               ))
             ) : (
               <Text style={styles.empty}>
-                선택한 날짜에 친구들의 수영 일정이 없어요.
+                선택한 날짜에 친구들의 수영 일정이 없습니다.
               </Text>
             )}
           </View>
