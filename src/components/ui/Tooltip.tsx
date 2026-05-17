@@ -1,12 +1,14 @@
 // 공통 툴팁 — 딱 2종 (Figma 171:6758 위툴팁 / 171:6779 아래툴팁).
-//   placement='top'(기본) = 위툴팁: 버블이 대상 위, 삼각형은 버블 하단에서
-//     아래로(대상을 가리킴). 대부분의 툴팁(stat/chip·ID복사·일정충돌).
-//   placement='bottom' = 아래툴팁: 버블이 대상 아래, 삼각형은 버블 상단에서
-//     위로. 즐겨찾기 등록/해제 전용.
-// 버블/삼각형 시각은 동일, 위치만 반대. drop-shadow는 Figma 정확값
-// (음수 spread 없는 값이라 흰 카드 위에서도 윤곽 잡힘).
-// 위치(position:absolute)+width는 호출부 style prop — 좁은 부모(아이콘
-// 20px) 안에서 폭이 수렴해 라벨이 truncate되지 않도록 width 필수.
+//   placement='top'(기본) = 위툴팁: 버블이 대상 위, 꼬리는 버블 하단(아래로).
+//   placement='bottom' = 아래툴팁: 버블이 대상 아래, 꼬리는 버블 상단(위로).
+// 버블/꼬리 시각 동일, 꼬리 방향(위치)만 반대.
+//
+// ★ 렌더 순서 항상 [버블, 꼬리] 고정 → 꼬리가 항상 마지막에 그려짐(윗층).
+//   그래야 꼬리(불투명 흰 삼각형)가 버블 그림자 이음새를 덮어 위/아래
+//   모두 깨끗. 꼬리는 position:absolute라 순서와 무관하게 placement대로
+//   버블 위/아래에 배치(flex 순서가 위치를 안 정하게 분리).
+// 위치(position:absolute)+width는 호출부 style prop(좁은 부모서 폭 수렴
+//   해 라벨 truncate되지 않도록 width 필수).
 
 import React from 'react';
 import {
@@ -20,10 +22,8 @@ import { tokens } from '@/styles/tokens';
 
 type Placement = 'top' | 'bottom';
 
-// 무방향(offset 0 + blur) 그림자 — 버블+꼬리 동일 적용. 방향 offset이면
-// 아래툴팁 꼬리(버블 위)의 그림자가 버블 윗변/텍스트로 드리워져 위 패딩이
-// 줄어 보임. 무방향이라 위/아래툴팁이 균일한 헤일로로 완전 동일하게 보이고
-// Figma 실루엣 drop-shadow 의도에 더 부합. 흰 카드 위 윤곽도 잡힘.
+// 무방향(offset 0 + blur) 그림자 — 버블+꼬리 동일. 방향 offset이면
+// 꼬리 쪽으로 그림자가 쏠려 위/아래툴팁이 달라 보임. 흰 카드 위 윤곽도 잡힘.
 const TOOLTIP_SHADOW =
   '0px 0px 8px rgba(15, 23, 42, 0.16), 0px 0px 2px rgba(15, 23, 42, 0.12)';
 
@@ -40,20 +40,29 @@ export function Tooltip({
 }) {
   return (
     <View style={[styles.wrap, style]} pointerEvents="none">
-      {placement === 'bottom' ? <View style={styles.arrowUp} /> : null}
+      {/* 항상 버블 먼저 → 버블+그림자(1,2단계) */}
       <View style={styles.bubble}>
         <Text style={styles.text} numberOfLines={1}>
           {label}
         </Text>
       </View>
-      {placement === 'top' ? <View style={styles.arrowDown} /> : null}
+      {/* 항상 꼬리 마지막 → 꼬리 그림자+꼬리(3,4단계)=윗층. 위치는
+          absolute로 placement대로(위툴팁=버블 아래 / 아래툴팁=버블 위) */}
+      <View
+        style={[
+          styles.arrow,
+          placement === 'top' ? styles.arrowTop : styles.arrowBottom,
+        ]}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  // 호출부 style이 position:absolute + width 부여. 버블이 width 안에
+  // 가운데 정렬 → 꼬리 left:'50%'가 버블 중앙과 일치.
   wrap: { alignItems: 'center' },
-  // Figma I171:6758;1270:15177 — 흰 버블 r8 px8 py6 + Shadow/lg(드롭섀도 정확값)
+  // Figma I171:6758;1270:15177 — 흰 버블 r8 px8 py6 + 그림자
   bubble: {
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
@@ -70,28 +79,29 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     textAlign: 'center',
   },
-  // 16x8 아래로 향한 삼각형 — 위툴팁(버블 아래, 대상은 그 아래)
-  arrowDown: {
+  // 꼬리 공통 — 16x8 삼각형, absolute(버블 기준 가운데), 항상 맨 위층
+  arrow: {
+    position: 'absolute',
+    left: '50%',
+    marginLeft: -8,
     width: 0,
     height: 0,
     borderLeftWidth: 8,
     borderRightWidth: 8,
-    borderTopWidth: 8,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
-    borderTopColor: '#FFFFFF',
     boxShadow: TOOLTIP_SHADOW,
   },
-  // 16x8 위로 향한 삼각형 — 아래툴팁(버블 위, 대상은 그 위)
-  arrowUp: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 8,
-    borderRightWidth: 8,
+  // 위툴팁 — 아래로 향한 삼각형, 버블 하단 바깥
+  arrowTop: {
+    bottom: -8,
+    borderTopWidth: 8,
+    borderTopColor: '#FFFFFF',
+  },
+  // 아래툴팁 — 위로 향한 삼각형, 버블 상단 바깥
+  arrowBottom: {
+    top: -8,
     borderBottomWidth: 8,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
     borderBottomColor: '#FFFFFF',
-    boxShadow: TOOLTIP_SHADOW,
   },
 });
