@@ -103,7 +103,7 @@ function ymd(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-export const MOCK_SCHEDULES: MySwimSchedule[] = Array.from({ length: 50 }, (_, i) => {
+export const MOCK_SCHEDULES: MySwimSchedule[] = Array.from({ length: 20 }, (_, i) => {
   const base = new Date();
   // -12 ~ +24일 사이로 분산 (오늘 포함, 같은 날 복수 일정도 생김)
   base.setDate(base.getDate() + ((i * 7) % 37) - 12);
@@ -168,11 +168,11 @@ const NONFRIEND_VIS: ScheduleVisibility[] = [
   'public', 'public', 'public', 'friends', 'private',
 ];
 
-// 20명 × 10 = 200. 5/23·5/24 7개 슬롯에 고루 분배(다양하게) →
-// 어느 슬롯을 등록해도 친구·비친구·가시성 섞인 참여자가 충분히 보임.
+// 20명 × 3 = 60 (성능: 과거 ×10=200에서 축소 — 참여자 데모엔 충분).
+// 5/23·5/24 7개 슬롯에 분배 → 어느 슬롯이든 친구·비친구·가시성 섞임.
 const BASE_OTHER_SCHEDULES: OtherSchedule[] = OTHER_USERS.flatMap(
   (u, ui) =>
-    Array.from({ length: 10 }, (_, j) => {
+    Array.from({ length: 3 }, (_, j) => {
       const slot = TEST_SLOTS[(ui + j) % TEST_SLOTS.length];
       const visibility = (u.isFriend ? FRIEND_VIS : NONFRIEND_VIS)[
         (ui + j) % 5
@@ -204,7 +204,7 @@ const RANGE_SLOTS: { start: string; end: string }[] = [
   { start: '15:00', end: '16:50' },
   { start: '19:00', end: '20:50' },
 ];
-const RANGE_5_17_5_30: OtherSchedule[] = Array.from({ length: 30 }, (_, i) => {
+const RANGE_5_17_5_30: OtherSchedule[] = Array.from({ length: 12 }, (_, i) => {
   const u = OTHER_USERS[(i * 3 + 1) % OTHER_USERS.length];
   const day = 17 + (i % 14); // 05-17 ~ 05-30
   const slot = RANGE_SLOTS[i % RANGE_SLOTS.length];
