@@ -20,11 +20,11 @@ import IconChevronDown from '@assets/icons/chevron-down.svg';
 import type { RootStackParamList } from '@/navigation/types';
 import { BottomSheet, SheetCtaButton } from '@/components/ui/BottomSheet';
 import {
-  MOCK_FRIENDS,
   MOCK_OTHER_SCHEDULES,
   type MockAccount,
 } from '@/lib/mockData';
 import { BUNDLE_AVATARS } from '@/lib/avatars';
+import { useFriends } from '@/store/friends';
 import { useSentInvites, inviteSlotKey } from '@/store/sentInvites';
 import { dispatchMessage } from '@/lib/messages/dispatch';
 import { tokens } from '@/styles/tokens';
@@ -86,12 +86,15 @@ export function InviteFriendsScreen() {
     () => new Set<string>([...joinedIds, ...sentIds]),
     [joinedIds, sentIds],
   );
+  // 초대 후보 = 현재 친구(store) — block()/removeFriend()가 이미 반영된
+  // 단일 출처라 차단·삭제된 사용자는 절대 후보에 안 뜸.
+  const friends = useFriends((s) => s.friends);
   const sorted = React.useMemo(
     () =>
-      MOCK_FRIENDS.filter((f) => !excludedIds.has(f.id)).sort((a, b) =>
-        a.name.localeCompare(b.name, 'ko'),
-      ),
-    [excludedIds],
+      friends
+        .filter((f) => !excludedIds.has(f.id))
+        .sort((a, b) => a.name.localeCompare(b.name, 'ko')),
+    [friends, excludedIds],
   );
   const q = query.trim().toLowerCase();
   const filtered = q

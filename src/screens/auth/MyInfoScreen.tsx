@@ -45,7 +45,7 @@ import { NotificationsTab } from '@/components/notifications/NotificationsTab';
 import { FriendsTab } from '@/components/friends/FriendsTab';
 import { useSwimSchedules, isSchedulePast } from '@/store/swimSchedule';
 import { useNotifications } from '@/store/notifications';
-import { MOCK_FRIENDS } from '@/lib/mockData';
+import { useFriends } from '@/store/friends';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import IconUser from '@assets/icons/user-profile.svg';
 import IconGenderMale from '@assets/icons/gender-male.svg';
@@ -73,7 +73,8 @@ export function MyInfoScreen() {
     () => schedules.filter((x) => !isSchedulePast(x)).length,
     [schedules],
   );
-  const friendCount = MOCK_FRIENDS.length;
+  // 친구 수 — store 단일 출처(차단/삭제 반영). MOCK 정적 길이 금지.
+  const friendCount = useFriends((s) => s.friends.length);
   const unread = useNotifications((s) => s.unread);
   const markAllRead = useNotifications((s) => s.markAllRead);
 
