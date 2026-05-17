@@ -32,7 +32,7 @@ export function RejectFriendModal({
           <View style={styles.textGroup}>
             <Text style={styles.title}>친구 추가 거절</Text>
             <Text style={styles.desc}>
-              {name}님을 친구로 추가하지 않겠습니까?
+              {name}님의 친구 요청을 거절하겠습니까?
             </Text>
           </View>
 
