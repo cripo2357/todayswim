@@ -29,6 +29,20 @@ import IconAlertTriangle from '@assets/icons/alert-triangle.svg';
 import IconEmotionOverjoyed from '@assets/icons/emotion-overjoyed.svg';
 
 type State = 'idle' | 'uploading' | 'error';
+// 실패 사유 — Figma 110:3337 동일 레이아웃, 타이틀/안내문구만 분기.
+type ErrorReason = 'format' | 'too_large';
+const ERROR_COPY: Record<ErrorReason, { title: string; sub: string }> = {
+  // 형식/확장자 또는 처리 실패 (Figma 110:3337 원 카피)
+  format: {
+    title: '잘못된 형식!',
+    sub: '프로필 이미지로 등록할 수 없는 확장자 파일입니다.',
+  },
+  // 용량 초과 (사용자 확정 카피 2026-05-18)
+  too_large: {
+    title: '이미지 업로드 실패',
+    sub: '이미지 파일의 용량이 너무 큽니다.',
+  },
+};
 
 const AVATAR_SIZE = 120; // uploading 링용
 const IDLE_AVATAR = 80; // idle 아바타 (Figma 110:3316 / 130:3599 통일)
@@ -60,6 +74,7 @@ export function ProfileImageScreen() {
     profile?.photoThumbUri,
   );
   const [state, setState] = React.useState<State>('idle');
+  const [errorReason, setErrorReason] = React.useState<ErrorReason>('format');
 
   // 갤러리 선택 → 512px JPEG 리사이즈 → Storage 업로드 (공용 유틸).
   const pickImage = async () => {
@@ -73,7 +88,8 @@ export function ProfileImageScreen() {
     }
     if (r.status === 'canceled') return;
     if (r.status === 'too_large' || r.status === 'error') {
-      // 너무 큰 사진/처리 실패 모두 업로드 실패 화면(Figma 110:3337)으로.
+      // 둘 다 업로드 실패 화면(Figma 110:3337). 사유로 카피만 분기.
+      setErrorReason(r.status === 'too_large' ? 'too_large' : 'format');
       setState('error');
       return;
     }
@@ -108,7 +124,9 @@ export function ProfileImageScreen() {
           />
         )}
         {state === 'uploading' && <UploadingView photo={photo} />}
-        {state === 'error' && <ErrorView onRetry={pickImage} />}
+        {state === 'error' && (
+          <ErrorView reason={errorReason} onRetry={pickImage} />
+        )}
       </View>
     </SafeAreaView>
   );
@@ -222,16 +240,23 @@ function UploadingView({ photo }: { photo: string }) {
   );
 }
 
-function ErrorView({ onRetry }: { onRetry: () => void }) {
-  // Figma 110:3337 — 경고 + "잘못된 형식!" + "내 사진 다시 업로드".
+function ErrorView({
+  reason,
+  onRetry,
+}: {
+  reason: ErrorReason;
+  onRetry: () => void;
+}) {
+  // Figma 110:3337 — 경고 + 타이틀/안내(사유별) + "내 사진 다시 업로드".
+  const copy = ERROR_COPY[reason];
   return (
     <View style={styles.centerWrap}>
       <View style={styles.errorIconWrap}>
         <IconAlertTriangle width={48} height={48} />
       </View>
       <View style={styles.errorTextBlock}>
-        <Text style={styles.errorTitle}>잘못된 형식!</Text>
-        <Text style={styles.errorSub}>프로필 이미지로 등록할 수 없는 확장자 파일입니다.</Text>
+        <Text style={styles.errorTitle}>{copy.title}</Text>
+        <Text style={styles.errorSub}>{copy.sub}</Text>
       </View>
       <Pressable
         onPress={onRetry}
