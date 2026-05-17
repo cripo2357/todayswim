@@ -13,13 +13,14 @@ import { tokens } from '@/styles/tokens';
 
 const AV = 20; // 아바타 지름 (Figma 173:13711)
 const STEP = 17; // 가로 배치 간격 (3px 겹침 — 사용자 튜닝)
-const ROW_H = 20; // 행 높이 (세로 비겹침)
+const ROW_H = 17; // 행 피치 (3px 세로 겹침 — 사용자 튜닝)
 const COLS = 6;
 const ROWS = 5;
 
-/** 스택 컨테이너 폭/높이 (MapScreen anchor 계산에 사용). */
-export const STACK_W = (COLS - 1) * STEP + AV; // 110
-export const STACK_H = ROWS * ROW_H; // 100
+// 스택 컨테이너 폭/높이 (MapScreen anchor 계산에 사용).
+// 겹침이 있으므로 박스 = 아바타 1개 + (N-1)*피치 (ROW_H/STEP≠AV 시 필수).
+export const STACK_W = (COLS - 1) * STEP + AV; // 6열: 5*17+20 = 105
+export const STACK_H = (ROWS - 1) * ROW_H + AV; // 5행: 4*17+20 = 88
 
 /** index → 셀 위치. r=0 이 맨 아래 행, 행 안에서는 왼→오.
  *  레이어(사용자 확정): 한 줄 6명 중 맨 오른쪽(c=5)이 최상단,
