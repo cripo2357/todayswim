@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
   // Figma 163:7149 — 일러스트 풀폭(원본 비율 유지)
   illustWrap: { width: '100%' },
   illustConfused: { aspectRatio: 343 / 227 },
-  illustDone: { aspectRatio: 343 / 250 },
+  illustDone: { aspectRatio: 313 / 221 }, // friend 163:6885 새 일러스트 viewBox
   // Figma 163:6814 — 제목/설명 그룹
   textGroup: { gap: 12, alignItems: 'center', alignSelf: 'stretch' },
   // Figma 163:6815 — Bold 24/32 -0.288 #1F2937
