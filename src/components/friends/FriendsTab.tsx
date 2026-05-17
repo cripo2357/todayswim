@@ -80,10 +80,18 @@ export function FriendsTab() {
   // 친구의 '비공개 아님' 일정 슬롯(중복 참여자 묶음) — 내가 미참여인 것만
   const allFriendSlots = React.useMemo<FriendSlot[]>(() => {
     const blocked = new Set(blockedIds);
+    // 예정 일정만 — 오늘 포함 30일(오늘 ~ 오늘+29). 지난 일정·범위 밖 제외.
+    const t0 = new Date();
+    t0.setHours(0, 0, 0, 0);
+    const t29 = new Date(t0);
+    t29.setDate(t29.getDate() + 29);
+    const minD = dateKey(t0);
+    const maxD = dateKey(t29);
     const m = new Map<string, FriendSlot>();
     for (const o of MOCK_OTHER_SCHEDULES) {
       if (!o.isFriend || o.visibility === 'private') continue;
       if (blocked.has(o.userId)) continue; // 차단 = 일정에서도 제외
+      if (o.date < minD || o.date > maxD) continue; // 오늘~+29일만
       const key = `${o.poolId}|${o.date}|${o.start}|${o.end}`;
       if (mySlots.has(key)) continue;
       let g = m.get(key);
