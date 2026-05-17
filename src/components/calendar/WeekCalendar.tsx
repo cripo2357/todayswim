@@ -31,6 +31,7 @@ export function WeekCalendar({
   selectedDate,
   onSelectDate,
   markedKeys,
+  dotColor = tokens.color.red,
   minDate,
   maxDate,
   headerDivider,
@@ -39,6 +40,8 @@ export function WeekCalendar({
   onSelectDate: (d: Date) => void;
   /** 일정 있는 날짜 키(YYYY-MM-DD) set — dot 표시 */
   markedKeys?: Set<string>;
+  /** dot 색 — 기본 red(내 일정, Figma 120:4701) / 친구 일정=pd-blue(168:7486) */
+  dotColor?: string;
   /** 선택 가능 최소/최대 날짜 (없으면 무제한). 등록 캘린더에서만 사용. */
   minDate?: Date;
   maxDate?: Date;
@@ -174,7 +177,9 @@ export function WeekCalendar({
                 </Text>
                 {/* 내 일정 있는 날 — 숫자 바로 아래, 선택 원 "안쪽" 하단에
                     겹치도록 원 기준 absolute 배치 (Figma 120:4701). */}
-                {markedKeys?.has(k) ? <View style={styles.dot} /> : null}
+                {markedKeys?.has(k) ? (
+                  <View style={[styles.dot, { backgroundColor: dotColor }]} />
+                ) : null}
               </View>
             </Pressable>
           );
@@ -253,9 +258,9 @@ const styles = StyleSheet.create({
   },
   // Figma 123:8265 — 선택 숫자는 Regular(흰색), Bold 아님
   dayNumSelected: { color: tokens.color.white, fontFamily: tokens.font.sans },
-  // Figma 120:4701 — 내 일정 있는 날: 숫자 바로 아래 6px 빨간 점.
-  // dayCircle 기준 absolute → 선택 원 안쪽 하단에 겹쳐 위치.
-  // 선택일에도 동일 빨강(일관) — 색 토글 안 함.
+  // Figma 120:4701 — 일정 있는 날: 숫자 바로 아래 점. dayCircle 기준
+  // absolute → 선택 원 안쪽 하단에 겹쳐 위치. 선택일에도 동일색(토글 안 함).
+  // 색은 dotColor prop (기본 red=내 일정 / 친구 일정=pd-blue, Figma 168:7486).
   dot: {
     position: 'absolute',
     bottom: 2,
@@ -264,6 +269,5 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: tokens.color.red,
   },
 });

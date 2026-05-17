@@ -236,6 +236,7 @@ export function FriendsTab() {
             selectedDate={selectedDate}
             onSelectDate={setSelectedDate}
             markedKeys={friendDateKeys}
+            dotColor={tokens.color.pdBlue}
             headerDivider
           />
           <View style={styles.list}>
