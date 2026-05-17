@@ -20,6 +20,7 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { useProfile } from '@/store/profile';
 
 export type SocialProvider = 'google' | 'apple' | 'kakao';
 
@@ -168,5 +169,7 @@ export const useAuth = create<AuthState>((set) => ({
       // Google 미로그인 상태면 무시
     }
     set({ user: null });
+    // 프로필도 비움 — 로그아웃 후 맵 프로필 FAB이 '로그인'으로 동작.
+    await useProfile.getState().clear();
   },
 }));
