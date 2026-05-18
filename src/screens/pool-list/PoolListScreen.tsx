@@ -280,9 +280,11 @@ export function PoolListScreen() {
           <>
             <Pressable
               style={styles.poolBackdrop}
-              onPress={() => setSearchOpen(false)}
+              // 다른 영역 탭으로 자동완성 닫힐 때도 엔터와 동일하게
+              // draft 커밋 + 닫기 = 검색 1회 실행(사용자 확정).
+              onPress={onSubmitSearch}
               accessibilityRole="button"
-              accessibilityLabel="수영장 검색 닫기"
+              accessibilityLabel="수영장 검색 닫고 검색"
             />
             <View style={[styles.poolPanel, { top: triggerY }]}>
               {/* Figma 147:5406 — 검색칸 #F8FAFC 알약 */}
