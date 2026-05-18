@@ -278,7 +278,8 @@ export function ProfileTab({
   );
 
   // 가능 영법 4개 모두 선택 시에만 자격증·IM100 활성(사용자 확정).
-  // 3개 이하로 바뀌면 자격증=없음 / IM100=기록 없음 강제 + 칩 비활성.
+  // 3개 이하로 바뀌면 자격증=없음 / IM100=기록 없음 강제 + 칩 비활성,
+  // 그리고 자격증·IM100 공개여부도 비공개로 강제 + 토글 비활성.
   const strokesComplete = strokes.length === ALL_STROKES.length;
   React.useEffect(() => {
     if (strokesComplete) return;
@@ -292,7 +293,17 @@ export function ProfileTab({
       changed = true;
     }
     if (changed) markSwimDirty();
-  }, [strokesComplete, certs, im100]);
+    // 공개여부(showCerts/showIm100)는 store 즉시 반영(patch). 현재 효과값이
+    // 공개일 때만 false 로 — 이미 비공개면 재패치 없음(루프 방지).
+    const visPatch: Partial<UserProfile> = {};
+    if (profile.showCerts ?? PROFILE_VIS_DEFAULT.showCerts) {
+      visPatch.showCerts = false;
+    }
+    if (profile.showIm100 ?? PROFILE_VIS_DEFAULT.showIm100) {
+      visPatch.showIm100 = false;
+    }
+    if (Object.keys(visPatch).length > 0) patch(visPatch);
+  }, [strokesComplete, certs, im100, profile.showCerts, profile.showIm100]);
 
   // 닉네임 인라인 변경 (Figma 120:3030 / 129:6307 / 129:6296)
   const nickInputRef = React.useRef<TextInput>(null);
@@ -635,6 +646,7 @@ export function ProfileTab({
         marginTop={24}
         value={profile.showCerts ?? PROFILE_VIS_DEFAULT.showCerts}
         onChange={(v) => patch({ showCerts: v })}
+        disabled={!strokesComplete}
       />
       <ChipRow>
         {ALL_CERTIFICATIONS.map((c) => (
@@ -653,6 +665,7 @@ export function ProfileTab({
         marginTop={24}
         value={profile.showIm100 ?? PROFILE_VIS_DEFAULT.showIm100}
         onChange={(v) => patch({ showIm100: v })}
+        disabled={!strokesComplete}
       />
       <ChipRow>
         {ALL_IM100_RECORDS.map((r) => (
@@ -721,20 +734,25 @@ function VisRow({
   marginTop,
   value,
   onChange,
+  disabled,
 }: {
   label: string;
   marginTop?: number;
   value: boolean;
   onChange: (v: boolean) => void;
+  disabled?: boolean;
 }) {
   return (
     <View style={[styles.visRow, marginTop != null ? { marginTop } : null]}>
-      <Text style={styles.visRowLabel}>{label}</Text>
+      <Text style={[styles.visRowLabel, disabled && styles.visRowLabelDisabled]}>
+        {label}
+      </Text>
       <Toggle
         value={value}
         onValueChange={onChange}
         label={value ? '공개' : '비공개'}
         labelPosition="left"
+        disabled={disabled}
       />
     </View>
   );
@@ -1039,6 +1057,8 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sans,
     color: tokens.color.ink900,
   },
+  // 영법 4개 미만 → 자격증·IM100 공개여부 비활성(Toggle 자체 0.5와 일관).
+  visRowLabelDisabled: { opacity: 0.5 },
 
   inputBox: {
     flexDirection: 'row',
