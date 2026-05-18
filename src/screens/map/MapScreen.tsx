@@ -79,6 +79,12 @@ const STACK_PIN_GAP = -7;
 // 프로필 스택을 핀 바텀 정렬 기준에서 위로 올리는 양(px). 양수=위로.
 const STACK_LIFT = 9;
 
+// 이 정수 줌 이상에서만 프로필 스택 렌더. 줌아웃 시 풀이 점처럼 작아
+// 스택 가독성 0인데 동시에 수십 풀×29아바타 비트맵 캡처가 폭발 →
+// 최대 성능 비용. supercluster maxZoom=13이라 14↑은 거의 개별 풀.
+// (preview 측정: 스택이 release에서도 최대 부하 — 줌 게이팅이 핵심 레버)
+const STACK_MIN_ZOOM = 14;
+
 // 단순 평면 근사 거리(m). 짧은 거리/한국 위도에선 haversine과 차이 무시 가능.
 function approxDistanceMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const dLat = (lat2 - lat1) * 111_000;
@@ -508,7 +514,9 @@ export function MapScreen() {
                 }}
                 onTap={() => onMarkerPress(p.id)}
               />
-              {stack && stack.entries.length > 0 ? (
+              {stack &&
+              stack.entries.length > 0 &&
+              zoomInt >= STACK_MIN_ZOOM ? (
                 <NaverMapMarkerOverlay
                   latitude={p.lat}
                   longitude={p.lng}
