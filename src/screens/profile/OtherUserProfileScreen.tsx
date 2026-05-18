@@ -325,7 +325,7 @@ export function OtherUserProfileScreen() {
 
       <ConfirmFriendActionModal
         visible={modal === 'block'}
-        title={`${profile.name} 차단`}
+        title={`${profile.name} 영구 차단`}
         descLines={[
           '차단하면 서로에게 모든 정보가 비공개되며,',
           '영구 차단이므로 차단 해제 불가합니다.',
@@ -347,7 +347,7 @@ export function OtherUserProfileScreen() {
         title={`${profile.name} 친구 삭제`}
         descLines={[
           '친구를 삭제하겠습니까?',
-          '삭제해도 나중에 다시 친구 추가 가능합니다.',
+          '나중에 다시 친구 추가는 가능합니다.',
         ]}
         primaryLabel="네, 삭제합니다"
         onPrimary={() => {
@@ -355,7 +355,7 @@ export function OtherUserProfileScreen() {
           setModal(null);
           close();
         }}
-        secondaryLabel="차단하고 싶습니다."
+        secondaryLabel="영구 차단하고 싶습니다."
         secondaryIcon="ban"
         onSecondary={() => setModal('block')}
         onClose={() => setModal(null)}
