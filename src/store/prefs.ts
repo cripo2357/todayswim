@@ -55,8 +55,7 @@ export const usePrefs = create<PrefsState>((set) => ({
 
   hydrate: async () => {
     try {
-      const [v, i, p, f, ms, mf] = await Promise.all([
-        AsyncStorage.getItem(K_VIEW),
+      const [i, p, f, ms, mf] = await Promise.all([
         AsyncStorage.getItem(K_INVITE),
         AsyncStorage.getItem(K_PROFILE_VIS),
         AsyncStorage.getItem(K_FRIEND_REQ),
@@ -64,10 +63,9 @@ export const usePrefs = create<PrefsState>((set) => ({
         AsyncStorage.getItem(K_MAP_FRIENDS),
       ]);
       const pv: ProfileVisibility = p === 'public' ? 'public' : 'friends';
-      const ov: OthersScheduleView = v === 'public' ? 'public' : 'friends';
       set({
-        // 프로필 '친구만' 공개면 다른 사람 일정 보기는 강제 '친구 일정만'
-        othersScheduleView: pv === 'friends' ? 'friends' : ov,
+        // '프로필과 일정 공유' 단일 제어 — 일정 공유는 항상 프로필 공개 미러
+        othersScheduleView: pv,
         scheduleInvite: i === 'off' ? 'off' : 'on',
         profileVisibility: pv,
         friendRequest: FRIEND_REQ_VALUES.includes(f as FriendRequest)
@@ -97,15 +95,14 @@ export const usePrefs = create<PrefsState>((set) => ({
   },
 
   setProfileVisibility: async (v) => {
+    // '프로필과 일정 공유' 단일 제어(Figma 129:6006) — 일정 공유는
+    // 항상 프로필 공개를 미러. 2기능 1제어로 병합(사용자 확정).
     await AsyncStorage.setItem(K_PROFILE_VIS, v);
+    await AsyncStorage.setItem(K_VIEW, v);
+    set({ profileVisibility: v, othersScheduleView: v });
     if (v === 'friends') {
-      // 프로필 '친구만' → 다른 사람 일정 보기 강제 '친구 일정만'
-      // + 내 예정 일정 중 전체공개 → 친구공개로 강등
-      await AsyncStorage.setItem(K_VIEW, 'friends');
-      set({ profileVisibility: v, othersScheduleView: 'friends' });
+      // 친구만 → 내 예정 일정 중 전체공개 → 친구공개로 강등
       await useSwimSchedules.getState().downgradePublicToFriends();
-    } else {
-      set({ profileVisibility: v });
     }
   },
 

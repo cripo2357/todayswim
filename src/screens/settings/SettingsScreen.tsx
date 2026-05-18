@@ -20,7 +20,6 @@ import type { RootStackParamList } from '@/navigation/types';
 import { useAuth } from '@/store/auth';
 import {
   usePrefs,
-  type OthersScheduleView,
   type ScheduleInvite,
   type ProfileVisibility,
   type FriendRequest,
@@ -36,7 +35,6 @@ import IconProfile from '@assets/icons/settings/profile.svg';
 import IconLogout from '@assets/icons/settings/logout.svg';
 import IconTrash from '@assets/icons/settings/trash.svg';
 import IconBell from '@assets/icons/settings/bell.svg';
-import IconCalendar from '@assets/icons/settings/calendar.svg';
 import IconEnvelope from '@assets/icons/settings/envelope.svg';
 import IconLifeBuoy from '@assets/icons/settings/life-buoy.svg';
 import IconEditPencil from '@assets/icons/settings/edit-pencil.svg';
@@ -51,15 +49,7 @@ import IconMapPin from '@assets/icons/settings/map-pin.svg';
 
 const FEEDBACK_EMAIL = 'cripo2357@gmail.com';
 
-// 수영 일정 공유 — OptionSheet 옵션 + 행 우측 표시값 (Figma 130:5012)
-const VIEW_OPTIONS: Option<OthersScheduleView>[] = [
-  { value: 'friends', label: '친구들만 공유' },
-  { value: 'public', label: '전체 공유' },
-];
-const VIEW_VALUE: Record<OthersScheduleView, string> = {
-  friends: '친구들만',
-  public: '모든 사람들',
-};
+// (수영 일정 공유는 '프로필과 일정 공유'로 병합 — profileVisibility 단일 제어)
 // 친구의 수영 일정 초대
 const INVITE_OPTIONS: Option<ScheduleInvite>[] = [
   { value: 'on', label: '초대 받기' },
@@ -116,8 +106,6 @@ export function SettingsScreen() {
   const signOut = useAuth((s) => s.signOut);
   const [pushOn, setPushOn] = React.useState(true);
 
-  const othersView = usePrefs((s) => s.othersScheduleView);
-  const setOthersView = usePrefs((s) => s.setOthersScheduleView);
   const scheduleInvite = usePrefs((s) => s.scheduleInvite);
   const setScheduleInvite = usePrefs((s) => s.setScheduleInvite);
   const profileVis = usePrefs((s) => s.profileVisibility);
@@ -125,7 +113,6 @@ export function SettingsScreen() {
   const friendReq = usePrefs((s) => s.friendRequest);
   const setFriendReq = usePrefs((s) => s.setFriendRequest);
   const profile = useProfile((s) => s.profile);
-  const [viewSheet, setViewSheet] = React.useState(false);
   const [inviteSheet, setInviteSheet] = React.useState(false);
   const [profileSheet, setProfileSheet] = React.useState(false);
   const [friendReqSheet, setFriendReqSheet] = React.useState(false);
@@ -142,12 +129,6 @@ export function SettingsScreen() {
     : null;
   const startLocLabel = startPool?.name ?? '내 위치';
   const mapFriendVal: MapFriendShow = showMapFriend ? 'show' : 'hide';
-
-  // 프로필 '친구만' 공개면 다른 사람 일정 보기는 '친구 일정만'으로 강제 (전체 옵션 미노출)
-  const viewOptions =
-    profileVis === 'friends'
-      ? VIEW_OPTIONS.filter((o) => o.value === 'friends')
-      : VIEW_OPTIONS;
 
   const [logoutOpen, setLogoutOpen] = React.useState(false);
   const onLogout = () => setLogoutOpen(true);
@@ -187,20 +168,16 @@ export function SettingsScreen() {
           />
         </Section>
 
-        {/* 사용자 관계 — Figma 129:6006. 4행 모두 prefs + OptionSheet
-            (실동작 연동은 친구 시스템 Phase2, 선택값은 로컬 영속). */}
+        {/* 사용자 관계 — Figma 129:6006. 3행 prefs + OptionSheet.
+            '프로필과 일정 공유'(profileVisibility)가 프로필 공개 + 수영
+            일정 공유를 단일 제어. 실동작 연동은 친구 시스템 Phase2,
+            선택값은 로컬 영속. */}
         <Section title="사용자 관계">
           <Row
             icon={<IconProfile width={24} height={24} />}
-            label="내 프로필 공개"
+            label="프로필과 일정 공유"
             value={PROFILE_VIS_VALUE[profileVis]}
             onPress={() => setProfileSheet(true)}
-          />
-          <Row
-            icon={<IconCalendar width={24} height={24} />}
-            label="수영 일정 공유"
-            value={VIEW_VALUE[othersView]}
-            onPress={() => setViewSheet(true)}
           />
           <Row
             icon={<IconHandHeart width={24} height={24} />}
@@ -312,14 +289,6 @@ export function SettingsScreen() {
         </View>
       </ScrollView>
 
-      <OptionSheet<OthersScheduleView>
-        visible={viewSheet}
-        onClose={() => setViewSheet(false)}
-        title="수영 일정 공유"
-        options={viewOptions}
-        value={othersView}
-        onConfirm={(v) => setOthersView(v)}
-      />
       <OptionSheet<ScheduleInvite>
         visible={inviteSheet}
         onClose={() => setInviteSheet(false)}
@@ -331,7 +300,7 @@ export function SettingsScreen() {
       <OptionSheet<ProfileVisibility>
         visible={profileSheet}
         onClose={() => setProfileSheet(false)}
-        title="내 프로필 공개"
+        title="프로필과 일정 공유"
         options={PROFILE_VIS_OPTIONS}
         value={profileVis}
         onConfirm={(v) => setProfileVis(v)}
