@@ -17,6 +17,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Dimensions,
 } from 'react-native';
 import { Search, Check } from 'lucide-react-native';
 import IconUserDouble from '@assets/icons/user-double.svg';
@@ -30,6 +31,9 @@ import {
   sanitizeCode,
   type FriendSearchUser,
 } from '@/lib/friendSearch';
+
+// 시트가 너무 짧고 탭 전환마다 높이가 튀던 문제 — 길게 고정(사용자 확정).
+const SHEET_MIN_H = Math.round(Dimensions.get('window').height * 0.6);
 
 type Tab = 'nickname' | 'id';
 
@@ -101,6 +105,7 @@ export function AddFriendSheet({
       onClose={onClose}
       title="새 친구 추가"
       contentStyle={styles.sheet}
+      minHeight={SHEET_MIN_H}
     >
       {/* 세그먼트 탭 */}
       <View style={styles.tabGroup}>
@@ -136,19 +141,26 @@ export function AddFriendSheet({
         {tab === 'nickname' ? (
           <View style={styles.card}>
             <View style={styles.pill}>
-              <TextInput
-                value={nq}
-                onChangeText={(v) => {
-                  setNq(v);
-                  setSelId(null);
-                }}
-                placeholder="닉네임"
-                placeholderTextColor={tokens.color.ink700}
-                style={styles.pillInput}
-                autoCapitalize="none"
-                autoCorrect={false}
-                returnKeyType="search"
-              />
+              <View style={styles.pillInputWrap}>
+                <TextInput
+                  value={nq}
+                  onChangeText={(v) => {
+                    setNq(v);
+                    setSelId(null);
+                  }}
+                  style={styles.pillInput}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  returnKeyType="search"
+                />
+                {/* RN Android placeholder 는 커스텀 폰트 미적용 → 빈 값 시
+                    Pretendard Text 오버레이(앱 공통 패턴). */}
+                {nq.length === 0 ? (
+                  <Text style={styles.pillPlaceholder} pointerEvents="none">
+                    닉네임
+                  </Text>
+                ) : null}
+              </View>
             </View>
             {results.length > 0 ? (
               <ScrollView
@@ -198,20 +210,25 @@ export function AddFriendSheet({
         ) : (
           <View style={styles.idWrap}>
             <View style={styles.pill}>
-              <TextInput
-                value={code}
-                onChangeText={(v) => {
-                  setCode(sanitizeCode(v));
-                  setIdErr(null);
-                }}
-                placeholder="정확한 ID 6자리"
-                placeholderTextColor={tokens.color.ink700}
-                style={styles.pillInput}
-                autoCapitalize="characters"
-                autoCorrect={false}
-                maxLength={6}
-                returnKeyType="search"
-              />
+              <View style={styles.pillInputWrap}>
+                <TextInput
+                  value={code}
+                  onChangeText={(v) => {
+                    setCode(sanitizeCode(v));
+                    setIdErr(null);
+                  }}
+                  style={styles.pillInput}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  maxLength={6}
+                  returnKeyType="search"
+                />
+                {code.length === 0 ? (
+                  <Text style={styles.pillPlaceholder} pointerEvents="none">
+                    정확한 ID 6자리
+                  </Text>
+                ) : null}
+              </View>
               <Search size={18} color={tokens.color.ink400} strokeWidth={2} />
             </View>
             {idErr ? <Text style={styles.errText}>{idErr}</Text> : null}
@@ -261,7 +278,8 @@ const styles = StyleSheet.create({
   },
   tabLabelActive: { color: tokens.color.ink900 },
 
-  group: { gap: 8 },
+  // flex:1 — 시트 minHeight 고정 시 본문이 늘어 CTA가 하단에 고정.
+  group: { gap: 8, flex: 1 },
   // Figma 168:7500 — "새 친구" + 우측 안내
   secRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   secLabel: {
@@ -302,6 +320,7 @@ const styles = StyleSheet.create({
     borderRadius: tokens.radius.pill,
     backgroundColor: '#F8FAFC',
   },
+  pillInputWrap: { flex: 1, justifyContent: 'center' },
   pillInput: {
     flex: 1,
     fontSize: 16,
@@ -310,6 +329,22 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sansMedium,
     color: tokens.color.ink900,
     padding: 0,
+  },
+  // RN Android placeholder 는 커스텀폰트 미적용 → Pretendard Text 오버레이
+  // (앱 공통 패턴). 색은 기존 placeholderTextColor(ink700) 유지, 폰트만 교정.
+  pillPlaceholder: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    textAlignVertical: 'center',
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sansMedium,
+    color: tokens.color.ink700,
+    includeFontPadding: false,
   },
   list: { maxHeight: 216 },
   item: {

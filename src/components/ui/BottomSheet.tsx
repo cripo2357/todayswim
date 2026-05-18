@@ -32,6 +32,8 @@ interface BottomSheetProps {
   children: React.ReactNode;
   /** 내부 컨테이너 padding/gap override (기본 px16 pt24 pb24 gap24) */
   contentStyle?: StyleProp<ViewStyle>;
+  /** 시트 본문 최소 높이(px) — 짧은 콘텐츠에서도 길게 고정. */
+  minHeight?: number;
 }
 
 export function BottomSheet({
@@ -40,6 +42,7 @@ export function BottomSheet({
   title,
   children,
   contentStyle,
+  minHeight,
 }: BottomSheetProps) {
   const slideY = React.useRef(new Animated.Value(SCREEN_H)).current;
   const [render, setRender] = React.useState(visible);
@@ -76,7 +79,13 @@ export function BottomSheet({
             <View style={styles.handleWrap}>
               <View style={styles.handle} />
             </View>
-            <View style={[styles.sheet, contentStyle]}>
+            <View
+              style={[
+                styles.sheet,
+                contentStyle,
+                minHeight != null ? { minHeight } : null,
+              ]}
+            >
               {title != null ? (
                 <View style={styles.titleRow}>
                   <Text style={styles.title}>{title}</Text>
@@ -117,7 +126,13 @@ export function SheetCtaButton({
       <Text style={[styles.ctaLabel, disabled && styles.ctaLabelDisabled]}>
         {label}
       </Text>
-      {icon}
+      {/* button_icon_always_visible 정책: 아이콘은 항상 표시, 비활성 시
+          색만 톤다운(라벨과 동일 디스에이블 처리). 조건부 미렌더 금지. */}
+      {icon != null ? (
+        <View style={disabled ? styles.ctaIconDisabled : undefined}>
+          {icon}
+        </View>
+      ) : null}
     </Pressable>
   );
 }
@@ -180,4 +195,7 @@ const styles = StyleSheet.create({
     color: tokens.color.black,
   },
   ctaLabelDisabled: { color: tokens.color.pdGray },
+  // 비활성 아이콘 톤다운 — 라벨(pdGray)과 동일 정책. 아이콘 SVG 색이
+  // baked라 opacity 로 일괄 톤다운(어떤 아이콘 노드든 동작).
+  ctaIconDisabled: { opacity: 0.4 },
 });
