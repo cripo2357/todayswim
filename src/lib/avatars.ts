@@ -41,9 +41,10 @@ export const BUNDLE_AVATARS: Record<AvatarId, FC<SvgProps>> = {
   'avatar-female-6': AvatarFemale6,
 };
 
-// 지도 스택 등 소형·다수 노출용 64px PNG (SVG 벡터 트리 × 다수 × 마커
-// 비트맵 캡처 비용 회피). repo SVG를 sharp로 래스터화 — assets/avatars/thumb/.
-// 큰 노출(≳64px)은 BUNDLE_AVATARS(SVG)로 선명도 유지. Avatar가 size로 분기.
+// 번들 아바타 다티어 PNG (SVG 벡터 트리 × 다수 마운트 비용 회피 —
+// friends_scalability 메모리). repo SVG를 sharp로 래스터화.
+// 치수 = "그 맥락 최대 표시 px × DPR(~3)": sm 64(thumb/) / md 256 / lg 512.
+// scripts/avatar-thumbs.mjs 로 md/lg 재생성(sm=기존 thumb/ 유지).
 export const BUNDLE_AVATAR_THUMBS: Record<AvatarId, ImageSourcePropType> = {
   'avatar-male-1': require('@assets/avatars/thumb/avatar-male-1.png'),
   'avatar-male-2': require('@assets/avatars/thumb/avatar-male-2.png'),
@@ -58,6 +59,47 @@ export const BUNDLE_AVATAR_THUMBS: Record<AvatarId, ImageSourcePropType> = {
   'avatar-female-5': require('@assets/avatars/thumb/avatar-female-5.png'),
   'avatar-female-6': require('@assets/avatars/thumb/avatar-female-6.png'),
 };
+
+export const BUNDLE_AVATAR_MD: Record<AvatarId, ImageSourcePropType> = {
+  'avatar-male-1': require('@assets/avatars/md/avatar-male-1.png'),
+  'avatar-male-2': require('@assets/avatars/md/avatar-male-2.png'),
+  'avatar-male-3': require('@assets/avatars/md/avatar-male-3.png'),
+  'avatar-male-4': require('@assets/avatars/md/avatar-male-4.png'),
+  'avatar-male-5': require('@assets/avatars/md/avatar-male-5.png'),
+  'avatar-male-6': require('@assets/avatars/md/avatar-male-6.png'),
+  'avatar-female-1': require('@assets/avatars/md/avatar-female-1.png'),
+  'avatar-female-2': require('@assets/avatars/md/avatar-female-2.png'),
+  'avatar-female-3': require('@assets/avatars/md/avatar-female-3.png'),
+  'avatar-female-4': require('@assets/avatars/md/avatar-female-4.png'),
+  'avatar-female-5': require('@assets/avatars/md/avatar-female-5.png'),
+  'avatar-female-6': require('@assets/avatars/md/avatar-female-6.png'),
+};
+
+export const BUNDLE_AVATAR_LG: Record<AvatarId, ImageSourcePropType> = {
+  'avatar-male-1': require('@assets/avatars/lg/avatar-male-1.png'),
+  'avatar-male-2': require('@assets/avatars/lg/avatar-male-2.png'),
+  'avatar-male-3': require('@assets/avatars/lg/avatar-male-3.png'),
+  'avatar-male-4': require('@assets/avatars/lg/avatar-male-4.png'),
+  'avatar-male-5': require('@assets/avatars/lg/avatar-male-5.png'),
+  'avatar-male-6': require('@assets/avatars/lg/avatar-male-6.png'),
+  'avatar-female-1': require('@assets/avatars/lg/avatar-female-1.png'),
+  'avatar-female-2': require('@assets/avatars/lg/avatar-female-2.png'),
+  'avatar-female-3': require('@assets/avatars/lg/avatar-female-3.png'),
+  'avatar-female-4': require('@assets/avatars/lg/avatar-female-4.png'),
+  'avatar-female-5': require('@assets/avatars/lg/avatar-female-5.png'),
+  'avatar-female-6': require('@assets/avatars/lg/avatar-female-6.png'),
+};
+
+/** 표시 size(px)에 맞는 번들 PNG 티어 소스. sm≤64 / md≤160 / lg.
+ *  SVG(BUNDLE_AVATARS)는 더 이상 노출 경로 아님 — 다수 마운트 비용 회피. */
+export function bundleAvatarPng(
+  id: AvatarId,
+  size: number,
+): ImageSourcePropType {
+  if (size <= 64) return BUNDLE_AVATAR_THUMBS[id];
+  if (size <= 160) return BUNDLE_AVATAR_MD[id];
+  return BUNDLE_AVATAR_LG[id];
+}
 
 const MALE_AVATAR_IDS: AvatarId[] = [
   'avatar-male-1', 'avatar-male-2', 'avatar-male-3',

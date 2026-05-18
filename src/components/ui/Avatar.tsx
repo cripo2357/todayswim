@@ -6,9 +6,11 @@
 // 사진 소스: 번들 아바타(AvatarId) / 업로드·소셜 URI / 없으면 기본 아이콘.
 // shared_ui_library 메모리에 따라 단일 출처로 추출 — 신규 노출은 이걸 사용.
 //
-// 성능: 지도 스택처럼 소형·다수 노출은 thumbUri(64px avatar_thumb.jpg)를
-// 우선 사용해 512px 디코드를 피한다. 썸네일 로드 실패(레거시·미존재)면
-// onError 로 원본(photoUri) 1회 폴백. React.memo 로 마커 캡처 재렌더 절감.
+// 성능: 번들 아바타는 SVG 벡터 트리 대신 표시 size에 맞는 PNG 티어
+// (sm64/md256/lg512, bundleAvatarPng)로 — 다수 동시 마운트 비용 회피
+// (friends_scalability 메모리). 업로드 사진은 소형 노출 시 thumbUri
+// (64px) 우선해 512 디코드 회피, 실패 시 onError 로 photoUri 1회 폴백.
+// React.memo 로 마커 캡처/리스트 재렌더 절감.
 //
 // 외곽선 두께는 Figma 173-13735 가 border-0 이나 전역 정책 우선 — 얇게 1.5
 // 기본(호출부 borderWidth 로 조정/0 가능).
@@ -22,15 +24,11 @@ import {
 } from 'react-native';
 import { User } from 'lucide-react-native';
 import {
-  BUNDLE_AVATARS,
-  BUNDLE_AVATAR_THUMBS,
+  bundleAvatarPng,
   isBundleAvatar,
   type AvatarId,
 } from '@/lib/avatars';
 import { tokens } from '@/styles/tokens';
-
-// 번들 PNG 래스터 네이티브 크기. 이 이하면 PNG(가벼움), 초과면 SVG(선명).
-const BUNDLE_RASTER_MAX = 64;
 
 export type AvatarRelation = 'me' | 'friend' | 'other';
 
@@ -86,18 +84,12 @@ function AvatarBase({
       ]}
     >
       {isBundle ? (
-        size <= BUNDLE_RASTER_MAX ? (
-          // 소형(스택 등): SVG 벡터 트리 대신 64px PNG — 캡처/렌더 경량.
-          <Image
-            source={BUNDLE_AVATAR_THUMBS[photoUri as AvatarId]}
-            style={{ width: size, height: size }}
-          />
-        ) : (
-          React.createElement(BUNDLE_AVATARS[photoUri as AvatarId], {
-            width: size,
-            height: size,
-          })
-        )
+        // 번들 아바타: 표시 size에 맞는 PNG 티어(sm/md/lg) — SVG 벡터
+        // 트리 다수 마운트 비용 회피(friends_scalability).
+        <Image
+          source={bundleAvatarPng(photoUri as AvatarId, size)}
+          style={{ width: size, height: size }}
+        />
       ) : photoSrc ? (
         <Image
           source={{ uri: photoSrc }}

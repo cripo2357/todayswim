@@ -7,17 +7,20 @@
 import React from 'react';
 import {
   View, Text, StyleSheet, Pressable, ScrollView, TextInput, Dimensions, Image,
+  type NativeSyntheticEvent, type NativeScrollEvent,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
-import { XCircle, Plus, User } from 'lucide-react-native';
+import { XCircle, Plus } from 'lucide-react-native';
 import IconChevronDown from '@assets/icons/chevron-down.svg';
 import IconUserDouble from '@assets/icons/user-double.svg';
 import IconChatSmile from '@assets/icons/chat-bubble-smile.svg';
 import IconIdBadgeWhite from '@assets/icons/id-badge-white.svg';
-import { MOCK_OTHER_SCHEDULES } from '@/lib/mockData';
-import { BUNDLE_AVATARS, type AvatarId } from '@/lib/avatars';
+import { MOCK_OTHER_SCHEDULES, type MockAccount } from '@/lib/mockData';
+import { bundleAvatarPng, type AvatarId } from '@/lib/avatars';
+import { Avatar as UiAvatar } from '@/components/ui/Avatar';
+import { useFriendList } from '@/hooks/useFriendList';
 import { RejectFriendModal } from '@/components/friends/RejectFriendModal';
 import { AddFriendSheet } from '@/components/friends/AddFriendSheet';
 import { FriendRequestSentModal } from '@/components/friends/FriendRequestSentModal';
@@ -160,7 +163,32 @@ export function FriendsTab() {
   const [triggerY, setTriggerY] = React.useState(0); // 트리거 y(섹션 기준)
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [draft, setDraft] = React.useState('');
-  const [query, setQuery] = React.useState('');
+  // 친구 목록 페이지네이션 seam — 12개씩 윈도잉 + 검색. Phase2: 이 훅의
+  // 구현만 서버 커서/검색으로 교체(이 컴포넌트 무수정). friends_scalability.
+  const {
+    items: pagedFriends,
+    hasMore: friendsHasMore,
+    loadMore: loadMoreFriends,
+    query,
+    setQuery,
+  } = useFriendList();
+  const onOpenProfile = React.useCallback(
+    (userId: string) => navigation.navigate('OtherUserProfile', { userId }),
+    [navigation],
+  );
+  const onListScroll = React.useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      if (!friendsHasMore) return;
+      const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
+      if (
+        layoutMeasurement.height + contentOffset.y >=
+        contentSize.height - 400
+      ) {
+        loadMoreFriends();
+      }
+    },
+    [friendsHasMore, loadMoreFriends],
+  );
 
   const openSearch = () => {
     setSearchOpen(true);
@@ -182,18 +210,7 @@ export function FriendsTab() {
       : friends;
     return [...base].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
   }, [draftQ, friends]);
-  const committedQ = query.trim().toLowerCase();
-  // 친구 목록은 항상 이름 가나다순 (검색 필터 후에도 동일).
-  const listFriends = React.useMemo(() => {
-    const base = committedQ
-      ? friends.filter(
-          (f) =>
-            f.nickname.toLowerCase().includes(committedQ) ||
-            f.name.toLowerCase().includes(committedQ),
-        )
-      : friends;
-    return [...base].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
-  }, [committedQ, friends]);
+  // 친구 목록 정렬·필터·페이징은 useFriendList(pagedFriends)가 담당.
 
   const confirmReject = () => {
     if (!rejectTarget) return;
@@ -210,6 +227,8 @@ export function FriendsTab() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         scrollEnabled={!searchOpen}
+        onScroll={onListScroll}
+        scrollEventThrottle={16}
       >
         {/* ── 새 친구 ── */}
         <View style={styles.section}>
@@ -339,37 +358,31 @@ export function FriendsTab() {
                   </View>
                   <View style={styles.schedDivider} />
                   <View style={styles.schedFriends}>
-                    {s.participants.map((p, i) => {
-                      const Bundle = BUNDLE_AVATARS[p.avatar];
-                      return (
-                        <Pressable
-                          key={i}
-                          style={styles.miniRow}
-                          onPress={() =>
-                            navigation.navigate('OtherUserProfile', {
-                              userId: p.userId,
-                            })
-                          }
-                          accessibilityRole="button"
-                          accessibilityLabel={`${p.name} 프로필 보기`}
-                        >
-                          <View style={styles.miniAvatar}>
-                            {Bundle ? (
-                              <Bundle width={24} height={24} />
-                            ) : (
-                              <User
-                                size={12}
-                                color={tokens.color.ink400}
-                                strokeWidth={2}
-                              />
-                            )}
-                          </View>
-                          <Text style={styles.miniName} numberOfLines={1}>
-                            {p.name}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
+                    {s.participants.map((p, i) => (
+                      <Pressable
+                        key={i}
+                        style={styles.miniRow}
+                        onPress={() =>
+                          navigation.navigate('OtherUserProfile', {
+                            userId: p.userId,
+                          })
+                        }
+                        accessibilityRole="button"
+                        accessibilityLabel={`${p.name} 프로필 보기`}
+                      >
+                        <View style={styles.miniAvatar}>
+                          {/* SVG 벡터 트리 다수 마운트 회피 — PNG 티어
+                              (friends_scalability). 링은 miniAvatar 가 그림. */}
+                          <Image
+                            source={bundleAvatarPng(p.avatar, 24)}
+                            style={styles.miniAvatarImg}
+                          />
+                        </View>
+                        <Text style={styles.miniName} numberOfLines={1}>
+                          {p.name}
+                        </Text>
+                      </Pressable>
+                    ))}
                   </View>
                 </View>
                 );
@@ -409,42 +422,10 @@ export function FriendsTab() {
           </View>
 
           <View style={styles.list}>
-            {listFriends.map((f) => (
-              <View key={f.id} style={styles.friendRow}>
-                <Pressable
-                  onPress={() =>
-                    navigation.navigate('OtherUserProfile', { userId: f.id })
-                  }
-                  accessibilityRole="button"
-                  accessibilityLabel={`${f.name} 프로필 보기`}
-                >
-                  <Avatar size={48} avatarId={f.avatar} />
-                </Pressable>
-                <View style={styles.friendInfo}>
-                  <Text style={styles.friendName} numberOfLines={1}>
-                    {f.name}
-                  </Text>
-                  <View style={styles.friendStatusRow}>
-                    <IconChatSmile width={20} height={20} />
-                    <Text style={styles.friendStatus} numberOfLines={1}>
-                      {f.status}
-                    </Text>
-                  </View>
-                </View>
-                <Pressable
-                  style={styles.profileBtn}
-                  onPress={() =>
-                    navigation.navigate('OtherUserProfile', { userId: f.id })
-                  }
-                  accessibilityRole="button"
-                  accessibilityLabel={`${f.name} 프로필`}
-                >
-                  <Text style={styles.profileBtnLabel}>프로필</Text>
-                  <IconIdBadgeWhite width={16} height={16} />
-                </Pressable>
-              </View>
+            {pagedFriends.map((f) => (
+              <FriendRow key={f.id} friend={f} onOpen={onOpenProfile} />
             ))}
-            {listFriends.length === 0 ? (
+            {pagedFriends.length === 0 ? (
               <Text style={styles.empty}>검색 결과가 없어요.</Text>
             ) : null}
           </View>
@@ -552,23 +533,60 @@ export function FriendsTab() {
   );
 }
 
+// 친구·요청·검색 아바타 — 공유 ui/Avatar 위임(번들=PNG 티어, 친구
+// 관계 mint 링 2px). SVG 벡터 트리 다수 마운트 제거(friends_scalability).
 function Avatar({ size, avatarId }: { size: number; avatarId?: AvatarId }) {
-  const Bundle = avatarId ? BUNDLE_AVATARS[avatarId] : null;
   return (
-    <View
-      style={[
-        styles.avatar,
-        { width: size, height: size, borderRadius: size / 2 },
-      ]}
-    >
-      {Bundle ? (
-        <Bundle width={size - 4} height={size - 4} />
-      ) : (
-        <User size={size * 0.5} color={tokens.color.ink400} strokeWidth={2} />
-      )}
-    </View>
+    <UiAvatar
+      photoUri={avatarId}
+      size={size}
+      relation="friend"
+      borderWidth={2}
+    />
   );
 }
+
+/** 친구 목록 행 — React.memo 로 검색/스크롤 state 변경 시 보이는 행만
+ *  재렌더(friends_scalability). 콜백은 안정 참조로 받는다. */
+const FriendRow = React.memo(function FriendRow({
+  friend,
+  onOpen,
+}: {
+  friend: MockAccount;
+  onOpen: (userId: string) => void;
+}) {
+  return (
+    <View style={styles.friendRow}>
+      <Pressable
+        onPress={() => onOpen(friend.id)}
+        accessibilityRole="button"
+        accessibilityLabel={`${friend.name} 프로필 보기`}
+      >
+        <Avatar size={48} avatarId={friend.avatar} />
+      </Pressable>
+      <View style={styles.friendInfo}>
+        <Text style={styles.friendName} numberOfLines={1}>
+          {friend.name}
+        </Text>
+        <View style={styles.friendStatusRow}>
+          <IconChatSmile width={20} height={20} />
+          <Text style={styles.friendStatus} numberOfLines={1}>
+            {friend.status}
+          </Text>
+        </View>
+      </View>
+      <Pressable
+        style={styles.profileBtn}
+        onPress={() => onOpen(friend.id)}
+        accessibilityRole="button"
+        accessibilityLabel={`${friend.name} 프로필`}
+      >
+        <Text style={styles.profileBtnLabel}>프로필</Text>
+        <IconIdBadgeWhite width={16} height={16} />
+      </Pressable>
+    </View>
+  );
+});
 
 // RN 0.83 boxShadow(Shadow/md) — elevation 미사용. float 패널이 카드 위에
 // 정상 표시되도록(Android elevation 스택 회피) + 레거시 shadow* 제거.
@@ -748,6 +766,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  miniAvatarImg: { width: 24, height: 24 },
   // CalendarTab ptName과 동일 — Medium 12/16 -0.06 #1F2937
   miniName: {
     flex: 1,
