@@ -10,7 +10,7 @@
 //    (정적 isFriend 신뢰 X — block_policy_enforcement 메모리).
 //  · 친구의 비공개(private) 슬롯은 제외(participant_visibility_policy 일관 —
 //    내 일정은 내 것이라 가시성 무관).
-//  · 순서: 나=0번, 나머지는 풀별 고정 셔플(매 렌더 재셔플 방지). 최대 29 + "… more".
+//  · 순서: 나=0번, 나머지는 풀별 고정 셔플(매 렌더 재셔플 방지). 최대 9 + "… more".
 //
 // Phase-1: 친구 일정 소스는 기존 participant 데이터(MOCK_OTHER_SCHEDULES, 달력
 //          resolveParticipants 와 동일 소스). 서버 친구 일정 적재는 Phase-2 갭.
@@ -42,8 +42,10 @@ export interface PoolStack {
   overflow: boolean;
 }
 
-/** 한 풀에 노출하는 최대 아바타 수(초과 시 "… more"). Figma 5×6 - more칸. */
-export const STACK_MAX = 29;
+// 한 풀에 노출하는 최대 아바타 수(초과 시 "… more").
+// 사용자 확정(Figma Frame 655): 3×3 = 9명까지, 10명+면 별도 "…" 칸.
+// 성능 완화 — 29→9 (map_stack_perf 메모리: 캡처 비용 = 아바타수×풀수).
+export const STACK_MAX = 9;
 
 const H24_MS = 24 * 60 * 60 * 1000;
 

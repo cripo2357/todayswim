@@ -14,16 +14,18 @@ import { tokens } from '@/styles/tokens';
 const AV = 20; // 아바타 지름 (Figma 173:13711)
 const STEP = 17; // 가로 배치 간격 (3px 겹침 — 사용자 튜닝)
 const ROW_H = 17; // 행 피치 (3px 세로 겹침 — 사용자 튜닝)
-const COLS = 6;
-const ROWS = 5;
+// 사용자 확정(Figma Frame 655): 3×3 최대 9명, 10명+면 "…" 노출.
+const COLS = 3;
+const ROWS = 3;
 
 // 스택 컨테이너 폭/높이 (MapScreen anchor 계산에 사용).
-// 겹침이 있으므로 박스 = 아바타 1개 + (N-1)*피치 (ROW_H/STEP≠AV 시 필수).
-export const STACK_W = (COLS - 1) * STEP + AV; // 6열: 5*17+20 = 105
-export const STACK_H = (ROWS - 1) * ROW_H + AV; // 5행: 4*17+20 = 88
+// 폭은 "…" 가 들어가는 4번째 칸(col=COLS)까지 포함해야 안 잘림.
+// 겹침 있으므로 박스 = 아바타 1개 + N*STEP / (행)−1*ROW_H + AV.
+export const STACK_W = COLS * STEP + AV; // 3열 + … 칸: 3*17+20 = 71
+export const STACK_H = (ROWS - 1) * ROW_H + AV; // 3행: 2*17+20 = 54
 
 /** index → 셀 위치. r=0 이 맨 아래 행, 행 안에서는 왼→오.
- *  레이어(사용자 확정): 한 줄 6명 중 맨 오른쪽(c=5)이 최상단,
+ *  레이어(사용자 확정): 한 줄 3명 중 맨 오른쪽(c=2)이 최상단,
  *  왼쪽으로 갈수록 한 단계씩 아래, 맨 왼쪽(c=0)이 최하단.
  *  → zIndex=c. 렌더 순서도 왼→오라 오른쪽이 마지막에 그려져
  *  paint 순서로도 동일(캡처 방식 무관 결정적). Figma 173:13745
@@ -60,13 +62,14 @@ function MapProfileStackBase({
         );
       })}
       {overflow ? (
-        // 30번째 칸(맨 윗줄 6번째 = 우상단). Figma 173:13752 —
+        // 10명+ 일 때 우상단 추가 칸(아바타 3열 오른쪽 4번째 = col=COLS).
+        // Figma Frame 655: 3×3 + 별도 "…" 민트 원. 9명은 그대로 다 보임.
         // pd-mint 원 + 점 3개("… more"). bg=pd-mint(Figma 확정).
         <View
           style={[
             styles.cell,
             styles.more,
-            { left: (COLS - 1) * STEP, top: 0, zIndex: 0 },
+            { left: COLS * STEP, top: 0, zIndex: 0 },
           ]}
         >
           <View style={styles.moreDot} />
