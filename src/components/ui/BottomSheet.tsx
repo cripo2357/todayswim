@@ -15,6 +15,8 @@ import {
   Modal,
   Animated,
   Dimensions,
+  KeyboardAvoidingView,
+  Platform,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
@@ -72,10 +74,16 @@ export function BottomSheet({
     <Modal visible transparent animationType="none" onRequestClose={onClose}>
       <View style={styles.root}>
         <Pressable onPress={onClose} style={styles.backdrop} />
-        <Animated.View
-          style={[styles.sheetWrap, { transform: [{ translateY: slideY }] }]}
+        {/* 입력 있는 시트(새 친구 추가 등)에서 키보드가 시트를 가리던 문제 —
+            공용 쉘에서 한 번에 회피. 입력 없는 시트는 키보드 안 떠 무영향. */}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.kav}
         >
-          <SafeAreaView edges={['bottom']}>
+          <Animated.View
+            style={[styles.sheetWrap, { transform: [{ translateY: slideY }] }]}
+          >
+            <SafeAreaView edges={['bottom']}>
             <View style={styles.handleWrap}>
               <View style={styles.handle} />
             </View>
@@ -95,7 +103,8 @@ export function BottomSheet({
               {children}
             </View>
           </SafeAreaView>
-        </Animated.View>
+          </Animated.View>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
   );
@@ -139,6 +148,7 @@ export function SheetCtaButton({
 
 const styles = StyleSheet.create({
   root: { flex: 1, justifyContent: 'flex-end' },
+  kav: { width: '100%' },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(15, 23, 42, 0.4)',

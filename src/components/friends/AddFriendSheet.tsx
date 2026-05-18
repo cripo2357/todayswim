@@ -21,6 +21,7 @@ import {
 } from 'react-native';
 import { Search, Check } from 'lucide-react-native';
 import IconUserDouble from '@assets/icons/user-double.svg';
+import IconChevronDown from '@assets/icons/chevron-down.svg';
 import { tokens } from '@/styles/tokens';
 import { BottomSheet, SheetCtaButton } from '@/components/ui/BottomSheet';
 import { Avatar } from '@/components/ui/Avatar';
@@ -32,8 +33,9 @@ import {
   type FriendSearchUser,
 } from '@/lib/friendSearch';
 
-// 시트가 너무 짧고 탭 전환마다 높이가 튀던 문제 — 길게 고정(사용자 확정).
-const SHEET_MIN_H = Math.round(Dimensions.get('window').height * 0.6);
+// 시트가 너무 짧고 탭 전환마다 높이가 튀던 문제 — 길게 고정(Figma
+// 168:9186 = 화면의 ~78%, 본문 minHeight 로 근사).
+const SHEET_MIN_H = Math.round(Dimensions.get('window').height * 0.72);
 
 type Tab = 'nickname' | 'id';
 
@@ -107,7 +109,8 @@ export function AddFriendSheet({
       contentStyle={styles.sheet}
       minHeight={SHEET_MIN_H}
     >
-      {/* 세그먼트 탭 */}
+      {/* 세그먼트 탭 — Figma 168:9196 wrapper px16 py8 (탭 그룹 좌우 인셋) */}
+      <View style={styles.tabWrap}>
       <View style={styles.tabGroup}>
         {(['nickname', 'id'] as const).map((t) => {
           const active = tab === t;
@@ -128,18 +131,19 @@ export function AddFriendSheet({
           );
         })}
       </View>
+      </View>
 
-      {/* "새 친구" 라벨 + 안내 + 검색 본문 (Figma gap 8) */}
+      {/* "새친구" 라벨 + 안내 + 검색 본문 (Figma 168:9297 gap 8) */}
       <View style={styles.group}>
         <View style={styles.secRow}>
-          <Text style={styles.secLabel}>새 친구</Text>
+          <Text style={styles.secLabel}>새친구</Text>
           <Text style={styles.secHint} numberOfLines={1}>
             기존 친구와 비공개 사용자는 검색되지 않습니다.
           </Text>
         </View>
 
         {tab === 'nickname' ? (
-          <View style={styles.card}>
+          <>
             <View style={styles.pill}>
               <View style={styles.pillInputWrap}>
                 <TextInput
@@ -153,14 +157,16 @@ export function AddFriendSheet({
                   autoCorrect={false}
                   returnKeyType="search"
                 />
-                {/* RN Android placeholder 는 커스텀 폰트 미적용 → 빈 값 시
-                    Pretendard Text 오버레이(앱 공통 패턴). */}
+                {/* RN Android placeholder 커스텀폰트 미적용 → Pretendard
+                    Text 오버레이(앱 공통, 두 탭 동일 디자인). */}
                 {nq.length === 0 ? (
                   <Text style={styles.pillPlaceholder} pointerEvents="none">
                     닉네임
                   </Text>
                 ) : null}
               </View>
+              {/* Figma 168:9305 — 닉네임은 타이프어헤드(드롭다운) caret */}
+              <IconChevronDown width={20} height={20} />
             </View>
             {results.length > 0 ? (
               <ScrollView
@@ -206,9 +212,9 @@ export function AddFriendSheet({
             ) : nq.trim() ? (
               <Text style={styles.empty}>검색 결과가 없습니다.</Text>
             ) : null}
-          </View>
+          </>
         ) : (
-          <View style={styles.idWrap}>
+          <>
             <View style={styles.pill}>
               <View style={styles.pillInputWrap}>
                 <TextInput
@@ -229,10 +235,11 @@ export function AddFriendSheet({
                   </Text>
                 ) : null}
               </View>
-              <Search size={18} color={tokens.color.ink400} strokeWidth={2} />
+              {/* ID는 6자리 정확 조회 → 검색 아이콘(168:9354 확인 전 잠정) */}
+              <Search size={20} color={tokens.color.ink400} strokeWidth={2} />
             </View>
             {idErr ? <Text style={styles.errText}>{idErr}</Text> : null}
-          </View>
+          </>
         )}
       </View>
 
@@ -250,6 +257,8 @@ const styles = StyleSheet.create({
   // Figma 168:7495 — 섹션 간 gap 32 (BottomSheet 기본 24 override)
   sheet: { paddingHorizontal: 16, paddingTop: 24, paddingBottom: 24, gap: 32 },
 
+  // Figma 168:9196 — Tab Group 래퍼: px16 py8 (탭 그룹 좌우 인셋)
+  tabWrap: { paddingHorizontal: 16, paddingVertical: 8 },
   // Figma 168:9155 — Tab Group: bg #F1F5F9 r18 p4
   tabGroup: {
     flexDirection: 'row',
@@ -299,39 +308,32 @@ const styles = StyleSheet.create({
     color: tokens.color.ink500,
   },
 
-  // Figma 168:7504 — Text InputFrame: 흰 카드 border r15 p8 gap4 + Shadow/lg
-  card: {
-    backgroundColor: tokens.color.white,
-    borderWidth: 1,
-    borderColor: tokens.color.lineDefault,
-    borderRadius: 15,
-    padding: 8,
-    gap: 4,
-    ...tokens.shadow.lg,
-  },
-  idWrap: { gap: 8 },
-  // 검색 pill — bg #F8FAFC(기존 검색칩 관례), radius full
+  // Figma 168:9301 _InputTextBase — 흰 박스, border #94A3B8, r14, minH48,
+  // p12, gap12. 닉네임/ID 두 탭 "동일" 컴포넌트(과거 탭별 불일치 통일).
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    minHeight: 40,
-    paddingHorizontal: 8,
-    borderRadius: tokens.radius.pill,
-    backgroundColor: '#F8FAFC',
+    gap: 12,
+    minHeight: 48,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#94A3B8',
+    borderRadius: 14,
+    backgroundColor: tokens.color.white,
   },
   pillInputWrap: { flex: 1, justifyContent: 'center' },
+  // Figma Text md/Regular 16/22 #1F2937 입력값
   pillInput: {
     flex: 1,
     fontSize: 16,
     lineHeight: 22,
     letterSpacing: -0.112,
-    fontFamily: tokens.font.sansMedium,
+    fontFamily: tokens.font.sans,
     color: tokens.color.ink900,
     padding: 0,
   },
-  // RN Android placeholder 는 커스텀폰트 미적용 → Pretendard Text 오버레이
-  // (앱 공통 패턴). 색은 기존 placeholderTextColor(ink700) 유지, 폰트만 교정.
+  // RN Android placeholder 커스텀폰트 미적용 → Pretendard Text 오버레이
+  // (앱 공통, 두 탭 동일). Figma: Regular 16 #4B5563.
   pillPlaceholder: {
     position: 'absolute',
     left: 0,
@@ -342,11 +344,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 22,
     letterSpacing: -0.112,
-    fontFamily: tokens.font.sansMedium,
-    color: tokens.color.ink700,
+    fontFamily: tokens.font.sans,
+    color: '#4B5563',
     includeFontPadding: false,
   },
-  list: { maxHeight: 216 },
+  // Figma 168:9306 — 결과 목록 영역 h200
+  list: { maxHeight: 200 },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
