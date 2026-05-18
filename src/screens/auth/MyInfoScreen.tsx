@@ -277,6 +277,23 @@ export function ProfileTab({
     [],
   );
 
+  // 가능 영법 4개 모두 선택 시에만 자격증·IM100 활성(사용자 확정).
+  // 3개 이하로 바뀌면 자격증=없음 / IM100=기록 없음 강제 + 칩 비활성.
+  const strokesComplete = strokes.length === ALL_STROKES.length;
+  React.useEffect(() => {
+    if (strokesComplete) return;
+    let changed = false;
+    if (!(certs.length === 1 && certs[0] === '없음')) {
+      setCerts(['없음']);
+      changed = true;
+    }
+    if (im100 !== '기록 없음') {
+      setIm100('기록 없음');
+      changed = true;
+    }
+    if (changed) markSwimDirty();
+  }, [strokesComplete, certs, im100]);
+
   // 닉네임 인라인 변경 (Figma 120:3030 / 129:6307 / 129:6296)
   const nickInputRef = React.useRef<TextInput>(null);
   const [nick, setNick] = React.useState(profile.name);
@@ -626,6 +643,7 @@ export function ProfileTab({
             label={c}
             selected={certs.includes(c)}
             onPress={() => toggleCert(c)}
+            disabled={!strokesComplete}
           />
         ))}
       </ChipRow>
@@ -646,6 +664,7 @@ export function ProfileTab({
               setIm100(r as IM100Record);
               markSwimDirty();
             }}
+            disabled={!strokesComplete}
           />
         ))}
       </ChipRow>
@@ -735,16 +754,22 @@ function ChipRow({ children }: { children: React.ReactNode }) {
 }
 
 function Chip({
-  label, selected, onPress,
+  label, selected, onPress, disabled,
 }: {
   label: string;
   selected: boolean;
   onPress: () => void;
+  disabled?: boolean;
 }) {
   return (
     <Pressable
       onPress={onPress}
-      style={[styles.chip, selected && styles.chipSelected]}
+      disabled={disabled}
+      style={[
+        styles.chip,
+        selected && styles.chipSelected,
+        disabled && styles.chipDisabled,
+      ]}
     >
       <Text style={[styles.chipLabel, selected && styles.chipLabelSelected]}>
         {label}
@@ -1198,6 +1223,8 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.color.pdMint,
     borderColor: tokens.color.pdMint,
   },
+  // 가능 영법 4개 미만 → 자격증·IM100 비활성(사용자 확정).
+  chipDisabled: { opacity: 0.4 },
   chipLabel: {
     fontSize: 14,
     lineHeight: 20,

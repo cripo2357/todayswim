@@ -39,7 +39,7 @@ function formatWhen(date: string, start: string): string {
   const [hh, mm] = start.split(':').map(Number);
   const ampm = hh < 12 ? '오전' : '오후';
   const h12 = hh % 12 === 0 ? 12 : hh % 12;
-  return `${y}년 ${m}월 ${d}일(${dow}), ${ampm} ${h12}:${String(mm).padStart(2, '0')}`;
+  return `${y}년 ${m}월 ${d}일(${dow}) ${ampm} ${h12}:${String(mm).padStart(2, '0')}`;
 }
 
 interface FriendSlot {

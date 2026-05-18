@@ -37,7 +37,7 @@ const EMPTY_IDS: string[] = [];
 
 const DOW_KR = ['일', '월', '화', '수', '목', '금', '토'];
 
-// Figma 150:8696 — "2026년 1월 23일(목), 오전 11:00" (날짜 + 시작시각 12h)
+// Figma 150:8696 — "2026년 1월 23일(목) 오전 11:00" (날짜 + 시작시각 12h, 쉼표 없음)
 function formatScheduleLine(iso: string, start: string): string {
   const [y, m, d] = iso.split('-').map(Number);
   const dow = DOW_KR[new Date(y, m - 1, d).getDay()];
@@ -45,7 +45,7 @@ function formatScheduleLine(iso: string, start: string): string {
   const hh = Number(hhStr);
   const ampm = hh < 12 ? '오전' : '오후';
   const h12 = hh % 12 || 12;
-  return `${y}년 ${m}월 ${d}일(${dow}), ${ampm} ${h12}:${mm}`;
+  return `${y}년 ${m}월 ${d}일(${dow}) ${ampm} ${h12}:${mm}`;
 }
 
 export function InviteFriendsScreen() {

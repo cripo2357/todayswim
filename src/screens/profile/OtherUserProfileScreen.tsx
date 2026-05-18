@@ -15,7 +15,8 @@ import {
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Plus, Users, CalendarCheck, Ban, Trash2 } from 'lucide-react-native';
-import Swimmer from '@assets/icons/swimmer.svg';
+import SwimmerGray from '@assets/icons/swimmer-gray.svg';
+import IconUserTriple from '@assets/icons/user-triple.svg';
 import type { RootStackParamList } from '@/navigation/types';
 import { useFriends, friendRelation, type FriendRelation } from '@/store/friends';
 import {
@@ -40,7 +41,7 @@ function formatWhen(date: string, start: string): string {
   const [hh, mm] = start.split(':').map(Number);
   const ampm = hh < 12 ? '오전' : '오후';
   const h12 = hh % 12 === 0 ? 12 : hh % 12;
-  return `${y}년 ${m}월 ${d}일(${dow}), ${ampm} ${h12}:${String(mm).padStart(2, '0')}`;
+  return `${y}년 ${m}월 ${d}일(${dow}) ${ampm} ${h12}:${String(mm).padStart(2, '0')}`;
 }
 
 // CTA: 상태별 라벨/색/동작. (Figma 172:9735/12010/11530)
@@ -185,28 +186,37 @@ export function OtherUserProfileScreen() {
                 </View>
               ) : null}
 
-              {/* Figma 172:10644 — 3열, 사이 #CBD5E1 구분선 */}
+              {/* Figma 172:10644 — 3열, 사이 #CBD5E1 구분선. 평균 수영시간은
+                  미노출 기간(가입 32일 미만 등 weeklyAvgHours=null)엔 칸 전체
+                  (아이콘/값/라벨/구분선) 미표시 — 사용자 확정. 아이콘 색은
+                  Figma Gray/40(#94A3B8), 수영친구는 user-triple. */}
               <View style={styles.stats}>
+                {profile.weeklyAvgHours != null ? (
+                  <View style={[styles.stat, styles.statDivider]}>
+                    <SwimmerGray width={24} height={24} />
+                    <Text style={styles.statValue}>
+                      {formatWeeklyAvg(profile)}
+                    </Text>
+                    <Text style={styles.statLabel}>평균 수영시간</Text>
+                  </View>
+                ) : null}
                 <View style={[styles.stat, styles.statDivider]}>
-                  <Swimmer width={24} height={24} />
-                  <Text style={styles.statValue}>
-                    {formatWeeklyAvg(profile)}
-                  </Text>
-                  <Text style={styles.statLabel}>평균 수영시간</Text>
-                </View>
-                <View style={[styles.stat, styles.statDivider]}>
-                  <CalendarCheck size={24} color={tokens.color.pdMint} strokeWidth={2} />
+                  <CalendarCheck size={24} color="#94A3B8" strokeWidth={2} />
                   <Text style={styles.statValue}>
                     {profile.showServiceYears
-                      ? `${profile.serviceYears}년`
+                      ? profile.serviceYears < 1
+                        ? '1년 미만'
+                        : `${profile.serviceYears}년`
                       : '비공개'}
                   </Text>
                   <Text style={styles.statLabel}>수영 기간</Text>
                 </View>
                 <View style={styles.stat}>
-                  <Users size={24} color={tokens.color.pdMint} strokeWidth={2} />
+                  <IconUserTriple width={24} height={24} />
                   <Text style={styles.statValue}>
-                    {profile.friendCount.toLocaleString()}명
+                    {profile.friendCount > 999
+                      ? '+999명'
+                      : `${profile.friendCount.toLocaleString()}명`}
                   </Text>
                   <Text style={styles.statLabel}>수영 친구</Text>
                 </View>
@@ -456,8 +466,10 @@ const styles = StyleSheet.create({
   statDivider: { borderRightWidth: 1, borderRightColor: '#CBD5E1' },
   // 일정 목록 — ~2.3개(카드 ≈112 + gap12)만 보이고 나머지는 스크롤.
   // 모달 전체가 일정 수에 따라 무한정 길어지는 것 방지.
-  schedScroll: { alignSelf: 'stretch', maxHeight: 280 },
-  schedScrollContent: { gap: 12 },
+  // 카드 boxShadow 가 내부 ScrollView 뷰포트에 잘려 어색했음(#8) — 콘텐츠에
+  // 좌우/상하 여백을 주고 스크롤 컨테이너를 음수 마진으로 당겨 카드 폭은 유지.
+  schedScroll: { alignSelf: 'stretch', maxHeight: 280, marginHorizontal: -12 },
+  schedScrollContent: { gap: 12, paddingHorizontal: 12, paddingVertical: 8 },
   // Figma 172:10647 — Bold 20/28 -0.2 #1F2937
   statValue: {
     fontFamily: tokens.font.sansBold,
@@ -512,9 +524,10 @@ const styles = StyleSheet.create({
     color: tokens.color.ink500,
   },
   // Figma 172:10665 — white r16 p16 shadow.lg
+  // Figma 172:10668 — inner items-start (텍스트/칩 블록과 썸네일 상단 정렬).
   schedCard: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 12,
     backgroundColor: tokens.color.white,
     borderRadius: 16,
