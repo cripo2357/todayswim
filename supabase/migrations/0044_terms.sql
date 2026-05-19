@@ -10,8 +10,11 @@
 --   service        ↔ service          서비스 이용약관           (가입 필수 동의)
 --   privacyConsent ↔ privacy_consent  개인정보 수집·이용 동의   (가입 필수 동의)
 --   privacyPolicy  ↔ privacy_policy   개인정보 처리방침         (고지=통지, 동의 대상 아님)
---   location       ↔ location         위치기반서비스 이용약관   (선택 동의)
+--   location       ↔ location         위치기반서비스 이용약관   (가입 필수 동의)
 --   marketing      ↔ marketing        마케팅 정보 수신 동의     (선택 동의)
+-- ※ 가입 게이트 필수 동의는 위 3개(service/privacy_consent/location) +
+--   '만 14세 이상' 연령확인(약관 문서 아님, 클라이언트 게이트 — 본 테이블
+--   대상 아님). 마케팅만 선택.
 --
 -- 설계 원칙:
 --   1) 문서/버전 마스터(terms)와 동의 이력(terms_agreements) 분리.
@@ -34,8 +37,8 @@ create table if not exists public.terms (
   effective_date   date not null,                       -- 시행일
   -- 섹션 배열 [{title, body}, ...] — src/lib/termsContent.ts sections 구조와 1:1.
   content          jsonb not null,
-  -- 가입 게이트 필수 동의 여부 (service/privacy_consent=true,
-  --   location/marketing=false, privacy_policy=false[고지]).
+  -- 가입 게이트 필수 동의 여부 (service/privacy_consent/location=true,
+  --   marketing=false[선택], privacy_policy=false[고지]).
   is_required      boolean not null default true,
   -- 동의 대상 여부 — privacy_policy 는 '통지' 문서라 false(동의 행 미생성).
   requires_consent boolean not null default true,

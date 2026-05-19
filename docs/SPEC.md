@@ -60,7 +60,7 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 
 [인증 게이트 — 로그아웃 시 프로필 FAB → 로그인 후]
 ├─ Login ✅            [공개]  소셜 로그인(Google/Kakao 실; Apple=목업 테스트경로)
-├─ TermsAgreement ✅   [게이트] 필수 2개 약관 동의(서비스·개인정보 수집·이용)
+├─ TermsAgreement ✅   [게이트] 가입 필수 동의 4개(만14세·서비스 이용약관·개인정보 수집·이용·위치기반서비스 이용약관) + 마케팅(선택)
 ├─ TermsDetail ✅      [공개]  약관 상세 단일 템플릿(5종, termsKey 파라미터)
 ├─ ProfileSetup ✅     [게이트] 프로필 생성(닉네임·성별·생년월일·경력·영법)
 ├─ ProfileImage ✅     [게이트] 아바타 설정(기본/소셜/업로드)
@@ -91,7 +91,7 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 ### 3.1 가입 · 온보딩 ✅(인증부) / 🟡(프로필 저장 로컬)
 1. 비로그인 상태에서 지도(MapMain)의 프로필 FAB 탭 → `Login`.
 2. 소셜 로그인: **Google**(idToken→Supabase) / **Kakao**(OAuth PKCE→Supabase) = 실제 인증. **Apple**=목업 테스트 경로(`signInMock`, 약관·프로필 초기화).
-3. 약관 상태 확인 → 미동의면 `TermsAgreement`. 필수 2종(**서비스 이용약관 + 개인정보 수집·이용 동의**) 체크 → 진행. (위치·마케팅 약관은 가입 게이트 아님)
+3. 약관 상태 확인 → 미동의면 `TermsAgreement`. **가입 필수 동의 4개**(① 만 14세 이상 ② 서비스 이용약관 ③ 개인정보 수집·이용 동의 ④ 위치기반서비스 이용약관) 체크 → 진행. **마케팅 정보 수신 동의는 선택**(게이트 아님). 개인정보 처리방침은 '고지' 문서로 동의 대상 아님(설정에서 열람만).
 4. `ProfileSetup`: 닉네임(2~6자, 중복·금칙어 서버 검사) · 성별 · 생년월일 · 수영경력(0~30) · 영법.
 5. `ProfileImage`: 기본 아바타(성별/소셜) 또는 사진 업로드(512px+64px 썸네일 → Supabase Storage).
 6. `Welcome` → MapMain. 이후 "로그인" 판정 = 로컬 프로필 존재.
@@ -155,7 +155,7 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 | `useSwimSchedules` (`poolsday.swimSchedules`) | 내 수영 일정[]: poolId/Name, date, start/end, visibility, completed | 🟡 로컬, 비었으면 50개 목업 시드 |
 | `useFavorites` (`poolsday.favorites`) | 즐겨찾는 poolId[] | 🟡 로컬 |
 | `usePrefs` (`poolsday.prefs.*`) | 공개범위, 일정초대 on/off, 친구신청 범위, 지도 시작위치, 친구스택 표시 | 🟡 로컬(프라이버시 설정이 기기 한정) |
-| `lib/terms` (`poolsday.terms.*`) | 약관 동의 시각(service/privacyConsent만, ISO) | 🟡 로컬·**기기 단위**(계정 아님), P2=계정 이관 |
+| `lib/terms` (`poolsday.terms.*`) | 가입 동의 시각 5키 — 필수 age·service·privacyConsent·location + 선택 marketing (ISO) | 🟡 로컬·**기기 단위**(계정 아님), P2=계정 이관 |
 | `useAuth` | 소셜 세션(supabase-js가 AsyncStorage 영속) / Apple 목업키 | ✅ 세션 실 / 🟡 Apple 목업 |
 | `useFriends`, `useNotifications`(unread), `useSentInvites`, `useSelection`, `useAddScheduleIntent`, `usePoolFilter` | 친구그래프·미읽음수·보낸초대·선택·필터 | 🟡 메모리 전용(재시작 초기화) |
 
@@ -178,7 +178,7 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 | 영법 | 선택(기본 자유형) | 기기 로컬만 | 프로필 |
 | 친구코드 ID(6자 자동생성) | 자동(재발급 가능) | 기기 로컬 + `notifications.user_code` | 친구추가·알림 수신키 |
 | 프로필 사진 | 선택(기본 번들 아바타) | 실세션이면 Storage `avatars`, 아니면 로컬 URI | 아바타 |
-| 약관 동의 시각(서비스·개인정보 수집·이용) | 필수 | 기기 로컬(기기단위) | 동의 게이트 |
+| 가입 동의 시각 — 필수 4(만14세·서비스 이용약관·개인정보 수집·이용·위치기반서비스 이용약관) + 선택 1(마케팅) | 필수 4 / 선택 1 | 기기 로컬(기기단위) | 동의 게이트 |
 
 ### 5.2 자동 수집 (기기/위치/이용)
 
@@ -258,7 +258,7 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 
 ### 8.2 Phase 2 백엔드 SSOT (코드에 자리/주석 존재, 미구현)
 - **사용자 프로필 서버화**: 현재 PII 전부 기기 로컬(AsyncStorage, 비암호화 JSON). P2 `user_profiles` 테이블 이관 필요(약관·데이터보관 정책 직결).
-- **약관 동의 서버화·버전관리**: 현재 기기단위·service/privacyConsent만. P2 = `terms`(유형/버전/시행일/내용) + `terms_agreements`(누가·언제·어떤 버전·agree/withdraw, append-only 감사로그) 분리, 버전 고정·재동의·철회 이벤트. *(스키마 초안 작성 완료: `supabase/migrations/0044_terms.sql` — Phase 2, 미적용. 활성화 시 lib/terms.ts 를 계정단위 서버 모델로 이관 필요.)*
+- **약관 동의 서버화·버전관리**: 현재 기기단위·필수4(age/service/privacyConsent/location)+marketing(선택). P2 = `terms`(유형/버전/시행일/내용) + `terms_agreements`(누가·언제·어떤 버전·agree/withdraw, append-only 감사로그) 분리, 버전 고정·재동의·철회 이벤트. *(스키마 초안 작성 완료: `supabase/migrations/0044_terms.sql` — Phase 2, 미적용. 활성화 시 lib/terms.ts 를 계정단위 서버 모델로 이관 필요.)*
 - **친구/일정/초대 실연동**: 친구그래프·내 일정·초대가 로컬·목업 → 서버 테이블 + 양방향 전달.
 - **알림 전달·실시간**: 현재 본인 이력만 insert, 수신자 적재·realtime·NotificationsTab 실데이터 미연동. 룰 10개 중 8개 미발송.
 - **OS 푸시 인프라 부재**: 푸시 토큰/발송 서버 전무 → 푸시 정책 실행 전 신규 구축 필요.

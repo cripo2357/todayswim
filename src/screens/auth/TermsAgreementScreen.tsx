@@ -1,6 +1,8 @@
-// Figma 101:3671 — 서비스 약관 동의 (게이트 화면)
-// 두 약관(서비스 이용 + 개인정보 수집·이용) 모두 체크 후 시작.
-// 각 라벨 탭하면 단일 약관 상세 템플릿(TermsDetail)으로 — termsKey 전달.
+// Figma 101:3671 — 서비스 약관 동의 (가입 게이트).
+// 동의 항목 5개: 만14세 / 서비스 이용약관 / 개인정보 수집·이용 /
+//   위치기반서비스 이용약관 (필수 4) + 마케팅 정보 수신 동의 (선택).
+// 약관명(링크) 탭 → 단일 상세 템플릿(TermsDetail), termsKey 전달.
+// 만 14세는 약관 문서가 없어 링크 없는 평문 체크 행.
 
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
@@ -11,11 +13,11 @@ import { Check } from 'lucide-react-native';
 import {
   getTermsState,
   isFullyAgreed,
-  agreeService,
-  declineService,
-  agreePrivacy,
-  declinePrivacy,
+  setConsent,
+  MANDATORY_CONSENTS,
+  type ConsentKey,
 } from '@/lib/terms';
+import type { TermsKey } from '@/lib/termsContent';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
 import { AppHeader } from '@/components/layout/AppHeader';
@@ -23,48 +25,83 @@ import TermsKeyIllust from '@assets/illustrations/terms-key.svg';
 import IconGavel from '@assets/icons/gavel.svg';
 import IconGavelGray from '@assets/icons/gavel-gray.svg';
 
-export function TermsAgreementScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const [serviceAgreed, setServiceAgreed] = React.useState(false);
-  const [privacyAgreed, setPrivacyAgreed] = React.useState(false);
+// 표시 순서·라벨 (Figma 101:3671). label=링크 없는 평문 / linkLabel+tail=링크 행.
+const ROWS: {
+  key: ConsentKey;
+  label?: string;
+  linkLabel?: string;
+  tail?: string;
+  termsKey?: TermsKey;
+}[] = [
+  { key: 'age', label: '만 14세 이상입니다.' },
+  {
+    key: 'service',
+    linkLabel: '서비스 이용약관',
+    tail: '에 동의합니다.',
+    termsKey: 'service',
+  },
+  {
+    key: 'privacyConsent',
+    linkLabel: '개인정보 수집·이용',
+    tail: '에 동의합니다.',
+    termsKey: 'privacyConsent',
+  },
+  {
+    key: 'location',
+    linkLabel: '위치기반서비스 이용약관',
+    tail: '에 동의합니다.',
+    termsKey: 'location',
+  },
+  {
+    key: 'marketing',
+    linkLabel: '마케팅 정보 수신 동의',
+    tail: '에 동의합니다.(선택)',
+    termsKey: 'marketing',
+  },
+];
 
-  // 전문 화면 다녀온 후 동의 상태 다시 가져오기.
+type Agreed = Record<ConsentKey, boolean>;
+const EMPTY: Agreed = {
+  age: false,
+  service: false,
+  privacyConsent: false,
+  location: false,
+  marketing: false,
+};
+
+export function TermsAgreementScreen() {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const [agreed, setAgreed] = React.useState<Agreed>(EMPTY);
+
+  // 상세 화면 다녀온 후 동의 상태 재동기화.
   useFocusEffect(
     React.useCallback(() => {
       (async () => {
         const s = await getTermsState();
-        setServiceAgreed(!!s.serviceAgreedAt);
-        setPrivacyAgreed(!!s.privacyAgreedAt);
+        setAgreed({
+          age: !!s.age,
+          service: !!s.service,
+          privacyConsent: !!s.privacyConsent,
+          location: !!s.location,
+          marketing: !!s.marketing,
+        });
       })();
     }, []),
   );
 
-  const allAgreed = serviceAgreed && privacyAgreed;
+  // 가입 진행 = 필수 4개 모두 동의 (마케팅 제외).
+  const canStart = MANDATORY_CONSENTS.every((k) => agreed[k]);
 
-  const onStart = async () => {
-    if (!allAgreed) return;
-    // 약관 동의 → 프로필 등록 단계.
+  const toggle = async (key: ConsentKey) => {
+    const next = !agreed[key];
+    await setConsent(key, next);
+    setAgreed((p) => ({ ...p, [key]: next }));
+  };
+
+  const onStart = () => {
+    if (!canStart) return;
     navigation.replace('ProfileSetup');
-  };
-
-  // 체크박스 직접 토글 — 상세 화면 안 보고도 동의/철회 가능.
-  const toggleService = async () => {
-    if (serviceAgreed) {
-      await declineService();
-      setServiceAgreed(false);
-    } else {
-      await agreeService();
-      setServiceAgreed(true);
-    }
-  };
-  const togglePrivacy = async () => {
-    if (privacyAgreed) {
-      await declinePrivacy();
-      setPrivacyAgreed(false);
-    } else {
-      await agreePrivacy();
-      setPrivacyAgreed(true);
-    }
   };
 
   return (
@@ -80,49 +117,51 @@ export function TermsAgreementScreen() {
           </View>
 
           <View style={styles.textBlock}>
-            <Text style={styles.subtitle}>약관에 동의하고 서비스를 시작하세요.</Text>
+            <Text style={styles.subtitle}>
+              약관에 동의하고 서비스를 시작하세요.
+            </Text>
 
             <View style={styles.checkList}>
-              <CheckRow
-                checked={serviceAgreed}
-                linkLabel="서비스 이용약관"
-                tailLabel="에 동의합니다."
-                onToggle={toggleService}
-                onPressLink={() =>
-                  navigation.navigate('TermsDetail', { termsKey: 'service' })
-                }
-              />
-              <CheckRow
-                checked={privacyAgreed}
-                linkLabel="개인정보 수집 및 이용"
-                tailLabel="에 동의합니다."
-                onToggle={togglePrivacy}
-                onPressLink={() =>
-                  navigation.navigate('TermsDetail', {
-                    termsKey: 'privacyConsent',
-                  })
-                }
-              />
+              {ROWS.map((r) => (
+                <CheckRow
+                  key={r.key}
+                  checked={agreed[r.key]}
+                  label={r.label}
+                  linkLabel={r.linkLabel}
+                  tailLabel={r.tail}
+                  onToggle={() => toggle(r.key)}
+                  onPressLink={
+                    r.termsKey
+                      ? () =>
+                          navigation.navigate('TermsDetail', {
+                            termsKey: r.termsKey as TermsKey,
+                          })
+                      : undefined
+                  }
+                />
+              ))}
             </View>
           </View>
         </View>
 
         <Pressable
           onPress={onStart}
-          disabled={!allAgreed}
+          disabled={!canStart}
           style={({ pressed }) => [
             styles.cta,
-            !allAgreed && styles.ctaDisabled,
-            pressed && allAgreed && { opacity: 0.85 },
+            !canStart && styles.ctaDisabled,
+            pressed && canStart && { opacity: 0.85 },
           ]}
           accessibilityRole="button"
         >
-          <Text style={[styles.ctaLabel, !allAgreed && styles.ctaLabelDisabled]}>
-            약관 동의
+          <Text style={[styles.ctaLabel, !canStart && styles.ctaLabelDisabled]}>
+            동의하고 풀스데이 시작
           </Text>
-          {allAgreed
-            ? <IconGavel width={20} height={20} />
-            : <IconGavelGray width={20} height={20} />}
+          {canStart ? (
+            <IconGavel width={20} height={20} />
+          ) : (
+            <IconGavelGray width={20} height={20} />
+          )}
         </Pressable>
       </View>
     </SafeAreaView>
@@ -130,31 +169,43 @@ export function TermsAgreementScreen() {
 }
 
 function CheckRow({
-  checked, linkLabel, tailLabel, onToggle, onPressLink,
+  checked,
+  label,
+  linkLabel,
+  tailLabel,
+  onToggle,
+  onPressLink,
 }: {
   checked: boolean;
-  linkLabel: string;
-  tailLabel: string;
-  /** 체크박스 자체 탭 → on/off 토글 */
+  /** 링크 없는 평문 행 (만 14세) */
+  label?: string;
+  /** 링크 행: 약관명(밑줄) + 꼬리 */
+  linkLabel?: string;
+  tailLabel?: string;
   onToggle: () => void;
-  /** 약관 이름(링크) 탭 → 상세 화면 */
-  onPressLink: () => void;
+  onPressLink?: () => void;
 }) {
   return (
     <View style={styles.checkRow}>
       <Pressable
         onPress={onToggle}
         hitSlop={8}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked }}
         style={[styles.checkbox, checked && styles.checkboxChecked]}
       >
-        {/* Figma 101:3828/3829 — 체크/언체크 동일하게 흰 체크 아이콘 표시. 배경색만 mint/gray로. */}
         <Check size={12} color={tokens.color.white} strokeWidth={3} />
       </Pressable>
-      {/* nested Text — link 부분만 onPress 받고, 전체는 한 줄 inline 렌더 ("약관에 동의합니다" 자연스럽게 붙음). */}
-      <Text style={styles.tailLabel}>
-        <Text style={styles.linkLabel} onPress={onPressLink}>{linkLabel}</Text>
-        {tailLabel}
-      </Text>
+      {label != null ? (
+        <Text style={styles.tailLabel}>{label}</Text>
+      ) : (
+        <Text style={styles.tailLabel}>
+          <Text style={styles.linkLabel} onPress={onPressLink}>
+            {linkLabel}
+          </Text>
+          {tailLabel}
+        </Text>
+      )}
     </View>
   );
 }
@@ -164,20 +215,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: tokens.color.bgPaper,
   },
-  // AppHeader 아래 컨텐츠 — 가로 16 패딩, CTA를 바닥으로 밀기 위해 space-between.
   content: {
     flex: 1,
     paddingHorizontal: 16,
     paddingBottom: 32,
     justifyContent: 'space-between',
   },
-  // 제목 → 일러스트 → 텍스트블록 = gap 40 (Figma 101:3673)
   upperBlock: {
     alignItems: 'center',
     gap: 40,
     paddingTop: 24,
   },
-  // 부제 ↔ 체크리스트 = gap 24 (Figma 101:3825)
   textBlock: {
     width: '100%',
     alignItems: 'center',
@@ -197,7 +245,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Figma — 16/26 (1.6) Regular #4B5563 center
+  // 16/26 Regular #4B5563 center
   subtitle: {
     fontSize: 16,
     lineHeight: 26,
@@ -205,14 +253,13 @@ const styles = StyleSheet.create({
     color: '#4B5563',
     textAlign: 'center',
   },
-  // 체크리스트 wrapper에 padding 24
   checkList: { width: '100%', gap: 12, paddingHorizontal: 24 },
   checkRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  // Figma — unchecked: 회색(#C8C8C8) 채움, no border
+  // unchecked: 회색 채움, no border
   checkbox: {
     width: 20,
     height: 20,
@@ -221,11 +268,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // checked: pd-mint 채움 (Figma 101:3828 — #63CBE8)
+  // checked: pd-mint 채움 (Figma 101:3828 #63CBE8)
   checkboxChecked: {
     backgroundColor: tokens.color.pdMint,
   },
-  // Figma — pd-mint #63CBE8, 16/22 Medium underline
+  // pd-mint #63CBE8, 16/22 Medium underline
   linkLabel: {
     fontSize: 16,
     lineHeight: 22,
@@ -234,7 +281,7 @@ const styles = StyleSheet.create({
     color: tokens.color.pdMint,
     textDecorationLine: 'underline',
   },
-  // Figma — 16/22 Regular ink900
+  // 16/22 Regular ink900
   tailLabel: {
     fontSize: 16,
     lineHeight: 22,

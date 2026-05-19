@@ -15,24 +15,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Check, X } from 'lucide-react-native';
 import BrandWordmark from '@assets/illustrations/wordmark-poolsday-light.svg';
 import { AppHeader } from '@/components/layout/AppHeader';
-import {
-  agreeService,
-  declineService,
-  agreePrivacy,
-  declinePrivacy,
-} from '@/lib/terms';
+import { setConsent, type ConsentKey } from '@/lib/terms';
 import { TERMS_META, type TermsKey } from '@/lib/termsContent';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
 
-// 약관별 동의/거부 핸들러 — 온보딩 게이트 대상만 상태 기록, 그 외 no-op.
-const AGREE: Partial<Record<TermsKey, () => Promise<void>>> = {
-  service: agreeService,
-  privacyConsent: agreePrivacy,
-};
-const DECLINE: Partial<Record<TermsKey, () => Promise<void>>> = {
-  service: declineService,
-  privacyConsent: declinePrivacy,
+// 동의 대상 약관 → ConsentKey. 개인정보 처리방침(privacyPolicy)은
+// '고지' 문서라 동의 대상 아님(상태 미기록, 닫기만).
+const CONSENT_OF: Partial<Record<TermsKey, ConsentKey>> = {
+  service: 'service',
+  privacyConsent: 'privacyConsent',
+  location: 'location',
+  marketing: 'marketing',
 };
 
 export function TermsDetailScreen() {
@@ -41,12 +35,13 @@ export function TermsDetailScreen() {
   const { params } = useRoute<RouteProp<RootStackParamList, 'TermsDetail'>>();
   const meta = TERMS_META[params.termsKey];
 
+  const consentKey = CONSENT_OF[params.termsKey];
   const onAgree = async () => {
-    await AGREE[params.termsKey]?.();
+    if (consentKey) await setConsent(consentKey, true);
     navigation.goBack();
   };
   const onDecline = async () => {
-    await DECLINE[params.termsKey]?.();
+    if (consentKey) await setConsent(consentKey, false);
     navigation.goBack();
   };
 
