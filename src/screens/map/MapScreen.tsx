@@ -409,15 +409,16 @@ export function MapScreen() {
         customStyleId="c52a2948-bdea-4a26-8a59-92a5cf711f42"
       >
         {/* 내 위치 마커 — 로그인이면 노란 원+프로필 사진(커스텀 children,
-            Figma 130:3622), 로그아웃이면 marker-me-guest.png(노란 원+
-            검은 팔벌린 사람 baked) 그대로. 둘 다 50px. */}
+            Figma 130:3622, 50px), 로그아웃이면 marker-me-guest.png(노란 원+
+            검은 팔벌린 사람 baked). 로그아웃 크기 = 25m 수영장 마커와 동일 47px
+            (MARKER_SMALL size 47). 로그인은 50px 유지. */}
         {geo.status === 'granted' && geo.coords ? (
           <NaverMapMarkerOverlay
             latitude={geo.coords.lat}
             longitude={geo.coords.lng}
             {...(profile?.photoUri ? {} : { image: MARKER_ME_GUEST })}
-            width={50}
-            height={50}
+            width={profile?.photoUri ? 50 : 47}
+            height={profile?.photoUri ? 50 : 47}
             anchor={{ x: 0.5, y: 0.5 }}
             zIndex={5}
             caption={{
