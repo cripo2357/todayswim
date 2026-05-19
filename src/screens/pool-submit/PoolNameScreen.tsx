@@ -645,6 +645,8 @@ const styles = StyleSheet.create({
   },
   textareaFill: { flex: 1 },
   // multiline placeholder Text 오버레이 (상단 정렬)
+  // Figma 90:7412 — Regular 16/1.6 #4B5563(Gray/60). ink400(#94A3B8)는
+  // Figma보다 흐림 → 리터럴 hex(figma_color_token_mismatch).
   textareaPlaceholder: {
     position: 'absolute',
     left: 0,
@@ -653,7 +655,7 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sans,
     fontSize: 16,
     lineHeight: 26,
-    color: tokens.color.ink400,
+    color: '#4B5563',
     includeFontPadding: false,
   },
   // Figma 90:7413 — 박스 하단 행: 카운터(flex) + 리사이즈 notch
