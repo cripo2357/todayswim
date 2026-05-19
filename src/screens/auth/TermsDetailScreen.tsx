@@ -2,48 +2,23 @@
 // TERMS_META 에서 정보만 교체해 5개 약관(서비스/개인정보 수집·이용/
 // 개인정보 처리방침/위치기반/마케팅)을 모두 커버.
 //
-// 동의/거부: 온보딩 게이트(lib/terms)에 묶인 service·privacyConsent 만
-// 상태 기록, 나머지(처리방침/위치/마케팅)는 조회 후 뒤로가기.
-// (TermsAgreement·LoginScreen 의 isFullyAgreed 게이트 = service+privacy
-//  유지 — 본 리팩터로 게이트 동작 불변.)
+// 읽기 전용 — Figma 101:3833엔 하단 버튼 없음(헤더 back으로 복귀).
+// 동의/거부는 전적으로 TermsAgreement 체크박스 게이트가 담당.
+// 본 화면은 약관 전문 열람만.
 
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
-import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { useRoute, type RouteProp } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Check, X } from 'lucide-react-native';
 import BrandWordmark from '@assets/illustrations/wordmark-poolsday-light.svg';
 import { AppHeader } from '@/components/layout/AppHeader';
-import { setConsent, type ConsentKey } from '@/lib/terms';
-import { TERMS_META, type TermsKey } from '@/lib/termsContent';
+import { TERMS_META } from '@/lib/termsContent';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
 
-// 동의 대상 약관 → ConsentKey. 개인정보 처리방침(privacyPolicy)은
-// '고지' 문서라 동의 대상 아님(상태 미기록, 닫기만).
-const CONSENT_OF: Partial<Record<TermsKey, ConsentKey>> = {
-  service: 'service',
-  privacyConsent: 'privacyConsent',
-  location: 'location',
-  marketing: 'marketing',
-};
-
 export function TermsDetailScreen() {
-  const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { params } = useRoute<RouteProp<RootStackParamList, 'TermsDetail'>>();
   const meta = TERMS_META[params.termsKey];
-
-  const consentKey = CONSENT_OF[params.termsKey];
-  const onAgree = async () => {
-    if (consentKey) await setConsent(consentKey, true);
-    navigation.goBack();
-  };
-  const onDecline = async () => {
-    if (consentKey) await setConsent(consentKey, false);
-    navigation.goBack();
-  };
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
@@ -82,35 +57,6 @@ export function TermsDetailScreen() {
           </React.Fragment>
         ))}
       </ScrollView>
-
-      <View style={styles.footer}>
-        <Pressable
-          onPress={onAgree}
-          style={({ pressed }) => [
-            styles.btn,
-            styles.btnAgree,
-            pressed && { opacity: 0.85 },
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel="동의합니다"
-        >
-          <Text style={styles.btnAgreeLabel}>동의합니다</Text>
-          <Check size={20} color={tokens.color.black} strokeWidth={2.4} />
-        </Pressable>
-        <Pressable
-          onPress={onDecline}
-          style={({ pressed }) => [
-            styles.btn,
-            styles.btnDecline,
-            pressed && { opacity: 0.85 },
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel="거부합니다"
-        >
-          <Text style={styles.btnDeclineLabel}>거부합니다</Text>
-          <X size={20} color={tokens.color.white} strokeWidth={2.4} />
-        </Pressable>
-      </View>
     </SafeAreaView>
   );
 }
@@ -176,38 +122,5 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     fontFamily: tokens.font.sans,
     color: '#4B5563',
-  },
-  footer: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 24,
-    gap: 12,
-  },
-  btn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    minHeight: 48,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 14,
-  },
-  btnAgree: { backgroundColor: tokens.color.pdByellow },
-  btnAgreeLabel: {
-    fontSize: 16,
-    lineHeight: 22,
-    letterSpacing: -0.112,
-    fontFamily: tokens.font.sansSemibold,
-    color: tokens.color.black,
-  },
-  // Figma — #FF2D55 (pd-pink, destructive)
-  btnDecline: { backgroundColor: '#FF2D55' },
-  btnDeclineLabel: {
-    fontSize: 16,
-    lineHeight: 22,
-    letterSpacing: -0.112,
-    fontFamily: tokens.font.sansSemibold,
-    color: tokens.color.white,
   },
 });
