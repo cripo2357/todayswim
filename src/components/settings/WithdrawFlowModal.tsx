@@ -11,8 +11,15 @@
 
 import React from 'react';
 import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
-import { LifeBuoy, Hand, Check } from 'lucide-react-native';
+import { Check } from 'lucide-react-native';
 import { tokens } from '@/styles/tokens';
+// 프로젝트 기존/업로드 아이콘 사용(lucide 대체 X).
+//  life-buoy.svg = baked black 20px (WelcomeScreen·MapScreen 등 상시 사용,
+//    노랑 버튼 검정 라벨에 적합 — Figma 201:8373).
+//  hand-pan.svg  = currentColor(모노크롬) → color prop으로 문맥별 색.
+//  light-bulb.svg = baked pd-blue (모달2 텍스트버튼 색 일치).
+import IconLifeBuoy from '@assets/icons/life-buoy.svg';
+import IconHandPan from '@assets/icons/hand-pan.svg';
 import IconLightBulb from '@assets/icons/light-bulb.svg';
 import IllustWithdraw from '@assets/illustrations/account-withdraw.svg';
 import IllustPlug from '@assets/illustrations/friend-reject.svg';
@@ -105,11 +112,7 @@ export function WithdrawFlowModal({
                     accessibilityLabel="서비스 계속 이용"
                   >
                     <Text style={styles.btnLabelDark}>서비스 계속 이용</Text>
-                    <LifeBuoy
-                      size={20}
-                      color={tokens.color.black}
-                      strokeWidth={2}
-                    />
+                    <IconLifeBuoy width={20} height={20} />
                   </Pressable>
                   <Pressable
                     onPress={() => setPhase('confirm2')}
@@ -120,7 +123,11 @@ export function WithdrawFlowModal({
                     accessibilityRole="button"
                     accessibilityLabel="네, 탈퇴하겠습니다"
                   >
-                    <Hand size={20} color={tokens.color.pdBlue} strokeWidth={2} />
+                    <IconHandPan
+                      width={20}
+                      height={20}
+                      color={tokens.color.pdBlue}
+                    />
                     <Text style={styles.textLinkLabel}>네, 탈퇴하겠습니다</Text>
                   </Pressable>
                 </>
@@ -137,7 +144,11 @@ export function WithdrawFlowModal({
                     accessibilityLabel="서비스 탈퇴"
                   >
                     <Text style={styles.btnLabelLight}>서비스 탈퇴</Text>
-                    <Hand size={20} color={tokens.color.white} strokeWidth={2} />
+                    <IconHandPan
+                      width={20}
+                      height={20}
+                      color={tokens.color.white}
+                    />
                   </Pressable>
                   <Pressable
                     onPress={onClose}

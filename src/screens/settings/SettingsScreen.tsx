@@ -34,7 +34,8 @@ import { tokens } from '@/styles/tokens';
 import BrandWordmark from '@assets/illustrations/wordmark-poolsday-light.svg';
 import IconProfile from '@assets/icons/settings/profile.svg';
 import IconLogout from '@assets/icons/settings/logout.svg';
-// 회원 탈퇴 아이콘 변경(Figma 163:10349 trash → hand-pan, baked pd-mint)
+// 회원 탈퇴 아이콘 변경(Figma 163:10349 trash → hand-pan). hand-pan.svg는
+// currentColor(모달서 파랑/흰색 재사용) → 설정 행은 color=pdMint 명시.
 import IconHandPan from '@assets/icons/hand-pan.svg';
 import IconBell from '@assets/icons/settings/bell.svg';
 import IconEnvelope from '@assets/icons/settings/envelope.svg';
@@ -276,7 +277,13 @@ export function SettingsScreen() {
         {/* 계정 (Figma 163:10343) — 구분선 아래, 회원 탈퇴 + 로그아웃 */}
         <Section title="계정">
           <Row
-            icon={<IconHandPan width={24} height={24} />}
+            icon={
+              <IconHandPan
+                width={24}
+                height={24}
+                color={tokens.color.pdMint}
+              />
+            }
             label="회원 탈퇴"
             onPress={() => setWithdrawOpen(true)}
           />
