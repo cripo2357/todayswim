@@ -594,35 +594,38 @@ export function ProfileTab({
         value={profile.showSwimClasses ?? PROFILE_VIS_DEFAULT.showSwimClasses}
         onChange={(v) => patch({ showSwimClasses: v })}
       />
-      <View style={styles.lessonBlock}>
+      {/* Figma 166:8233 — 레슨 수영장·타임·"레슨 정보 변경"을 같은 칩
+          목록(라벨형)으로 노출. 수영장/타임=민트 채움(표시 전용),
+          "레슨 정보 변경"=아웃라인 버튼(맨 뒤). 다른 섹션과 동일한
+          Chip 스타일 재사용. */}
+      <ChipRow>
         {profile.lessonPoolId && profile.lessonPoolName ? (
-          <Text style={styles.lessonPoolName}>{profile.lessonPoolName}</Text>
+          <View style={[styles.chip, styles.chipSelected]}>
+            <Text style={[styles.chipLabel, styles.chipLabelSelected]}>
+              {profile.lessonPoolName}
+            </Text>
+          </View>
         ) : null}
-        {profile.lessonPoolId ? (
-          <View style={styles.swimClassWrap}>
-            {DAY_ORDER.flatMap(
+        {profile.lessonPoolId
+          ? DAY_ORDER.flatMap(
               (d) => groupByDay(profile.swimClasses ?? [])[d],
             ).map((c) => (
-              <View key={c.id} style={styles.swimClassChip}>
-                <Text style={styles.swimClassChipText}>
+              <View key={c.id} style={[styles.chip, styles.chipSelected]}>
+                <Text style={[styles.chipLabel, styles.chipLabelSelected]}>
                   {formatClassChip(c)}
                 </Text>
               </View>
-            ))}
-          </View>
-        ) : null}
+            ))
+          : null}
         <Pressable
           onPress={() => navigation.navigate('SwimClassRegister')}
-          style={({ pressed }) => [
-            styles.swimClassAdd,
-            pressed && { opacity: 0.6 },
-          ]}
+          style={({ pressed }) => [styles.chip, pressed && { opacity: 0.6 }]}
           accessibilityRole="button"
           accessibilityLabel="레슨 정보 변경"
         >
-          <Text style={styles.swimClassAddText}>레슨 정보 변경</Text>
+          <Text style={styles.chipLabel}>레슨 정보 변경</Text>
         </Pressable>
-      </View>
+      </ChipRow>
 
       <VisRow
         label="가능 영법"
@@ -1184,55 +1187,8 @@ const styles = StyleSheet.create({
 
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
 
-  // Figma 117:2556 — 수영 레슨 블록(풀명 + 칩 + 변경 버튼), 세로 gap 8
-  lessonBlock: { gap: 8, marginTop: 12 },
-  lessonPoolName: {
-    fontSize: 16,
-    lineHeight: 22,
-    letterSpacing: -0.112,
-    fontFamily: tokens.font.sansSemibold,
-    color: tokens.color.ink900,
-  },
-  // Figma 166:8235 — 수영 수업 칩 wrap (gap 8)
-  swimClassWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  // Figma 166:8237 — 등록된 수업 칩: pd-mint bg+border, r9 px10 py4
-  swimClassChip: {
-    backgroundColor: tokens.color.pdMint,
-    borderWidth: 1,
-    borderColor: tokens.color.pdMint,
-    borderRadius: 9,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  // Figma I166:8237 — Medium 14/20 -0.084 white
-  swimClassChipText: {
-    fontSize: 14,
-    lineHeight: 20,
-    letterSpacing: -0.084,
-    fontFamily: tokens.font.sansMedium,
-    color: tokens.color.white,
-  },
-  // Figma 166:8236 — 수업 시간 추가: outline #CBD5E1, r9 px10 py4
-  swimClassAdd: {
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 9,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  // Figma I166:8236 — Medium 14/20 -0.084 #4B5563
-  swimClassAddText: {
-    fontSize: 14,
-    lineHeight: 20,
-    letterSpacing: -0.084,
-    fontFamily: tokens.font.sansMedium,
-    color: '#4B5563',
-  },
-  // Figma Badge Text — px10 py4, radius 9, border #CBD5E1
+  // Figma Badge Text — px10 py4, radius 9, border #CBD5E1.
+  // 수영 레슨(166:8233)·가능 영법·자격증·IM100 공통 칩 — 단일 출처.
   chip: {
     paddingHorizontal: 10,
     paddingVertical: 4,
