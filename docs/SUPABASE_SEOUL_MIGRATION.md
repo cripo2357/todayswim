@@ -34,10 +34,10 @@
 
 > 🔒 **시크릿 원칙**(memory `security_secret_handling`): `service_role` key·anon key 값은 채팅·코드·커밋 어디에도 넣지 않는다. 크리스가 대시보드/로컬에서만 다룬다. **프로젝트 ref / `https://<ref>.supabase.co` URL은 공개 식별자**라 Claude가 받아 마이그레이션 치환에 사용 가능.
 
-## 2. 결정 필요 (경로 분기)
+## 2. 결정 (확정됨)
 
-1. **dev 서버 데이터 보존?** — fresh(마이그레이션 재실행 + 사진 재업로드만, 권장: P1·dev라 깔끔) vs 보존(`pg_dump`/restore + storage 복사로 닉네임·제보·알림·아바타 이관).
-2. **마이그레이션 적용 방식?** — Supabase SQL editor 수동(과거 방식) / Supabase CLI `link`+`db push` 신규 연동 / Claude가 0001~0044를 단일 번들 SQL로 생성(붙여넣기 1회).
+1. **dev 서버 데이터: Fresh** — 보존 안 함. 마이그레이션 재실행 + pool 사진 재업로드만. (닉네임 선점·제보·알림·아바타 dev 데이터 폐기, P1이라 OK)
+2. **적용 방식: 단일 번들 SQL** — `supabase/bundle_seoul_0001-0043.sql` 생성 완료(41파일·0001~0043, 0044 제외, 옛 ref→`__NEW_PROJECT_REF__` 치환). 새 빈 프로젝트 SQL editor에 1회 붙여넣기. 실행 전 `__NEW_PROJECT_REF__`를 새 ref로 일괄 치환(또는 Claude가 새 ref 받아 재생성).
 
 ## 3. 단계별 런북 (순서 엄수, 컷오버 전까지 뭄바이 유지)
 
