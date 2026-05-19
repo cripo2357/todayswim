@@ -15,6 +15,8 @@ import {
   Modal,
   Animated,
   Dimensions,
+  Keyboard,
+  TouchableWithoutFeedback,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
@@ -79,21 +81,28 @@ export function BottomSheet({
             <View style={styles.handleWrap}>
               <View style={styles.handle} />
             </View>
-            <View
-              style={[
-                styles.sheet,
-                contentStyle,
-                minHeight != null ? { minHeight } : null,
-              ]}
+            {/* 입력 바깥 빈 영역 탭 = 키보드 해제(focus out). 자식
+                컨트롤(입력/버튼)이 소비한 탭은 그대로, 빈 곳만 dismiss. */}
+            <TouchableWithoutFeedback
+              onPress={Keyboard.dismiss}
+              accessible={false}
             >
-              {title != null ? (
-                <View style={styles.titleRow}>
-                  <Text style={styles.title}>{title}</Text>
-                  <SheetCloseButton onPress={onClose} />
-                </View>
-              ) : null}
-              {children}
-            </View>
+              <View
+                style={[
+                  styles.sheet,
+                  contentStyle,
+                  minHeight != null ? { minHeight } : null,
+                ]}
+              >
+                {title != null ? (
+                  <View style={styles.titleRow}>
+                    <Text style={styles.title}>{title}</Text>
+                    <SheetCloseButton onPress={onClose} />
+                  </View>
+                ) : null}
+                {children}
+              </View>
+            </TouchableWithoutFeedback>
           </SafeAreaView>
         </Animated.View>
       </View>
