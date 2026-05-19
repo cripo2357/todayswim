@@ -16,7 +16,6 @@ import {
   Animated,
   Dimensions,
   Keyboard,
-  TouchableWithoutFeedback,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
@@ -81,28 +80,29 @@ export function BottomSheet({
             <View style={styles.handleWrap}>
               <View style={styles.handle} />
             </View>
-            {/* 입력 바깥 빈 영역 탭 = 키보드 해제(focus out). 자식
-                컨트롤(입력/버튼)이 소비한 탭은 그대로, 빈 곳만 dismiss. */}
-            <TouchableWithoutFeedback
-              onPress={Keyboard.dismiss}
-              accessible={false}
+            {/* 입력 바깥 빈 영역 탭 = 키보드 해제(focus out). 리스폰더
+                시스템으로 처리 — 빈 곳은 자식이 안 가져가 컨테이너가
+                responder가 되어 dismiss. TextInput/Pressable/ScrollView는
+                자식이 responder를 먼저 claim → 그대로 동작(포커스 정상).
+                TouchableWithoutFeedback로 전체를 감싸면 입력 탭과 같은
+                release에서 dismiss가 발화해 포커스가 깨짐(안티패턴). */}
+            <View
+              style={[
+                styles.sheet,
+                contentStyle,
+                minHeight != null ? { minHeight } : null,
+              ]}
+              onStartShouldSetResponder={() => true}
+              onResponderRelease={Keyboard.dismiss}
             >
-              <View
-                style={[
-                  styles.sheet,
-                  contentStyle,
-                  minHeight != null ? { minHeight } : null,
-                ]}
-              >
-                {title != null ? (
-                  <View style={styles.titleRow}>
-                    <Text style={styles.title}>{title}</Text>
-                    <SheetCloseButton onPress={onClose} />
-                  </View>
-                ) : null}
-                {children}
-              </View>
-            </TouchableWithoutFeedback>
+              {title != null ? (
+                <View style={styles.titleRow}>
+                  <Text style={styles.title}>{title}</Text>
+                  <SheetCloseButton onPress={onClose} />
+                </View>
+              ) : null}
+              {children}
+            </View>
           </SafeAreaView>
         </Animated.View>
       </View>
