@@ -137,28 +137,20 @@ export const useAuth = create<AuthState>((set) => ({
 
   signInWithKakao: async () => {
     const redirectTo = Linking.createURL('auth/callback');
+    // ⚠️ Supabase GoTrue는 Kakao에 `account_email`을 서버측에서 강제
+    //   요청한다(클라 `scopes` 옵션으로 제거 불가 — 검증으로 확인됨:
+    //   `scopes:'profile_nickname profile_image'`를 줘도 콜백이
+    //   `Invalid scope: account_email`로 실패). 따라서 Kakao 로그인은
+    //   Kakao 앱을 **비즈 앱**으로 등록해 `account_email` 동의항목이
+    //   허용돼야 비로소 동작한다. (이메일=계정 key라 어차피 필요 —
+    //   memory email_account_key, docs/SUPABASE_SEOUL_MIGRATION.md §8.)
+    //   그때까지 카카오 로그인은 기능 불가(리전 이관과 무관한 외부 제약).
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'kakao',
-      options: {
-        redirectTo,
-        skipBrowserRedirect: true,
-        // 이메일(account_email) 제외 — Kakao 앱이 비즈 앱이 아니라 이메일
-        // 동의항목이 '권한 없음'이라 기본 스코프로 요청하면 KOE205.
-        // 닉네임·프로필사진(필수 동의 가능)만 요청. 이메일은 앱 미사용.
-        scopes: 'profile_nickname profile_image',
-      },
+      options: { redirectTo, skipBrowserRedirect: true },
     });
     if (error) throw error;
     if (!data?.url) throw new Error('Kakao OAuth URL 없음');
-
-    // 진단: Kakao authorize URL의 실제 scope 확인 (KOE205 = scope/동의항목
-    // 불일치). account_email 이 보이면 비즈 앱 필요/스코프 미반영.
-    console.log(
-      '[kakao] authorize scope =',
-      new URL(data.url).searchParams.get('scope'),
-      '| url =',
-      data.url,
-    );
 
     const res = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
     if (res.type !== 'success') return; // 취소/실패

@@ -105,12 +105,15 @@
 - `pools`/`schedules`/`announcements` fetch 정상(지도·목록·시간표).
 - pool 사진 로드(새 ref URL).
 - Google·Kakao 로그인 → 세션·프로필.
-  - ⚠️ Kakao 이메일: 앱이 비즈 앱이 아니라 `account_email` 동의항목이
-    "권한 없음"(필수/선택 설정 불가, 콘솔 우회 토글 없음). 임시로
-    `src/store/auth.ts` Kakao `scopes:'profile_nickname profile_image'`
-    로 이메일 제외 → 로그인 기능만 검증. 이메일=계정 key라
-    **비즈 앱 등록 + `account_email` 스코프 복원**은 출시 전 P2 필수
-    차단 항목(리전 이관과 무관한 기존 이슈). Google은 이메일 확보됨.
+  - ✅ **Google: 검증 완료** — 새 서울 프로젝트에 user 생성·세션·이메일 확보.
+  - ⛔ **Kakao: 비즈 앱 전까지 로그인 불가(검증 불가, BLOCKED)** —
+    Supabase GoTrue가 Kakao에 `account_email`을 서버측 강제 요청하며
+    클라 `scopes`로 못 뺀다(검증됨: 콜백 `Invalid scope: account_email`).
+    Kakao 앱이 비즈 앱이 아니라 `account_email` "권한 없음" → 로그인
+    자체가 막힘. **리전 이관과 무관한 외부 제약**(같은 Kakao 앱이면
+    뭄바이도 동일). 이관 결함 아님 — 이관 검증에서 Kakao는 제외.
+    해소 = Kakao 앱 비즈 등록 + `account_email` 동의항목 허용(이메일=
+    계정 key라 어차피 필요, P2 출시 전 필수). memory `email_account_key`.
 - 닉네임 중복검사(`profile_nicknames` SELECT/INSERT) + 금칙어 트리거.
 - 제보 insert(`pool_submissions`).
 - 아바타 업로드(`avatars`).
