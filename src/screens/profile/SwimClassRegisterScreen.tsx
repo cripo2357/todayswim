@@ -72,16 +72,35 @@ function PoolPickerSheet({
   return (
     <BottomSheet visible={visible} onClose={onClose} title="레슨 받는 수영장">
       <View style={styles.searchPill}>
-        <TextInput
-          value={q}
-          onChangeText={setQ}
-          placeholder="수영장 이름"
-          placeholderTextColor={tokens.color.ink700}
-          style={styles.searchInput}
-          autoCorrect={false}
-          returnKeyType="search"
-        />
+        <View style={styles.searchInputWrap}>
+          <TextInput
+            value={q}
+            onChangeText={setQ}
+            style={styles.searchInput}
+            autoCorrect={false}
+            autoCapitalize="none"
+            returnKeyType="search"
+          />
+          {/* RN Android placeholder 커스텀폰트 미적용 → Pretendard 오버레이 */}
+          {q.length === 0 ? (
+            <Text style={styles.searchPlaceholder} pointerEvents="none">
+              수영장 이름
+            </Text>
+          ) : null}
+        </View>
+        {q.length > 0 ? (
+          <Pressable
+            onPress={() => setQ('')}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="검색어 지우기"
+          >
+            <XCircle size={20} color="#94A3B8" strokeWidth={2} />
+          </Pressable>
+        ) : null}
       </View>
+      {/* 결과 영역 고정 높이 — 검색 결과 수에 따라 시트가 수축/팽창하지
+          않도록(사용자 확정: "검색어 입력하면 높이 확 작아짐" 수정). */}
       <ScrollView
         style={styles.poolList}
         keyboardShouldPersistTaps="handled"
@@ -398,21 +417,42 @@ const styles = StyleSheet.create({
   },
   // PoolPickerSheet
   searchPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     minHeight: 44,
     borderRadius: tokens.radius.pill,
     backgroundColor: '#F8FAFC',
     paddingHorizontal: 12,
-    justifyContent: 'center',
   },
+  searchInputWrap: { flex: 1, justifyContent: 'center' },
   searchInput: {
+    flex: 1,
     fontSize: 16,
     lineHeight: 22,
     letterSpacing: -0.112,
     fontFamily: tokens.font.sansMedium,
-    color: tokens.color.ink900,
+    color: '#4B5563',
     padding: 0,
   },
-  poolList: { maxHeight: 320 },
+  // RN Android placeholder 커스텀폰트 미적용 → Pretendard Text 오버레이
+  // (앱 공통, ui_fidelity_checklist). Figma 검색칸 톤: #4B5563.
+  searchPlaceholder: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    textAlignVertical: 'center',
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sansMedium,
+    color: '#4B5563',
+    includeFontPadding: false,
+  },
+  // 고정 높이 — 검색 결과 수와 무관하게 시트 높이 일정(수축 방지).
+  poolList: { height: 340 },
   poolRow: { paddingVertical: 12, paddingHorizontal: 4, gap: 2 },
   poolRowText: { gap: 2 },
   poolName: {
