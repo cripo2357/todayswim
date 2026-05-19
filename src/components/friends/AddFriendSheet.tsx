@@ -282,7 +282,7 @@ export function AddFriendSheet({
                   returnKeyType="search"
                 />
                 {code.length === 0 ? (
-                  <Text style={styles.placeholderText} pointerEvents="none">
+                  <Text style={styles.inputPlaceholder} pointerEvents="none">
                     정확한 ID 6자리
                   </Text>
                 ) : null}
@@ -384,8 +384,8 @@ const styles = StyleSheet.create({
     color: tokens.color.ink900,
     padding: 0,
   },
-  // RN Android placeholder 커스텀폰트 미적용 → Pretendard Text.
-  // Figma: Regular 16 #4B5563. 닉네임 트리거는 항상 이 텍스트(고정).
+  // 닉네임 트리거(=Pressable, TextInput 없음)의 고정 라벨 — flex 로
+  // chevron 옆에 자리. Figma: Regular 16 #4B5563.
   placeholderText: {
     flex: 1,
     fontSize: 16,
@@ -393,6 +393,22 @@ const styles = StyleSheet.create({
     letterSpacing: -0.112,
     fontFamily: tokens.font.sans,
     color: '#4B5563',
+  },
+  // ID TextInput 의 플레이스홀더 — 입력 위 절대배치 오버레이(빈 값일
+  // 때만, 타이핑 시 사라짐). flex 로 두면 입력과 세로로 쌓여 위치 깨짐.
+  inputPlaceholder: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    textAlignVertical: 'center',
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sans,
+    color: '#4B5563',
+    includeFontPadding: false,
   },
 
   // Figma 168:9309 — 선택/조회된 사용자 행: 아바타24 + 이름 + 상태
