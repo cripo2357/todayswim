@@ -302,11 +302,12 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   ctaDisabled: { backgroundColor: tokens.color.pdBgray },
+  // Figma 101:3830 — "Text md/SemiBold" 16/22 -0.112 black (Bold 아님)
   ctaLabel: {
     fontSize: 16,
     lineHeight: 22,
     letterSpacing: -0.112,
-    fontFamily: tokens.font.sansBold,
+    fontFamily: tokens.font.sansSemibold,
     color: tokens.color.black,
   },
   ctaLabelDisabled: { color: tokens.color.pdGray },
