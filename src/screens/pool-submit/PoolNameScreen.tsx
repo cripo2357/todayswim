@@ -7,7 +7,7 @@
 import React from 'react';
 import {
   View, Text, TextInput, ScrollView, StyleSheet, Pressable,
-  KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback, Alert,
+  KeyboardAvoidingView, Platform, Keyboard, Alert,
 } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -302,9 +302,7 @@ function EditForm({ poolId }: { poolId?: string }) {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}
       >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-          <View style={styles.flex}>
-            <ScrollView
+        <ScrollView
               style={styles.flex}
               contentContainerStyle={styles.scrollContent}
               showsVerticalScrollIndicator={false}
@@ -380,9 +378,7 @@ function EditForm({ poolId }: { poolId?: string }) {
                   ? <IconWrench width={20} height={20} />
                   : <IconWrenchGray width={20} height={20} />}
               </Pressable>
-            </ScrollView>
-          </View>
-        </TouchableWithoutFeedback>
+        </ScrollView>
       </KeyboardAvoidingView>
     </ScreenContainer>
   );
@@ -645,8 +641,8 @@ const styles = StyleSheet.create({
   },
   textareaFill: { flex: 1 },
   // multiline placeholder Text 오버레이 (상단 정렬)
-  // Figma 90:7412 — Regular 16/1.6 #4B5563(Gray/60). ink400(#94A3B8)는
-  // Figma보다 흐림 → 리터럴 hex(figma_color_token_mismatch).
+  // 이름 필드 placeholder(ink400)와 동일 톤 — #4B5563(Gray/60)은 본문색이라
+  // placeholder로 쓰면 입력값처럼 진하게 보임(크리스 피드백, 일관성 우선).
   textareaPlaceholder: {
     position: 'absolute',
     left: 0,
@@ -655,7 +651,7 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sans,
     fontSize: 16,
     lineHeight: 26,
-    color: '#4B5563',
+    color: tokens.color.ink400,
     includeFontPadding: false,
   },
   // Figma 90:7413 — 박스 하단 행: 카운터(flex) + 리사이즈 notch
