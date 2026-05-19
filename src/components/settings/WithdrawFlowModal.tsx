@@ -56,7 +56,9 @@ export function WithdrawFlowModal({
             </View>
             <View style={styles.textGroup}>
               <Text style={styles.title}>서비스 탈퇴 완료</Text>
-              <Text style={styles.descLg}>고마웠어요. 앞으로도</Text>
+              <Text style={styles.descLg}>
+                {'정말 고마웠어요.\n앞으로도 즐거운 수영하세요.'}
+              </Text>
             </View>
             <Pressable
               onPress={onDeleted}
