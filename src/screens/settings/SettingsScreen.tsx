@@ -33,6 +33,8 @@ import { WithdrawFlowModal } from '@/components/settings/WithdrawFlowModal';
 import { tokens } from '@/styles/tokens';
 import BrandWordmark from '@assets/illustrations/wordmark-poolsday-light.svg';
 import IconProfile from '@assets/icons/settings/profile.svg';
+// 프로필과 일정 공유 행 아이콘 변경(Figma 163:6666 → share, baked pd-mint)
+import IconShare from '@assets/icons/settings/share.svg';
 import IconLogout from '@assets/icons/settings/logout.svg';
 // 회원 탈퇴 아이콘 변경(Figma 163:10349 trash → hand-pan). hand-pan.svg는
 // currentColor(모달서 파랑/흰색 재사용) → 설정 행은 color=pdMint 명시.
@@ -182,7 +184,7 @@ export function SettingsScreen() {
             선택값은 로컬 영속. */}
         <Section title="사용자 관계">
           <Row
-            icon={<IconProfile width={24} height={24} />}
+            icon={<IconShare width={24} height={24} />}
             label="프로필과 일정 공유"
             value={PROFILE_VIS_VALUE[profileVis]}
             onPress={() => setProfileSheet(true)}
