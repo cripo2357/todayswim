@@ -37,7 +37,7 @@
 ## 2. 결정 (확정됨)
 
 1. **dev 서버 데이터: Fresh** — 보존 안 함. 마이그레이션 재실행 + pool 사진 재업로드만. (닉네임 선점·제보·알림·아바타 dev 데이터 폐기, P1이라 OK)
-2. **적용 방식: 단일 번들 SQL** — `supabase/bundle_seoul_0001-0043.sql` 생성 완료(41파일·0001~0043, 0044 제외, 옛 ref→`__NEW_PROJECT_REF__` 치환). 새 빈 프로젝트 SQL editor에 1회 붙여넣기. 실행 전 `__NEW_PROJECT_REF__`를 새 ref로 일괄 치환(또는 Claude가 새 ref 받아 재생성).
+2. **적용 방식: 단일 번들 SQL** — `supabase/bundle_seoul_0001-0043.sql`(41파일·0001~0043, 0044 제외). **새 ref `hldfsstyzbnqnrlqhhtc`로 베이크 완료** — 소스 마이그레이션 5곳 + 번들 모두 치환됨(옛 ref 잔여 0). 새 빈 프로젝트 SQL editor에 **그대로 1회 붙여넣기**(추가 치환 불필요).
 
 ## 3. 단계별 런북 (순서 엄수, 컷오버 전까지 뭄바이 유지)
 
@@ -46,9 +46,9 @@
 - 확보: 새 **project ref**, **URL**(`https://<ref>.supabase.co`), **anon key**, **service_role key**(시크릿).
 - 새 **ref / URL** 을 Claude에게 전달(공개 식별자라 OK).
 
-### 2단계 — 마이그레이션 ref 치환 (Claude)
-- 5개 파일(0021/0023/0024/0031/0034)의 `jdvpesumvkspoxrdqbqw` → 새 ref 일괄 치환 → 커밋.
-- (선택) §2-2가 "단일 번들"이면 0001~0044 합본 SQL 생성.
+### 2단계 — 마이그레이션 ref 치환 (Claude) ✅ 완료
+- 새 ref `hldfsstyzbnqnrlqhhtc` 확정. 소스 5개 파일 + 번들 치환 완료(옛 ref 잔여 0).
+- `supabase/bundle_seoul_0001-0043.sql` 재생성(실 ref 베이크).
 
 ### 3단계 — 스키마·시드 적용 (크리스)
 - 새 프로젝트에 마이그레이션 **0001 → 0044 순서대로** 실행(2단계 치환본 기준).

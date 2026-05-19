@@ -5,6 +5,6 @@
 -- (Storage의 pool-photos/POOL_SEOUL_0005.jpg 는 HTTP 200 정상 확인됨.)
 
 update public.pools
-set photo_url = 'https://jdvpesumvkspoxrdqbqw.supabase.co/storage/v1/object/public/pool-photos/POOL_SEOUL_0005.jpg'
+set photo_url = 'https://hldfsstyzbnqnrlqhhtc.supabase.co/storage/v1/object/public/pool-photos/POOL_SEOUL_0005.jpg'
 where id = 'POOL_SEOUL_0005'
   and (photo_url is null or photo_url = '');

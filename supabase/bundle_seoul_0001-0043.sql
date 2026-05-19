@@ -1,11 +1,8 @@
 -- ============================================================
 -- Pool's Day — Supabase 서울 리전 이관용 단일 번들 (0001~0043)
--- 생성물: docs/SUPABASE_SEOUL_MIGRATION.md §3-3 용. 0044(terms,P2) 제외.
---
--- ⚠️ 실행 전 필수: 아래 토큰을 새 서울 프로젝트 ref로 일괄 치환.
---    __NEW_PROJECT_REF__  →  <새 프로젝트 ref>  (pool-photos URL 5곳)
---    (또는 Claude에게 새 ref 알려주면 치환본 재생성)
--- 새(빈) 서울 프로젝트의 SQL editor에 1회 실행. 순서 보존됨.
+-- 새 프로젝트 ref: hldfsstyzbnqnrlqhhtc (서울). 0044(terms,P2) 제외.
+-- pool-photos URL은 새 ref로 베이크됨 — 추가 치환 불필요.
+-- 새(빈) 서울 프로젝트의 SQL editor에 1회 실행. 순서 보존.
 -- ============================================================
 
 
@@ -1578,7 +1575,7 @@ insert into public.pools (
     6, 25, 1.2, 1.4,
     '{}', false, false, false,
     true, true, 3400,
-    'https://__NEW_PROJECT_REF__.supabase.co/storage/v1/object/public/pool-photos/POOL_SEOUL_0005.jpg')
+    'https://hldfsstyzbnqnrlqhhtc.supabase.co/storage/v1/object/public/pool-photos/POOL_SEOUL_0005.jpg')
 on conflict (id) do nothing;
 
 -- 자유수영 시간표 (출처 표 그대로)
@@ -1635,7 +1632,7 @@ where id = 'POOL_SEOUL_0005';
 -- (Storage의 pool-photos/POOL_SEOUL_0005.jpg 는 HTTP 200 정상 확인됨.)
 
 update public.pools
-set photo_url = 'https://__NEW_PROJECT_REF__.supabase.co/storage/v1/object/public/pool-photos/POOL_SEOUL_0005.jpg'
+set photo_url = 'https://hldfsstyzbnqnrlqhhtc.supabase.co/storage/v1/object/public/pool-photos/POOL_SEOUL_0005.jpg'
 where id = 'POOL_SEOUL_0005'
   and (photo_url is null or photo_url = '');
 
@@ -1669,7 +1666,7 @@ insert into public.pools (
     4, 25,
     '{}', false, false, false,
     true, true, 4400,
-    'https://__NEW_PROJECT_REF__.supabase.co/storage/v1/object/public/pool-photos/POOL_SEOUL_0006.jpg')
+    'https://hldfsstyzbnqnrlqhhtc.supabase.co/storage/v1/object/public/pool-photos/POOL_SEOUL_0006.jpg')
 on conflict (id) do nothing;
 
 -- 자유수영 시간표 (출처 표)
@@ -1845,7 +1842,7 @@ insert into public.pools (
     '{}', false, false, false,
     true, true,
     3000, 3000, 4500,
-    'https://__NEW_PROJECT_REF__.supabase.co/storage/v1/object/public/pool-photos/POOL_SEOUL_0007.jpg')
+    'https://hldfsstyzbnqnrlqhhtc.supabase.co/storage/v1/object/public/pool-photos/POOL_SEOUL_0007.jpg')
 on conflict (id) do nothing;
 
 -- 자유수영 시간표 (공식 기준)
@@ -1936,7 +1933,7 @@ insert into public.pools (
     '{}', false, false, false,
     true, true,
     8000, 8000, 9000,
-    'https://__NEW_PROJECT_REF__.supabase.co/storage/v1/object/public/pool-photos/POOL_SEOUL_0008.jpg')
+    'https://hldfsstyzbnqnrlqhhtc.supabase.co/storage/v1/object/public/pool-photos/POOL_SEOUL_0008.jpg')
 on conflict (id) do nothing;
 
 -- 자유수영 시간표 (cbswim 기준, 공식 미검증)

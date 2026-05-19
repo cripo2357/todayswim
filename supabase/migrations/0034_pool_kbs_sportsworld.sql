@@ -22,7 +22,7 @@ insert into public.pools (
     '{}', false, false, false,
     true, true,
     8000, 8000, 9000,
-    'https://jdvpesumvkspoxrdqbqw.supabase.co/storage/v1/object/public/pool-photos/POOL_SEOUL_0008.jpg')
+    'https://hldfsstyzbnqnrlqhhtc.supabase.co/storage/v1/object/public/pool-photos/POOL_SEOUL_0008.jpg')
 on conflict (id) do nothing;
 
 -- 자유수영 시간표 (cbswim 기준, 공식 미검증)
