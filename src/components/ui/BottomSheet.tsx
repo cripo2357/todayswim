@@ -15,8 +15,6 @@ import {
   Modal,
   Animated,
   Dimensions,
-  KeyboardAvoidingView,
-  Platform,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
@@ -74,16 +72,10 @@ export function BottomSheet({
     <Modal visible transparent animationType="none" onRequestClose={onClose}>
       <View style={styles.root}>
         <Pressable onPress={onClose} style={styles.backdrop} />
-        {/* 입력 있는 시트(새 친구 추가 등)에서 키보드가 시트를 가리던 문제 —
-            공용 쉘에서 한 번에 회피. 입력 없는 시트는 키보드 안 떠 무영향. */}
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.kav}
+        <Animated.View
+          style={[styles.sheetWrap, { transform: [{ translateY: slideY }] }]}
         >
-          <Animated.View
-            style={[styles.sheetWrap, { transform: [{ translateY: slideY }] }]}
-          >
-            <SafeAreaView edges={['bottom']}>
+          <SafeAreaView edges={['bottom']}>
             <View style={styles.handleWrap}>
               <View style={styles.handle} />
             </View>
@@ -103,8 +95,7 @@ export function BottomSheet({
               {children}
             </View>
           </SafeAreaView>
-          </Animated.View>
-        </KeyboardAvoidingView>
+        </Animated.View>
       </View>
     </Modal>
   );
@@ -147,11 +138,7 @@ export function SheetCtaButton({
 }
 
 const styles = StyleSheet.create({
-  // KAV 가 flex 컨테이너 + flex-end 여야 키보드 시 패딩/높이 변화로
-  // 바닥 정렬 시트가 실제로 올라감(root 가 flex-end면 KAV 패딩이 시트를
-  // 못 밀어 자동완성이 키보드에 가림). root 는 단순 풀스크린.
-  root: { flex: 1 },
-  kav: { flex: 1, justifyContent: 'flex-end' },
+  root: { flex: 1, justifyContent: 'flex-end' },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(15, 23, 42, 0.4)',

@@ -37,9 +37,10 @@ import {
   type FriendSearchUser,
 } from '@/lib/friendSearch';
 
-// 시트가 너무 짧고 탭 전환마다 높이가 튀던 문제 — 길게 고정(Figma
-// 168:9186 = 화면의 ~78%, 본문 minHeight 로 근사).
-const SHEET_MIN_H = Math.round(Dimensions.get('window').height * 0.72);
+// 시트를 길게 고정 — 검색 트리거/드롭다운이 화면 위쪽에 와서 키보드(아래
+// ~40%)에 안 가리도록(사용자 확정: 시트 전체를 올리지 말고 길게). 결과
+// 목록은 panelList 가 스크롤. 탭 전환 시 높이 튐도 방지.
+const SHEET_MIN_H = Math.round(Dimensions.get('window').height * 0.86);
 
 type Tab = 'nickname' | 'id';
 
