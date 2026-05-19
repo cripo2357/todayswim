@@ -63,8 +63,20 @@ export function LoginScreen() {
     }
   };
 
+  // dim(카드 밖 어두운 영역) 탭 → 닫기. 단, 게이트 진입(뒤 화면 없음)이면
+  // canGoBack=false → 무동작(필수 로그인 게이트에서 실수로 닫히지 않게).
+  const onDismiss = () => {
+    if (navigation.canGoBack()) navigation.goBack();
+  };
+
   return (
     <View style={styles.root}>
+      <Pressable
+        style={StyleSheet.absoluteFill}
+        onPress={onDismiss}
+        accessibilityRole="button"
+        accessibilityLabel="닫기"
+      />
       <View style={styles.card}>
         <View style={styles.illustWrap}>
           <LoginIllust width={280} height={224} />
