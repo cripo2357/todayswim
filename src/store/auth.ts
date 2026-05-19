@@ -151,6 +151,15 @@ export const useAuth = create<AuthState>((set) => ({
     if (error) throw error;
     if (!data?.url) throw new Error('Kakao OAuth URL 없음');
 
+    // 진단: Kakao authorize URL의 실제 scope 확인 (KOE205 = scope/동의항목
+    // 불일치). account_email 이 보이면 비즈 앱 필요/스코프 미반영.
+    console.log(
+      '[kakao] authorize scope =',
+      new URL(data.url).searchParams.get('scope'),
+      '| url =',
+      data.url,
+    );
+
     const res = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
     if (res.type !== 'success') return; // 취소/실패
 
