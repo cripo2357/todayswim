@@ -29,7 +29,10 @@ export async function uploadProfileAvatar(
     data: { session },
   } = await supabase.auth.getSession();
   const uid = session?.user?.id;
-  if (!uid) return { status: 'skipped' };
+  if (!uid) {
+    console.warn('[avatar] skipped — 실 Supabase 세션 없음(uid 없음)');
+    return { status: 'skipped' };
+  }
 
   const path = `${uid}/avatar.jpg`;
   const { error } = await supabase.storage
@@ -38,7 +41,16 @@ export async function uploadProfileAvatar(
       contentType: 'image/jpeg',
       upsert: true,
     });
-  if (error) return { status: 'error' };
+  if (error) {
+    // 진단: Storage 거부 실제 사유(RLS 위반 / permission denied / 버킷 등).
+    console.warn(
+      '[avatar] upload error:',
+      (error as { message?: string }).message ?? error,
+      '| path =',
+      path,
+    );
+    return { status: 'error' };
+  }
 
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
   if (!data?.publicUrl) return { status: 'error' };
