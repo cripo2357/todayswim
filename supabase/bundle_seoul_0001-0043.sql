@@ -4,6 +4,8 @@
 -- 의존성 순서 보정: 0013(분류 flag 컬럼)을 0012(샘플 시드) 앞으로.
 -- 맨 앞 TEARDOWN: 신규(빈) 프로젝트 가정 — 부분 적용분 정리 후
 --   깨끗이 1회 실행. 실데이터 없으므로 안전(Fresh 결정).
+-- 맨 끝 ROLE GRANTS: 신규 방식 프로젝트는 anon/authenticated 기본
+--   GRANT를 자동으로 안 깔아 RLS가 맞아도 42501 → 표준 GRANT 복원.
 -- ============================================================
 
 -- ===================== TEARDOWN =====================
@@ -2296,3 +2298,20 @@ drop trigger if exists trg_enforce_nickname_policy on public.profile_nicknames;
 create trigger trg_enforce_nickname_policy
   before insert on public.profile_nicknames
   for each row execute function public.enforce_nickname_policy();
+
+-- ===================== ROLE GRANTS =====================
+-- 신규 방식 Supabase 프로젝트는 옛 프로젝트와 달리 anon/authenticated
+-- 기본 GRANT를 자동으로 깔지 않는다. GRANT 없으면 RLS 정책이 맞아도
+-- 테이블 레벨에서 'permission denied for table'(42501) → 앱이 데이터를
+-- 한 행도 못 읽음. Supabase가 새 프로젝트에 까는 표준 GRANT를 그대로
+-- 복원(실 보안 경계는 RLS — pools는 SELECT 정책만 있어 GRANT가 all이어도
+-- 쓰기는 RLS가 차단). 모든 객체 생성 뒤(맨 끝)에 1회.
+grant usage on schema public to anon, authenticated, service_role;
+
+grant all on all tables    in schema public to anon, authenticated, service_role;
+grant all on all sequences in schema public to anon, authenticated, service_role;
+grant all on all routines  in schema public to anon, authenticated, service_role;
+
+alter default privileges in schema public grant all on tables    to anon, authenticated, service_role;
+alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema public grant all on routines  to anon, authenticated, service_role;

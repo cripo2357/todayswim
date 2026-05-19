@@ -58,6 +58,11 @@
   프로젝트 = Fresh라 안전).
 - `pools`/`schedules`/`announcements`/`nickname_blocklist` 시드 + `avatars` 버킷 + RLS·트리거가 함께 생성됨(전부 마이그레이션 내장).
 - ⚠️ 0044(terms)는 Phase 2 초안 — 적용 보류(헤더 주석대로). 0001~0043만.
+- ⚠️ **번들 맨 끝 ROLE GRANTS 포함**: 신규 방식 Supabase 프로젝트는
+  옛 프로젝트와 달리 `anon`/`authenticated` 기본 GRANT를 자동으로 안
+  깐다. 없으면 RLS가 맞아도 테이블 레벨 `42501 permission denied` →
+  앱이 데이터 0행. 번들 끝에 Supabase 표준 GRANT를 복원해 한 번에
+  처리(별도 실행 불필요). 구버전 번들로 적용했었다면 §4 트러블슈팅 참고.
 
 ### 4단계 — Storage (크리스)
 - 새 프로젝트에 **`pool-photos`** 버킷 생성(**public**).
@@ -115,6 +120,29 @@
 - 0044(terms)는 미적용 유지(P2 초안).
 - service_role key 노출 금지(채팅·커밋·.env 커밋 X).
 - 마이그레이션은 멱등하지 않은 시드 INSERT 다수 → 새(빈) 프로젝트에 1회만, 순서대로.
+- 신규 Supabase는 `sb_publishable_...`(anon 대체)/`sb_secret_...`(service_role
+  대체)만 노출하고 레거시 `eyJ...` JWT는 기본 숨김 가능 →
+  `EXPO_PUBLIC_SUPABASE_ANON_KEY`에 **`sb_publishable_`** 사용(코드 수정 0,
+  supabase-js가 문자열로 전달만 함). `sb_secret_`는 모바일·.env 금지.
+
+### 트러블슈팅 — 데이터가 0행 / 앱 마커 안 뜸 (42501)
+
+RLS 정책은 맞는데(`pools_read_all` public/SELECT/true) 앱이 한 행도
+못 읽고, SQL Editor에서 `set role anon; select count(*) from public.pools;`
+가 `ERROR: 42501: permission denied for table pools` → **테이블 레벨
+GRANT 누락**(신규 프로젝트 기본 GRANT 미적용). 최신 번들에는 이미
+ROLE GRANTS가 포함됐지만, 구버전 번들로 적용했었다면 아래를 SQL
+Editor에 1회 실행(번들 끝 블록과 동일):
+
+```sql
+grant usage on schema public to anon, authenticated, service_role;
+grant all on all tables    in schema public to anon, authenticated, service_role;
+grant all on all sequences in schema public to anon, authenticated, service_role;
+grant all on all routines  in schema public to anon, authenticated, service_role;
+alter default privileges in schema public grant all on tables    to anon, authenticated, service_role;
+alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema public grant all on routines  to anon, authenticated, service_role;
+```
 
 ---
 
