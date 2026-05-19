@@ -139,10 +139,10 @@ export function AddFriendSheet({
         })}
       </View>
 
-      {/* "새친구" 라벨 + 안내 + 검색 본문 (Figma 168:9297 gap 8) */}
+      {/* "새 친구" 라벨 + 안내 + 검색 본문 (Figma 168:9297 gap 8) */}
       <View style={styles.group}>
         <View style={styles.secRow}>
-          <Text style={styles.secLabel}>새친구</Text>
+          <Text style={styles.secLabel}>새 친구</Text>
           <Text style={styles.secHint} numberOfLines={1}>
             기존 친구와 비공개 사용자는 검색되지 않습니다.
           </Text>

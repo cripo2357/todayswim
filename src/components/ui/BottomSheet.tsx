@@ -147,8 +147,11 @@ export function SheetCtaButton({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, justifyContent: 'flex-end' },
-  kav: { width: '100%' },
+  // KAV 가 flex 컨테이너 + flex-end 여야 키보드 시 패딩/높이 변화로
+  // 바닥 정렬 시트가 실제로 올라감(root 가 flex-end면 KAV 패딩이 시트를
+  // 못 밀어 자동완성이 키보드에 가림). root 는 단순 풀스크린.
+  root: { flex: 1 },
+  kav: { flex: 1, justifyContent: 'flex-end' },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(15, 23, 42, 0.4)',
