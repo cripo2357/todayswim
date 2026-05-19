@@ -41,6 +41,15 @@ interface AuthState {
   /** Apple — [TEST MODE] 가입 프로세스 진입점 전용 mock */
   signInMock: (provider: SocialProvider) => Promise<void>;
   signOut: () => Promise<void>;
+  /**
+   * 회원 탈퇴 (Figma 201:8341/10281/10428).
+   * P1(목업): 로컬 세션·프로필 전면 teardown = 로그아웃과 동일 효과로
+   * 사용자는 즉시 로그아웃·데이터 비움 상태가 됨.
+   * P2(백엔드 SSOT): 서버측 계정/데이터 영구 삭제는 service-role 권한이
+   * 필요해 클라이언트에서 못 함 — Supabase Edge Function/RPC로 분리 예정
+   * (여기가 그 단일 seam). project_phases 참고.
+   */
+  deleteAccount: () => Promise<void>;
   hydrate: () => Promise<void>;
 }
 
@@ -170,6 +179,22 @@ export const useAuth = create<AuthState>((set) => ({
     }
     set({ user: null });
     // 프로필도 비움 — 로그아웃 후 맵 프로필 FAB이 '로그인'으로 동작.
+    await useProfile.getState().clear();
+  },
+
+  deleteAccount: async () => {
+    // TODO(P2): 서버측 계정/데이터 영구 삭제 호출 위치
+    //   await supabase.functions.invoke('delete-account')  // service-role
+    // 위 서버 삭제 성공 후 아래 로컬 teardown 진행하도록 확장.
+    // P1(목업): signOut과 동일한 로컬 teardown — 세션/소셜/프로필 전면 비움.
+    await supabase.auth.signOut();
+    await AsyncStorage.removeItem(MOCK_STORAGE_KEY);
+    try {
+      await GoogleSignin.signOut();
+    } catch {
+      // Google 미로그인 상태면 무시
+    }
+    set({ user: null });
     await useProfile.getState().clear();
   },
 }));

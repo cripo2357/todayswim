@@ -29,11 +29,13 @@ import { usePools } from '@/hooks/usePools';
 import { OptionSheet, type Option } from '@/components/ui/OptionSheet';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { ConfirmLogoutModal } from '@/components/settings/ConfirmLogoutModal';
+import { WithdrawFlowModal } from '@/components/settings/WithdrawFlowModal';
 import { tokens } from '@/styles/tokens';
 import BrandWordmark from '@assets/illustrations/wordmark-poolsday-light.svg';
 import IconProfile from '@assets/icons/settings/profile.svg';
 import IconLogout from '@assets/icons/settings/logout.svg';
-import IconTrash from '@assets/icons/settings/trash.svg';
+// 회원 탈퇴 아이콘 변경(Figma 163:10349 trash → hand-pan, baked pd-mint)
+import IconHandPan from '@assets/icons/hand-pan.svg';
 import IconBell from '@assets/icons/settings/bell.svg';
 import IconEnvelope from '@assets/icons/settings/envelope.svg';
 import IconLifeBuoy from '@assets/icons/settings/life-buoy.svg';
@@ -104,6 +106,8 @@ function friendReqValue(v: FriendRequest, id: string): string {
 export function SettingsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const signOut = useAuth((s) => s.signOut);
+  const deleteAccount = useAuth((s) => s.deleteAccount);
+  const authUser = useAuth((s) => s.user);
   const [pushOn, setPushOn] = React.useState(true);
 
   const scheduleInvite = usePrefs((s) => s.scheduleInvite);
@@ -132,6 +136,9 @@ export function SettingsScreen() {
 
   const [logoutOpen, setLogoutOpen] = React.useState(false);
   const onLogout = () => setLogoutOpen(true);
+  const [withdrawOpen, setWithdrawOpen] = React.useState(false);
+  const withdrawNickname =
+    authUser?.nickname || profile?.name || '회원';
 
   const sendMail = () => {
     const url = `mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent(
@@ -269,8 +276,9 @@ export function SettingsScreen() {
         {/* 계정 (Figma 163:10343) — 구분선 아래, 회원 탈퇴 + 로그아웃 */}
         <Section title="계정">
           <Row
-            icon={<IconTrash width={24} height={24} />}
+            icon={<IconHandPan width={24} height={24} />}
             label="회원 탈퇴"
+            onPress={() => setWithdrawOpen(true)}
           />
           <Row
             icon={<IconLogout width={24} height={24} />}
@@ -331,6 +339,18 @@ export function SettingsScreen() {
           navigation.reset({ index: 0, routes: [{ name: 'MapMain' }] });
         }}
         onClose={() => setLogoutOpen(false)}
+      />
+
+      <WithdrawFlowModal
+        visible={withdrawOpen}
+        nickname={withdrawNickname}
+        onClose={() => setWithdrawOpen(false)}
+        onDeleted={async () => {
+          setWithdrawOpen(false);
+          await deleteAccount();
+          // 탈퇴 후 맵으로 (스택 리셋 — 뒤로가기로 설정 복귀 방지). 로그아웃과 동일.
+          navigation.reset({ index: 0, routes: [{ name: 'MapMain' }] });
+        }}
       />
     </SafeAreaView>
   );
