@@ -69,6 +69,21 @@ export const MOCK_NON_FRIENDS: MockAccount[] = [
   { id: 'nf8', name: '임태현', nickname: '느림보', status: '천천히 오래', code: 'POOL-OP56', avatar: 'avatar-male-4' },
   { id: 'nf9', name: 'Henry Martinez', nickname: 'henry', status: '@henrymartinez', code: 'POOL-QR78', avatar: 'avatar-female-6' },
   { id: 'nf10', name: '배수아', nickname: '인어공주', status: '바다 수영 좋아', code: 'POOL-ST90', avatar: 'avatar-female-3' },
+  // ── 테스트용: 이름에 'a' 포함 비친구 10명 (닉네임 검색 'a' 테스트) ──
+  { id: 'nf11', name: 'Aaron Lee', nickname: 'aaronl', status: '자유형 연습 중', code: 'POOL-NA11', avatar: 'avatar-male-1' },
+  { id: 'nf12', name: 'Maya Kim', nickname: 'maya', status: '초보 탈출 도전', code: 'POOL-NA12', avatar: 'avatar-female-1' },
+  { id: 'nf13', name: 'Hannah Cho', nickname: 'hannah', status: '주말 수영러', code: 'POOL-NA13', avatar: 'avatar-female-2' },
+  { id: 'nf14', name: 'Liam Park', nickname: 'liamp', status: '접영 배우는 중', code: 'POOL-NA14', avatar: 'avatar-male-2' },
+  { id: 'nf15', name: 'Sophia Han', nickname: 'sophia', status: '물과 친해지기', code: 'POOL-NA15', avatar: 'avatar-female-3' },
+  { id: 'nf16', name: 'Ava Jung', nickname: 'avaj', status: '아침 수영 좋아', code: 'POOL-NA16', avatar: 'avatar-female-4' },
+  { id: 'nf17', name: 'Nathan Bae', nickname: 'nathan', status: '1km 도전', code: 'POOL-NA17', avatar: 'avatar-male-3' },
+  { id: 'nf18', name: 'Clara Yoon', nickname: 'claray', status: '평영 연습', code: 'POOL-NA18', avatar: 'avatar-female-5' },
+  { id: 'nf19', name: 'Mason Seo', nickname: 'mason', status: '느긋하게 수영', code: 'POOL-NA19', avatar: 'avatar-male-4' },
+  { id: 'nf20', name: 'Diana Nam', nickname: 'diana', status: '수영 입문 2주차', code: 'POOL-NA20', avatar: 'avatar-female-6' },
+  // ── 테스트용: ID 검색(정확 일치). accountCode('nf-id-7000234')="ABCD2E".
+  //    코드 알파벳에 0·O·1·I·L 없음 → "ABCD12" 불가('1' 제외) → ABCD2E 사용.
+  //    ID 탭에 정확히 "ABCD2E" 입력해야 검색됨(부분일치 아님). ──
+  { id: 'nf-id-7000234', name: '코드테스트', nickname: 'idtest', status: 'ID 검색 테스트용', code: 'POOL-CODE', avatar: 'avatar-male-5' },
 ];
 
 // ── 수영 일정 50개 (오늘 기준 ±, 다양한 풀/시간/공개범위) ────
