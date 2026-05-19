@@ -21,6 +21,8 @@ import IconFilter from '@assets/icons/filter.svg';
 import IconCloseCircle from '@assets/icons/close-circle.svg';
 import IconLocate from '@assets/icons/locate.svg';
 import IconProfile from '@assets/icons/profile.svg';
+// profile.svg는 흰색 baked(FAB 어두운 배경용) → 노란 마커용 검은색 변형
+import IconProfileBlack from '@assets/icons/profile-black.svg';
 import IconLifeBuoy from '@assets/icons/life-buoy.svg';
 
 import type { RootStackParamList } from '@/navigation/types';
@@ -54,7 +56,8 @@ import { tokens } from '@/styles/tokens';
 const MARKER_BIG           = require('@assets/markers/marker-big.png');
 const MARKER_SMALL         = require('@assets/markers/marker-small.png');
 const MARKER_HOTEL         = require('@assets/markers/marker-hotel.png');
-const MARKER_ME            = require('@assets/markers/marker-me.png'); // 내 위치 노란 링
+const MARKER_ME            = require('@assets/markers/marker-me.png'); // 내 위치 노란 링(로그인)
+const MARKER_ME_GUEST      = require('@assets/markers/marker-me-guest.png'); // 로그아웃 내 위치(노란 원+사람 baked)
 const MARKER_CLUSTER       = require('@assets/markers/cluster.png');
 
 const INITIAL_CAMERA: Camera = {
@@ -109,30 +112,28 @@ function ProfileFabContent({ photoUri }: { photoUri?: string }) {
   return <Image source={{ uri: photoUri }} style={styles.fabAvatarImg} />;
 }
 
-/** 내 위치 마커 — marker-me.png(50, 노란 원+halo) 위에 34 프로필.
- *  가장자리 (50-34)/2 = 8px 노란 테두리가 보임 (Figma 130:3622).
- *  로그아웃(photoUri 없음)이면 노란 원은 그대로 + 가운데 기본 사람
- *  아이콘(FAB 로그아웃과 동일 IconProfile). */
+/** 내 위치 마커 — 노란 원(50, halo) 가운데에 내용.
+ *  로그인: marker-me.png + 34 프로필 사진 (Figma 130:3622).
+ *  로그아웃: marker-me-guest.png + 검은 사람 아이콘(profile-black). */
 function LocationProfileMarker({ photoUri }: { photoUri?: string }) {
   return (
     <View style={styles.locMarker}>
-      <Image source={MARKER_ME} style={styles.locRing} />
-      {!photoUri ? (
-        <View style={[styles.locInner, styles.locInnerIcon]}>
-          <IconProfile width={22} height={22} />
-        </View>
-      ) : (
-        <View style={styles.locInner}>
-          {isBundleAvatar(photoUri) ? (
-            React.createElement(BUNDLE_AVATARS[photoUri], {
-              width: 34,
-              height: 34,
-            })
-          ) : (
-            <Image source={{ uri: photoUri }} style={styles.locInnerImg} />
-          )}
-        </View>
-      )}
+      <Image
+        source={photoUri ? MARKER_ME : MARKER_ME_GUEST}
+        style={styles.locRing}
+      />
+      <View style={styles.locInner}>
+        {!photoUri ? (
+          <IconProfileBlack width={24} height={24} />
+        ) : isBundleAvatar(photoUri) ? (
+          React.createElement(BUNDLE_AVATARS[photoUri], {
+            width: 34,
+            height: 34,
+          })
+        ) : (
+          <Image source={{ uri: photoUri }} style={styles.locInnerImg} />
+        )}
+      </View>
     </View>
   );
 }
@@ -414,9 +415,8 @@ export function MapScreen() {
         // 스타일 수정/재발행은 https://console.ncloud.com/maps/styles 에서.
         customStyleId="c52a2948-bdea-4a26-8a59-92a5cf711f42"
       >
-        {/* 내 위치 마커 — 노란 원(marker-me.png 50)으로 통일. 로그인이면
-            가운데 프로필 사진, 로그아웃이면 가운데 기본 사람 아이콘
-            (Figma 130:3622). 둘 다 커스텀 children 사용. */}
+        {/* 내 위치 마커 — 노란 원 가운데에 로그인=프로필 사진 /
+            로그아웃=검은 사람 아이콘 (Figma 130:3622). 커스텀 children. */}
         {geo.status === 'granted' && geo.coords ? (
           <NaverMapMarkerOverlay
             latitude={geo.coords.lat}
@@ -757,10 +757,6 @@ const styles = StyleSheet.create({
     transform: [{ translateX: -1 }, { translateY: -1 }],
   },
   locInnerImg: { width: 34, height: 34 },
-  // 로그아웃 — 사람 아이콘 뒤 흰 원판(노란 링 안쪽이 비치지 않게).
-  locInnerIcon: {
-    backgroundColor: tokens.color.white,
-  },
   // 필터 적용중 — 좌측 X(초기화) + 우측 텍스트+아이콘(설정), 하나의 알약처럼 보이는 통합 View
   fabFilterPill: {
     // 둥근 FAB(44)와 동일 높이 — 필터 적용/미적용 시 컬럼 y 어긋남 방지
