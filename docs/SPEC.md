@@ -211,6 +211,8 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 
 ## 6. 시스템 트리거 (푸시 정책용)
 
+> 📄 **상세 명세:** 26개 알림 트리거의 발송 조건·수신자·본문·액션·우선순위·채널은 [notification-triggers-spec.md](notification-triggers-spec.md)에 정의(v0.1 초안). 본 절은 코드에 실제 선언된 룰 기준 현황만 기록한다.
+
 > **결정적 사실:** **OS 푸시 알림이 코드에 전혀 없다** (expo-notifications/FCM/APNs/푸시토큰 부재). 모든 "알림"은 **인앱**(`notifications` 테이블 insert)이며, 표시되는 알림 목록(NotificationsTab)은 **정적 샘플 UI**로 테이블을 읽지도 않는다. 미읽음 배지는 메모리 시드. 설정의 "푸시 알림 받기" 토글은 미연동(로컬 state). → **푸시 정책은 사실상 신규 설계 대상**이며, 아래는 코드에 선언된 메시지 룰(`lib/messages/rules.ts`) 기준.
 
 | 트리거 이벤트 | 발신 | 수신 대상 조건 | 분류 | 상태 | 전달 |
