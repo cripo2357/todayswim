@@ -54,7 +54,6 @@ import { tokens } from '@/styles/tokens';
 const MARKER_BIG           = require('@assets/markers/marker-big.png');
 const MARKER_SMALL         = require('@assets/markers/marker-small.png');
 const MARKER_HOTEL         = require('@assets/markers/marker-hotel.png');
-const MARKER_LOCATION      = require('@assets/markers/marker-location.png');
 const MARKER_ME            = require('@assets/markers/marker-me.png'); // 내 위치 노란 링
 const MARKER_CLUSTER       = require('@assets/markers/cluster.png');
 
@@ -407,15 +406,16 @@ export function MapScreen() {
         // 스타일 수정/재발행은 https://console.ncloud.com/maps/styles 에서.
         customStyleId="c52a2948-bdea-4a26-8a59-92a5cf711f42"
       >
-        {/* 내 위치 마커 — 로그인(프로필 있음)이면 프로필 사진 원형+노란링
-            (Figma 130:3622, children 커스텀 마커), 아니면 기본 PNG */}
+        {/* 내 위치 마커 — 노란 원(marker-me.png 50)으로 통일. 로그인
+            (프로필 있음)이면 그 위에 프로필 사진 오버레이(Figma 130:3622),
+            로그아웃이면 동일 노란 원만(가운데 사진 없음). */}
         {geo.status === 'granted' && geo.coords ? (
           <NaverMapMarkerOverlay
             latitude={geo.coords.lat}
             longitude={geo.coords.lng}
-            {...(profile?.photoUri ? {} : { image: MARKER_LOCATION })}
-            width={profile?.photoUri ? 50 : 47}
-            height={profile?.photoUri ? 50 : 47}
+            {...(profile?.photoUri ? {} : { image: MARKER_ME })}
+            width={50}
+            height={50}
             anchor={{ x: 0.5, y: 0.5 }}
             zIndex={5}
             caption={{
