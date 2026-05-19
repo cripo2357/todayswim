@@ -256,21 +256,36 @@ export function SettingsScreen() {
           />
         </Section>
 
-        {/* 서비스 약관 */}
+        {/* 서비스 약관 (Figma 129:5245) — 가입후 조회용 4종. 단일
+            TermsDetail 템플릿에 termsKey 만 바꿔 진입. */}
         <Section title="서비스 약관">
           <Row
             icon={<IconGavel width={24} height={24} />}
-            label="서비스 이용 약관"
-            onPress={() => navigation.navigate('TermsService')}
+            label="서비스 이용약관"
+            onPress={() =>
+              navigation.navigate('TermsDetail', { termsKey: 'service' })
+            }
           />
           <Row
             icon={<IconPerson width={24} height={24} />}
-            label="개인정보 처리 방침"
-            onPress={() => navigation.navigate('TermsPrivacy')}
+            label="개인정보 처리방침"
+            onPress={() =>
+              navigation.navigate('TermsDetail', { termsKey: 'privacyPolicy' })
+            }
           />
           <Row
             icon={<IconMapPin width={24} height={24} />}
-            label="위치정보 처리 방침"
+            label="위치기반서비스 이용약관"
+            onPress={() =>
+              navigation.navigate('TermsDetail', { termsKey: 'location' })
+            }
+          />
+          <Row
+            icon={<IconMegaphone width={24} height={24} />}
+            label="마케팅 정보 수신 동의"
+            onPress={() =>
+              navigation.navigate('TermsDetail', { termsKey: 'marketing' })
+            }
           />
         </Section>
 

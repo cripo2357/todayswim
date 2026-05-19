@@ -2,6 +2,8 @@
  * 네비게이션 파라미터 타입.
  * SPEC.md §6 화면구성과 1:1 매칭.
  */
+import type { TermsKey } from '@/lib/termsContent';
+
 export type RootStackParamList = {
   Splash: undefined;
   MapMain: undefined;
@@ -9,8 +11,8 @@ export type RootStackParamList = {
   // 인증·약관·프로필 흐름 (Splash 직후 게이트)
   Login: undefined;
   TermsAgreement: undefined;
-  TermsService: undefined;
-  TermsPrivacy: undefined;
+  // 단일 약관 상세 템플릿 — termsKey 로 5개 약관 커버 (Figma 101:3833)
+  TermsDetail: { termsKey: TermsKey };
   ProfileSetup: undefined;
   // 가입 마지막 단계 전용 (완료→Welcome). 내 정보 수정은 이 화면을 쓰지 않음.
   ProfileImage: undefined;

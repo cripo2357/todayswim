@@ -1,54 +1,52 @@
-// Figma 101:3833 — 서비스 이용약관 전문 + 동의/거부 버튼
-// 동의 클릭 → AsyncStorage 저장 후 이전 화면(TermsAgreement)으로 복귀.
+// Figma 101:3833 "약관 상세보기" — 단일 템플릿. route param termsKey 로
+// TERMS_META 에서 정보만 교체해 5개 약관(서비스/개인정보 수집·이용/
+// 개인정보 처리방침/위치기반/마케팅)을 모두 커버.
+//
+// 동의/거부: 온보딩 게이트(lib/terms)에 묶인 service·privacyConsent 만
+// 상태 기록, 나머지(처리방침/위치/마케팅)는 조회 후 뒤로가기.
+// (TermsAgreement·LoginScreen 의 isFullyAgreed 게이트 = service+privacy
+//  유지 — 본 리팩터로 게이트 동작 불변.)
 
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Check, X } from 'lucide-react-native';
 import BrandWordmark from '@assets/illustrations/wordmark-poolsday-light.svg';
 import { AppHeader } from '@/components/layout/AppHeader';
-import { agreeService, declineService } from '@/lib/terms';
+import {
+  agreeService,
+  declineService,
+  agreePrivacy,
+  declinePrivacy,
+} from '@/lib/terms';
+import { TERMS_META, type TermsKey } from '@/lib/termsContent';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
 
-const EFFECTIVE_DATE = '2026년 11월 23일';
-const SECTIONS: { title: string; body: string }[] = [
-  {
-    title: '1. 수집하는 정보',
-    body:
-      `저희는 서비스를 제공하고 개선하기 위해 다음과 같은 정보를 수집합니다:\n` +
-      `개인정보: Pool's Day에 가입할 때 귀하의 이름, 이메일 주소 및 기타 연락처 정보를 수집합니다.\n` +
-      `이용 데이터: 앱 사용 방식에 대한 정보를 수집합니다. 여기에는 앱 상호작용, 장치 정보, IP 주소 및 사용 로그가 포함됩니다.\n` +
-      `쿠키: 저희는 귀하의 앱 사용 패턴을 추적하고 경험을 개선하기 위해 쿠키를 사용합니다.`,
-  },
-  {
-    title: '2. 귀하의 정보를 사용하는 방법',
-    body:
-      `저희는 귀하의 개인정보를 다음과 같은 목적으로 사용합니다:\n` +
-      `개인화된 수영장 추천 정보를 제공합니다.\n` +
-      `자유수영 시간표를 동기화하고 알림을 보냅니다.\n` +
-      `앱 기능을 개선하고 문제를 해결하며 향상시킵니다.\n` +
-      `귀하의 활동에 대한 관련 알림, 업데이트 및 보고서를 보냅니다.\n` +
-      `법적 및 규제 요구 사항을 준수합니다.`,
-  },
-  {
-    title: '3. 약관 변경',
-    body: '본 약관은 변경될 수 있으며 변경 시 앱 내 공지를 통해 안내드립니다.',
-  },
-];
+// 약관별 동의/거부 핸들러 — 온보딩 게이트 대상만 상태 기록, 그 외 no-op.
+const AGREE: Partial<Record<TermsKey, () => Promise<void>>> = {
+  service: agreeService,
+  privacyConsent: agreePrivacy,
+};
+const DECLINE: Partial<Record<TermsKey, () => Promise<void>>> = {
+  service: declineService,
+  privacyConsent: declinePrivacy,
+};
 
-export function TermsServiceScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+export function TermsDetailScreen() {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { params } = useRoute<RouteProp<RootStackParamList, 'TermsDetail'>>();
+  const meta = TERMS_META[params.termsKey];
 
   const onAgree = async () => {
-    await agreeService();
+    await AGREE[params.termsKey]?.();
     navigation.goBack();
   };
-
   const onDecline = async () => {
-    await declineService();
+    await DECLINE[params.termsKey]?.();
     navigation.goBack();
   };
 
@@ -56,31 +54,36 @@ export function TermsServiceScreen() {
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
       <AppHeader background={tokens.color.bgPaper} />
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.wordmarkWrap}>
           <BrandWordmark width={256} height={152} />
         </View>
 
-        {/* 헤더 frame — 배지 + (제목/발효일) gap 16 */}
+        {/* 헤더 — 버전 배지 + (제목/발효일) */}
         <View style={styles.headerBlock}>
           <View style={styles.versionChip}>
-            <Text style={styles.versionText}>v1.0.0</Text>
+            <Text style={styles.versionText}>{meta.version}</Text>
           </View>
           <View style={styles.titleGroup}>
-            <Text style={styles.title}>서비스 이용약관</Text>
-            <Text style={styles.effective}>발효일: {EFFECTIVE_DATE}</Text>
+            <Text style={styles.title}>{meta.title}</Text>
+            <Text style={styles.effective}>발효일: {meta.effectiveDate}</Text>
           </View>
         </View>
 
         <View style={styles.divider} />
 
-        {SECTIONS.map((section, i) => (
+        {meta.sections.map((section, i) => (
           <React.Fragment key={section.title}>
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>{section.title}</Text>
               <Text style={styles.body}>{section.body}</Text>
             </View>
-            {i < SECTIONS.length - 1 ? <View style={styles.divider} /> : null}
+            {i < meta.sections.length - 1 ? (
+              <View style={styles.divider} />
+            ) : null}
           </React.Fragment>
         ))}
       </ScrollView>
@@ -88,14 +91,26 @@ export function TermsServiceScreen() {
       <View style={styles.footer}>
         <Pressable
           onPress={onAgree}
-          style={({ pressed }) => [styles.btn, styles.btnAgree, pressed && { opacity: 0.85 }]}
+          style={({ pressed }) => [
+            styles.btn,
+            styles.btnAgree,
+            pressed && { opacity: 0.85 },
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="동의합니다"
         >
           <Text style={styles.btnAgreeLabel}>동의합니다</Text>
           <Check size={20} color={tokens.color.black} strokeWidth={2.4} />
         </Pressable>
         <Pressable
           onPress={onDecline}
-          style={({ pressed }) => [styles.btn, styles.btnDecline, pressed && { opacity: 0.85 }]}
+          style={({ pressed }) => [
+            styles.btn,
+            styles.btnDecline,
+            pressed && { opacity: 0.85 },
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="거부합니다"
         >
           <Text style={styles.btnDeclineLabel}>거부합니다</Text>
           <X size={20} color={tokens.color.white} strokeWidth={2.4} />
@@ -107,13 +122,13 @@ export function TermsServiceScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: tokens.color.bgPaper },
-  // Figma 101:3834 — w 343 (375 - 32 padding), gap 32 between main blocks.
+  // Figma 101:3834 — w 343 (375 - 32 padding)
   scrollContent: { paddingHorizontal: 16, paddingBottom: 16 },
   wordmarkWrap: { alignItems: 'center', paddingTop: 24 },
   // Figma 101:3838 — gap 20 (배지 ↔ 제목 그룹)
   headerBlock: { alignItems: 'center', gap: 20, marginTop: 32 },
   titleGroup: { alignSelf: 'stretch', alignItems: 'center', gap: 16 },
-  // Figma 101:3839 — Medium 14/20 #4B5563, border #CBD5E1, radius 9, px10 py4
+  // Figma 101:3839 — Medium 14/20 #4B5563, border #CBD5E1, r9 px10 py4
   versionChip: {
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -145,7 +160,11 @@ const styles = StyleSheet.create({
     color: '#4B5563',
     textAlign: 'center',
   },
-  divider: { height: 1, backgroundColor: tokens.color.lineDefault, marginVertical: 32 },
+  divider: {
+    height: 1,
+    backgroundColor: tokens.color.lineDefault,
+    marginVertical: 32,
+  },
   // Figma 101:3847 — section frame gap 16
   section: { gap: 16 },
   // Figma 101:3848 — 20/28 -0.2 Bold #1F2937
@@ -180,7 +199,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   btnAgree: { backgroundColor: tokens.color.pdByellow },
-  // Figma — SemiBold (700이 아닌 600)
   btnAgreeLabel: {
     fontSize: 16,
     lineHeight: 22,
@@ -188,7 +206,7 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sansSemibold,
     color: tokens.color.black,
   },
-  // Figma — #FF2D55 (pd-pink, Apple destructive red 톤)
+  // Figma — #FF2D55 (pd-pink, destructive)
   btnDecline: { backgroundColor: '#FF2D55' },
   btnDeclineLabel: {
     fontSize: 16,

@@ -1,6 +1,6 @@
 // Figma 101:3671 — 서비스 약관 동의 (게이트 화면)
 // 두 약관(서비스 이용 + 개인정보 수집·이용) 모두 체크 후 시작.
-// 각 라벨 탭하면 전문 화면(TermsService / TermsPrivacy)으로.
+// 각 라벨 탭하면 단일 약관 상세 템플릿(TermsDetail)으로 — termsKey 전달.
 
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
@@ -88,14 +88,20 @@ export function TermsAgreementScreen() {
                 linkLabel="서비스 이용약관"
                 tailLabel="에 동의합니다."
                 onToggle={toggleService}
-                onPressLink={() => navigation.navigate('TermsService')}
+                onPressLink={() =>
+                  navigation.navigate('TermsDetail', { termsKey: 'service' })
+                }
               />
               <CheckRow
                 checked={privacyAgreed}
                 linkLabel="개인정보 수집 및 이용"
                 tailLabel="에 동의합니다."
                 onToggle={togglePrivacy}
-                onPressLink={() => navigation.navigate('TermsPrivacy')}
+                onPressLink={() =>
+                  navigation.navigate('TermsDetail', {
+                    termsKey: 'privacyConsent',
+                  })
+                }
               />
             </View>
           </View>

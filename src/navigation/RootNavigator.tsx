@@ -13,8 +13,7 @@ import { PoolListScreen } from '@/screens/pool-list/PoolListScreen';
 import { FavoritePoolsScreen } from '@/screens/pool-list/FavoritePoolsScreen';
 import { LoginScreen } from '@/screens/auth/LoginScreen';
 import { TermsAgreementScreen } from '@/screens/auth/TermsAgreementScreen';
-import { TermsServiceScreen } from '@/screens/auth/TermsServiceScreen';
-import { TermsPrivacyScreen } from '@/screens/auth/TermsPrivacyScreen';
+import { TermsDetailScreen } from '@/screens/auth/TermsDetailScreen';
 import { ProfileSetupScreen } from '@/screens/auth/ProfileSetupScreen';
 import { ProfileImageScreen } from '@/screens/auth/ProfileImageScreen';
 import { MyInfoScreen } from '@/screens/auth/MyInfoScreen';
@@ -100,8 +99,7 @@ export function RootNavigator() {
       {/* 인증 / 약관 */}
       <Stack.Screen name="Login" component={LoginScreen} options={{ animation: 'fade' }} />
       <Stack.Screen name="TermsAgreement" component={TermsAgreementScreen} />
-      <Stack.Screen name="TermsService" component={TermsServiceScreen} />
-      <Stack.Screen name="TermsPrivacy" component={TermsPrivacyScreen} />
+      <Stack.Screen name="TermsDetail" component={TermsDetailScreen} />
       <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
       <Stack.Screen name="ProfileImage" component={ProfileImageScreen} />
       <Stack.Screen name="MyInfo" component={MyInfoScreen} />
