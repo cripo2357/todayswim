@@ -22,6 +22,9 @@ drop function if exists public.enforce_nickname_policy() cascade;
 drop policy if exists "avatar owner insert" on storage.objects;
 drop policy if exists "avatar owner update" on storage.objects;
 drop policy if exists "avatar owner delete" on storage.objects;
+drop policy if exists "avatars p1 open insert" on storage.objects;
+drop policy if exists "avatars p1 open update" on storage.objects;
+drop policy if exists "avatars p1 open delete" on storage.objects;
 -- =================== /TEARDOWN ======================
 
 
@@ -1536,33 +1539,25 @@ create policy profile_nicknames_insert_any on public.profile_nicknames
 -- 버킷 'avatars' (public read): 아바타는 지도 마커·사람들 탭에서 타 유저에게 공개.
 -- 경로 규약: '{auth.uid()}/avatar.jpg' 고정 + upsert → 유저당 1파일(덮어쓰기),
 --           orphan/누적 없음, 청소 로직 불필요.
--- 쓰기/수정/삭제는 본인 폴더에만 (RLS, auth.uid 기준). read는 public 버킷이라
--- 공개 URL fetch에 별도 SELECT 정책 불필요.
+-- 쓰기는 P1 개방형(0045가 0020 재정의 — avatars 버킷 한정, role 제한
+-- 없음). 신규 프로젝트 storage-api 가 user JWT 를 authenticated 로 못
+-- 잡는 갭 회피 + 다른 P1 개방 정책과 일관. read는 public 버킷이라 별도
+-- SELECT 정책 불필요. ⚠️ P3: 본인 폴더 소유자 정책으로 재하드닝.
 
 insert into storage.buckets (id, name, public)
 values ('avatars', 'avatars', true)
 on conflict (id) do nothing;
 
-create policy "avatar owner insert" on storage.objects
-  for insert to authenticated
-  with check (
-    bucket_id = 'avatars'
-    and (storage.foldername(name))[1] = auth.uid()::text
-  );
+-- P1 개방형 (0045_avatars_p1_open_policy.sql 베이크 — avatars 버킷 한정).
+create policy "avatars p1 open insert" on storage.objects
+  for insert with check (bucket_id = 'avatars');
 
-create policy "avatar owner update" on storage.objects
-  for update to authenticated
-  using (
-    bucket_id = 'avatars'
-    and (storage.foldername(name))[1] = auth.uid()::text
-  );
+create policy "avatars p1 open update" on storage.objects
+  for update using (bucket_id = 'avatars')
+  with check (bucket_id = 'avatars');
 
-create policy "avatar owner delete" on storage.objects
-  for delete to authenticated
-  using (
-    bucket_id = 'avatars'
-    and (storage.foldername(name))[1] = auth.uid()::text
-  );
+create policy "avatars p1 open delete" on storage.objects
+  for delete using (bucket_id = 'avatars');
 
 
 -- ============================================================
