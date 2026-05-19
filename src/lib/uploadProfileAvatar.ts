@@ -49,6 +49,35 @@ export async function uploadProfileAvatar(
       '| path =',
       path,
     );
+    // 진단: user 세션 토큰 클레임(시크릿 아님 — payload는 누구나 디코드 가능).
+    // alg=HS256 이면 레거시 서명 / RS256·ES256 이면 신규 signing key.
+    // role!=authenticated 또는 sub!=uid 또는 exp 만료면 그게 원인.
+    try {
+      const tok = session?.access_token ?? '';
+      const [h, p] = tok.split('.');
+      const b64 = (s: string) =>
+        decodeURIComponent(
+          escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))),
+        );
+      const hdr = JSON.parse(b64(h));
+      const cl = JSON.parse(b64(p));
+      console.warn(
+        '[avatar] jwt diag — alg:',
+        hdr.alg,
+        '| role:',
+        cl.role,
+        '| sub==uid:',
+        cl.sub === uid,
+        '| aud:',
+        cl.aud,
+        '| iss:',
+        cl.iss,
+        '| expired:',
+        typeof cl.exp === 'number' && cl.exp * 1000 < Date.now(),
+      );
+    } catch (e) {
+      console.warn('[avatar] jwt diag 실패:', String(e));
+    }
     return { status: 'error' };
   }
 
