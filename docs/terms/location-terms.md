@@ -1,3 +1,11 @@
+---
+version: 1.0.0
+effectiveDate: 2026-05-28
+lastModified: 2026-05-28
+documentType: required-consent
+title: Pool's Day 위치기반서비스 이용약관
+---
+
 <!-- 본 문서는 「위치정보의 보호 및 이용 등에 관한 법률」을 참고하여 작성된 초안입니다. 개별 서비스 특성에 따른 법률 전문가 검토가 필수이며, 정식 배포 전 반드시 법률자문을 받으십시오. -->
 
 # Pool's Day 위치기반서비스 이용약관
