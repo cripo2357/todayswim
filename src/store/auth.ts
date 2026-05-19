@@ -139,7 +139,14 @@ export const useAuth = create<AuthState>((set) => ({
     const redirectTo = Linking.createURL('auth/callback');
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'kakao',
-      options: { redirectTo, skipBrowserRedirect: true },
+      options: {
+        redirectTo,
+        skipBrowserRedirect: true,
+        // 이메일(account_email) 제외 — Kakao 앱이 비즈 앱이 아니라 이메일
+        // 동의항목이 '권한 없음'이라 기본 스코프로 요청하면 KOE205.
+        // 닉네임·프로필사진(필수 동의 가능)만 요청. 이메일은 앱 미사용.
+        scopes: 'profile_nickname profile_image',
+      },
     });
     if (error) throw error;
     if (!data?.url) throw new Error('Kakao OAuth URL 없음');
