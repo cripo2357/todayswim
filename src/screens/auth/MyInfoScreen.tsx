@@ -1023,21 +1023,24 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 20,
   },
+  // Figma 117:2891 — "Text md/Bold" #1F2937(Gray/80). 토글/칩과 동일
+  // 리터럴 hex (ink900=#0F172A는 Figma와 다름 → 화면 내 색 일관).
   sectionHeaderLabel: {
     fontSize: 16,
     lineHeight: 22,
     letterSpacing: -0.112,
     fontFamily: tokens.font.sansBold,
-    color: tokens.color.ink900,
+    color: '#1F2937',
   },
 
   fieldGap: { gap: 8, marginBottom: 24 },
+  // Figma 129:6375/133:3660 — "Text sm/SemiBold" #1F2937(Gray/80).
   fieldLabel: {
     fontSize: 14,
     lineHeight: 20,
     letterSpacing: -0.084,
     fontFamily: tokens.font.sansSemibold,
-    color: tokens.color.ink900,
+    color: '#1F2937',
   },
   subLabel: {
     fontSize: 14,
@@ -1054,14 +1057,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 12,
   },
-  // Figma Section Header(117:2890 등) — "Text sm/SemiBold"(한글 Bold).
-  // fieldLabel(성별/생년월일)과 동일 스타일 → sansSemibold로 일치.
+  // Figma Section Header(117:2890 등) — "Text sm/SemiBold"(한글 Bold),
+  // #1F2937(Gray/80). fieldLabel과 동일 스타일.
   visRowLabel: {
     fontSize: 14,
     lineHeight: 20,
     letterSpacing: -0.084,
     fontFamily: tokens.font.sansSemibold,
-    color: tokens.color.ink900,
+    color: '#1F2937',
   },
   // 영법 4개 미만 → 자격증·IM100 공개여부 비활성(Toggle 자체 0.5와 일관).
   visRowLabelDisabled: { opacity: 0.5 },
@@ -1078,13 +1081,15 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: tokens.color.white,
   },
+  // Figma I129:6376;5606:19069 등 — Regular 16/22 #4B5563(Gray/60).
+  // 칩/슬라이더와 동일 리터럴(ink500=#64748B는 Figma와 다름).
   inputText: {
     flex: 1,
     fontSize: 16,
     lineHeight: 22,
     letterSpacing: -0.112,
     fontFamily: tokens.font.sans,
-    color: tokens.color.ink500,
+    color: '#4B5563',
   },
   // Figma 129:6373(성별) / 133:3657(생년월일) — 수집목적 안내문구.
   // 디자인 갱신: 13/18/-0.078 → 14/20/-0.084. 간격은 프레임 균일 gap-8
@@ -1095,7 +1100,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     letterSpacing: -0.084,
     fontFamily: tokens.font.sans,
-    color: tokens.color.ink500,
+    color: '#4B5563',
   },
 
   // 닉네임 — 좌측 표시 + 우측 변경 버튼
