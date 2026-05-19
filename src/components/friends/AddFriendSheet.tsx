@@ -1,13 +1,17 @@
 // 새 친구 추가 시트 — Figma 168:7488(닉네임) / 168:9186(선택) / 168:9354(ID).
 //
 // 공통 BottomSheet 쉘(핸들·r32·헤더 "새 친구 추가"+X) + 세그먼트 탭
-// [닉네임으로 찾기 | ID로 찾기] + "새 친구" 라벨/안내 + 검색 + 하단
+// [닉네임으로 찾기 | ID로 찾기] + "새친구" 라벨/안내 + 검색 + 하단
 // "초대장 보내기"(user-double). 전송 = useFriends.sendRequest →
 // 부모가 FriendRequestSentModal(169:5727) 노출 (OtherUserProfile 동일 플로우).
 //
+// 닉네임 검색은 수영 일정추가의 수영장 픽커와 "동일 패턴"(사용자 확정):
+// 닫힘=트리거(선택값/플레이스홀더) / 열림=float 드롭다운, 자동완성에서
+// 한 명 탭하면 그 친구가 선택되고 드롭다운이 즉시 닫힘. ID는 6자리
+// 정확 조회라 단일 입력 + 실패 시 문구.
+//
 // Phase-1: friendSearch(목업). 서버 조회/상대 비공개 게이팅은 Phase-2 갭.
 // 아바타 외곽선: 비친구라 profile_border_policy 따라 relation="other"(pd-gray).
-// (이 Figma는 mint로 그려졌으나 전역 테두리 정책 우선 — 불일치 메모.)
 
 import React from 'react';
 import {
@@ -19,7 +23,7 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
-import { Search, Check } from 'lucide-react-native';
+import { Search, XCircle } from 'lucide-react-native';
 import IconUserDouble from '@assets/icons/user-double.svg';
 import IconChevronDown from '@assets/icons/chevron-down.svg';
 import { tokens } from '@/styles/tokens';
@@ -60,7 +64,10 @@ export function AddFriendSheet({
 
   const [tab, setTab] = React.useState<Tab>('nickname');
   const [nq, setNq] = React.useState('');
-  const [selId, setSelId] = React.useState<string | null>(null);
+  // 선택된 친구 객체 — 드롭다운 닫혀도 트리거에 이름 표시(쿼리 비워도 유지).
+  const [selUser, setSelUser] = React.useState<FriendSearchUser | null>(null);
+  const [nickOpen, setNickOpen] = React.useState(false);
+  const [triggerY, setTriggerY] = React.useState(0);
   const [code, setCode] = React.useState('');
   const [idErr, setIdErr] = React.useState<string | null>(null);
 
@@ -68,7 +75,8 @@ export function AddFriendSheet({
     if (!visible) {
       setTab('nickname');
       setNq('');
-      setSelId(null);
+      setSelUser(null);
+      setNickOpen(false);
       setCode('');
       setIdErr(null);
     }
@@ -78,7 +86,6 @@ export function AddFriendSheet({
     () => searchByNickname(nq, opts),
     [nq, opts],
   );
-  const selected = results.find((r) => r.id === selId) ?? null;
 
   const send = (u: FriendSearchUser) => {
     sendRequest(u.id);
@@ -87,7 +94,7 @@ export function AddFriendSheet({
 
   const onCta = () => {
     if (tab === 'nickname') {
-      if (selected) send(selected);
+      if (selUser) send(selUser);
       return;
     }
     const u = findByCode(code, opts);
@@ -99,7 +106,7 @@ export function AddFriendSheet({
   };
 
   const ctaDisabled =
-    tab === 'nickname' ? !selected : code.length !== 6;
+    tab === 'nickname' ? !selUser : code.length !== 6;
 
   return (
     <BottomSheet
@@ -109,8 +116,7 @@ export function AddFriendSheet({
       contentStyle={styles.sheet}
       minHeight={SHEET_MIN_H}
     >
-      {/* 세그먼트 탭 — Figma 168:9196 wrapper px16 py8 (탭 그룹 좌우 인셋) */}
-      <View style={styles.tabWrap}>
+      {/* 세그먼트 탭 — 본문 폭 그대로(좌우 추가 인셋 없음) */}
       <View style={styles.tabGroup}>
         {(['nickname', 'id'] as const).map((t) => {
           const active = tab === t;
@@ -119,6 +125,7 @@ export function AddFriendSheet({
               key={t}
               onPress={() => {
                 setTab(t);
+                setNickOpen(false);
                 setIdErr(null);
               }}
               style={[styles.tab, active && styles.tabActive]}
@@ -130,7 +137,6 @@ export function AddFriendSheet({
             </Pressable>
           );
         })}
-      </View>
       </View>
 
       {/* "새친구" 라벨 + 안내 + 검색 본문 (Figma 168:9297 gap 8) */}
@@ -144,98 +150,137 @@ export function AddFriendSheet({
 
         {tab === 'nickname' ? (
           <>
-            <View style={styles.pill}>
-              <View style={styles.pillInputWrap}>
-                <TextInput
-                  value={nq}
-                  onChangeText={(v) => {
-                    setNq(v);
-                    setSelId(null);
-                  }}
-                  style={styles.pillInput}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  returnKeyType="search"
-                />
-                {/* RN Android placeholder 커스텀폰트 미적용 → Pretendard
-                    Text 오버레이(앱 공통, 두 탭 동일 디자인). */}
-                {nq.length === 0 ? (
-                  <Text style={styles.pillPlaceholder} pointerEvents="none">
-                    닉네임
-                  </Text>
-                ) : null}
-              </View>
-              {/* Figma 168:9305 — 닉네임은 타이프어헤드(드롭다운) caret */}
-              <IconChevronDown width={20} height={20} />
-            </View>
-            {results.length > 0 ? (
-              <ScrollView
-                style={styles.list}
-                keyboardShouldPersistTaps="handled"
-                nestedScrollEnabled
+            {/* 닫힘 트리거 — 선택 친구 or 플레이스홀더 + caret. 일정추가
+                수영장 픽커와 동일(122:8027). 탭하면 float 드롭다운. */}
+            <View onLayout={(e) => setTriggerY(e.nativeEvent.layout.y)}>
+              <Pressable
+                onPress={() => setNickOpen(true)}
+                style={styles.trigger}
+                accessibilityRole="button"
+                accessibilityLabel="닉네임으로 친구 검색"
               >
-                {results.map((u) => {
-                  const sel = u.id === selId;
-                  return (
-                    <Pressable
-                      key={u.id}
-                      onPress={() => setSelId(u.id)}
-                      style={[styles.item, sel && styles.itemSel]}
-                      accessibilityRole="button"
-                    >
-                      <View style={styles.itemLeft}>
-                        <Avatar
-                          photoUri={u.avatar}
-                          size={24}
-                          relation="other"
-                          borderWidth={1}
-                        />
-                        <Text style={styles.itemName} numberOfLines={1}>
-                          {u.name}
+                <Text
+                  style={[
+                    styles.triggerText,
+                    !selUser && styles.triggerPlaceholder,
+                  ]}
+                  numberOfLines={1}
+                >
+                  {selUser ? selUser.name : '닉네임'}
+                </Text>
+                <IconChevronDown width={20} height={20} />
+              </Pressable>
+            </View>
+
+            {/* 열림 float — 그룹 마지막 자식(트리 최상위, 그림자 없이 터치
+                우선). 트리거 위치(top=triggerY)에 검색칸 + 결과 목록. */}
+            {nickOpen ? (
+              <>
+                <Pressable
+                  style={styles.backdrop}
+                  onPress={() => setNickOpen(false)}
+                  accessibilityRole="button"
+                  accessibilityLabel="검색 닫기"
+                />
+                <View style={[styles.panel, { top: triggerY }]}>
+                  <View style={styles.searchPill}>
+                    <View style={styles.searchInputWrap}>
+                      <TextInput
+                        autoFocus
+                        value={nq}
+                        onChangeText={setNq}
+                        style={styles.searchInput}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        returnKeyType="search"
+                      />
+                      {nq.length === 0 ? (
+                        <Text
+                          style={styles.searchPlaceholder}
+                          pointerEvents="none"
+                        >
+                          닉네임
                         </Text>
-                      </View>
-                      {sel ? (
-                        <Check
-                          size={16}
-                          color={tokens.color.ink700}
-                          strokeWidth={2.4}
-                        />
-                      ) : (
+                      ) : null}
+                    </View>
+                    {nq.length > 0 ? (
+                      <Pressable
+                        onPress={() => setNq('')}
+                        hitSlop={8}
+                        accessibilityRole="button"
+                        accessibilityLabel="검색어 지우기"
+                      >
+                        <XCircle size={20} color="#94A3B8" strokeWidth={2} />
+                      </Pressable>
+                    ) : null}
+                  </View>
+                  <ScrollView
+                    style={styles.panelList}
+                    nestedScrollEnabled
+                    keyboardShouldPersistTaps="always"
+                  >
+                    {results.map((u) => (
+                      <Pressable
+                        key={u.id}
+                        onPress={() => {
+                          // 자동완성에서 한 명 탭 = 선택 + 드롭다운 닫힘.
+                          setSelUser(u);
+                          setNickOpen(false);
+                          setNq('');
+                        }}
+                        style={styles.item}
+                        accessibilityRole="button"
+                      >
+                        <View style={styles.itemLeft}>
+                          <Avatar
+                            photoUri={u.avatar}
+                            size={24}
+                            relation="other"
+                            borderWidth={1}
+                          />
+                          <Text style={styles.itemName} numberOfLines={1}>
+                            {u.name}
+                          </Text>
+                        </View>
                         <Text style={styles.itemSub} numberOfLines={1}>
                           {u.status}
                         </Text>
-                      )}
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            ) : nq.trim() ? (
-              <Text style={styles.empty}>검색 결과가 없습니다.</Text>
+                      </Pressable>
+                    ))}
+                    {results.length === 0 ? (
+                      <Text style={styles.empty}>
+                        {nq.trim()
+                          ? '검색 결과가 없습니다.'
+                          : '닉네임을 입력해 검색하세요.'}
+                      </Text>
+                    ) : null}
+                  </ScrollView>
+                </View>
+              </>
             ) : null}
           </>
         ) : (
           <>
-            <View style={styles.pill}>
-              <View style={styles.pillInputWrap}>
+            <View style={styles.inputBox}>
+              <View style={styles.inputWrap}>
                 <TextInput
                   value={code}
                   onChangeText={(v) => {
                     setCode(sanitizeCode(v));
                     setIdErr(null);
                   }}
-                  style={styles.pillInput}
+                  style={styles.input}
                   autoCapitalize="characters"
                   autoCorrect={false}
                   maxLength={6}
                   returnKeyType="search"
                 />
                 {code.length === 0 ? (
-                  <Text style={styles.pillPlaceholder} pointerEvents="none">
+                  <Text style={styles.placeholder} pointerEvents="none">
                     정확한 ID 6자리
                   </Text>
                 ) : null}
               </View>
-              {/* ID는 6자리 정확 조회 → 검색 아이콘(168:9354 확인 전 잠정) */}
               <Search size={20} color={tokens.color.ink400} strokeWidth={2} />
             </View>
             {idErr ? <Text style={styles.errText}>{idErr}</Text> : null}
@@ -257,9 +302,7 @@ const styles = StyleSheet.create({
   // Figma 168:7495 — 섹션 간 gap 32 (BottomSheet 기본 24 override)
   sheet: { paddingHorizontal: 16, paddingTop: 24, paddingBottom: 24, gap: 32 },
 
-  // Figma 168:9196 — Tab Group 래퍼: px16 py8 (탭 그룹 좌우 인셋)
-  tabWrap: { paddingHorizontal: 16, paddingVertical: 8 },
-  // Figma 168:9155 — Tab Group: bg #F1F5F9 r18 p4
+  // Figma 168:9155 — Tab Group: bg #F1F5F9 r18 p4 (본문 폭 그대로)
   tabGroup: {
     flexDirection: 'row',
     backgroundColor: tokens.color.lineSubtle,
@@ -287,9 +330,10 @@ const styles = StyleSheet.create({
   },
   tabLabelActive: { color: tokens.color.ink900 },
 
-  // flex:1 — 시트 minHeight 고정 시 본문이 늘어 CTA가 하단에 고정.
+  // flex:1 + position 컨텍스트(float 패널 기준) — minHeight 고정 시
+  // 본문이 늘어 CTA 하단 고정.
   group: { gap: 8, flex: 1 },
-  // Figma 168:7500 — "새 친구" + 우측 안내
+  // Figma 168:7500 — "새친구" + 우측 안내
   secRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   secLabel: {
     fontSize: 14,
@@ -308,9 +352,29 @@ const styles = StyleSheet.create({
     color: tokens.color.ink500,
   },
 
-  // Figma 168:9301 _InputTextBase — 흰 박스, border #94A3B8, r14, minH48,
-  // p12, gap12. 닉네임/ID 두 탭 "동일" 컴포넌트(과거 탭별 불일치 통일).
-  pill: {
+  // Figma 168:9301 _InputTextBase — 흰 박스 border #94A3B8 r14 minH48 p12.
+  // 닫힘 트리거(닉네임) / ID 입력 동일 베이스(과거 탭별 불일치 통일).
+  trigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 48,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#94A3B8',
+    borderRadius: 14,
+    backgroundColor: tokens.color.white,
+  },
+  triggerText: {
+    flex: 1,
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sans,
+    color: '#1F2937',
+  },
+  // 플레이스홀더 색 통일(두 탭 동일) — Figma Gray/60
+  triggerPlaceholder: { color: '#4B5563' },
+  inputBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -321,9 +385,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: tokens.color.white,
   },
-  pillInputWrap: { flex: 1, justifyContent: 'center' },
-  // Figma Text md/Regular 16/22 #1F2937 입력값
-  pillInput: {
+  inputWrap: { flex: 1, justifyContent: 'center' },
+  input: {
     flex: 1,
     fontSize: 16,
     lineHeight: 22,
@@ -334,7 +397,7 @@ const styles = StyleSheet.create({
   },
   // RN Android placeholder 커스텀폰트 미적용 → Pretendard Text 오버레이
   // (앱 공통, 두 탭 동일). Figma: Regular 16 #4B5563.
-  pillPlaceholder: {
+  placeholder: {
     position: 'absolute',
     left: 0,
     right: 0,
@@ -348,8 +411,58 @@ const styles = StyleSheet.create({
     color: '#4B5563',
     includeFontPadding: false,
   },
-  // Figma 168:9306 — 결과 목록 영역 h200
-  list: { maxHeight: 200 },
+
+  // 열림 시 본문 덮는 투명 영역 — 탭하면 닫힘(패널은 그 위, 트리 최상위)
+  backdrop: { ...StyleSheet.absoluteFillObject },
+  // 트리거 위치에 뜨는 흰 카드(검색칸 + 결과). 일정추가 풀 픽커와 동일.
+  panel: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
+    backgroundColor: tokens.color.white,
+    padding: 8,
+    gap: 8,
+    ...tokens.shadow.lg,
+  },
+  // 검색칸 #F8FAFC 알약 minH40 p8 gap8
+  searchPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    minHeight: 40,
+    padding: 8,
+    borderRadius: 9999,
+    backgroundColor: '#F8FAFC',
+  },
+  searchInputWrap: { flex: 1, justifyContent: 'center' },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sansMedium,
+    color: '#4B5563',
+    padding: 0,
+  },
+  searchPlaceholder: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    textAlignVertical: 'center',
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sansMedium,
+    color: '#4B5563',
+    includeFontPadding: false,
+  },
+  // Figma 168:9306 — 결과 목록 영역 ~h200
+  panelList: { maxHeight: 200 },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -359,7 +472,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: tokens.radius.pill,
   },
-  itemSel: { backgroundColor: tokens.color.lineSubtle },
   itemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
