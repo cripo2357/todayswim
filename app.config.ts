@@ -5,13 +5,11 @@ import { ExpoConfig, ConfigContext } from 'expo/config';
 // Client Secret은 서버 API용 — 모바일 번들에 절대 포함 안 함.
 //   → Geocoding 등 Secret 필요한 호출은 별도 백엔드(Supabase Edge Function 등)로 분리.
 // .env의 EXPO_PUBLIC_NAVER_MAP_CLIENT_ID에서 읽고, EAS 빌드는 eas env로 동일 변수 주입.
-const NAVER_MAPS_CLIENT_ID = process.env.EXPO_PUBLIC_NAVER_MAP_CLIENT_ID;
-if (!NAVER_MAPS_CLIENT_ID) {
-  throw new Error(
-    'EXPO_PUBLIC_NAVER_MAP_CLIENT_ID is not set. ' +
-    '.env에 추가하거나 EAS env로 등록하세요.'
-  );
-}
+// env 우선, 없으면 공개 식별자 폴백. 번들 ID로 Naver 콘솔 제한돼 코드
+// 노출 안전(EXPO_PUBLIC_*는 어차피 JS 번들 인라인). EAS env에 변수가
+// 빠져 있어도 빌드 config(expo config --json)가 죽지 않게 폴백 보장.
+const NAVER_MAPS_CLIENT_ID =
+  process.env.EXPO_PUBLIC_NAVER_MAP_CLIENT_ID ?? 'ud6qr6hymv';
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
