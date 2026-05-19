@@ -272,6 +272,10 @@ function CreateForm() {
 function EditForm({ poolId }: { poolId?: string }) {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const submitMutation = useSubmitPool();
+  // 박스 어디를 탭해도 입력 포커스 — multiline+절대 placeholder 조합에서
+  // 탭이 입력에 안 꽂히는 회귀 방지(가드 누적 대신 단순 ref.focus).
+  const nameRef = React.useRef<TextInput>(null);
+  const descRef = React.useRef<TextInput>(null);
 
   const [name, setName] = React.useState('');
   const [desc, setDesc] = React.useState('');
@@ -311,10 +315,14 @@ function EditForm({ poolId }: { poolId?: string }) {
               <Text style={styles.heading}>수영장 수정 정보를{'\n'}입력하세요.</Text>
 
               <Field label="수영장 이름">
-                <View style={styles.inputBox}>
+                <Pressable
+                  style={styles.inputBox}
+                  onPress={() => nameRef.current?.focus()}
+                >
                   <IconLifeBuoy width={20} height={20} />
                   <View style={styles.inputFill}>
                     <TextInput
+                      ref={nameRef}
                       value={name}
                       onChangeText={setName}
                       style={styles.inputText}
@@ -329,13 +337,17 @@ function EditForm({ poolId }: { poolId?: string }) {
                       </Text>
                     ) : null}
                   </View>
-                </View>
+                </Pressable>
               </Field>
 
               <Field label="수정 요청">
-                <View style={styles.textareaBox}>
+                <Pressable
+                  style={styles.textareaBox}
+                  onPress={() => descRef.current?.focus()}
+                >
                   <View style={styles.textareaFill}>
                     <TextInput
+                      ref={descRef}
                       multiline
                       style={styles.textareaInput}
                       value={desc}
@@ -354,7 +366,7 @@ function EditForm({ poolId }: { poolId?: string }) {
                     <Text style={styles.counterText}>{desc.length}/{DESC_MAX}</Text>
                     <IconNotch width={16} height={16} />
                   </View>
-                </View>
+                </Pressable>
               </Field>
 
               <Pressable
