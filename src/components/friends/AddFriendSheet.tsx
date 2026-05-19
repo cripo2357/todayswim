@@ -22,6 +22,7 @@ import {
   ScrollView,
   StyleSheet,
   Dimensions,
+  Keyboard,
 } from 'react-native';
 import { XCircle } from 'lucide-react-native';
 import IconUserDouble from '@assets/icons/user-double.svg';
@@ -113,6 +114,13 @@ export function AddFriendSheet({
   );
   const idMiss = code.length === 6 && !idFound;
 
+  // 드롭다운 닫힘 = 검색칸 focus out(키보드/커서 해제). 선택/백드롭/
+  // 탭전환 모두 공통.
+  const closeNick = React.useCallback(() => {
+    setNickOpen(false);
+    Keyboard.dismiss();
+  }, []);
+
   // 화면에 표시/전송할 대상 — 탭별.
   const picked = tab === 'nickname' ? selUser : idFound;
 
@@ -139,7 +147,7 @@ export function AddFriendSheet({
               key={t}
               onPress={() => {
                 setTab(t);
-                setNickOpen(false);
+                closeNick();
               }}
               style={[styles.tab, active && styles.tabActive]}
               accessibilityRole="button"
@@ -187,7 +195,7 @@ export function AddFriendSheet({
               <>
                 <Pressable
                   style={styles.backdrop}
-                  onPress={() => setNickOpen(false)}
+                  onPress={closeNick}
                   accessibilityRole="button"
                   accessibilityLabel="검색 닫기"
                 />
@@ -232,10 +240,11 @@ export function AddFriendSheet({
                       <Pressable
                         key={u.id}
                         onPress={() => {
-                          // 자동완성 한 명 탭 = 선택 + 드롭다운 닫힘.
+                          // 자동완성 한 명 탭 = 선택 + 드롭다운 닫힘 +
+                          // 검색칸 focus out(키보드 해제).
                           setSelUser(u);
-                          setNickOpen(false);
                           setNq('');
+                          closeNick();
                         }}
                         style={styles.item}
                         accessibilityRole="button"
