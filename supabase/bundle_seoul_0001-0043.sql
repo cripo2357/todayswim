@@ -1,9 +1,26 @@
 -- ============================================================
--- Pool's Day — Supabase 서울 리전 이관용 단일 번들 (0001~0043)
--- 새 프로젝트 ref: hldfsstyzbnqnrlqhhtc (서울). 0044(terms,P2) 제외.
--- pool-photos URL은 새 ref로 베이크됨 — 추가 치환 불필요.
--- 새(빈) 서울 프로젝트의 SQL editor에 1회 실행. 순서 보존.
+-- Pool's Day — Supabase 서울 리전 이관 단일 번들 (0001~0043)
+-- ref: hldfsstyzbnqnrlqhhtc (서울). 0044(terms,P2) 제외.
+-- 의존성 순서 보정: 0013(분류 flag 컬럼)을 0012(샘플 시드) 앞으로.
+-- 맨 앞 TEARDOWN: 신규(빈) 프로젝트 가정 — 부분 적용분 정리 후
+--   깨끗이 1회 실행. 실데이터 없으므로 안전(Fresh 결정).
 -- ============================================================
+
+-- ===================== TEARDOWN =====================
+drop table if exists public.notifications cascade;
+drop table if exists public.nickname_blocklist cascade;
+drop table if exists public.schedule_submissions cascade;
+drop table if exists public.pool_submissions cascade;
+drop table if exists public.schedules cascade;
+drop table if exists public.profile_nicknames cascade;
+drop table if exists public.announcements cascade;
+drop table if exists public.pools cascade;
+drop function if exists public.set_updated_at() cascade;
+drop function if exists public.enforce_nickname_policy() cascade;
+drop policy if exists "avatar owner insert" on storage.objects;
+drop policy if exists "avatar owner update" on storage.objects;
+drop policy if exists "avatar owner delete" on storage.objects;
+-- =================== /TEARDOWN ======================
 
 
 -- ============================================================
@@ -1147,6 +1164,28 @@ truncate table public.pools restart identity cascade;
 
 
 -- ============================================================
+-- 0013_pools_classification_flags.sql  (의존성 순서상 0012보다 먼저)
+-- ============================================================
+-- Pool's Day v1 — pools 분류 flag 3개 추가.
+-- 카드(Figma 93:10597)에서 cyan 칩으로 노출되는 1차 분류:
+--   - has_kids_pool: 유아풀 보유
+--   - has_diving_pool: 다이빙풀 보유
+--   - is_hotel_pool: 호텔 부속 수영장
+-- 기존 facilities text[]는 세부 시설(샤워실/주차장/사물함 등)로 유지.
+-- 호텔 풀은 마커도 별도(marker-hotel.png) — MapScreen이 is_hotel_pool 우선 분기.
+
+alter table public.pools
+  add column if not exists has_kids_pool boolean not null default false,
+  add column if not exists has_diving_pool boolean not null default false,
+  add column if not exists is_hotel_pool boolean not null default false;
+
+-- 인덱스 — 호텔 마커 분기와 칩 필터에서 자주 조회됨.
+create index if not exists pools_is_hotel_pool_idx on public.pools (is_hotel_pool) where is_hotel_pool;
+create index if not exists pools_has_kids_pool_idx on public.pools (has_kids_pool) where has_kids_pool;
+create index if not exists pools_has_diving_pool_idx on public.pools (has_diving_pool) where has_diving_pool;
+
+
+-- ============================================================
 -- 0012_pools_sample_seed.sql
 -- ============================================================
 -- Pool's Day v1 — 샘플 풀 11개 시드 (UI 테스트용).
@@ -1229,28 +1268,6 @@ insert into public.pools (
     ARRAY['샤워실','사우나','자쿠지','사물함'], false, false, true,
     false, true, 50000)
 on conflict (id) do nothing;
-
-
--- ============================================================
--- 0013_pools_classification_flags.sql
--- ============================================================
--- Pool's Day v1 — pools 분류 flag 3개 추가.
--- 카드(Figma 93:10597)에서 cyan 칩으로 노출되는 1차 분류:
---   - has_kids_pool: 유아풀 보유
---   - has_diving_pool: 다이빙풀 보유
---   - is_hotel_pool: 호텔 부속 수영장
--- 기존 facilities text[]는 세부 시설(샤워실/주차장/사물함 등)로 유지.
--- 호텔 풀은 마커도 별도(marker-hotel.png) — MapScreen이 is_hotel_pool 우선 분기.
-
-alter table public.pools
-  add column if not exists has_kids_pool boolean not null default false,
-  add column if not exists has_diving_pool boolean not null default false,
-  add column if not exists is_hotel_pool boolean not null default false;
-
--- 인덱스 — 호텔 마커 분기와 칩 필터에서 자주 조회됨.
-create index if not exists pools_is_hotel_pool_idx on public.pools (is_hotel_pool) where is_hotel_pool;
-create index if not exists pools_has_kids_pool_idx on public.pools (has_kids_pool) where has_kids_pool;
-create index if not exists pools_has_diving_pool_idx on public.pools (has_diving_pool) where has_diving_pool;
 
 
 -- ============================================================
