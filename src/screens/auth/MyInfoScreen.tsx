@@ -590,7 +590,7 @@ export function ProfileTab({
           "레슨 정보 변경"(등록 화면). 공개 시 프로필 노출 + 지도 stack. */}
       <VisRow
         label="수영 레슨"
-        marginTop={24}
+        marginTop={28}
         value={profile.showSwimClasses ?? PROFILE_VIS_DEFAULT.showSwimClasses}
         onChange={(v) => patch({ showSwimClasses: v })}
       />
@@ -626,7 +626,7 @@ export function ProfileTab({
 
       <VisRow
         label="가능 영법"
-        marginTop={24}
+        marginTop={28}
         value={profile.showStrokes ?? PROFILE_VIS_DEFAULT.showStrokes}
         onChange={(v) => patch({ showStrokes: v })}
       />
@@ -643,7 +643,7 @@ export function ProfileTab({
 
       <VisRow
         label="자격증"
-        marginTop={24}
+        marginTop={28}
         value={profile.showCerts ?? PROFILE_VIS_DEFAULT.showCerts}
         onChange={(v) => patch({ showCerts: v })}
         disabled={!strokesComplete}
@@ -662,7 +662,7 @@ export function ProfileTab({
 
       <VisRow
         label="IM100 기록"
-        marginTop={24}
+        marginTop={28}
         value={profile.showIm100 ?? PROFILE_VIS_DEFAULT.showIm100}
         onChange={(v) => patch({ showIm100: v })}
         disabled={!strokesComplete}
