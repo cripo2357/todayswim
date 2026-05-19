@@ -110,21 +110,29 @@ function ProfileFabContent({ photoUri }: { photoUri?: string }) {
 }
 
 /** 내 위치 마커 — marker-me.png(50, 노란 원+halo) 위에 34 프로필.
- *  가장자리 (50-34)/2 = 8px 노란 테두리가 보임 (Figma 130:3622). */
-function LocationProfileMarker({ photoUri }: { photoUri: string }) {
+ *  가장자리 (50-34)/2 = 8px 노란 테두리가 보임 (Figma 130:3622).
+ *  로그아웃(photoUri 없음)이면 노란 원은 그대로 + 가운데 기본 사람
+ *  아이콘(FAB 로그아웃과 동일 IconProfile). */
+function LocationProfileMarker({ photoUri }: { photoUri?: string }) {
   return (
     <View style={styles.locMarker}>
       <Image source={MARKER_ME} style={styles.locRing} />
-      <View style={styles.locInner}>
-        {isBundleAvatar(photoUri) ? (
-          React.createElement(BUNDLE_AVATARS[photoUri], {
-            width: 34,
-            height: 34,
-          })
-        ) : (
-          <Image source={{ uri: photoUri }} style={styles.locInnerImg} />
-        )}
-      </View>
+      {!photoUri ? (
+        <View style={[styles.locInner, styles.locInnerIcon]}>
+          <IconProfile width={22} height={22} />
+        </View>
+      ) : (
+        <View style={styles.locInner}>
+          {isBundleAvatar(photoUri) ? (
+            React.createElement(BUNDLE_AVATARS[photoUri], {
+              width: 34,
+              height: 34,
+            })
+          ) : (
+            <Image source={{ uri: photoUri }} style={styles.locInnerImg} />
+          )}
+        </View>
+      )}
     </View>
   );
 }
@@ -406,14 +414,13 @@ export function MapScreen() {
         // 스타일 수정/재발행은 https://console.ncloud.com/maps/styles 에서.
         customStyleId="c52a2948-bdea-4a26-8a59-92a5cf711f42"
       >
-        {/* 내 위치 마커 — 노란 원(marker-me.png 50)으로 통일. 로그인
-            (프로필 있음)이면 그 위에 프로필 사진 오버레이(Figma 130:3622),
-            로그아웃이면 동일 노란 원만(가운데 사진 없음). */}
+        {/* 내 위치 마커 — 노란 원(marker-me.png 50)으로 통일. 로그인이면
+            가운데 프로필 사진, 로그아웃이면 가운데 기본 사람 아이콘
+            (Figma 130:3622). 둘 다 커스텀 children 사용. */}
         {geo.status === 'granted' && geo.coords ? (
           <NaverMapMarkerOverlay
             latitude={geo.coords.lat}
             longitude={geo.coords.lng}
-            {...(profile?.photoUri ? {} : { image: MARKER_ME })}
             width={50}
             height={50}
             anchor={{ x: 0.5, y: 0.5 }}
@@ -427,9 +434,7 @@ export function MapScreen() {
             }}
             onTap={flyToMyLocation}
           >
-            {profile?.photoUri ? (
-              <LocationProfileMarker photoUri={profile.photoUri} />
-            ) : null}
+            <LocationProfileMarker photoUri={profile?.photoUri} />
           </NaverMapMarkerOverlay>
         ) : null}
 
@@ -752,6 +757,10 @@ const styles = StyleSheet.create({
     transform: [{ translateX: -1 }, { translateY: -1 }],
   },
   locInnerImg: { width: 34, height: 34 },
+  // 로그아웃 — 사람 아이콘 뒤 흰 원판(노란 링 안쪽이 비치지 않게).
+  locInnerIcon: {
+    backgroundColor: tokens.color.white,
+  },
   // 필터 적용중 — 좌측 X(초기화) + 우측 텍스트+아이콘(설정), 하나의 알약처럼 보이는 통합 View
   fabFilterPill: {
     // 둥근 FAB(44)와 동일 높이 — 필터 적용/미적용 시 컬럼 y 어긋남 방지
