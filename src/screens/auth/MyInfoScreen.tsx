@@ -1080,12 +1080,14 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sans,
     color: tokens.color.ink500,
   },
-  // Figma 117:2885 — 성별/나이 수집목적 안내문구 (필드 아래, 회색 소형)
+  // Figma 129:6373(성별) / 133:3657(생년월일) — 수집목적 안내문구.
+  // 디자인 갱신: 13/18/-0.078 → 14/20/-0.084. 간격은 프레임 균일 gap-8
+  // (라벨·입력·안내문구 모두 8) — fieldGap.gap:8 만으로 충족, 별도
+  // marginTop 제거(있으면 입력↔안내 16으로 이중 적용됨).
   fieldNote: {
-    marginTop: 8,
-    fontSize: 13,
-    lineHeight: 18,
-    letterSpacing: -0.078,
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: -0.084,
     fontFamily: tokens.font.sans,
     color: tokens.color.ink500,
   },
