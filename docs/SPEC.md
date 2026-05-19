@@ -258,7 +258,7 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 
 ### 8.2 Phase 2 백엔드 SSOT (코드에 자리/주석 존재, 미구현)
 - **사용자 프로필 서버화**: 현재 PII 전부 기기 로컬(AsyncStorage, 비암호화 JSON). P2 `user_profiles` 테이블 이관 필요(약관·데이터보관 정책 직결).
-- **약관 동의 서버화·버전관리**: 현재 기기단위·service/privacyConsent만. P2 = `terms`(유형/버전/시행일/내용) + `terms_agreements`(누가·언제·어떤 버전·agree/withdraw, append-only 감사로그) 분리, 버전 고정·재동의·철회 이벤트. *(설계 합의됨, 마이그레이션 미작성)*
+- **약관 동의 서버화·버전관리**: 현재 기기단위·service/privacyConsent만. P2 = `terms`(유형/버전/시행일/내용) + `terms_agreements`(누가·언제·어떤 버전·agree/withdraw, append-only 감사로그) 분리, 버전 고정·재동의·철회 이벤트. *(스키마 초안 작성 완료: `supabase/migrations/0044_terms.sql` — Phase 2, 미적용. 활성화 시 lib/terms.ts 를 계정단위 서버 모델로 이관 필요.)*
 - **친구/일정/초대 실연동**: 친구그래프·내 일정·초대가 로컬·목업 → 서버 테이블 + 양방향 전달.
 - **알림 전달·실시간**: 현재 본인 이력만 insert, 수신자 적재·realtime·NotificationsTab 실데이터 미연동. 룰 10개 중 8개 미발송.
 - **OS 푸시 인프라 부재**: 푸시 토큰/발송 서버 전무 → 푸시 정책 실행 전 신규 구축 필요.
