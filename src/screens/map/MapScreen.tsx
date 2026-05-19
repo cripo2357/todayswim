@@ -372,12 +372,15 @@ export function MapScreen() {
     // 항상 새로 측정 — 사용자가 이동했을 수 있으므로 캐시된 geo.coords 무시.
     // request()는 캐시→fresh 2단계로 최신 좌표 반환. 권한 거부 시 null.
     const fresh = await geo.request();
-    if (fresh) {
+    // request() 실패해도 직전 상태의 캐시 좌표가 있으면 그걸로라도 이동.
+    // 둘 다 없을 때(권한없음·위치 전무)만 무동작.
+    const target = fresh ?? geo.coords;
+    if (target) {
       // 내 위치 이동은 다른 기능 사용으로 간주 → deselect
       select(null);
       mapRef.current?.animateCameraTo({
-        latitude: fresh.lat,
-        longitude: fresh.lng,
+        latitude: target.lat,
+        longitude: target.lng,
         zoom: 13,
         duration: 400,
       });

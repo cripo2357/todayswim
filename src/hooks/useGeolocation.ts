@@ -31,6 +31,9 @@ export function useGeolocation(opts: { auto?: boolean } = {}): GeoState {
   const request = useCallback(async (): Promise<Coords | null> => {
     setStatus('requesting');
     setError(undefined);
+    // 지금까지 확보한 최선 좌표(캐시 last-known). fresh fix 실패해도 이게
+    // 있으면 반환 → "내 위치 이동" 무동작 방지(버그 수정).
+    let best: Coords | null = null;
     try {
       const { status: perm } = await Location.requestForegroundPermissionsAsync();
       if (perm !== 'granted') {
@@ -42,20 +45,29 @@ export function useGeolocation(opts: { auto?: boolean } = {}): GeoState {
       // Cold start에서 fresh fix는 5~30초 걸려서 그 동안 마커 안 보이는 UX 회피.
       const last = await Location.getLastKnownPositionAsync({ maxAge: 5 * 60 * 1000 });
       if (last) {
-        setCoords({ lat: last.coords.latitude, lng: last.coords.longitude });
+        best = { lat: last.coords.latitude, lng: last.coords.longitude };
+        setCoords(best);
         setStatus('granted');
       }
 
-      // 2단계: 정확한 fresh fix를 백그라운드로 받아 위치 refine.
-      // Lowest 정확도 — 풀 찾기엔 ~수백m 정확도면 충분, 빠른 fix 우선.
-      const pos = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Lowest,
-      });
+      // 2단계: 정확한 fresh fix. getCurrentPositionAsync 는 타임아웃 옵션이
+      // 없어 GPS 안 잡히면 무한 대기 → 4초 레이스로 끊고 캐시 폴백.
+      const pos = await Promise.race([
+        Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Lowest }),
+        new Promise<never>((_, rej) =>
+          setTimeout(() => rej(new Error('location timeout')), 4000),
+        ),
+      ]);
       const fresh: Coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       setCoords(fresh);
       setStatus('granted');
       return fresh;
     } catch (e: any) {
+      // fresh fix 실패(타임아웃·신호없음)라도 캐시 좌표가 있으면 그걸로 이동.
+      if (best) {
+        setStatus('granted');
+        return best;
+      }
       setStatus('error');
       setError(e?.message ?? 'unknown error');
       return null;
