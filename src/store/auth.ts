@@ -148,8 +148,17 @@ export const useAuth = create<AuthState>((set) => ({
     if (res.type !== 'success') return; // 취소/실패
 
     // PKCE: 콜백 URL의 ?code= 를 세션으로 교환.
-    const code = new URL(res.url).searchParams.get('code');
-    if (!code) throw new Error('Kakao 콜백에 code 없음');
+    const cbUrl = new URL(res.url);
+    const code = cbUrl.searchParams.get('code');
+    if (!code) {
+      // Supabase는 실패 시 code 대신 error/error_description을 붙여 돌려보냄
+      // — 그 메시지를 그대로 노출(추측 대신 실제 원인).
+      const detail =
+        cbUrl.searchParams.get('error_description') ??
+        cbUrl.searchParams.get('error') ??
+        res.url;
+      throw new Error(`Kakao 콜백에 code 없음 — ${detail}`);
+    }
     const { data: sess, error: exErr } =
       await supabase.auth.exchangeCodeForSession(code);
     if (exErr) throw exErr;
