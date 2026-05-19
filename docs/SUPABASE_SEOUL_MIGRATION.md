@@ -105,6 +105,12 @@
 - `pools`/`schedules`/`announcements` fetch 정상(지도·목록·시간표).
 - pool 사진 로드(새 ref URL).
 - Google·Kakao 로그인 → 세션·프로필.
+  - ⚠️ Kakao 이메일: 앱이 비즈 앱이 아니라 `account_email` 동의항목이
+    "권한 없음"(필수/선택 설정 불가, 콘솔 우회 토글 없음). 임시로
+    `src/store/auth.ts` Kakao `scopes:'profile_nickname profile_image'`
+    로 이메일 제외 → 로그인 기능만 검증. 이메일=계정 key라
+    **비즈 앱 등록 + `account_email` 스코프 복원**은 출시 전 P2 필수
+    차단 항목(리전 이관과 무관한 기존 이슈). Google은 이메일 확보됨.
 - 닉네임 중복검사(`profile_nicknames` SELECT/INSERT) + 금칙어 트리거.
 - 제보 insert(`pool_submissions`).
 - 아바타 업로드(`avatars`).
