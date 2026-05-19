@@ -866,8 +866,9 @@ function ExperienceSlider({
         </View>
       </View>
       <View style={sliderStyles.labelRow}>
+        {/* 좌=현재값 SemiBold / 우=최대값 Regular (Figma 117:2895) */}
         <Text style={sliderStyles.label}>{formatExp(value, max)}</Text>
-        <Text style={sliderStyles.label}>{max}년 이상</Text>
+        <Text style={sliderStyles.labelMax}>{max}년 이상</Text>
       </View>
     </View>
   );
@@ -1053,11 +1054,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 12,
   },
+  // Figma Section Header(117:2890 등) — "Text sm/SemiBold"(한글 Bold).
+  // fieldLabel(성별/생년월일)과 동일 스타일 → sansSemibold로 일치.
   visRowLabel: {
     fontSize: 14,
     lineHeight: 20,
     letterSpacing: -0.084,
-    fontFamily: tokens.font.sans,
+    fontFamily: tokens.font.sansSemibold,
     color: tokens.color.ink900,
   },
   // 영법 4개 미만 → 자격증·IM100 공개여부 비활성(Toggle 자체 0.5와 일관).
@@ -1252,11 +1255,20 @@ const sliderStyles = StyleSheet.create({
     top: -6,
   },
   labelRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  // Figma I117:2895;5626:31911 — 현재값(좌): SemiBold
   label: {
     fontSize: 16,
     lineHeight: 22,
     letterSpacing: -0.112,
     fontFamily: tokens.font.sansSemibold,
+    color: '#4B5563',
+  },
+  // Figma I117:2895;5626:31912 — 최대값(우): Regular(현재값과 구분)
+  labelMax: {
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sans,
     color: '#4B5563',
   },
 });
