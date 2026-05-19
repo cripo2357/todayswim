@@ -69,10 +69,27 @@
 - "fresh"면 생략.
 
 ### 6단계 — Auth 재구성 (크리스)
-- Supabase 대시보드 Auth: Google·Kakao provider 재설정(Kakao client id/secret 재입력).
-- 콜백 URL 변경: 새 `https://<새ref>.supabase.co/auth/v1/callback`.
-  - Google Cloud OAuth: 승인된 리디렉션 URI에 새 콜백 추가.
-  - Kakao 개발자콘솔: Redirect URI에 새 콜백 추가.
+
+> 코드 검증: `src/store/auth.ts`. **Google = `signInWithIdToken`(네이티브 SDK
+> idToken 교환) — Supabase `/auth/v1/callback`을 안 거침.** Kakao =
+> `signInWithOAuth` + PKCE — Kakao → Supabase 콜백 → 앱 딥링크.
+> ⇒ 리전 ref에 의존하는 건 **Kakao 흐름과 Supabase URL 설정뿐.**
+
+- **Supabase 대시보드(새 서울 프로젝트) → Authentication**
+  - Providers → **Google** 활성화: 기존과 동일한 **웹 클라이언트 ID**
+    입력. Authorized Client IDs에도 그 웹 클라이언트 ID 포함(idToken
+    audience 검증용). client secret은 대시보드에서만 입력.
+  - Providers → **Kakao** 활성화: Kakao REST API 키(client id) +
+    client secret 재입력.
+  - URL Configuration → Redirect URLs에 **`poolsday://auth/callback`**
+    추가(앱 딥링크 = `redirectTo`. 새 프로젝트는 비어 있으니 재등록 필수).
+- **Kakao 개발자콘솔** → 카카오 로그인 → Redirect URI에
+  **새 `https://hldfsstyzbnqnrlqhhtc.supabase.co/auth/v1/callback`** 추가.
+- **Google Cloud Console: 변경 없음.** 네이티브 idToken 흐름이라 Supabase
+  콜백을 안 씀 — Android 클라이언트(SHA-1·`com.cripo.poolsday`)·웹
+  클라이언트 ID는 ref와 무관, 그대로.
+- `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`는 Google 식별자(ref 무관) → env
+  스왑 시 **그대로 유지**(6→7단계에서 바뀌는 건 Supabase URL/anon뿐).
 - 앱 딥링크 `poolsday://auth/callback`은 불변(코드 변경 없음).
 
 ### 7단계 — 클라이언트 설정 스왑 (크리스)
