@@ -4,7 +4,7 @@
 import React from 'react';
 import {
   View, Text, TextInput, ScrollView, StyleSheet, Pressable,
-  KeyboardAvoidingView, Platform, PanResponder,
+  KeyboardAvoidingView, Platform, PanResponder, Keyboard,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -13,7 +13,6 @@ import IconChevronDown from '@assets/icons/chevron-down.svg';
 import IconCake from '@assets/icons/cake.svg';
 
 import { useProfile, genProfileId, type Gender, type Stroke } from '@/store/profile';
-import { useAuth } from '@/store/auth';
 import {
   isNicknameTaken,
   claimNickname,
@@ -38,10 +37,12 @@ const EXP_MAX = 30;
 export function ProfileSetupScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const saveProfile = useProfile((s) => s.save);
-  const authUser = useAuth((s) => s.user);
 
-  // 소셜 로그인에서 받아온 닉네임을 기본값으로.
-  const [name, setName] = React.useState(() => authUser?.nickname ?? '');
+  // 닉네임은 사용자가 직접 입력 — 앱 닉네임은 in-app 식별자(2~6자, 영소문자/
+  // 한글/숫자만)라 소셜 표시명을 자동 채움해도 sanitize에서 거의 깎이고
+  // 정체성도 분리(memory nickname_policy). 사진 자동기본값은 다음 단계
+  // (ProfileImage)에서 처리.
+  const [name, setName] = React.useState('');
   const [gender, setGender] = React.useState<Gender | null>(null);
   const [birthDate, setBirthDate] = React.useState(''); // YYYY-MM-DD
   const [exp, setExp] = React.useState(10);
@@ -65,32 +66,6 @@ export function ProfileSetupScreen() {
     return () => {
       if (nickTimerRef.current) clearTimeout(nickTimerRef.current);
     };
-  }, []);
-
-  // 소셜 닉네임이 기본값으로 채워진 경우 mount 시 1회 중복 확인 —
-  // 사용자가 그대로 두고 바로 진행해도 canSubmit('ok' 필요)이 풀리도록.
-  React.useEffect(() => {
-    const initial = (authUser?.nickname ?? '').trim();
-    if (initial.length < 2) return;
-    nameRef.current = authUser?.nickname ?? '';
-    const initReason = nicknameBlockReason(initial);
-    if (initReason) {
-      setNickStatus(initReason);
-      return;
-    }
-    setNickStatus('checking');
-    (async () => {
-      const remote = await nicknameBlockReasonRemote(initial);
-      if (nameRef.current.trim() !== initial) return;
-      if (remote) {
-        setNickStatus(remote);
-        return;
-      }
-      const taken = await isNicknameTaken(initial);
-      if (nameRef.current.trim() !== initial) return;
-      setNickStatus(taken ? 'taken' : 'ok');
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const onChangeName = (raw: string) => {
@@ -178,13 +153,15 @@ export function ProfileSetupScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}
       >
+        {/* 상단 고정 헤더 — 스크롤과 분리(폼이 길어도 타이틀 항상 보임) */}
+        <View style={styles.headerWrap}>
+          <Text style={styles.title}>프로필 등록</Text>
+        </View>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.title}>프로필 등록</Text>
-
           {/* 필수 */}
           <SectionHeader label="필수" icon={<IconSectionBasic width={20} height={20} />} />
           <Field label="닉네임">
@@ -215,7 +192,10 @@ export function ProfileSetupScreen() {
 
           <Field label="성별">
             <Pressable
-              onPress={() => setShowGenderSheet(true)}
+              onPress={() => {
+                Keyboard.dismiss(); // 닉네임 TextInput refocus 회귀 차단
+                setShowGenderSheet(true);
+              }}
               style={styles.inputBox}
             >
               <IconGenderMale width={20} height={20} />
@@ -233,7 +213,10 @@ export function ProfileSetupScreen() {
 
           <Field label="생년월일">
             <Pressable
-              onPress={() => setShowCalendarSheet(true)}
+              onPress={() => {
+                Keyboard.dismiss(); // 시트 닫힘 후 닉네임 자동 refocus 차단
+                setShowCalendarSheet(true);
+              }}
               style={styles.inputBox}
             >
               <IconCake width={20} height={20} />
@@ -434,8 +417,16 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   scrollContent: {
     paddingHorizontal: 24,
-    paddingTop: 56,
+    paddingTop: 0,
     paddingBottom: 48,
+  },
+  // 상단 고정 헤더 (스크롤과 분리). paddingTop 56은 원래 scrollContent의
+  // 그것을 그대로 가져와 시각 위치 동등. 첫 sectionHeader의 marginTop 16이
+  // 원래 갭을 유지하므로 픽셀 변화 없음.
+  headerWrap: {
+    paddingHorizontal: 24,
+    paddingTop: 56,
+    backgroundColor: tokens.color.bgPaper,
   },
   title: {
     fontSize: 28,
