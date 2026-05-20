@@ -11,7 +11,10 @@
 //    (정적 isFriend 신뢰 X — block_policy_enforcement 메모리).
 //  · 친구의 비공개(private) 슬롯은 제외(participant_visibility_policy 일관 —
 //    내 일정은 내 것이라 가시성 무관).
-//  · 순서: 나=0번, 나머지는 풀별 고정 셔플(매 렌더 재셔플 방지). 최대 9 + "… more".
+//  · 순서: 나=맨앞(맵 그리드 좌측 하단 고정), 나머지는 (시드+풀+사용자) 해시
+//    셔플. 시드는 호출자가 결정 — MapScreen은 useFocusEffect로 포커스마다 새
+//    시드 발급(맵 활성화 1회 = 1셔플). 9명 초과면 시드 기준 앞 9명만 표본 추출
+//    (나머지는 "… more"로 갈음). 매 렌더 재셔플은 시드를 안 바꾸면 발생 X.
 //
 // Phase-1: 친구 일정 소스는 기존 participant 데이터(MOCK_OTHER_SCHEDULES, 달력
 //          resolveParticipants 와 동일 소스). 서버 친구 일정 적재는 Phase-2 갭.
@@ -92,6 +95,11 @@ export interface BuildStacksInput {
   /** 사람들(비친구 전체공개) 일정 노출창. 미지정 또는 0이면 사람들 일정 미노출.
    *  profileVisibility='public'일 때만 의미. */
   publicHorizonMs?: number;
+  /** 풀별 셔플 시드 — 호출자가 동일 시드를 유지하는 동안 결과 안정, 새 시드를
+   *  넘기면 9명 표본·순서 모두 재셔플. MapScreen은 useFocusEffect로 포커스
+   *  시점마다 새 시드 발급(맵 진입할 때마다 셔플). 미지정 시 '0' — 풀+사용자
+   *  ID만으로 결정적 정렬(테스트·하위호환). */
+  shuffleSeed?: string;
 }
 
 interface Cand {
@@ -115,6 +123,7 @@ export function buildPoolProfileStacks(
   const friendHorizonMs = input.friendHorizonMs ?? DEFAULT_HORIZON_MS;
   const publicHorizonMs = input.publicHorizonMs ?? 0;
   const showMine = input.showMine ?? true;
+  const shuffleSeed = input.shuffleSeed ?? '0';
   const poolIds = new Set(input.pools.map((p) => p.id));
 
   // userId 당 가장 임박한 후보 1건만 유지(여러 슬롯 → 최임박 풀 배치).
@@ -233,7 +242,8 @@ export function buildPoolProfileStacks(
     }
   }
 
-  // 풀별 그룹 → 정렬(나 먼저, 나머지 고정 셔플) → cap.
+  // 풀별 그룹 → 정렬(나 먼저, 나머지 시드+풀+사용자 해시 셔플) → cap.
+  // 시드가 매 포커스마다 새 값이면 표본 추출(앞 9명)과 순서 둘 다 재셔플.
   const byPool = new Map<string, Cand[]>();
   for (const c of best.values()) {
     const arr = byPool.get(c.poolId);
@@ -246,7 +256,11 @@ export function buildPoolProfileStacks(
     const me = cands.filter((c) => c.relation === 'me');
     const others = cands
       .filter((c) => c.relation !== 'me')
-      .sort((a, b) => hash(poolId + a.userId) - hash(poolId + b.userId));
+      .sort(
+        (a, b) =>
+          hash(shuffleSeed + ':' + poolId + ':' + a.userId) -
+          hash(shuffleSeed + ':' + poolId + ':' + b.userId),
+      );
     const ordered = [...me, ...others];
     result.set(poolId, {
       overflow: ordered.length > STACK_MAX,
