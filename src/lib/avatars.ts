@@ -90,13 +90,16 @@ export const BUNDLE_AVATAR_LG: Record<AvatarId, ImageSourcePropType> = {
   'avatar-female-6': require('@assets/avatars/lg/avatar-female-6.png'),
 };
 
-/** 표시 size(px)에 맞는 번들 PNG 티어 소스. sm≤64 / md≤160 / lg.
- *  SVG(BUNDLE_AVATARS)는 더 이상 노출 경로 아님 — 다수 마운트 비용 회피. */
+/** 표시 size(px)에 맞는 번들 PNG 티어 소스. sm≤28(맵 스택 20·mini 24) /
+ *  md≤160(검색 32·요청 40·친구행 48·프로필 ≤160) / lg(>160).
+ *  SVG(BUNDLE_AVATARS)는 더 이상 노출 경로 아님 — 다수 마운트 비용 회피
+ *  (friends_scalability). 임계값 ≤64는 회귀였음 — 친구행48이 sm(64)로
+ *  떨어져 3x 디스플레이에서 흐릿했음. 친구행은 md(256)가 정상 티어. */
 export function bundleAvatarPng(
   id: AvatarId,
   size: number,
 ): ImageSourcePropType {
-  if (size <= 64) return BUNDLE_AVATAR_THUMBS[id];
+  if (size <= 28) return BUNDLE_AVATAR_THUMBS[id];
   if (size <= 160) return BUNDLE_AVATAR_MD[id];
   return BUNDLE_AVATAR_LG[id];
 }

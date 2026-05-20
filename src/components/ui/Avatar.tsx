@@ -8,9 +8,10 @@
 //
 // 성능: 번들 아바타는 SVG 벡터 트리 대신 표시 size에 맞는 PNG 티어
 // (sm64/md256/lg512, bundleAvatarPng)로 — 다수 동시 마운트 비용 회피
-// (friends_scalability 메모리). 업로드 사진은 소형 노출 시 thumbUri
-// (64px) 우선해 512 디코드 회피, 실패 시 onError 로 photoUri 1회 폴백.
-// React.memo 로 마커 캡처/리스트 재렌더 절감.
+// (friends_scalability 메모리). 업로드 사진은 ≤28 소형 노출(맵 스택·mini)
+// 시에만 thumbUri(64px) 우선해 512 디코드 회피, 실패 시 onError 로
+// photoUri 1회 폴백. 친구행48·요청40·검색32는 본본(512)을 다운샘플 —
+// 64 썸네일을 늘려 쓰는 회귀 방지. React.memo 로 마커/리스트 재렌더 절감.
 //
 // 외곽선 두께는 Figma 173-13735 가 border-0 이나 전역 정책 우선 — 얇게 1.5
 // 기본(호출부 borderWidth 로 조정/0 가능).
@@ -48,7 +49,7 @@ function AvatarBase({
 }: {
   /** 번들 AvatarId / 업로드·소셜 URI / undefined(기본 아이콘) */
   photoUri?: string;
-  /** 소형 노출용 64px 썸네일. 실패 시 photoUri 폴백. */
+  /** 소형 노출용 64px 썸네일. size≤28일 때만 우선 사용, 실패 시 photoUri 폴백. */
   thumbUri?: string;
   size: number;
   relation: AvatarRelation;
@@ -62,11 +63,10 @@ function AvatarBase({
   }, [thumbUri, photoUri]);
 
   const isBundle = isBundleAvatar(photoUri);
-  const photoSrc = isBundle
-    ? undefined
-    : thumbUri && !thumbFailed
-      ? thumbUri
-      : photoUri;
+  // 64px 썸네일은 ≤28 소형 노출(맵 스택·mini)에서만 우선 — 그보다 큰
+  // 디스플레이(친구행48 등)에서 64를 늘리면 흐릿. 본본(512)을 RN 다운샘플.
+  const useThumb = size <= 28 && !!thumbUri && !thumbFailed;
+  const photoSrc = isBundle ? undefined : useThumb ? thumbUri : photoUri;
 
   // Figma 173-13735: 이미지는 원을 꽉 채우고(inset-0 size-full), 관계 링은
   // 이미지를 줄이지 않는 오버레이로. 그래야 -2px 겹침이 실제로 보인다.

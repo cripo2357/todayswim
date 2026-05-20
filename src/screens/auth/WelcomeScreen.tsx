@@ -20,8 +20,9 @@ const DROPLET_COUNT = 8;
 const RISE_DURATION = 2400;
 const WORDMARK_WIDTH = 256;
 const WORDMARK_HEIGHT = 152;
-const APOSTROPHE_CENTER_X = SCREEN_WIDTH / 2 + 64;
-const APOSTROPHE_Y_BASE = SCREEN_HEIGHT / 2 - 185;
+// 워드마크 viewBox 872x518, apostrophe 중심 ≈ (670, 51) → 워드마크 중심에서 우측 0.269*W, 상단 0.099*H 지점.
+const APOSTROPHE_CENTER_X = SCREEN_WIDTH / 2 + Math.round(WORDMARK_WIDTH * 0.269);
+const APOSTROPHE_Y_BASE = SCREEN_HEIGHT / 2 - 200 + Math.round(WORDMARK_HEIGHT * 0.099);
 const RISE_TO = -30;
 const DROPLET_W = 16;
 const DROPLET_H = 24;
@@ -111,7 +112,7 @@ export function WelcomeScreen() {
             { opacity: d.opacity, transform: [{ translateY: d.y }] },
           ]}
         >
-          <DropletComma width={DROPLET_W} height={DROPLET_H} />
+          <DropletComma width={DROPLET_W} height={DROPLET_H} color="#FFFFFF" />
         </Animated.View>
       ))}
 
