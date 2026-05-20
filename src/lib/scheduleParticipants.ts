@@ -10,7 +10,7 @@
 
 import type { MySwimSchedule } from '@/store/swimSchedule';
 import type { OthersScheduleView } from '@/store/prefs';
-import { MOCK_OTHER_SCHEDULES, type OtherSchedule } from '@/lib/mockData';
+import type { OtherSchedule } from '@/lib/mockData';
 
 export interface ParticipantGroups {
   /** 친구 초대 버튼 노출 (비공개면 false) */
@@ -35,11 +35,14 @@ export function resolveParticipants(
   viewPref: OthersScheduleView,
   /** 차단한 사용자 id — 영구·양방향 제외(어떤 일정에도 안 보임). */
   blockedIds?: readonly string[],
+  /** 다른 사용자 일정 풀(서버 fetch 결과 또는 mock 폴백) — P2 진입 후 inject.
+   *  미지정 시 빈 배열(파라미터 누락 호출처를 명시적으로 잡기). */
+  otherSchedules: readonly OtherSchedule[] = [],
 ): ParticipantGroups {
   if (my.visibility === 'private') return EMPTY;
 
   const blocked = new Set(blockedIds ?? []);
-  const sameSlot = MOCK_OTHER_SCHEDULES.filter(
+  const sameSlot = otherSchedules.filter(
     (o) =>
       !blocked.has(o.userId) &&
       o.poolId === my.poolId &&

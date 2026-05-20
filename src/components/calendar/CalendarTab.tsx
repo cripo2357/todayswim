@@ -21,6 +21,7 @@ import {
 import { isBundleAvatar, BUNDLE_AVATARS } from '@/lib/avatars';
 import { usePrefs } from '@/store/prefs';
 import { resolveParticipants } from '@/lib/scheduleParticipants';
+import { useOtherSchedules } from '@/hooks/useOtherSchedules';
 import { useFriends } from '@/store/friends';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
@@ -77,6 +78,8 @@ export function CalendarTab() {
   const setCompleted = useSwimSchedules((s) => s.setCompleted);
   const viewPref = usePrefs((s) => s.othersScheduleView);
   const blockedIds = useFriends((s) => s.blocked);
+  // P2: 친구 일정 서버 fetch (서버 0건이면 mock 폴백).
+  const otherSchedules = useOtherSchedules();
   // 다른 사람 일정 보기가 '친구 일정만'이면 일정 관리 시트에서 '전체 공개' 미노출
   const manageOptions = React.useMemo(
     () =>
@@ -214,7 +217,7 @@ export function CalendarTab() {
                   내 설정으로 필터. 비공개=나만 / 친구공개=나+친구+초대 /
                   전체공개=+다른사람(설정 '다른 사람 일정 보기' 시) */}
               {(() => {
-                const pg = resolveParticipants(s, viewPref, blockedIds);
+                const pg = resolveParticipants(s, viewPref, blockedIds, otherSchedules);
                 const past = isSchedulePast(s); // 지난 일정엔 친구초대 미노출
                 return (
                   <View style={styles.participants}>

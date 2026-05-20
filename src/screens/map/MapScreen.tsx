@@ -35,7 +35,8 @@ import { useProfile } from '@/store/profile';
 import { useNotifications } from '@/store/notifications';
 import { useSwimSchedules } from '@/store/swimSchedule';
 import { useFriends } from '@/store/friends';
-import { MOCK_OTHER_SCHEDULES, MOCK_OTHER_LESSONS } from '@/lib/mockData';
+import { MOCK_OTHER_LESSONS } from '@/lib/mockData';
+import { useOtherSchedules } from '@/hooks/useOtherSchedules';
 import {
   buildPoolProfileStacks,
   type PoolStack,
@@ -250,11 +251,12 @@ export function MapScreen() {
 
   // 풀별 프로필 스택 — 나/친구 중 노출창(슬롯 시작 N 전 ~ 종료) 내 일정자.
   // N = prefs.mapFriendHorizon ('d1'/'h12'/'h6'). 'off'면 스택 전체 미표시(나 포함).
-  // Phase-1: 친구 일정 소스 = 기존 participant 데이터(MOCK_OTHER_SCHEDULES),
-  // 노출/차단은 useFriends 경유. 서버 친구 일정 적재는 Phase-2 갭.
+  // P2(2026-05-21): 친구 일정 소스 = useOtherSchedules(서버 user_schedules
+  // + profiles join, 빈 결과 시 MOCK_OTHER_SCHEDULES 폴백). 노출/차단 useFriends.
   const mySchedules = useSwimSchedules((s) => s.schedules);
   const friends = useFriends((s) => s.friends);
   const blocked = useFriends((s) => s.blocked);
+  const otherSchedules = useOtherSchedules();
   const poolStacks = React.useMemo<Map<string, PoolStack>>(
     () =>
       showStack
@@ -264,7 +266,7 @@ export function MapScreen() {
             mySchedules,
             friends,
             blocked,
-            otherSchedules: MOCK_OTHER_SCHEDULES,
+            otherSchedules,
             // 수영 레슨(공개 시). 일정과 통합돼 userId당 최임박 1곳만 노출.
             myLessonPoolId: profile?.lessonPoolId ?? null,
             mySwimClasses: profile?.swimClasses ?? [],
@@ -273,7 +275,16 @@ export function MapScreen() {
             horizonMs: MAP_FRIEND_HORIZON_MS[mapFriendHorizon],
           })
         : new Map(),
-    [pools, profile, mySchedules, friends, blocked, showStack, mapFriendHorizon],
+    [
+      pools,
+      profile,
+      mySchedules,
+      friends,
+      blocked,
+      showStack,
+      mapFriendHorizon,
+      otherSchedules,
+    ],
   );
 
   /**

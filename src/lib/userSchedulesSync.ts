@@ -144,6 +144,29 @@ export async function tryFetchSchedulesByProfileIds(
   }
 }
 
+/** 친구 일정 + owner(profiles.nickname/photo_uri) join — MOCK_OTHER_SCHEDULES
+ *  교체용. mapProfileStacks/scheduleParticipants 가 nickname·avatar 필요.
+ *  Supabase nested select(`profiles!inner(...)`)로 한 쿼리. */
+export interface ScheduleWithOwnerRow extends UserScheduleRow {
+  profiles: { nickname: string; photo_uri: string | null } | null;
+}
+export async function tryFetchSchedulesWithOwner(
+  profileIds: string[],
+): Promise<ScheduleWithOwnerRow[]> {
+  if (profileIds.length === 0) return [];
+  try {
+    const { data, error } = await supabase
+      .from('user_schedules')
+      .select('*, profiles!inner(nickname, photo_uri)')
+      .in('profile_id', profileIds)
+      .neq('visibility', 'private');
+    if (error || !data) return [];
+    return data as ScheduleWithOwnerRow[];
+  } catch {
+    return [];
+  }
+}
+
 /** 특정 풀+날짜 슬롯의 참여자 일정 fetch — 슬롯 참여자 더보기/스택용.
  *  현 단계 호출처 없음. */
 export async function tryFetchSchedulesByPoolDate(
