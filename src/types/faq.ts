@@ -6,7 +6,7 @@ export type FaqCategory = 'first' | 'info' | 'activity' | 'settings';
 export const FAQ_CATEGORY_LABEL: Record<FaqCategory, string> = {
   first: '처음',
   info: '정보',
-  activity: '활동',
+  activity: '일정',
   settings: '설정',
 };
 
