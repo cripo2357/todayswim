@@ -303,15 +303,9 @@ export function MapScreen() {
   const blocked = useFriends((s) => s.blocked);
   const favoriteIds = useFavorites((s) => s.ids);
   const otherSchedules = MOCK_OTHER_SCHEDULES;
-  // 줌 < STACK_MIN_ZOOM 이면 렌더 단계에서 어차피 잘리는데, 그 줌대에서 사용자
-  // 가 panning 하는 동안에도 useMemo가 도는 건 손해 — deps만 닿으면 1000+ 후보
-  // 일정/레슨 재계산이 발생. 줌 14↑ 일 때만 실제 계산을 돌리고, 그 미만에선 빈
-  // Map 반환. zoomInt가 useMemo dep에 stackActive 통해 들어가서 13↔14 전환
-  // 시점에 1회만 재계산이 트리거됨.
-  const stackActive = showStack && zoomInt >= STACK_MIN_ZOOM;
   const poolStacks = React.useMemo<Map<string, PoolStack>>(
     () =>
-      stackActive
+      showStack
         ? buildPoolProfileStacks({
             pools,
             myProfile: profile,
@@ -338,7 +332,7 @@ export function MapScreen() {
       mySchedules,
       friends,
       blocked,
-      stackActive,
+      showStack,
       mapFriendHorizon,
       effectivePublicHorizon,
       myScheduleVisibility,
