@@ -223,7 +223,7 @@ if (changes.length === 0 && errors.length === 0) {
   process.exit(0);
 }
 
-let body = `# 풀 시간표 검증 결과 (${today})\n\n`;
+let body = `# 수영장 시간표 검증 결과 (${today})\n\n`;
 body += `- 검증 대상: ${pools.length}\n`;
 body += `- ✅ 변동 없음: ${verified.length}\n`;
 body += `- 🔄 변경 감지: ${changes.length}\n`;
