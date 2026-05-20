@@ -13,17 +13,20 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import Constants from 'expo-constants';
 import type { RootStackParamList } from '@/navigation/types';
 import { useAuth } from '@/store/auth';
+import { fetchAppStatus } from '@/hooks/useAppStatus';
+import { isAppBelow } from '@/lib/version';
 import { tokens } from '@/styles/tokens';
 import BrandWordmark from '@assets/illustrations/wordmark-poolsday.svg';
 import DropletComma from '@assets/illustrations/droplet-comma.svg';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// 새 워드마크 257x153. 화면 비율로 약간 여유 있게.
+// 워드마크 viewBox 872x518 (이전 257x153 비율과 동일, 고해상도 export).
 const WORDMARK_WIDTH = 240;
-const WORDMARK_HEIGHT = Math.round((WORDMARK_WIDTH * 153) / 257);
+const WORDMARK_HEIGHT = Math.round((WORDMARK_WIDTH * 518) / 872);
 
 // Figma 90:3156 — 진행바 240px 폭, 8px 높이, radius 8.
 const PROGRESS_WIDTH = 240;
@@ -121,6 +124,43 @@ export function SplashScreen() {
       while (!useAuth.getState().hydrated) {
         await new Promise((r) => setTimeout(r, 50));
       }
+
+      // 부팅 게이트 — Supabase app_status 1행 fetch.
+      // 점검 ON → Maintenance / 클라이언트 < 최소버전 → AppUpdateRequired.
+      // 네트워크 실패는 무시(=null)하고 통과 — OfflineGate가 ErrorNoInternet으로 처리.
+      const status = await fetchAppStatus().catch(() => null);
+      if (status?.maintenanceActive) {
+        navigation.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'Maintenance',
+              params: status.maintenanceLabel
+                ? { reopenLabel: status.maintenanceLabel }
+                : undefined,
+            },
+          ],
+        });
+        return;
+      }
+      const currentVersion = Constants.expoConfig?.version ?? '0.0.0';
+      if (status?.minAppVersion && isAppBelow(currentVersion, status.minAppVersion)) {
+        navigation.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'AppUpdateRequired',
+              params: {
+                versionLabel: `최소 ${status.minAppVersion} 이상`,
+                iosUrl: status.iosStoreUrl ?? undefined,
+                androidUrl: status.androidStoreUrl ?? undefined,
+              },
+            },
+          ],
+        });
+        return;
+      }
+
       navigation.replace('MapMain');
     });
     return () => {

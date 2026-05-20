@@ -1,15 +1,19 @@
 import React from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import {
+  NavigationContainer,
+  getStateFromPath,
+  type LinkingOptions,
+} from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { RootNavigator } from '@/navigation/RootNavigator';
 import { navigationRef } from '@/navigation/navigationRef';
+import type { RootStackParamList } from '@/navigation/types';
 import { GlobalAddScheduleSheet } from '@/components/calendar/GlobalAddScheduleSheet';
-// import { OfflineGate } from '@/components/network/OfflineGate';
-//   ↑ expo-network 네이티브 모듈 — EAS dev 빌드 새로 한 후에 활성화. 그 전엔 runtime not ready 에러.
+import { OfflineGate } from '@/components/network/OfflineGate';
 import { useFonts } from '@/hooks/useFonts';
 import { usePoolFilter } from '@/store/poolFilter';
 import { useSelection } from '@/store/selection';
@@ -23,6 +27,21 @@ import { tokens } from '@/styles/tokens';
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 60_000, retry: 1 } },
 });
+
+// Deep link 게이트. 매칭되는 경로가 없으면 ErrorNotFound 로 fallback.
+// 현재 매칭 스크린 없음 — poolsday://... 들어오면 무조건 404 라우트로 처리.
+// 신규 deep link 추가 시 config.screens 에 매칭 규칙 등록.
+const linking: LinkingOptions<RootStackParamList> = {
+  prefixes: ['poolsday://'],
+  config: { screens: {} },
+  getStateFromPath: (path, options) => {
+    const state = getStateFromPath(path, options);
+    if (!state || state.routes.length === 0) {
+      return { routes: [{ name: 'ErrorNotFound' }] };
+    }
+    return state;
+  },
+};
 
 export default function App() {
   const [fontsLoaded, fontError] = useFonts();
@@ -50,11 +69,13 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
-        <NavigationContainer ref={navigationRef}>
+        <NavigationContainer ref={navigationRef} linking={linking}>
           <RootNavigator />
         </NavigationContainer>
         {/* 시간표 더블탭 → 그 자리에서 바로 일정 등록 시트(화면 이동 없음) */}
         <GlobalAddScheduleSheet />
+        {/* 오프라인 감지 → ErrorNoInternet 으로 navigation.reset (side-effect only) */}
+        <OfflineGate />
         <StatusBar style="dark" />
       </QueryClientProvider>
     </SafeAreaProvider>
