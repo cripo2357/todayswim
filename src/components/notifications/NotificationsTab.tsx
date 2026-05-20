@@ -15,15 +15,17 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import type { SvgProps } from 'react-native-svg';
-import { CheckCircle2, BarChart3, X, Check, ChevronRight } from 'lucide-react-native';
+import { X, Check, ChevronRight } from 'lucide-react-native';
 import { tokens } from '@/styles/tokens';
 import { RULES, type MessageKind, type MessageParams } from '@/lib/messages/rules';
 import { BUNDLE_AVATARS, type AvatarId } from '@/lib/avatars';
 
-// 프로젝트 SVG 아이콘 — 스펙 명명 아이콘에 1:1 매핑되는 것만.
+// 프로젝트 SVG 아이콘 — 스펙 명명 아이콘에 1:1 매핑.
 import IconNewFeature from '@assets/icons/announcement/new-feature.svg';
 import IconFeatureUpdate from '@assets/icons/announcement/feature-update.svg';
 import IconEvent from '@assets/icons/announcement/event.svg';
+import IconApproved from '@assets/icons/announcement/approved.svg'; // [승인]
+import IconReport from '@assets/icons/announcement/report.svg'; // [리포트]
 import IconEnvelope from '@assets/icons/settings/envelope.svg'; // [초대]
 import IconCloseCircle from '@assets/icons/close-circle.svg'; // [반려]
 import IconGavel from '@assets/icons/settings/gavel.svg'; // [약관]
@@ -88,9 +90,8 @@ const SLOT_WELCOME = svg(IconOverjoyed); // [환영]
 const SLOT_SWIM = svg(IconSwim); // [수영]
 const SLOT_EVENT = svg(IconEvent); // [이벤트]
 const SLOT_PARTNER = svg(IconMegaphone); // [이벤트] 변형 — 제휴/광고용
-// ⚠️ 아직 프로젝트 SVG 없음 → lucide 폴백(추후 Figma export 시 교체):
-const SLOT_APPROVED = lucide(CheckCircle2); // [승인] (브랜드 컬러 체크 — Figma export 필요)
-const SLOT_REPORT = lucide(BarChart3); // [리포트] (월간 결산 — Figma export 필요)
+const SLOT_APPROVED = svg(IconApproved); // [승인]
+const SLOT_REPORT = svg(IconReport); // [리포트]
 
 // 공통 샘플 변수 (v0.5 어휘)
 const P = '강남 스포츠센터';
