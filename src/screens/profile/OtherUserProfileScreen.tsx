@@ -434,6 +434,7 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.color.white,
     borderRadius: 32,
     padding: 16,
+    paddingBottom: 32,
     alignItems: 'center',
   },
   // Figma 172:10637 / 10715 / 10640 / 10641 — 계층별 간격
