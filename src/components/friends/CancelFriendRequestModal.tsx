@@ -3,13 +3,13 @@
 // + 취소(pd-byellow + black 텍스트) 버튼 + "나중에 결정하겠습니다" 텍스트 버튼.
 // (수영 일정 초대 취소(230:4481)는 빨강 CTA — 일정엔 영향 더 큰 destructive로 구분.)
 // 호출처: OtherUserProfileScreen 의 outgoing 상태 CTA 탭.
-// 일러스트: assets/illustrations/cancel-friend-request.svg (Figma 228:3915 export).
+// 일러스트: FriendRequestSentModal(169:5727)과 동일 자산(friend-request-sent.svg) 공유 — 사용자 확인.
 
 import React from 'react';
 import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
 import { XCircle, Hourglass } from 'lucide-react-native';
 import { tokens } from '@/styles/tokens';
-import IllustCancel from '@assets/illustrations/cancel-friend-request.svg';
+import IllustCancel from '@assets/illustrations/friend-request-sent.svg';
 
 export function CancelFriendRequestModal({
   visible,
@@ -89,8 +89,8 @@ const styles = StyleSheet.create({
     gap: 24,
     alignItems: 'center',
   },
-  // Figma 228:3915 — 311x204
-  illustWrap: { width: '100%', aspectRatio: 311 / 204 },
+  // friend-request-sent.svg viewBox 343x226 (FriendRequestSentModal과 동일 자산)
+  illustWrap: { width: '100%', aspectRatio: 343 / 226 },
   textGroup: { gap: 12, alignItems: 'center', alignSelf: 'stretch' },
   title: {
     fontFamily: tokens.font.sansBold,
