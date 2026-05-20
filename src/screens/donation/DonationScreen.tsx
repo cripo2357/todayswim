@@ -66,6 +66,20 @@ export function DonationScreen() {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [hideId, setHideId] = React.useState<string | null>(null);
 
+  // ScrollView 명시적 스크롤 — focus 시 본인 카드 y를 측정해 직접 scrollTo
+  // (paddingBottom 만으론 RN의 자동 키보드 스크롤이 Android에서 거의 안 동작).
+  const scrollRef = React.useRef<ScrollView>(null);
+  const selfCardYRef = React.useRef<number>(0);
+  const scrollToSelfCard = React.useCallback(() => {
+    // 키보드 애니메이션 끝나는 시점(약 150ms)에 스크롤. 80px 위에 여백 둠.
+    setTimeout(() => {
+      scrollRef.current?.scrollTo({
+        y: Math.max(0, selfCardYRef.current - 80),
+        animated: true,
+      });
+    }, 150);
+  }, []);
+
   // 키보드 회피 — 인라인 textarea 편집 시 키보드가 본인 카드를 가리지 않도록
   // ScrollView contentContainerStyle.paddingBottom 을 키보드 높이만큼 늘려서
   // focus된 TextInput 까지 자동 스크롤 가능하게 함(RN의 기본 keyboardOnFocus
@@ -127,10 +141,11 @@ export function DonationScreen() {
       </View>
 
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={[
           styles.scroll,
-          // 키보드 올라오면 그만큼 추가 여백 — 본인 카드 textarea가 키보드에
-          // 가려지지 않고 자동 스크롤로 visible 영역으로 올라옴.
+          // 키보드 올라오면 그만큼 추가 여백 — scrollTo 가 본인 카드를 충분히
+          // 위로 올릴 수 있는 contents 길이 확보용.
           kbHeight > 0 ? { paddingBottom: 24 + kbHeight } : null,
         ]}
         showsVerticalScrollIndicator={false}
@@ -218,6 +233,11 @@ export function DonationScreen() {
                 setEditingId(null);
               }}
               onHide={() => setHideId(item.id)}
+              onLayoutSelf={(y) => {
+                // 본인 카드만 y 저장(다른 카드는 무시).
+                if (item.mine) selfCardYRef.current = y;
+              }}
+              onFocusInput={scrollToSelfCard}
             />
           ))}
           {items.length === 0 ? (
@@ -246,6 +266,8 @@ function DonationItemCard({
   onCancelEdit,
   onSaveEdit,
   onHide,
+  onLayoutSelf,
+  onFocusInput,
 }: {
   item: DonationItem;
   editing: boolean;
@@ -253,6 +275,10 @@ function DonationItemCard({
   onCancelEdit: () => void;
   onSaveEdit: (msg: string) => Promise<void>;
   onHide: () => void;
+  /** 본인 카드만 y 좌표 보고 — 부모가 키보드 회피 스크롤에 사용. */
+  onLayoutSelf?: (y: number) => void;
+  /** TextInput focus 시 부모가 본인 카드까지 scrollTo. */
+  onFocusInput?: () => void;
 }) {
   const [draft, setDraft] = React.useState(item.message);
 
@@ -264,7 +290,10 @@ function DonationItemCard({
   const canSave = trimmed.length > 0 && trimmed.length <= MAX_LEN;
 
   return (
-    <View style={[styles.card, FIGMA_SHADOW_MD]}>
+    <View
+      style={[styles.card, FIGMA_SHADOW_MD]}
+      onLayout={(e) => onLayoutSelf?.(e.nativeEvent.layout.y)}
+    >
       <View style={styles.avatarWrap}>
         <Avatar
           photoUri={item.avatar}
@@ -293,6 +322,7 @@ function DonationItemCard({
                 textAlignVertical="top"
                 maxLength={MAX_LEN}
                 autoFocus
+                onFocus={onFocusInput}
               />
               <View style={styles.editCounterRow}>
                 <Text style={styles.editCounter}>
