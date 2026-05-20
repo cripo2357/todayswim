@@ -40,7 +40,7 @@ import {
   buildPoolProfileStacks,
   type PoolStack,
 } from '@/lib/mapProfileStacks';
-import { usePrefs } from '@/store/prefs';
+import { usePrefs, MAP_FRIEND_HORIZON_MS } from '@/store/prefs';
 import {
   MapProfileStack,
   STACK_W,
@@ -162,7 +162,8 @@ export function MapScreen() {
   const geo = useGeolocation({ auto: true });
   // 지도 시작 위치(null=내 위치, 그 외=즐겨찾기 poolId) + 친구 스택 표시 설정
   const mapStartPoolId = usePrefs((s) => s.mapStartPoolId);
-  const showStack = usePrefs((s) => s.showMapFriendStack);
+  const mapFriendHorizon = usePrefs((s) => s.mapFriendHorizon);
+  const showStack = mapFriendHorizon !== 'off';
 
   // 카메라 추적 — 두 가지로 분리해서 불필요한 리렌더 방지:
   // (1) cameraRef: 최신 카메라 (lat/lng/zoom). 매 onCameraChanged마다 갱신. 리렌더 X.
@@ -247,13 +248,13 @@ export function MapScreen() {
     [schedules],
   );
 
-  // 풀별 프로필 스택 — 나/친구 중 24h 내 진행예정 일정자(Figma 173:13595 등).
+  // 풀별 프로필 스택 — 나/친구 중 노출창(슬롯 시작 N 전 ~ 종료) 내 일정자.
+  // N = prefs.mapFriendHorizon ('d1'/'h12'/'h6'). 'off'면 스택 전체 미표시(나 포함).
   // Phase-1: 친구 일정 소스 = 기존 participant 데이터(MOCK_OTHER_SCHEDULES),
   // 노출/차단은 useFriends 경유. 서버 친구 일정 적재는 Phase-2 갭.
   const mySchedules = useSwimSchedules((s) => s.schedules);
   const friends = useFriends((s) => s.friends);
   const blocked = useFriends((s) => s.blocked);
-  // 설정 '지도에 수영 예정 친구 보기'=안 보기면 스택 전체 미표시(나 포함).
   const poolStacks = React.useMemo<Map<string, PoolStack>>(
     () =>
       showStack
@@ -269,9 +270,10 @@ export function MapScreen() {
             mySwimClasses: profile?.swimClasses ?? [],
             showMyLessons: profile?.showSwimClasses ?? true,
             otherLessons: MOCK_OTHER_LESSONS,
+            horizonMs: MAP_FRIEND_HORIZON_MS[mapFriendHorizon],
           })
         : new Map(),
-    [pools, profile, mySchedules, friends, blocked, showStack],
+    [pools, profile, mySchedules, friends, blocked, showStack, mapFriendHorizon],
   );
 
   /**
@@ -441,7 +443,8 @@ export function MapScreen() {
 
           // 클러스터 마커 — Figma 38:1866 (≤2자리) / 38:1870 (3자리+)
           // 카운트는 caption으로 marker 중앙에 겹침 (align Center). textSize는 자릿수 기준 가변.
-          if ((c.properties as any).cluster) {
+          // .cluster는 ClusterFeature에만 있는 flag — TS 좁힘용 명시적 형 가드.
+          if ('cluster' in c.properties && c.properties.cluster) {
             const props = c.properties as Supercluster.ClusterProperties;
             // 필터 비활성 시 supercluster의 point_count 그대로 사용 (O(1)).
             // 필터 활성 시에만 leaves 순회해서 매칭 카운트 (비용 큼).

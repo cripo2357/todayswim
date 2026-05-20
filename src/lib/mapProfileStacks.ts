@@ -1,8 +1,9 @@
 // 지도 수영장 마커 옆 프로필 스택 — 표시 대상 산출(순수 로직).
 //
 // 규칙 (사용자 확정 2026-05-18 / Figma 173:13595·13735·13797):
-//  · 노출 시간 기준 = 일정 "시작 24시간 전 ~ 종료시각" 사이(사용자 확정).
-//    즉 now ∈ [slotStart - 24h, slotEnd] 인 일정 보유자.
+//  · 노출 시간 기준 = 일정 "시작 N 전 ~ 종료시각" 사이(N = 사용자 설정).
+//    기본 24h(prefs.mapFriendHorizon = 'd1'). 12h·6h 옵션은 prefs로만 조절,
+//    여기는 horizonMs 파라미터로 받아 적용. 즉 now ∈ [slotStart − horizonMs, slotEnd].
 //  · 대상 일정 = 수영 일정 + (공개)수영 레슨. 한 사용자는 일정·레슨 통틀어
 //    가장 임박한(시작 빠른) 1건의 수영장에만 1회 배치(2곳 이상 노출 금지).
 //    레슨은 주간 반복 → 다음 회차로 환산해 동일 노출창 적용.
@@ -47,7 +48,8 @@ export interface PoolStack {
 // 성능 완화 — 29→9 (map_stack_perf 메모리: 캡처 비용 = 아바타수×풀수).
 export const STACK_MAX = 9;
 
-const H24_MS = 24 * 60 * 60 * 1000;
+/** 기본 노출 horizon = 1일. prefs.mapFriendHorizon 미전달 시 폴백. */
+const DEFAULT_HORIZON_MS = 24 * 60 * 60 * 1000;
 
 /** "YYYY-MM-DD" + "HH:MM" → epoch ms (로컬). swimSchedule.isSchedulePast 와 동일 파싱. */
 function slotMs(date: string, hhmm: string): number {
@@ -81,6 +83,8 @@ export interface BuildStacksInput {
   otherLessons?: OtherLesson[];
   /** 기준 시각(ms). 미지정 시 Date.now(). */
   now?: number;
+  /** 노출창 시작 = 슬롯 시작 − horizonMs. 미지정 시 1일(24h). */
+  horizonMs?: number;
 }
 
 interface Cand {
@@ -98,14 +102,15 @@ export function buildPoolProfileStacks(
   input: BuildStacksInput,
 ): Map<string, PoolStack> {
   const now = input.now ?? Date.now();
+  const horizonMs = input.horizonMs ?? DEFAULT_HORIZON_MS;
   const poolIds = new Set(input.pools.map((p) => p.id));
 
   // userId 당 가장 임박한 후보 1건만 유지(여러 슬롯 → 최임박 풀 배치).
   const best = new Map<string, Cand>();
   const consider = (c: Cand) => {
     if (!poolIds.has(c.poolId)) return; // 마커 없는 풀은 무시
-    // 노출창: 시작 24h 전 ~ 종료시각 (사용자 확정).
-    if (now < c.startMs - H24_MS || now > c.endMs) return;
+    // 노출창: 시작 horizonMs 전 ~ 종료시각 (사용자 설정).
+    if (now < c.startMs - horizonMs || now > c.endMs) return;
     const prev = best.get(c.userId);
     if (!prev || c.startMs < prev.startMs) best.set(c.userId, c);
   };
