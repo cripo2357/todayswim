@@ -300,6 +300,7 @@ export function SettingsScreen() {
           <Row
             icon={<IconQuestion width={24} height={24} />}
             label="자주 묻는 질문"
+            onPress={() => navigation.navigate('Faq')}
           />
           <Row
             icon={<IconEnvelope width={24} height={24} />}

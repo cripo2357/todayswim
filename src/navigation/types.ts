@@ -63,6 +63,10 @@ export type RootStackParamList = {
   // 기능은 모두 설정으로 이관(수영장 추가/수정 요청·공지사항·의견 메일).
   Announcements: undefined;
 
+  // 자주 묻는 질문 (설정 > 헬프 센터 > 자주 묻는 질문). Figma 239:3560.
+  // 일러스트 + 메일 CTA + 단일오픈 아코디언 리스트. 데이터=Supabase faqs(0071).
+  Faq: undefined;
+
   // 후원으로 서비스 응원하기 (설정 > 헬프 센터 > 후원으로 서비스 응원하기).
   // Figma 238:8643. 카카오뱅크 계좌 안내 + 응원 메시지 목록 + 본인 작성/수정/비공개.
   Donation: undefined;

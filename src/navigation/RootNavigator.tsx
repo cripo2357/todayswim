@@ -8,6 +8,7 @@ import { ScheduleViewScreen } from '@/screens/schedule/ScheduleViewScreen';
 import { PoolNameScreen } from '@/screens/pool-submit/PoolNameScreen';
 import { PoolDoneScreen } from '@/screens/pool-submit/PoolDoneScreen';
 import { AnnouncementsScreen } from '@/screens/announcement/AnnouncementsScreen';
+import { FaqScreen } from '@/screens/faq/FaqScreen';
 import { DonationScreen } from '@/screens/donation/DonationScreen';
 import { PoolFilterScreen } from '@/screens/filter/PoolFilterScreen';
 import { PoolListScreen } from '@/screens/pool-list/PoolListScreen';
@@ -92,6 +93,7 @@ export function RootNavigator() {
       />
 
       <Stack.Screen name="Announcements" component={AnnouncementsScreen} />
+      <Stack.Screen name="Faq" component={FaqScreen} />
       <Stack.Screen name="Donation" component={DonationScreen} />
 
       <Stack.Screen name="PoolFilter" component={PoolFilterScreen} />
