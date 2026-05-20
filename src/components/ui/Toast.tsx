@@ -1,12 +1,13 @@
 // 공통 토스트 카드 — Figma 225:3670.
 //
 // 흰 카드(p12, r16) + 1px pd-gray 보더. 콘텐츠 영역(좌측 flex) + 선택 액션
-// 버튼(pd-byellow) + 선택 닫기 X. 카드 자체는 presentation만 — 표시/숨김·
-// 위치·타이머는 호출부 책임([shared_ui_library] 패턴).
+// 버튼(pd-byellow). 카드 자체는 presentation만 — 표시/숨김·위치·타이머는
+// 호출부 책임([shared_ui_library] 패턴). 닫기 X는 디자인에서 제외(액션 버튼
+// 또는 auto-dismiss로 닫음).
 //
 // 사용 예
-//   <Toast title="..." message="..." onClose={...} />
-//   <Toast title="..." action={{ label: '확인', onPress: ... }} onClose={...} />
+//   <Toast title="..." message="..." />
+//   <Toast title="..." action={{ label: '확인', onPress: ... }} />
 //
 // 향후 글로벌 호출이 필요해지면 ToastProvider/useToast 레이어를 같은 파일에
 // 추가(현재는 카드 1종으로 충분).
@@ -21,7 +22,6 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { tokens } from '@/styles/tokens';
-import IconClose from '@assets/icons/close.svg';
 
 export interface ToastAction {
   label: string;
@@ -32,7 +32,6 @@ export function Toast({
   title,
   message,
   action,
-  onClose,
   style,
 }: {
   title: string;
@@ -40,8 +39,6 @@ export function Toast({
   message?: string;
   /** 우측 노란 버튼 — 없으면 표시 X */
   action?: ToastAction;
-  /** 닫기(X) 콜백 — 없으면 X 표시 X */
-  onClose?: () => void;
   /** 위치 지정(absolute 등). 카드 자체는 width 미지정 — caller가 부여. */
   style?: StyleProp<ViewStyle>;
 }) {
@@ -70,16 +67,6 @@ export function Toast({
           <Text style={styles.actionLabel} numberOfLines={1}>
             {action.label}
           </Text>
-        </Pressable>
-      ) : null}
-      {onClose ? (
-        <Pressable
-          onPress={onClose}
-          hitSlop={8}
-          accessibilityRole="button"
-          accessibilityLabel="닫기"
-        >
-          <IconClose width={20} height={20} />
         </Pressable>
       ) : null}
     </View>
