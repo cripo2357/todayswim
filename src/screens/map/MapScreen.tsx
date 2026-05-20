@@ -35,6 +35,7 @@ import { useProfile } from '@/store/profile';
 import { useNotifications } from '@/store/notifications';
 import { useSwimSchedules } from '@/store/swimSchedule';
 import { useFriends } from '@/store/friends';
+import { useFavorites } from '@/store/favorites';
 import { MOCK_OTHER_LESSONS, MOCK_OTHER_SCHEDULES } from '@/lib/mockData';
 // MapScreen 한정 — useOtherSchedules 사용 금지 ([[naver_map_oob_mock_only]]).
 // 2026-05-20 회귀: 6배치(f529ecf)에서 useOtherSchedules 도입 시 naver-map
@@ -63,6 +64,11 @@ import { tokens } from '@/styles/tokens';
 const MARKER_BIG           = require('@assets/markers/marker-big.png');
 const MARKER_SMALL         = require('@assets/markers/marker-small.png');
 const MARKER_HOTEL         = require('@assets/markers/marker-hotel.png');
+// 즐겨찾기 풀 마커 — 본체 좌상단에 하트가 베이크된 PNG. 본체 크기는 원본과 동일,
+// PNG 자체가 하트만큼 좌·상으로 더 큼. anchor를 본체 중앙(=실제 풀 좌표)으로 보정.
+const MARKER_BIG_FAV       = require('@assets/markers/marker-big-fav.png');
+const MARKER_SMALL_FAV     = require('@assets/markers/marker-small-fav.png');
+const MARKER_HOTEL_FAV     = require('@assets/markers/marker-hotel-fav.png');
 const MARKER_ME            = require('@assets/markers/marker-me.png'); // 내 위치 노란 링(로그인)
 const MARKER_ME_GUEST      = require('@assets/markers/marker-me-guest.png'); // 로그아웃(노란 원+검은 팔벌린 사람 baked)
 const MARKER_CLUSTER       = require('@assets/markers/cluster.png');
@@ -294,6 +300,7 @@ export function MapScreen() {
   const mySchedules = useSwimSchedules((s) => s.schedules);
   const friends = useFriends((s) => s.friends);
   const blocked = useFriends((s) => s.blocked);
+  const favoriteIds = useFavorites((s) => s.ids);
   const otherSchedules = MOCK_OTHER_SCHEDULES;
   // 줌 < STACK_MIN_ZOOM 이면 렌더 단계에서 어차피 잘리는데, 그 줌대에서 사용자
   // 가 panning 하는 동안에도 useMemo가 도는 건 손해 — deps만 닿으면 1000+ 후보
@@ -560,8 +567,40 @@ export function MapScreen() {
           const isSelected = p.id === selectedPoolId;
           const isHotel = !!p.isHotelPool;
           const isBig = (p.poolLength ?? 0) >= 50;
-          // 호텔 우선 → 50m 큰 풀 → 25m 작은 풀
-          const img = isHotel ? MARKER_HOTEL : isBig ? MARKER_BIG : MARKER_SMALL;
+          const isFav = favoriteIds.includes(p.id);
+          // 호텔 우선 → 50m 큰 풀 → 25m 작은 풀.
+          // 즐겨찾기 시 하트 베이크 변종. 하트는 본체 좌상단으로 튀어나와 있어서
+          // anchor를 본체 중앙(=풀 좌표)으로 보정해야 지도 위치와 정확히 일치.
+          // 본체는 원본과 동일 크기, PNG가 하트만큼만 좌·상으로 더 큼.
+          let img: number;
+          let mw: number;
+          let mh: number;
+          let anchorX: number;
+          let anchorY: number;
+          if (isFav) {
+            if (isHotel) {
+              img = MARKER_HOTEL_FAV;
+              mw = 51; mh = 48;
+              // 본체 47×47, PNG 51×48 → 본체 시작 (4,1), 본체 중앙 (27.5, 24.5)
+              anchorX = 27.5 / 51; anchorY = 24.5 / 48;
+            } else if (isBig) {
+              img = MARKER_BIG_FAV;
+              mw = 58; mh = 55;
+              // 본체 50×50, PNG 58×55 → 본체 시작 (8,5), 본체 중앙 (33, 30)
+              anchorX = 33 / 58; anchorY = 30 / 55;
+            } else {
+              img = MARKER_SMALL_FAV;
+              mw = 52; mh = 48;
+              // 본체 47×47, PNG 52×48 → 본체 시작 (5,1), 본체 중앙 (28.5, 24.5)
+              anchorX = 28.5 / 52; anchorY = 24.5 / 48;
+            }
+          } else {
+            img = isHotel ? MARKER_HOTEL : isBig ? MARKER_BIG : MARKER_SMALL;
+            const s = isBig && !isHotel ? 50 : 47;
+            mw = s; mh = s;
+            anchorX = 0.5; anchorY = 0.5;
+          }
+          // 스택 오버레이 위치 보정용 — 본체 사이즈 (PNG가 아닌 시각상 핀 크기).
           const size = isBig && !isHotel ? 50 : 47;
           const stack = poolStacks.get(p.id);
           // 핀(기존 그대로) + 같은 좌표에 스택 오버레이를 우측에 별도로 얹음.
@@ -573,9 +612,9 @@ export function MapScreen() {
                 latitude={p.lat}
                 longitude={p.lng}
                 image={img}
-                width={size}
-                height={size}
-                anchor={{ x: 0.5, y: 0.5 }}
+                width={mw}
+                height={mh}
+                anchor={{ x: anchorX, y: anchorY }}
                 zIndex={isSelected ? 10 : 1}
                 caption={{
                   text: p.name,
