@@ -31,7 +31,7 @@ import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { ConfirmLogoutModal } from '@/components/settings/ConfirmLogoutModal';
 import { WithdrawFlowModal } from '@/components/settings/WithdrawFlowModal';
 import { tokens } from '@/styles/tokens';
-import BrandWordmark from '@assets/illustrations/wordmark-poolsday-light.svg';
+import BrandWordmark from '@assets/illustrations/wordmark-poolsday-color.svg';
 import { WordmarkDroplets } from '@/components/ui/WordmarkDroplets';
 import IconProfile from '@assets/icons/settings/profile.svg';
 // 프로필과 일정 공유 행 아이콘 변경(Figma 163:6666 → share, baked pd-mint)
@@ -318,7 +318,16 @@ export function SettingsScreen() {
         <View style={styles.footer}>
           <View style={styles.wordmarkBox}>
             <BrandWordmark width={256} height={152} />
-            <WordmarkDroplets width={256} height={152} />
+            <WordmarkDroplets
+              width={256}
+              height={152}
+              color={tokens.color.pdMint}
+              offsetX={-10}
+              offsetY={-41}
+              count={3}
+              duration={1500}
+              scale={1.15}
+            />
           </View>
           <View style={styles.footerText}>
             <Text style={styles.version}>Pool’s day v1.0.0</Text>

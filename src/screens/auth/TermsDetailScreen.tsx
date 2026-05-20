@@ -33,7 +33,14 @@ export function TermsDetailScreen() {
           {/* 워드마크 apostrophe(#EAFF00)에서 노란 쉼표 물방울이 솟아오름 (스플래시와 동일 모션). */}
           <View style={styles.wordmarkBox}>
             <BrandWordmark width={256} height={152} />
-            <WordmarkDroplets width={256} height={152} />
+            <WordmarkDroplets
+              width={256}
+              height={152}
+              offsetX={-27}
+              offsetY={-30}
+              count={5}
+              duration={1500}
+            />
           </View>
         </View>
 

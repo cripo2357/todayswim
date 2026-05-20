@@ -13,6 +13,15 @@ interface Props {
   width: number;
   height: number;
   color?: string;
+  // apostrophe 자동 정렬 위치에서의 미세 보정(px). 화면별 시각 보정용.
+  offsetX?: number;
+  offsetY?: number;
+  // 동시에 떠 있는 droplet 개수. 줄이면 stream이 듬성해짐.
+  count?: number;
+  // 한 droplet이 시작→소멸까지 걸리는 시간(ms). 줄이면 빠르게 올라감.
+  duration?: number;
+  // 쉼표 크기 배율. 1 = 기본(14x21), 1.2 = 살짝 키움.
+  scale?: number;
 }
 
 // light 워드마크 viewBox 343x153, apostrophe path(#EAFF00) 영역 x:255~299 y:19~68
@@ -20,11 +29,11 @@ interface Props {
 const APOSTROPHE_X_RATIO = 277 / 343;
 const APOSTROPHE_Y_RATIO = 44 / 153;
 
-// 스플래시와 동일 크기/타이밍. apostrophe 자체 표시 크기에 비해 작아 stream 느낌.
-const DROPLET_W = 14;
-const DROPLET_H = 21;
-const DROPLET_COUNT = 8;
-const RISE_DURATION = 2400;
+// 스플래시와 동일 기본 크기/타이밍. apostrophe 자체 표시 크기에 비해 작아 stream 느낌.
+const BASE_DROPLET_W = 14;
+const BASE_DROPLET_H = 21;
+const DEFAULT_COUNT = 8;
+const DEFAULT_DURATION = 2400;
 
 interface Droplet {
   id: number;
@@ -37,16 +46,23 @@ export function WordmarkDroplets({
   width,
   height,
   color = tokens.color.pdByellow,
+  offsetX = 0,
+  offsetY = 0,
+  count = DEFAULT_COUNT,
+  duration = DEFAULT_DURATION,
+  scale = 1,
 }: Props) {
-  const xCenter = width * APOSTROPHE_X_RATIO;
-  const yStart = height * APOSTROPHE_Y_RATIO;
+  const dropletW = BASE_DROPLET_W * scale;
+  const dropletH = BASE_DROPLET_H * scale;
+  const xCenter = width * APOSTROPHE_X_RATIO + offsetX;
+  const yStart = height * APOSTROPHE_Y_RATIO + offsetY;
   // 워드마크 wrap 상단 살짝 위로 사라짐. 너무 멀리 솟구치면 부모 다른 형제와 겹침.
-  const yEnd = -24;
+  const yEnd = -24 + offsetY;
 
   const dropletsRef = React.useRef<Droplet[]>(
-    Array.from({ length: DROPLET_COUNT }, (_, i) => ({
+    Array.from({ length: count }, (_, i) => ({
       id: i,
-      delay: Math.round((RISE_DURATION / DROPLET_COUNT) * i),
+      delay: Math.round((duration / count) * i),
       y: new Animated.Value(yStart),
       opacity: new Animated.Value(0),
     })),
@@ -58,24 +74,24 @@ export function WordmarkDroplets({
       const rise = Animated.parallel([
         Animated.timing(d.y, {
           toValue: yEnd,
-          duration: RISE_DURATION,
+          duration,
           easing: Easing.linear,
           useNativeDriver: true,
         }),
         Animated.sequence([
           Animated.timing(d.opacity, {
             toValue: 0.95,
-            duration: RISE_DURATION * 0.2,
+            duration: duration * 0.2,
             useNativeDriver: true,
           }),
           Animated.timing(d.opacity, {
             toValue: 0.95,
-            duration: RISE_DURATION * 0.5,
+            duration: duration * 0.5,
             useNativeDriver: true,
           }),
           Animated.timing(d.opacity, {
             toValue: 0,
-            duration: RISE_DURATION * 0.3,
+            duration: duration * 0.3,
             useNativeDriver: true,
           }),
         ]),
@@ -98,7 +114,7 @@ export function WordmarkDroplets({
     });
     animations.forEach((a) => a.start());
     return () => animations.forEach((a) => a.stop());
-  }, [droplets, yStart, yEnd]);
+  }, [droplets, yStart, yEnd, duration]);
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -108,13 +124,15 @@ export function WordmarkDroplets({
           style={[
             styles.droplet,
             {
-              left: xCenter - DROPLET_W / 2,
+              left: xCenter - dropletW / 2,
+              width: dropletW,
+              height: dropletH,
               opacity: d.opacity,
               transform: [{ translateY: d.y }],
             },
           ]}
         >
-          <DropletComma width={DROPLET_W} height={DROPLET_H} color={color} />
+          <DropletComma width={dropletW} height={dropletH} color={color} />
         </Animated.View>
       ))}
     </View>
@@ -125,7 +143,5 @@ const styles = StyleSheet.create({
   droplet: {
     position: 'absolute',
     top: 0,
-    width: DROPLET_W,
-    height: DROPLET_H,
   },
 });
