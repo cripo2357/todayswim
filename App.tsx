@@ -56,6 +56,9 @@ export default function App() {
     useSwimSchedules.getState().hydrate();
     usePrefs.getState().hydrate();
     useFavorites.getState().hydrate();
+    // P2: mock 친구 61명을 서버 profiles에 한 번만 시드(best-effort, silent).
+    // mockData.ts 변경 시 seedMockProfiles의 SEED_KEY versioning으로 재시드.
+    void import('@/lib/seedMockProfiles').then((m) => m.seedMockProfilesOnce());
   }, []);
 
   if (!fontsLoaded && !fontError) {

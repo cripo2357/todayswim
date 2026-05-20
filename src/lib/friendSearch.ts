@@ -9,33 +9,17 @@
 import { MOCK_FRIENDS, MOCK_NON_FRIENDS, type MockAccount } from '@/lib/mockData';
 import type { AvatarId } from '@/lib/avatars';
 
+// 친구코드 유틸 단일 출처는 lib/friendCode. 외부 호환성 위해 re-export.
+export { accountCode, sanitizeCode } from '@/lib/friendCode';
+
 export interface FriendSearchUser {
   id: string;
   name: string;
   nickname: string;
   status: string;
   avatar: AvatarId;
-  /** 6자리 계정 ID — Phase-1 결정적 파생(실 genProfileId는 Phase-2) */
+  /** 6자리 계정 ID. P2 진입(2026-05-20) 후 mock id 자체가 친구코드 — `code = id`. */
   code: string;
-}
-
-// genProfileId(store/profile)와 동일 세트 — 혼동문자(0/O/1/I/L) 제외.
-const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-
-/** 계정 id → 결정적 6자리 코드. Phase-1 ID 검색 데모용(실 ID는 Phase-2). */
-export function accountCode(id: string): string {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < id.length; i++) {
-    h ^= id.charCodeAt(i);
-    h = Math.imul(h, 0x01000193);
-  }
-  let x = h >>> 0;
-  let s = '';
-  for (let i = 0; i < 6; i++) {
-    s += CODE_ALPHABET[x % CODE_ALPHABET.length];
-    x = (Math.floor(x / CODE_ALPHABET.length) + (i + 1) * 0x9e3779b1) >>> 0;
-  }
-  return s;
 }
 
 const ALL: MockAccount[] = [...MOCK_FRIENDS, ...MOCK_NON_FRIENDS];
@@ -58,7 +42,8 @@ function toUser(a: MockAccount): FriendSearchUser {
     nickname: a.nickname,
     status: a.status,
     avatar: a.avatar,
-    code: accountCode(a.id),
+    // P2 진입 후 mock id = 친구코드라 둘이 같다.
+    code: a.id,
   };
 }
 
@@ -93,17 +78,10 @@ export function findByCode(
   if (c.length !== 6) return null;
   for (const a of ALL) {
     if (!eligible(a, o)) continue;
-    if (accountCode(a.id) === c) return toUser(a);
+    // mock id = 친구코드라 직접 비교(대문자 통일).
+    if (a.id.toUpperCase() === c) return toUser(a);
   }
   return null;
 }
 
-/** ID 입력 정규화 — CODE_ALPHABET 문자만, 대문자, 최대 6자리. */
-export function sanitizeCode(v: string): string {
-  return v
-    .toUpperCase()
-    .split('')
-    .filter((ch) => CODE_ALPHABET.includes(ch))
-    .join('')
-    .slice(0, 6);
-}
+// sanitizeCode는 lib/friendCode 단일 출처 → 파일 상단에서 re-export.

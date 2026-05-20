@@ -1,11 +1,16 @@
-// 더미 데이터 (Phase 1 목업) — 친구 10 / 친구아닌 계정 10 / 수영일정 50.
+// 더미 데이터 (Phase 1 목업) — 친구 / 친구아닌 계정 / 수영일정.
 //
-// 백엔드(친구 시스템·Supabase) 연동 전까지 화면을 채우는 용도.
+// P2 진입(2026-05-20) 시 모든 mock 계정 id를 **6자리 친구코드**로 통일
+// (accountCode 결정적 해시 적용). 이전에는 'fr1'/'nf1' 같은 임의 string이라
+// 서버 profiles 인프라(0047~)와 매핑이 안 됐음 — 통일 후 mock 친구 모두
+// 클라 자동 시드(seedMockProfiles)로 실제 서버 row가 됨.
+//
 // FriendsTab / InviteFriendsScreen / 달력 store(useSwimSchedules) 에서 사용.
 
 import type { MySwimSchedule, ScheduleVisibility } from '@/store/swimSchedule';
 import type { AvatarId } from '@/lib/avatars';
 import type { DayOfWeek } from '@/types/schedule';
+import { accountCode } from '@/lib/friendCode';
 
 export interface MockAccount {
   id: string;
@@ -18,18 +23,25 @@ export interface MockAccount {
 }
 
 // ── 친구 10명 (기본) ──────────────────────────────────────────
-const BASE_FRIENDS: MockAccount[] = [
-  { id: 'fr1', name: '강두형', nickname: '물개왕', status: '오늘도 1km 완영', code: 'POOL-1A2B', avatar: 'avatar-male-1' },
-  { id: 'fr2', name: '이수진', nickname: '자유형장인', status: '접영 연습 중', code: 'POOL-3C4D', avatar: 'avatar-female-1' },
-  { id: 'fr3', name: 'Joshua Smith', nickname: 'josh', status: '수영 더 열심히', code: 'POOL-5E6F', avatar: 'avatar-male-2' },
-  { id: 'fr4', name: '박민재', nickname: '새벽수영러', status: '아침 6시 고정', code: 'POOL-7G8H', avatar: 'avatar-male-3' },
-  { id: 'fr5', name: 'Alice Kim', nickname: 'ally', status: '평영이 제일 좋아', code: 'POOL-9I0J', avatar: 'avatar-female-2' },
-  { id: 'fr6', name: '정해린', nickname: '돌고래', status: '대회 준비 중 🏊', code: 'POOL-1K2L', avatar: 'avatar-female-3' },
-  { id: 'fr7', name: '최우진', nickname: '버터플라이', status: '접영 200m 도전', code: 'POOL-3M4N', avatar: 'avatar-male-4' },
-  { id: 'fr8', name: 'Daniel Park', nickname: 'danp', status: '주 5회 수영', code: 'POOL-5O6P', avatar: 'avatar-male-5' },
-  { id: 'fr9', name: '한지우', nickname: '잠수왕', status: '숨 참기 2분', code: 'POOL-7Q8R', avatar: 'avatar-female-4' },
-  { id: 'fr10', name: '오세영', nickname: '수영바보', status: '수영장이 내 집', code: 'POOL-9S0T', avatar: 'avatar-male-6' },
+// id = accountCode(seed) — deterministic 6자리 친구코드. code 컬럼은 표시용
+// 흔적이지만 사용처 없음(friendSearch.toUser에서 code = a.id로 통일).
+const BASE_FRIENDS_RAW: Array<Omit<MockAccount, 'id' | 'code'> & { _seed: string }> = [
+  { _seed: 'fr1', name: '강두형', nickname: '물개왕', status: '오늘도 1km 완영', avatar: 'avatar-male-1' },
+  { _seed: 'fr2', name: '이수진', nickname: '자유형장인', status: '접영 연습 중', avatar: 'avatar-female-1' },
+  { _seed: 'fr3', name: 'Joshua Smith', nickname: 'josh', status: '수영 더 열심히', avatar: 'avatar-male-2' },
+  { _seed: 'fr4', name: '박민재', nickname: '새벽수영러', status: '아침 6시 고정', avatar: 'avatar-male-3' },
+  { _seed: 'fr5', name: 'Alice Kim', nickname: 'ally', status: '평영이 제일 좋아', avatar: 'avatar-female-2' },
+  { _seed: 'fr6', name: '정해린', nickname: '돌고래', status: '대회 준비 중 🏊', avatar: 'avatar-female-3' },
+  { _seed: 'fr7', name: '최우진', nickname: '버터플라이', status: '접영 200m 도전', avatar: 'avatar-male-4' },
+  { _seed: 'fr8', name: 'Daniel Park', nickname: 'danp', status: '주 5회 수영', avatar: 'avatar-male-5' },
+  { _seed: 'fr9', name: '한지우', nickname: '잠수왕', status: '숨 참기 2분', avatar: 'avatar-female-4' },
+  { _seed: 'fr10', name: '오세영', nickname: '수영바보', status: '수영장이 내 집', avatar: 'avatar-male-6' },
 ];
+const BASE_FRIENDS: MockAccount[] = BASE_FRIENDS_RAW.map(({ _seed, ...rest }) => ({
+  ...rest,
+  id: accountCode(_seed),
+  code: accountCode(_seed),
+}));
 
 // 사당문화회관 오버플로우 테스트용 친구 30명 — 전원 1개 슬롯 참여 →
 // 참여자 "더보기" / 지도 "… more"(29 초과) 검증. 기존 GWANAK/RANGE
@@ -42,12 +54,13 @@ const TEST_AVATAR_IDS: AvatarId[] = [
 ];
 const SADANG_TEST_FRIENDS: MockAccount[] = Array.from({ length: 30 }, (_, i) => {
   const n = i + 11;
+  const id = accountCode(`fr${n}`);
   return {
-    id: `fr${n}`,
+    id,
     name: `테스트친구${n}`,
     nickname: `tester${n}`,
     status: '사당 13시 자유수영',
-    code: `POOL-T${String(n).padStart(3, '0')}`,
+    code: id,
     avatar: TEST_AVATAR_IDS[i % TEST_AVATAR_IDS.length],
   };
 });
@@ -57,34 +70,40 @@ export const MOCK_FRIENDS: MockAccount[] = [
   ...SADANG_TEST_FRIENDS,
 ];
 
-// ── 친구 아닌 계정 10개 ──────────────────────────────────────
-export const MOCK_NON_FRIENDS: MockAccount[] = [
-  { id: 'nf1', name: 'Bob Johnson', nickname: 'bobby', status: '수영 잘하고 싶다', code: 'POOL-AB12', avatar: 'avatar-male-2' },
-  { id: 'nf2', name: '김도윤', nickname: '초보수영', status: '발차기 연습 중', code: 'POOL-CD34', avatar: 'avatar-male-5' },
-  { id: 'nf3', name: 'Clara Garcia', nickname: 'clara', status: '물 무서워요', code: 'POOL-EF56', avatar: 'avatar-female-5' },
-  { id: 'nf4', name: '서지호', nickname: '주말수영', status: '주말에만 출몰', code: 'POOL-GH78', avatar: 'avatar-male-3' },
-  { id: 'nf5', name: 'Emma Lee', nickname: 'emma', status: '자유형 25m', code: 'POOL-IJ90', avatar: 'avatar-female-6' },
-  { id: 'nf6', name: '윤채원', nickname: '물방울', status: '수영 입문 1주차', code: 'POOL-KL12', avatar: 'avatar-female-2' },
-  { id: 'nf7', name: 'Frank Wong', nickname: 'frank', status: '레인 독차지 금지', code: 'POOL-MN34', avatar: 'avatar-male-6' },
-  { id: 'nf8', name: '임태현', nickname: '느림보', status: '천천히 오래', code: 'POOL-OP56', avatar: 'avatar-male-4' },
-  { id: 'nf9', name: 'Henry Martinez', nickname: 'henry', status: '@henrymartinez', code: 'POOL-QR78', avatar: 'avatar-female-6' },
-  { id: 'nf10', name: '배수아', nickname: '인어공주', status: '바다 수영 좋아', code: 'POOL-ST90', avatar: 'avatar-female-3' },
+// ── 친구 아닌 계정 ──────────────────────────────────────────
+// id = accountCode(seed). 'nf-id-7000234' seed의 accountCode 결과 그대로
+// ID 검색용(이전 주석의 "ABCD2E" 값 — 결정적이라 변경 없음).
+const NON_FRIENDS_RAW: Array<Omit<MockAccount, 'id' | 'code'> & { _seed: string }> = [
+  { _seed: 'nf1', name: 'Bob Johnson', nickname: 'bobby', status: '수영 잘하고 싶다', avatar: 'avatar-male-2' },
+  { _seed: 'nf2', name: '김도윤', nickname: '초보수영', status: '발차기 연습 중', avatar: 'avatar-male-5' },
+  { _seed: 'nf3', name: 'Clara Garcia', nickname: 'clara', status: '물 무서워요', avatar: 'avatar-female-5' },
+  { _seed: 'nf4', name: '서지호', nickname: '주말수영', status: '주말에만 출몰', avatar: 'avatar-male-3' },
+  { _seed: 'nf5', name: 'Emma Lee', nickname: 'emma', status: '자유형 25m', avatar: 'avatar-female-6' },
+  { _seed: 'nf6', name: '윤채원', nickname: '물방울', status: '수영 입문 1주차', avatar: 'avatar-female-2' },
+  { _seed: 'nf7', name: 'Frank Wong', nickname: 'frank', status: '레인 독차지 금지', avatar: 'avatar-male-6' },
+  { _seed: 'nf8', name: '임태현', nickname: '느림보', status: '천천히 오래', avatar: 'avatar-male-4' },
+  { _seed: 'nf9', name: 'Henry Martinez', nickname: 'henry', status: '@henrymartinez', avatar: 'avatar-female-6' },
+  { _seed: 'nf10', name: '배수아', nickname: '인어공주', status: '바다 수영 좋아', avatar: 'avatar-female-3' },
   // ── 테스트용: 이름에 'a' 포함 비친구 10명 (닉네임 검색 'a' 테스트) ──
-  { id: 'nf11', name: 'Aaron Lee', nickname: 'aaronl', status: '자유형 연습 중', code: 'POOL-NA11', avatar: 'avatar-male-1' },
-  { id: 'nf12', name: 'Maya Kim', nickname: 'maya', status: '초보 탈출 도전', code: 'POOL-NA12', avatar: 'avatar-female-1' },
-  { id: 'nf13', name: 'Hannah Cho', nickname: 'hannah', status: '주말 수영러', code: 'POOL-NA13', avatar: 'avatar-female-2' },
-  { id: 'nf14', name: 'Liam Park', nickname: 'liamp', status: '접영 배우는 중', code: 'POOL-NA14', avatar: 'avatar-male-2' },
-  { id: 'nf15', name: 'Sophia Han', nickname: 'sophia', status: '물과 친해지기', code: 'POOL-NA15', avatar: 'avatar-female-3' },
-  { id: 'nf16', name: 'Ava Jung', nickname: 'avaj', status: '아침 수영 좋아', code: 'POOL-NA16', avatar: 'avatar-female-4' },
-  { id: 'nf17', name: 'Nathan Bae', nickname: 'nathan', status: '1km 도전', code: 'POOL-NA17', avatar: 'avatar-male-3' },
-  { id: 'nf18', name: 'Clara Yoon', nickname: 'claray', status: '평영 연습', code: 'POOL-NA18', avatar: 'avatar-female-5' },
-  { id: 'nf19', name: 'Mason Seo', nickname: 'mason', status: '느긋하게 수영', code: 'POOL-NA19', avatar: 'avatar-male-4' },
-  { id: 'nf20', name: 'Diana Nam', nickname: 'diana', status: '수영 입문 2주차', code: 'POOL-NA20', avatar: 'avatar-female-6' },
+  { _seed: 'nf11', name: 'Aaron Lee', nickname: 'aaronl', status: '자유형 연습 중', avatar: 'avatar-male-1' },
+  { _seed: 'nf12', name: 'Maya Kim', nickname: 'maya', status: '초보 탈출 도전', avatar: 'avatar-female-1' },
+  { _seed: 'nf13', name: 'Hannah Cho', nickname: 'hannah', status: '주말 수영러', avatar: 'avatar-female-2' },
+  { _seed: 'nf14', name: 'Liam Park', nickname: 'liamp', status: '접영 배우는 중', avatar: 'avatar-male-2' },
+  { _seed: 'nf15', name: 'Sophia Han', nickname: 'sophia', status: '물과 친해지기', avatar: 'avatar-female-3' },
+  { _seed: 'nf16', name: 'Ava Jung', nickname: 'avaj', status: '아침 수영 좋아', avatar: 'avatar-female-4' },
+  { _seed: 'nf17', name: 'Nathan Bae', nickname: 'nathan', status: '1km 도전', avatar: 'avatar-male-3' },
+  { _seed: 'nf18', name: 'Clara Yoon', nickname: 'claray', status: '평영 연습', avatar: 'avatar-female-5' },
+  { _seed: 'nf19', name: 'Mason Seo', nickname: 'mason', status: '느긋하게 수영', avatar: 'avatar-male-4' },
+  { _seed: 'nf20', name: 'Diana Nam', nickname: 'diana', status: '수영 입문 2주차', avatar: 'avatar-female-6' },
   // ── 테스트용: ID 검색(정확 일치). accountCode('nf-id-7000234')="ABCD2E".
-  //    코드 알파벳에 0·O·1·I·L 없음 → "ABCD12" 불가('1' 제외) → ABCD2E 사용.
   //    ID 탭에 정확히 "ABCD2E" 입력해야 검색됨(부분일치 아님). ──
-  { id: 'nf-id-7000234', name: '코드테스트', nickname: 'idtest', status: 'ID 검색 테스트용', code: 'POOL-CODE', avatar: 'avatar-male-5' },
+  { _seed: 'nf-id-7000234', name: '코드테스트', nickname: 'idtest', status: 'ID 검색 테스트용', avatar: 'avatar-male-5' },
 ];
+export const MOCK_NON_FRIENDS: MockAccount[] = NON_FRIENDS_RAW.map(({ _seed, ...rest }) => ({
+  ...rest,
+  id: accountCode(_seed),
+  code: accountCode(_seed),
+}));
 
 // ── 수영 일정 50개 (오늘 기준 ±, 다양한 풀/시간/공개범위) ────
 const POOLS = [
