@@ -22,6 +22,8 @@ import { tokens } from '@/styles/tokens';
 import { RULES, type MessageKind, type MessageParams } from '@/lib/messages/rules';
 import { BUNDLE_AVATARS, type AvatarId } from '@/lib/avatars';
 import type { RootStackParamList } from '@/navigation/types';
+import { RejectScheduleInviteModal } from '@/components/schedule/RejectScheduleInviteModal';
+import { CancelScheduleInviteModal } from '@/components/schedule/CancelScheduleInviteModal';
 
 // 프로젝트 SVG 아이콘 — 전부 announcement/ 회색톤(#1F2937)으로 통일.
 // 알림 전용 사본(설정 메뉴 등 원본은 자기 색 유지 — sed로 fill만 치환한 복제).
@@ -63,6 +65,8 @@ interface Notif {
   time: string;
   lines: string[];
   actions?: string[];
+  /** 확인 모달(거절/취소)에서 상대 표시명으로 사용 — params.name 그대로 전달. */
+  name?: string;
 }
 
 interface SampleSpec {
@@ -204,6 +208,7 @@ function toNotif(s: SampleSpec): Notif {
     time: SAMPLE_TIME,
     lines: c.body.filter((l) => l.length > 0),
     actions: c.actions && c.actions.length > 0 ? c.actions : undefined,
+    name: s.params.name,
   };
 }
 
@@ -258,23 +263,9 @@ function handleAction(
     }
     if (label === '수락')
       return Alert.alert('초대 수락', '실 운영 시 일정 참여 + 발신자에게 알림.');
-    if (label === '거절')
-      return Alert.alert('초대 거절', '실 운영 시 거절 기록 + 발신자에게 알림.');
+    // '거절'은 RejectScheduleInviteModal에서 처리(NotifCard.onActionPress 분기).
   }
-  // === B 1버튼 — 초대 취소(확인 모달) ===
-  if (kind === 'invite_sent' && label === '초대 취소') {
-    if (meta.scheduleAlive === false) {
-      return Alert.alert('이미 취소된 일정입니다', '카드를 갱신합니다.');
-    }
-    return Alert.alert('초대 취소', '초대를 취소할까요?', [
-      { text: '아니요', style: 'cancel' },
-      {
-        text: '취소',
-        style: 'destructive',
-        onPress: () => Alert.alert('취소됨', '실 운영 시 받은 사람에게 알림.'),
-      },
-    ]);
-  }
+  // '초대 취소'는 CancelScheduleInviteModal에서 처리(NotifCard.onActionPress 분기).
   // === 이동 액션 (B 1버튼 — 이동 강조) ===
   if (label === '약관 보기') {
     if (meta.termsKeyValid === false) {
@@ -384,6 +375,23 @@ function NotifCard({ notif }: { notif: Notif }) {
   // 패턴 A(탭→이동) = 버튼 없고 E 트리거도 아닌 카드.
   const cardTappable = !notif.actions && !E_TRIGGERS.has(notif.kind);
 
+  // 확인 모달 — invite_received '거절' / invite_sent '초대 취소'.
+  // Alert.alert 대신 디자인된 모달(Figma 228:3787 / 230:4481)로 처리.
+  const [rejectVisible, setRejectVisible] = React.useState(false);
+  const [cancelVisible, setCancelVisible] = React.useState(false);
+
+  const onActionPress = (label: string) => {
+    if (notif.kind === 'invite_received' && label === '거절') {
+      setRejectVisible(true);
+      return;
+    }
+    if (notif.kind === 'invite_sent' && label === '초대 취소') {
+      setCancelVisible(true);
+      return;
+    }
+    handleAction(navigation, notif.kind, label);
+  };
+
   const body = (
     <View style={styles.card}>
       <NotifSlot slot={notif.slot} rel={notif.rel} />
@@ -409,7 +417,7 @@ function NotifCard({ notif }: { notif: Notif }) {
                 <Pressable
                   key={a}
                   style={styles.badge}
-                  onPress={() => handleAction(navigation, notif.kind, a)}
+                  onPress={() => onActionPress(a)}
                 >
                   <AIcon size={16} color="#4B5563" strokeWidth={2} />
                   <Text style={styles.badgeLabel}>{a}</Text>
@@ -422,14 +430,46 @@ function NotifCard({ notif }: { notif: Notif }) {
     </View>
   );
 
+  const modals = (
+    <>
+      <RejectScheduleInviteModal
+        visible={rejectVisible}
+        name={notif.name ?? '[탈퇴 회원]'}
+        onReject={() => {
+          setRejectVisible(false);
+          // 샘플 갤러리 — 실 운영 시 거절 기록 + 발신자에게 알림.
+          Alert.alert('초대 거절', '실 운영 시 거절 기록 + 발신자에게 알림.');
+        }}
+        onLater={() => setRejectVisible(false)}
+      />
+      <CancelScheduleInviteModal
+        visible={cancelVisible}
+        onCancel={() => {
+          setCancelVisible(false);
+          // 샘플 갤러리 — 실 운영 시 받은 사람에게 알림.
+          Alert.alert('초대 취소됨', '실 운영 시 받은 사람에게 알림.');
+        }}
+        onLater={() => setCancelVisible(false)}
+      />
+    </>
+  );
+
   if (cardTappable) {
     return (
-      <Pressable onPress={() => handleCardTap(navigation, notif.kind)}>
-        {body}
-      </Pressable>
+      <>
+        <Pressable onPress={() => handleCardTap(navigation, notif.kind)}>
+          {body}
+        </Pressable>
+        {modals}
+      </>
     );
   }
-  return body;
+  return (
+    <>
+      {body}
+      {modals}
+    </>
+  );
 }
 
 const styles = StyleSheet.create({

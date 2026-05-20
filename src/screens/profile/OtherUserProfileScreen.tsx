@@ -31,6 +31,7 @@ import { usePools } from '@/hooks/usePools';
 import { BUNDLE_AVATARS } from '@/lib/avatars';
 import { ConfirmFriendActionModal } from '@/components/friends/ConfirmFriendActionModal';
 import { FriendRequestSentModal } from '@/components/friends/FriendRequestSentModal';
+import { CancelFriendRequestModal } from '@/components/friends/CancelFriendRequestModal';
 import { tokens } from '@/styles/tokens';
 import { formatDateTime } from '@/lib/dateFormat';
 
@@ -47,7 +48,7 @@ type CtaConfig = {
   label: string;
   icon: 'plus' | 'users';
   yellow: boolean;
-  action: 'send' | 'accept' | 'none';
+  action: 'send' | 'accept' | 'cancel' | 'none';
 };
 function ctaConfig(rel: FriendRelation): CtaConfig | null {
   switch (rel) {
@@ -56,7 +57,8 @@ function ctaConfig(rel: FriendRelation): CtaConfig | null {
     case 'incoming':
       return { label: '친구 신청 동의하고 친구하기', icon: 'users', yellow: true, action: 'accept' };
     case 'outgoing':
-      return { label: '친구 신청 동의를 기다리고 있습니다', icon: 'users', yellow: false, action: 'none' };
+      // 보낸 요청 — 탭하면 CancelFriendRequestModal (228:3911) 오픈.
+      return { label: '친구 신청 동의를 기다리고 있습니다', icon: 'users', yellow: false, action: 'cancel' };
     case 'friend':
     default:
       return null;
@@ -95,6 +97,8 @@ export function OtherUserProfileScreen() {
   const [modal, setModal] = React.useState<null | 'block' | 'delete'>(null);
   // 친구 신청 직후 '친구 추가 요청 완료'(169:5727) 표시
   const [sentOpen, setSentOpen] = React.useState(false);
+  // 보낸 요청 취소 확인 모달(228:3911)
+  const [cancelOpen, setCancelOpen] = React.useState(false);
   const close = () => navigation.goBack();
 
   if (!profile || rel === 'blocked') {
@@ -114,7 +118,12 @@ export function OtherUserProfileScreen() {
     if (cta.action === 'send') {
       fStore.sendRequest(userId);
       setSentOpen(true);
-    } else if (cta.action === 'accept') fStore.accept(userId);
+    } else if (cta.action === 'accept') {
+      fStore.accept(userId);
+    } else if (cta.action === 'cancel') {
+      // 보낸 요청 — 확인 모달 띄우고 사용자 컨펌 후 cancelRequest.
+      setCancelOpen(true);
+    }
   };
   const onJoin = (poolId: string, date: string, start: string, end: string) => {
     setIntent({ poolId, date, start, end });
@@ -364,6 +373,16 @@ export function OtherUserProfileScreen() {
           setSentOpen(false);
           close();
         }}
+      />
+      <CancelFriendRequestModal
+        visible={cancelOpen}
+        name={profile.name}
+        onCancel={() => {
+          fStore.cancelRequest(userId);
+          setCancelOpen(false);
+          close();
+        }}
+        onLater={() => setCancelOpen(false)}
       />
     </View>
   );
