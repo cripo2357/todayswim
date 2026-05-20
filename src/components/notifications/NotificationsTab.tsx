@@ -20,22 +20,22 @@ import { tokens } from '@/styles/tokens';
 import { RULES, type MessageKind, type MessageParams } from '@/lib/messages/rules';
 import { BUNDLE_AVATARS, type AvatarId } from '@/lib/avatars';
 
-// 프로젝트 SVG 아이콘 — 스펙 명명 아이콘에 1:1 매핑.
+// 프로젝트 SVG 아이콘 — 전부 announcement/ 회색톤(#1F2937)으로 통일.
+// 알림 전용 사본(설정 메뉴 등 원본은 자기 색 유지 — sed로 fill만 치환한 복제).
 import IconNewFeature from '@assets/icons/announcement/new-feature.svg';
 import IconFeatureUpdate from '@assets/icons/announcement/feature-update.svg';
 import IconEvent from '@assets/icons/announcement/event.svg';
 import IconApproved from '@assets/icons/announcement/approved.svg'; // [승인]
 import IconReport from '@assets/icons/announcement/report.svg'; // [리포트]
-import IconEnvelope from '@assets/icons/settings/envelope.svg'; // [초대]
-import IconCloseCircle from '@assets/icons/close-circle.svg'; // [반려]
-import IconGavel from '@assets/icons/settings/gavel.svg'; // [약관]
-import IconProfile from '@assets/icons/settings/profile.svg'; // [프로필]
-import IconBell from '@assets/icons/settings/bell.svg'; // [리마인더]
-import IconUserDouble from '@assets/icons/user-double.svg'; // [친구]
-import IconSwim from '@assets/icons/swim.svg'; // [수영]
-import IconCalendarCheck from '@assets/icons/settings/calendar-check.svg'; // [시간표]
-import IconOverjoyed from '@assets/icons/emotion-overjoyed.svg'; // [환영]
-import IconMegaphone from '@assets/icons/megaphone.svg'; // [이벤트] 대안
+import IconInvite from '@assets/icons/announcement/invite.svg'; // [초대]
+import IconRejected from '@assets/icons/announcement/rejected.svg'; // [반려]
+import IconTerms from '@assets/icons/announcement/terms.svg'; // [약관]
+import IconProfile from '@assets/icons/announcement/profile.svg'; // [프로필]
+import IconReminder from '@assets/icons/announcement/reminder.svg'; // [리마인더]
+import IconFriend from '@assets/icons/announcement/friend.svg'; // [친구]
+import IconSwim from '@assets/icons/announcement/swim.svg'; // [수영]
+import IconSchedule from '@assets/icons/announcement/schedule.svg'; // [시간표]
+import IconWelcome from '@assets/icons/announcement/welcome.svg'; // [환영]
 
 type SvgIconCmp = React.FC<SvgProps>;
 
@@ -77,19 +77,18 @@ const lucide = (Cmp: React.ComponentType<{ size?: number; color?: string; stroke
 const avatar = (id: AvatarId, rel: AvatarRel = 'friend'): Slot => ({ type: 'avatar', id, rel });
 
 // 명명 아이콘 (스펙) → 프로젝트 SVG 슬롯 (재사용 편의)
-const SLOT_FRIEND = svg(IconUserDouble); // [친구]
-const SLOT_INVITE = svg(IconEnvelope); // [초대]
-const SLOT_REJECT = svg(IconCloseCircle); // [반려]
+const SLOT_FRIEND = svg(IconFriend); // [친구]
+const SLOT_INVITE = svg(IconInvite); // [초대]
+const SLOT_REJECT = svg(IconRejected); // [반려]
 const SLOT_NEW_FEATURE = svg(IconNewFeature); // [신기능]
 const SLOT_VERSION_UP = svg(IconFeatureUpdate); // [업데이트]
-const SLOT_SCHEDULE = svg(IconCalendarCheck); // [시간표]
-const SLOT_REMINDER = svg(IconBell); // [리마인더]
-const SLOT_TERMS = svg(IconGavel); // [약관]
+const SLOT_SCHEDULE = svg(IconSchedule); // [시간표]
+const SLOT_REMINDER = svg(IconReminder); // [리마인더]
+const SLOT_TERMS = svg(IconTerms); // [약관]
 const SLOT_PROFILE = svg(IconProfile); // [프로필]
-const SLOT_WELCOME = svg(IconOverjoyed); // [환영]
+const SLOT_WELCOME = svg(IconWelcome); // [환영]
 const SLOT_SWIM = svg(IconSwim); // [수영]
-const SLOT_EVENT = svg(IconEvent); // [이벤트]
-const SLOT_PARTNER = svg(IconMegaphone); // [이벤트] 변형 — 제휴/광고용
+const SLOT_EVENT = svg(IconEvent); // [이벤트] (marketing 3종 모두 — 스펙)
 const SLOT_APPROVED = svg(IconApproved); // [승인]
 const SLOT_REPORT = svg(IconReport); // [리포트]
 
@@ -140,7 +139,7 @@ const GROUPS: { title: string; items: SampleSpec[] }[] = [
 
       // ── 유형 3. 운영자 발 이벤트 (광고) ──
       { id: 's18', kind: 'marketing_event', slot: SLOT_EVENT, params: { headline: '여름 수영 챌린지', desc: '7월 한 달 매일 수영 인증하고 굿즈 받아요.' } },
-      { id: 's19', kind: 'marketing_partnership', slot: SLOT_PARTNER, params: { headline: '○○스포츠', desc: '제휴 수영용품 할인 소식을 알려드려요.' } },
+      { id: 's19', kind: 'marketing_partnership', slot: SLOT_EVENT, params: { headline: '○○스포츠', desc: '제휴 수영용품 할인 소식을 알려드려요.' } },
       { id: 's20', kind: 'marketing_recommendation', slot: SLOT_EVENT, params: { headline: '근처 새 수영장', desc: '회원님 동선에 맞는 수영장을 추천해요.' } },
 
       // ── 유형 4. 자동·필수 (schedule_completion_prompt 제외 — 인앱 피드 미적재) ──
