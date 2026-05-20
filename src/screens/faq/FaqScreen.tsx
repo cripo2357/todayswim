@@ -23,7 +23,8 @@ import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { useFaqs } from '@/hooks/useFaqs';
 import { tokens } from '@/styles/tokens';
-import type { Faq } from '@/types/faq';
+import type { Faq, FaqCategory } from '@/types/faq';
+import { FAQ_CATEGORIES, FAQ_CATEGORY_LABEL } from '@/types/faq';
 import IconEnvelope from '@assets/icons/settings/envelope.svg';
 import FaqIllust from '@assets/illustrations/faq.svg';
 
@@ -41,11 +42,21 @@ export function FaqScreen() {
   const { data, isLoading, error } = useFaqs();
   // 단일 오픈 아코디언 — 1개를 열면 기존 열린건 자동 닫힘([[전역 규칙]] 사용자 지정).
   const [openId, setOpenId] = React.useState<string | null>(null);
-  const items = data ?? [];
+  // 카테고리 탭(Figma 245:5819) — 기본 '처음'. 전환 시 열린 아코디언 닫힘.
+  const [category, setCategory] = React.useState<FaqCategory>('first');
+  const all = data ?? [];
+  const items = all.filter((f) => f.category === category);
 
   const onPressItem = (id: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setOpenId((cur) => (cur === id ? null : id));
+  };
+
+  const onPressTab = (next: FaqCategory) => {
+    if (next === category) return;
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setCategory(next);
+    setOpenId(null);
   };
 
   const sendMail = () => {
@@ -91,6 +102,26 @@ export function FaqScreen() {
           <ChevronRight size={20} color="#CBD5E1" strokeWidth={2} />
         </Pressable>
 
+        {/* 카테고리 탭 — Figma 245:5819. Pool's day 첫 진입 = '처음' 그룹부터 */}
+        <View style={styles.tabGroup}>
+          {FAQ_CATEGORIES.map((c) => {
+            const active = c === category;
+            return (
+              <Pressable
+                key={c}
+                onPress={() => onPressTab(c)}
+                style={[styles.tab, active && styles.tabActive]}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: active }}
+              >
+                <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>
+                  {FAQ_CATEGORY_LABEL[c]}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
         {/* 아코디언 리스트 — Figma 239:3752 */}
         <View style={styles.list}>
           {isLoading ? (
@@ -105,7 +136,11 @@ export function FaqScreen() {
             </View>
           ) : items.length === 0 ? (
             <View style={styles.center}>
-              <Text style={styles.empty}>등록된 질문이 아직 없어요.</Text>
+              <Text style={styles.empty}>
+                {all.length === 0
+                  ? '등록된 질문이 아직 없어요.'
+                  : '이 카테고리에는 아직 질문이 없어요.'}
+              </Text>
             </View>
           ) : (
             items.map((faq) => (
@@ -211,6 +246,47 @@ const styles = StyleSheet.create({
   },
 
   pressed: { opacity: 0.6 },
+
+  // Figma 245:5819 — Tab Group. bg #F1F5F9, p4, r18, h48.
+  tabGroup: {
+    flexDirection: 'row',
+    backgroundColor: '#F1F5F9',
+    padding: 4,
+    borderRadius: 18,
+    height: 48,
+    alignItems: 'stretch',
+  },
+  // 각 탭: flex-1, h40, px16 py8, r14, center 정렬.
+  tab: {
+    flex: 1,
+    height: 40,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // 활성 탭: bg white, shadow-md (4/8 0.03 + 8/16 0.02).
+  tabActive: {
+    backgroundColor: tokens.color.white,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  // 비활성 라벨: SemiBold 14/20 -0.084 #1F2937
+  tabLabel: {
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: -0.084,
+    fontFamily: tokens.font.sansSemibold,
+    color: '#1F2937',
+  },
+  // 활성 라벨: 같은 폰트, 색만 #4B5563 (Figma 245:5822 — 흰 bg 위에 톤다운)
+  tabLabelActive: {
+    color: '#4B5563',
+  },
 
   // 아코디언 리스트 — 카드 외곽 없음, 행마다 하단 1px 라인.
   list: {

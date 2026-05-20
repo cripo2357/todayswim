@@ -3,13 +3,14 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import type { Faq } from '@/types/faq';
+import type { Faq, FaqCategory } from '@/types/faq';
 
 interface FaqRow {
   id: string;
   question: string;
   answer: string;
   sort_order: number;
+  category: FaqCategory;
 }
 
 function rowToFaq(row: FaqRow): Faq {
@@ -18,6 +19,7 @@ function rowToFaq(row: FaqRow): Faq {
     question: row.question,
     answer: row.answer,
     sortOrder: row.sort_order,
+    category: row.category,
   };
 }
 
@@ -27,7 +29,7 @@ export function useFaqs() {
     queryFn: async (): Promise<Faq[]> => {
       const { data, error } = await supabase
         .from('faqs')
-        .select('id, question, answer, sort_order')
+        .select('id, question, answer, sort_order, category')
         .order('sort_order', { ascending: true });
       if (error) throw error;
       return (data as FaqRow[]).map(rowToFaq);
