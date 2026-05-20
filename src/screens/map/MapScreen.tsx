@@ -94,6 +94,11 @@ const STACK_LIFT = 9;
 // (preview 측정: 스택이 release에서도 최대 부하 — 줌 게이팅이 핵심 레버)
 const STACK_MIN_ZOOM = 14;
 
+// 카메라 정지 후 이 ms가 지나면 idle로 간주 → 스택 다시 렌더. pan/zoom 중에는
+// 스택을 unmount해 비트맵 캡처 cascade 차단. 200ms는 사용자 손가락 떨림은
+// 무시하면서 의도적 정지에는 빠르게 반응하는 균형점.
+const STACK_IDLE_MS = 200;
+
 // 단순 평면 근사 거리(m). 짧은 거리/한국 위도에선 haversine과 차이 무시 가능.
 function approxDistanceMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const dLat = (lat2 - lat1) * 111_000;
@@ -203,6 +208,19 @@ export function MapScreen() {
   // 효과: 마커 탭/애니메이션 중 매 프레임 리렌더 60회+ → 정수 zoom 변화 시점만 (보통 2~3회).
   const cameraRef = React.useRef<Camera>(INITIAL_CAMERA);
   const [zoomInt, setZoomInt] = React.useState(Math.round(INITIAL_CAMERA.zoom));
+
+  // 카메라 idle 게이팅 — pan/zoom·programmatic 이동 중에는 스택을 unmount해서
+  // 비트맵 캡처(가장 비싼 비용) cascade 차단. 카메라가 STACK_IDLE_MS 동안 정지
+  // 하면 다시 그림. 사용자 인터랙션 중 끊김의 핵심 완화책 — 네이버/카카오맵
+  // 무거운 오버레이 표준 패턴. 초기값 true (마운트 직후 잠깐 그릴 수 있도록).
+  const [cameraIdle, setCameraIdle] = React.useState(true);
+  const idleTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  React.useEffect(
+    () => () => {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    },
+    [],
+  );
 
   // 좌표 잡히면 첫 1회 카메라를 사용자 위치로 이동
   // 비-Gesture 이벤트에서 마지막으로 본 zoom — 사용자 핀치 시작 직전의 baseline.
@@ -393,6 +411,15 @@ export function MapScreen() {
       setZoomInt(newZoomInt);
     }
 
+    // 카메라 idle 게이팅 — 어떤 reason이든 카메라가 움직이는 순간 스택 hide,
+    // STACK_IDLE_MS 동안 추가 움직임 없으면 다시 보임. setCameraIdle(false)는
+    // 첫 transition만 일어나도록 가드(매 프레임 setState 폭발 방지).
+    setCameraIdle((prev) => (prev ? false : prev));
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = setTimeout(() => {
+      setCameraIdle(true);
+    }, STACK_IDLE_MS);
+
     // 비-Gesture 이벤트(animateCameraTo 등)는 baseline만 갱신하고 deselect 평가 안함.
     // → 마커 탭으로 카메라가 zoom 15로 이동해도 카드 유지, 그 이후 사용자 핀치만 평가.
     if (cam.reason !== 'Gesture') {
@@ -582,7 +609,8 @@ export function MapScreen() {
               />
               {stack &&
               stack.entries.length > 0 &&
-              zoomInt >= STACK_MIN_ZOOM ? (
+              zoomInt >= STACK_MIN_ZOOM &&
+              cameraIdle ? (
                 <NaverMapMarkerOverlay
                   latitude={p.lat}
                   longitude={p.lng}

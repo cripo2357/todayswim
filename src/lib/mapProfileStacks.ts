@@ -11,10 +11,11 @@
 //    (정적 isFriend 신뢰 X — block_policy_enforcement 메모리).
 //  · 친구의 비공개(private) 슬롯은 제외(participant_visibility_policy 일관 —
 //    내 일정은 내 것이라 가시성 무관).
-//  · 순서: 나=맨앞(맵 그리드 좌측 하단 고정), 나머지는 (시드+풀+사용자) 해시
-//    셔플. 시드는 호출자가 결정 — MapScreen은 useFocusEffect로 포커스마다 새
-//    시드 발급(맵 활성화 1회 = 1셔플). 9명 초과면 시드 기준 앞 9명만 표본 추출
-//    (나머지는 "… more"로 갈음). 매 렌더 재셔플은 시드를 안 바꾸면 발생 X.
+//  · 순서: 나=맨앞(맵 그리드 좌측 하단 고정), 그 다음 친구, 마지막 사람들(비친구
+//    전체공개). 같은 우선순위 안에선 (시드+풀+사용자) 해시 셔플. 시드는 호출자가
+//    결정 — MapScreen은 useFocusEffect로 포커스마다 새 시드 발급. 9명 초과면
+//    친구가 먼저 자리 채우고 사람들은 남는 자리만 → 이름표를 '비친구가 친구를
+//    밀어내는' 회귀 방지. 9명 넘으면 "… more" 칸.
 //
 // Phase-1: 친구 일정 소스는 기존 participant 데이터(MOCK_OTHER_SCHEDULES, 달력
 //          resolveParticipants 와 동일 소스). 서버 친구 일정 적재는 Phase-2 갭.
@@ -29,7 +30,9 @@ import type {
 } from '@/lib/mockData';
 import { lessonOccurrenceMs } from '@/lib/swimClass';
 
-export type StackRelation = 'me' | 'friend';
+/** 'me'=나, 'friend'=실제 친구, 'other'=비친구 전체공개(profileVis='public'일
+ *  때만 후보). Avatar 외곽선 색: pd-byellow / pd-mint / pd-gray. */
+export type StackRelation = 'me' | 'friend' | 'other';
 
 export interface StackEntry {
   userId: string;
@@ -179,11 +182,11 @@ export function buildPoolProfileStacks(
         horizonMs: friendHorizonMs,
       });
     } else if (o.visibility === 'public' && publicHorizonMs > 0) {
-      // 사람들(비친구) — 친구 아닌 사람의 전체공개 일정. avatar 소스는 mock
-      // OtherSchedule 자체에 보존된 photoUri 또는 미상.
+      // 사람들(비친구) — 친구 아닌 사람의 전체공개 일정. relation='other'
+      // → Avatar 외곽선 pd-gray + 정렬 시 친구 뒤로 밀림(친구 우선).
       consider({
         userId: o.userId,
-        relation: 'friend', // 시각 표현은 friend와 동일(차후 구분 필요 시 'public')
+        relation: 'other',
         photoUri: o.avatar,
         poolId: o.poolId,
         startMs: slotMs(o.date, o.start),
@@ -232,7 +235,7 @@ export function buildPoolProfileStacks(
     } else if (o.visibility === 'public' && publicHorizonMs > 0) {
       consider({
         userId: o.userId,
-        relation: 'friend',
+        relation: 'other',
         photoUri: o.avatar,
         poolId: o.poolId,
         startMs: occ.startMs,
@@ -252,15 +255,23 @@ export function buildPoolProfileStacks(
   }
 
   const result = new Map<string, PoolStack>();
+  // 정렬 우선순위 — 나(고정 0번) > 친구 > 사람들(비친구). 9칸이 다 차면 친구가
+  // 우선 채워지고 사람들은 남는 자리에만. 같은 우선순위 안에서는 (시드+풀+사용자)
+  // 해시 셔플로 매 진입마다 다른 9명·다른 순서.
+  const relRank = (r: StackRelation): number =>
+    r === 'me' ? 0 : r === 'friend' ? 1 : 2;
   for (const [poolId, cands] of byPool) {
     const me = cands.filter((c) => c.relation === 'me');
     const others = cands
       .filter((c) => c.relation !== 'me')
-      .sort(
-        (a, b) =>
+      .sort((a, b) => {
+        const dr = relRank(a.relation) - relRank(b.relation);
+        if (dr !== 0) return dr;
+        return (
           hash(shuffleSeed + ':' + poolId + ':' + a.userId) -
-          hash(shuffleSeed + ':' + poolId + ':' + b.userId),
-      );
+          hash(shuffleSeed + ':' + poolId + ':' + b.userId)
+        );
+      });
     const ordered = [...me, ...others];
     result.set(poolId, {
       overflow: ordered.length > STACK_MAX,
