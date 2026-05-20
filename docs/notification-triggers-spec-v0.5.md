@@ -16,6 +16,7 @@ title: Pool's Day 알림 트리거 상세 스펙
 - **부정 성격 메시지 아이콘 통일** — friend_request_rejected / invite_received·sent 상태 3·4·5(거절·취소·만료) / pool/schedule_submission_rejected 전부 **[반려] 아이콘** 으로 통일(이미지가 본문의 부정 결과를 일관되게 신호). 이전 매핑(상태별 프로필·[초대] 회색 톤)을 대체.
 - **[프로필] 아이콘 = 맵 FAB 로그인 버튼 아이콘과 일치** — nickname_changed_by_admin은 ID 카드형(assets/icons/profile.svg, #1F2937 회색톤). 닉네임 정체성 컨텍스트를 앱 전반 프로필 진입점과 시각 일관화.
 - **프로필 사진 테두리 = 트리거 유형별 고정** — 발송 시점의 관계가 카드에 보존됨(런타임 친구목록 조회 X). 예: friend_request_received는 영구적으로 비친구(pd-gray) 테두리 — 그때 비친구였다는 기록. friend_request_accepted/invite_received/friend_schedule_overlap은 친구(pd-mint). 단일 출처 = `src/components/notifications/NotificationsTab.ts` `REL_BY_KIND`.
+- **발송 주체 매트릭스 추가** — 22트리거를 운영자(OPERATOR)·시스템(SYSTEM)·사용자(USER) 3분류. 운영자가 직접 발송해야 하는 트리거 = **11개** (시스템 안내 6 + 광고 3 + 약관·닉네임 강제 2). P2 백엔드 작업 시 운영자 콘솔/게시 인터페이스 범위 정의.
 
 **v0.5 변경 사항**
 
