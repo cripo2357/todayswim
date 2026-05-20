@@ -32,7 +32,6 @@ import IconRejected from '@assets/icons/announcement/rejected.svg'; // [반려]
 import IconTerms from '@assets/icons/announcement/terms.svg'; // [약관]
 import IconProfile from '@assets/icons/announcement/profile.svg'; // [프로필]
 import IconReminder from '@assets/icons/announcement/reminder.svg'; // [리마인더]
-import IconFriend from '@assets/icons/announcement/friend.svg'; // [친구]
 import IconSwim from '@assets/icons/announcement/swim.svg'; // [수영]
 import IconSchedule from '@assets/icons/announcement/schedule.svg'; // [시간표]
 import IconWelcome from '@assets/icons/announcement/welcome.svg'; // [환영]
@@ -77,7 +76,6 @@ const lucide = (Cmp: React.ComponentType<{ size?: number; color?: string; stroke
 const avatar = (id: AvatarId, rel: AvatarRel = 'friend'): Slot => ({ type: 'avatar', id, rel });
 
 // 명명 아이콘 (스펙) → 프로젝트 SVG 슬롯 (재사용 편의)
-const SLOT_FRIEND = svg(IconFriend); // [친구]
 const SLOT_INVITE = svg(IconInvite); // [초대]
 const SLOT_REJECT = svg(IconRejected); // [반려]
 const SLOT_NEW_FEATURE = svg(IconNewFeature); // [신기능]
@@ -112,17 +110,18 @@ const GROUPS: { title: string; items: SampleSpec[] }[] = [
       // friend_request_received: 신청자 = 아직 친구 아님 → stranger 테두리(pd-gray)
       { id: 's1', kind: 'friend_request_received', slot: avatar('avatar-male-1', 'stranger'), params: { name: NM } },
       { id: 's2', kind: 'friend_request_accepted', slot: avatar('avatar-female-2'), params: { name: NM } },
-      // 본인 행동 → [친구] 아이콘
-      { id: 's3', kind: 'friend_request_rejected', slot: SLOT_FRIEND, params: { name: NM } },
+      // 부정 성격(거절·취소·만료) → [반려] 아이콘으로 통일 (정책)
+      { id: 's3', kind: 'friend_request_rejected', slot: SLOT_REJECT, params: { name: NM } },
       // 초대 받은 직후 → 초대자 프로필
       { id: 's4', kind: 'invite_received', slot: avatar('avatar-male-3'), params: { name: NM, pool: P, date: D, time: T } },
-      // 본인 응답(수락/거절) → [초대] 아이콘
+      // 본인 수락 → [초대] 아이콘 (긍정)
       { id: 's5', kind: 'invite_accepted', slot: SLOT_INVITE, params: { name: NM, date: D } },
-      { id: 's6', kind: 'invite_rejected', slot: SLOT_INVITE, params: { name: NM, date: D } },
-      // 보낸 사람이 취소(받은 입장) → 초대자 프로필
-      { id: 's7', kind: 'invite_canceled', slot: avatar('avatar-male-4'), params: { name: NM, date: D } },
-      // 시스템 만료 → [초대] 아이콘
-      { id: 's8', kind: 'invite_auto_expired', slot: SLOT_INVITE, params: { name: NM, date: D } },
+      // 본인 거절 → [반려] 아이콘 (부정 통일)
+      { id: 's6', kind: 'invite_rejected', slot: SLOT_REJECT, params: { name: NM, date: D } },
+      // 상대가 취소 → [반려] 아이콘 (부정 통일)
+      { id: 's7', kind: 'invite_canceled', slot: SLOT_REJECT, params: { name: NM, date: D } },
+      // 시스템 만료(놓침) → [반려] 아이콘 (부정 통일)
+      { id: 's8', kind: 'invite_auto_expired', slot: SLOT_REJECT, params: { name: NM, date: D } },
       // 본인 발송(1명/2명+) → [초대] 아이콘
       { id: 's9', kind: 'invite_sent', slot: SLOT_INVITE, params: { name: NM, pool: P, date: D, time: T } },
       { id: 's10', kind: 'invite_sent', slot: SLOT_INVITE, params: { count: 3, pool: P, date: D, time: T } },
