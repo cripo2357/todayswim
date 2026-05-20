@@ -162,6 +162,11 @@ export function DonationScreen() {
       >
       <ScrollView
         ref={scrollRef}
+        // 핵심: ScrollView 자체에 flex:1 — KAV 안에서 KAV의 줄어든 영역에 맞춰
+        // ScrollView 도 줄어들어야 내부 자동 스크롤이 동작. style 없으면 ScrollView
+        // 가 contents 길이로 무한 확장돼 KAV가 줄어들어도 영향 안 받음.
+        // (PoolNameScreen 등 다른 키보드 화면의 검증된 패턴.)
+        style={styles.flex}
         contentContainerStyle={[
           styles.scroll,
           // 키보드 올라오면 그만큼 추가 여백 — scrollTo 가 본인 카드를 충분히
