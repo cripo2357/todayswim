@@ -27,6 +27,10 @@ export type RootStackParamList = {
   // 지도 시작 위치 (설정 > 지도 > 지도 시작 위치). Figma 179:4805
   MapStartLocation: undefined;
 
+  // 알림 설정 (설정 > 알림 > 알림 설정). Figma 129:5998 — 마스터 토글
+  // (카테고리별 토글은 스펙 §1191 잔여 작업).
+  NotificationSettings: undefined;
+
   // 프로필 (설정 > 프로필 → 진입). Figma 117:2556 — 기능은 MyInfo 프로필 탭과 동일
   Profile: undefined;
 
@@ -69,7 +73,9 @@ export type RootStackParamList = {
   FavoritePools: undefined;
 
   // 상태 / 오류 / 점검 / 강제 업데이트 화면 (Figma 77:1064/77:1388/77:1462/77:1636).
-  // Maintenance/AppUpdateRequired는 라우터/AppGate에서 트리거 — 일반 navigation 흐름엔 잘 안 들어감.
+  // - ErrorNotFound: deep link 매칭 실패 fallback (App.tsx linking.getStateFromPath).
+  // - ErrorNoInternet: OfflineGate가 NetInfo로 감지 후 reset.
+  // - Maintenance / AppUpdateRequired: Splash 부팅 게이트가 Supabase app_status fetch 후 reset.
   ErrorNotFound: undefined;
   ErrorNoInternet: undefined;
   Maintenance: { reopenLabel?: string };

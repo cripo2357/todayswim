@@ -19,6 +19,7 @@ import { ProfileImageScreen } from '@/screens/auth/ProfileImageScreen';
 import { MyInfoScreen } from '@/screens/auth/MyInfoScreen';
 import { SettingsScreen } from '@/screens/settings/SettingsScreen';
 import { MapStartLocationScreen } from '@/screens/settings/MapStartLocationScreen';
+import { NotificationSettingsScreen } from '@/screens/settings/NotificationSettingsScreen';
 import { ProfileScreen } from '@/screens/auth/ProfileScreen';
 import { SwimClassRegisterScreen } from '@/screens/profile/SwimClassRegisterScreen';
 import { OtherUserProfileScreen } from '@/screens/profile/OtherUserProfileScreen';
@@ -107,6 +108,10 @@ export function RootNavigator() {
       <Stack.Screen
         name="MapStartLocation"
         component={MapStartLocationScreen}
+      />
+      <Stack.Screen
+        name="NotificationSettings"
+        component={NotificationSettingsScreen}
       />
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="SwimClassRegister" component={SwimClassRegisterScreen} />

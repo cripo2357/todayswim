@@ -41,6 +41,7 @@ import IconLogout from '@assets/icons/settings/logout.svg';
 // currentColor(모달서 파랑/흰색 재사용) → 설정 행은 color=pdMint 명시.
 import IconHandPan from '@assets/icons/hand-pan.svg';
 import IconBell from '@assets/icons/settings/bell.svg';
+import IconBellOff from '@assets/icons/settings/bell-off.svg';
 import IconEnvelope from '@assets/icons/settings/envelope.svg';
 import IconLifeBuoy from '@assets/icons/settings/life-buoy.svg';
 import IconEditPencil from '@assets/icons/settings/edit-pencil.svg';
@@ -112,7 +113,9 @@ export function SettingsScreen() {
   const signOut = useAuth((s) => s.signOut);
   const deleteAccount = useAuth((s) => s.deleteAccount);
   const authUser = useAuth((s) => s.user);
-  const [pushOn, setPushOn] = React.useState(true);
+  // 알림 마스터 — 행 아이콘 bell↔bell-off 스왑(모든 알림 OFF 시 bell-off).
+  // 카테고리별 토글 도입 시 "그룹 합집합 OFF"로 확장(스펙 §1191 잔여 작업).
+  const pushOn = usePrefs((s) => s.pushOn);
 
   const scheduleInvite = usePrefs((s) => s.scheduleInvite);
   const setScheduleInvite = usePrefs((s) => s.setScheduleInvite);
@@ -170,12 +173,19 @@ export function SettingsScreen() {
           />
         </Section>
 
-        {/* 알림 */}
+        {/* 알림 (Figma 129:5998) — 마스터 토글 진입형. 모든 알림 OFF 시
+            아이콘 bell→bell-off 스왑. */}
         <Section title="알림">
           <Row
-            icon={<IconBell width={24} height={24} />}
-            label="푸시 알림 받기"
-            right={<Toggle on={pushOn} onToggle={() => setPushOn((v) => !v)} />}
+            icon={
+              pushOn ? (
+                <IconBell width={24} height={24} />
+              ) : (
+                <IconBellOff width={24} height={24} />
+              )
+            }
+            label="알림 설정"
+            onPress={() => navigation.navigate('NotificationSettings')}
           />
         </Section>
 
@@ -455,22 +465,6 @@ function Row({
   );
 }
 
-function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
-  return (
-    <Pressable
-      onPress={onToggle}
-      accessibilityRole="switch"
-      accessibilityState={{ checked: on }}
-      style={[
-        styles.toggle,
-        { backgroundColor: on ? tokens.color.pdMint : '#CBD5E1' },
-      ]}
-    >
-      <View style={[styles.toggleKnob, on ? styles.knobOn : styles.knobOff]} />
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: tokens.color.bgCream },
 
@@ -531,28 +525,6 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sans,
     color: '#4B5563',
   },
-
-  // Toggle Only (133:5777) — 52x28, r123, knob 24 white
-  toggle: {
-    width: 52,
-    height: 28,
-    borderRadius: 123,
-    padding: 2,
-    justifyContent: 'center',
-  },
-  toggleKnob: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: tokens.color.white,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  knobOn: { alignSelf: 'flex-end' },
-  knobOff: { alignSelf: 'flex-start' },
 
   // 구분선 (129:5324) — full-width hairline
   divider: {

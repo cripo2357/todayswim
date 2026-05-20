@@ -24,6 +24,10 @@ interface PrefsState {
   mapStartPoolId: string | null;
   /** 지도에 수영 예정 친구 스택 표시 (false=안 보기) */
   showMapFriendStack: boolean;
+  /** OS 푸시 알림 마스터(현재 단일 토글). false=모든 알림 OFF — 설정 행
+   *  아이콘이 bell→bell-off로 스왑. 카테고리별 토글 도입 시 이 값 ↔
+   *  하위 그룹 합집합으로 확장(스펙 §1191 잔여 작업). */
+  pushOn: boolean;
   hydrated: boolean;
   hydrate: () => Promise<void>;
   setOthersScheduleView: (v: OthersScheduleView) => Promise<void>;
@@ -32,6 +36,7 @@ interface PrefsState {
   setFriendRequest: (v: FriendRequest) => Promise<void>;
   setMapStartPoolId: (v: string | null) => Promise<void>;
   setShowMapFriendStack: (v: boolean) => Promise<void>;
+  setPushOn: (v: boolean) => Promise<void>;
 }
 
 const K_VIEW = 'poolsday.prefs.othersScheduleView';
@@ -40,6 +45,7 @@ const K_PROFILE_VIS = 'poolsday.prefs.profileVisibility';
 const K_FRIEND_REQ = 'poolsday.prefs.friendRequest';
 const K_MAP_START = 'poolsday.prefs.mapStartPoolId';
 const K_MAP_FRIENDS = 'poolsday.prefs.showMapFriendStack';
+const K_PUSH_ON = 'poolsday.prefs.pushOn';
 
 const FRIEND_REQ_VALUES: FriendRequest[] = ['off', 'id', 'nickname', 'all'];
 
@@ -51,16 +57,18 @@ export const usePrefs = create<PrefsState>((set) => ({
   friendRequest: 'nickname', // 닉네임으로만 신청 받기
   mapStartPoolId: null, // 내 위치
   showMapFriendStack: true, // 지도에 표시 (Figma 기본값)
+  pushOn: true, // 푸시 알림 기본 ON
   hydrated: false,
 
   hydrate: async () => {
     try {
-      const [i, p, f, ms, mf] = await Promise.all([
+      const [i, p, f, ms, mf, pn] = await Promise.all([
         AsyncStorage.getItem(K_INVITE),
         AsyncStorage.getItem(K_PROFILE_VIS),
         AsyncStorage.getItem(K_FRIEND_REQ),
         AsyncStorage.getItem(K_MAP_START),
         AsyncStorage.getItem(K_MAP_FRIENDS),
+        AsyncStorage.getItem(K_PUSH_ON),
       ]);
       const pv: ProfileVisibility = p === 'public' ? 'public' : 'friends';
       set({
@@ -73,6 +81,7 @@ export const usePrefs = create<PrefsState>((set) => ({
           : 'nickname',
         mapStartPoolId: ms || null,
         showMapFriendStack: mf === 'false' ? false : true,
+        pushOn: pn === 'false' ? false : true,
         hydrated: true,
       });
     } catch {
@@ -120,5 +129,10 @@ export const usePrefs = create<PrefsState>((set) => ({
   setShowMapFriendStack: async (v) => {
     await AsyncStorage.setItem(K_MAP_FRIENDS, v ? 'true' : 'false');
     set({ showMapFriendStack: v });
+  },
+
+  setPushOn: async (v) => {
+    await AsyncStorage.setItem(K_PUSH_ON, v ? 'true' : 'false');
+    set({ pushOn: v });
   },
 }));
