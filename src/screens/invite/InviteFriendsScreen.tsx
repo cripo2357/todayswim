@@ -26,7 +26,8 @@ import {
 import { BUNDLE_AVATARS } from '@/lib/avatars';
 import { useFriends } from '@/store/friends';
 import { useSentInvites, inviteSlotKey } from '@/store/sentInvites';
-import { dispatchMessage } from '@/lib/messages/dispatch';
+import { dispatchMessage, dispatchMessageTo } from '@/lib/messages/dispatch';
+import { useProfile } from '@/store/profile';
 import { tokens } from '@/styles/tokens';
 import { formatDateTime } from '@/lib/dateFormat';
 
@@ -108,7 +109,7 @@ export function InviteFriendsScreen() {
     if (selected.length === 0) return;
     // 보낸 초대 기록 → 다음에 같은 슬롯 열면 검색 대상에서 제외.
     markInvited(slotKey, selected.map((f) => f.id));
-    // 발송 이력 적재 (Rule: invite_sent)
+    // 발송 이력 적재 (Rule: invite_sent — 본인 이력)
     void dispatchMessage(
       'invite_sent',
       {
@@ -119,6 +120,24 @@ export function InviteFriendsScreen() {
       },
       { poolId, date, start, end },
     );
+    // P2(2026-05-20): 초대받은 각 친구에게 invite_received 적재. dispatchMessageTo
+    // 는 rule.recipients 무시하고 toUserCode 알림함에 강제 적재 — 'invite_received'
+    // 가 'self' 룰(받는 본인용)이라 발신자 본인에게 들어가면 안 되므로 별도 경로.
+    // name 은 발신자(나) 닉네임 — 친구 화면에 "{내 닉네임}이 …" 표기.
+    const myProfile = useProfile.getState().profile;
+    const myName = myProfile?.name;
+    const senderUserId = myProfile?.id;
+    if (myName) {
+      const time = start; // HH:MM
+      for (const f of selected) {
+        void dispatchMessageTo(
+          f.id,
+          'invite_received',
+          { name: myName, pool: poolName, date, time },
+          { poolId, date, start, end, senderUserId },
+        );
+      }
+    }
     // BottomSheet는 RN Modal — navigate면 그 Modal이 위에 떠 완료 화면을
     // 가림. replace로 이 화면(시트 Modal)을 닫고 완료 화면을 노출.
     navigation.replace('InviteDone', { count: selected.length });

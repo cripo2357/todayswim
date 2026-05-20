@@ -1,16 +1,17 @@
 // 내 정보 > 알림 탭 — Figma 134:9643 카드 UI.
 //
-// P1: 백엔드(크론·푸시·서버 팬아웃) 미연동. 본 탭은 **모든 메시지 트리거의
-// 샘플 갤러리**다 — docs/notification-triggers-spec-v0.5.md 의 22트리거 +
-// invite 상태 + monthly 8변형 + 변수 폴백을, 실제 카드 UI(NotifCard)로
-// 렌더한다. 카피는 lib/messages/rules.RULES 단일출처 → 스펙과 자동 일치
-// (여기서 문구를 따로 적지 않는다).
+// P2(2026-05-20~) 진입: useNotifications로 실 수신함 데이터 우선 표시.
+// 서버 0건이면 mock 샘플 갤러리 폴백(데모/검증 매끄러움, useOtherSchedules
+// 동일 패턴). 즉:
+//   - 가입 직후·아무 액션 없음 → mock 갤러리 그대로(스펙 22트리거 미리보기)
+//   - 액션 발생(친구 거절·초대 발송 등) → 실 row가 들어와 자동 전환
 //
 // 이미지(슬롯) — 스펙 "이미지 매핑" 그대로:
 //   상대 행동 트리거 → 프로필 사진(번들 아바타 샘플)
 //   본인 행동 / 시스템 / 다수 / 환영 등 → 명명 아이콘 (프로젝트 SVG 우선,
 //                                              없는 것만 lucide 폴백)
-// Phase 2: 실제 notifications 적재/수신으로 데이터 소스만 교체.
+// 카피는 lib/messages/rules.RULES 단일출처 — 서버 row의 title/body도 발송
+// 시점에 RULES.build로 계산해 적재됐으므로 mock과 동일 형식.
 
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, Alert } from 'react-native';
@@ -24,6 +25,8 @@ import { BUNDLE_AVATARS, type AvatarId } from '@/lib/avatars';
 import type { RootStackParamList } from '@/navigation/types';
 import { RejectScheduleInviteModal } from '@/components/schedule/RejectScheduleInviteModal';
 import { CancelScheduleInviteModal } from '@/components/schedule/CancelScheduleInviteModal';
+import { useNotifications, type NotificationRow } from '@/hooks/useNotifications';
+import { formatDateTime } from '@/lib/dateFormat';
 
 // 프로젝트 SVG 아이콘 — 전부 announcement/ 회색톤(#1F2937)으로 통일.
 // 알림 전용 사본(설정 메뉴 등 원본은 자기 색 유지 — sed로 fill만 치환한 복제).
@@ -325,15 +328,52 @@ const ACTION_ICON = (label: string): React.ComponentType<{ size?: number; color?
   return ChevronRight; // 일정 보기 / 보기 / 참여 / 약관 보기 / 근처 수영장 보기 등 이동형
 };
 
+// 서버 row의 kind→slot 매핑 — mock GROUPS의 첫 등장 slot을 재사용.
+// (avatar slot의 경우 mock의 default 아바타가 들어감 — 추후 row.related에
+//  senderAvatar/senderUserId 박아 profiles lookup으로 갱신 가능. P2 첫 단계
+//  단순화: kind만 알면 default slot 결정.)
+const KIND_TO_SLOT: Map<MessageKind, Slot> = (() => {
+  const m = new Map<MessageKind, Slot>();
+  for (const g of GROUPS) {
+    for (const s of g.items) {
+      if (!m.has(s.kind)) m.set(s.kind, s.slot);
+    }
+  }
+  return m;
+})();
+
+function rowToNotif(row: NotificationRow): Notif {
+  const slot: Slot = KIND_TO_SLOT.get(row.kind) ?? lucide(ChevronRight);
+  return {
+    id: row.id,
+    kind: row.kind,
+    slot,
+    rel: slot.type === 'avatar' ? relFor(row.kind) : undefined,
+    title: row.title,
+    // 통일 포맷 YY.MM.DD(요일) 오전/오후 H:MM (앱 전역, @/lib/dateFormat).
+    time: formatDateTime(row.created_at),
+    lines: (row.body ?? []).filter((l) => l.length > 0),
+    actions: row.actions && row.actions.length > 0 ? row.actions : undefined,
+    name: row.params?.name,
+  };
+}
+
 export function NotificationsTab() {
+  const { rows } = useNotifications();
+  // 서버 row가 있으면 단일 "최근" 그룹으로 통합(시간 정렬은 fetch에서 desc).
+  // 0건 → mock 갤러리 폴백(가입 직후·검증 매끄러움).
   return (
     <ScrollView
       contentContainerStyle={styles.scroll}
       showsVerticalScrollIndicator={false}
     >
-      {GROUPS.map((g) => (
-        <Group key={g.title} title={g.title} items={g.items.map(toNotif)} />
-      ))}
+      {rows.length > 0 ? (
+        <Group title="최근" items={rows.map(rowToNotif)} />
+      ) : (
+        GROUPS.map((g) => (
+          <Group key={g.title} title={g.title} items={g.items.map(toNotif)} />
+        ))
+      )}
     </ScrollView>
   );
 }
