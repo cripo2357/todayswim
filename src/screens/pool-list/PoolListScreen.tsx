@@ -416,8 +416,10 @@ function PoolListCard({
             {pool.priceWeekday != null ? (
               <Text style={styles.price} numberOfLines={1}>
                 {pool.priceWeekend != null
-                  ? `평일 ${pool.priceWeekday}원 · 주말 ${pool.priceWeekend}원`
-                  : `${pool.priceWeekday}원`}
+                  ? pool.priceWeekday === pool.priceWeekend
+                    ? `이용요금 ${pool.priceWeekday}원`
+                    : `평일 ${pool.priceWeekday}원 · 주말 ${pool.priceWeekend}원`
+                  : `이용요금 ${pool.priceWeekday}원`}
               </Text>
             ) : null}
           </View>
