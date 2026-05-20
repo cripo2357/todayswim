@@ -97,34 +97,19 @@ export function NotificationSettingsScreen() {
     : undefined;
 
   // 마케팅 토글 변경 시 토스트(정통망법 §50 — 사용자 의사 확인용 가시화).
-  // ~4초 자동 사라짐, X 탭 즉시 닫힘. 토글 핸들러에서 직접 trigger(useEffect로
-  // 마케팅 변화 감지하면 hydrate 단계에서도 false-positive로 튀는 위험 있음).
+  // [확인] 액션 버튼 있어 사용자가 탭해야 닫힘(자동 미사라짐 — 라이브러리 정책).
+  // 토글 핸들러에서 직접 trigger(useEffect로 marketing 변화 감지하면 hydrate
+  // 단계에서도 false-positive로 튀는 위험 있음).
   type MarketingToastVariant = 'agreed' | 'rejected';
   const [toast, setToast] = React.useState<
     { variant: MarketingToastVariant; at: string } | null
   >(null);
-  const toastTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
-  const dismissToast = React.useCallback(() => {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = null;
-    setToast(null);
-  }, []);
-  React.useEffect(
-    () => () => {
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    },
-    [],
-  );
+  const dismissToast = React.useCallback(() => setToast(null), []);
 
   const onToggleMarketing = () => {
     const next = !marketing;
     setMarketing(next);
-    const now = new Date().toISOString();
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    setToast({ variant: next ? 'agreed' : 'rejected', at: now });
-    toastTimerRef.current = setTimeout(() => setToast(null), 4000);
+    setToast({ variant: next ? 'agreed' : 'rejected', at: new Date().toISOString() });
   };
 
   return (
@@ -217,7 +202,8 @@ export function NotificationSettingsScreen() {
         </View>
       </ScrollView>
 
-      {/* 마케팅 토글 변경 토스트 — 헤더 아래, 좌우 16px, 4초 후 자동 사라짐. */}
+      {/* 마케팅 토글 변경 토스트 — 하단(safe-area 위), 좌우 16px.
+          [확인] 액션 있어 자동 미사라짐(사용자가 탭해야 닫힘). */}
       {toast ? (
         <View style={styles.toastWrap} pointerEvents="box-none">
           <Toast
@@ -231,7 +217,8 @@ export function NotificationSettingsScreen() {
                 ? `${formatKoreanLong(toast.at)}에 마케팅 정보 수신에 동의하였습니다.`
                 : `${formatKoreanLong(toast.at)}에 마케팅 정보 수신 동의를 철회하였습니다.`
             }
-            action={{ label: '확인', onPress: dismissToast }}
+            action={{ label: '확인' }}
+            onDismiss={dismissToast}
           />
         </View>
       ) : null}
@@ -412,10 +399,10 @@ const styles = StyleSheet.create({
   knobOn: { alignSelf: 'flex-end' },
   knobOff: { alignSelf: 'flex-start' },
 
-  // 토스트 위치 — ScreenHeader(minHeight 48) 바로 아래 + 8px 여백, 좌우 16
+  // 토스트 위치 — 화면 하단 safe-area 위 16px 여백, 좌우 16
   toastWrap: {
     position: 'absolute',
-    top: 56,
+    bottom: 16,
     left: 16,
     right: 16,
     zIndex: 10,

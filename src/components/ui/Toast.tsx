@@ -1,16 +1,20 @@
 // 공통 토스트 카드 — Figma 225:3670.
 //
-// 흰 카드(p12, r16) + 1px pd-gray 보더. 콘텐츠 영역(좌측 flex) + 선택 액션
-// 버튼(pd-byellow). 카드 자체는 presentation만 — 표시/숨김·위치·타이머는
-// 호출부 책임([shared_ui_library] 패턴). 닫기 X는 디자인에서 제외(액션 버튼
-// 또는 auto-dismiss로 닫음).
+// 흰 카드(p12, r16) + 1px pd-gray 보더. 콘텐츠 + 선택 액션 버튼(pd-byellow).
+// 위치(상/하단·여백)는 호출부 style prop으로 지정 — 카드 자체는 폭/위치 미지정.
+//
+// 닫힘 정책(라이브러리 내장):
+//  · action 있음 → 사용자가 버튼 탭해야 닫힘(자동 미사라짐).
+//  · action 없음 → autoDismissMs(기본 3000) 후 자동 사라짐.
+//  · 두 경로 모두 onDismiss 호출 → 부모가 mount 해제.
 //
 // 사용 예
-//   <Toast title="..." message="..." />
-//   <Toast title="..." action={{ label: '확인', onPress: ... }} />
-//
-// 향후 글로벌 호출이 필요해지면 ToastProvider/useToast 레이어를 같은 파일에
-// 추가(현재는 카드 1종으로 충분).
+//   // 단순 안내(자동 사라짐)
+//   <Toast title="..." message="..." onDismiss={...} />
+//   // 확인 필요(버튼 탭해야 닫힘)
+//   <Toast title="..." action={{ label: '확인' }} onDismiss={...} />
+//   // 액션 + 추가 처리(예: 되돌리기) — onPress 후 자동으로 닫힘
+//   <Toast title="..." action={{ label: '되돌리기', onPress: undo }} onDismiss={...} />
 
 import React from 'react';
 import {
@@ -25,23 +29,44 @@ import { tokens } from '@/styles/tokens';
 
 export interface ToastAction {
   label: string;
-  onPress: () => void;
+  /** 탭 시 추가 동작 — 없으면 그냥 닫기. onPress 후 항상 onDismiss로 닫힘. */
+  onPress?: () => void;
+}
+
+interface ToastProps {
+  title: string;
+  /** 보조 문구 — 없으면 제목만 렌더 */
+  message?: string;
+  /** 우측 노란 버튼 — 있으면 탭해야 닫힘(자동 미사라짐). */
+  action?: ToastAction;
+  /** 닫힘 콜백(액션 탭 또는 자동 사라짐). 부모가 토스트 mount 해제. */
+  onDismiss: () => void;
+  /** 자동 사라짐 시간(ms). action 있으면 무시. 기본 3000. */
+  autoDismissMs?: number;
+  /** 위치 지정(absolute 등). 카드 자체는 width 미지정 — caller가 부여. */
+  style?: StyleProp<ViewStyle>;
 }
 
 export function Toast({
   title,
   message,
   action,
+  onDismiss,
+  autoDismissMs = 3000,
   style,
-}: {
-  title: string;
-  /** 보조 문구 — 없으면 제목만 렌더 */
-  message?: string;
-  /** 우측 노란 버튼 — 없으면 표시 X */
-  action?: ToastAction;
-  /** 위치 지정(absolute 등). 카드 자체는 width 미지정 — caller가 부여. */
-  style?: StyleProp<ViewStyle>;
-}) {
+}: ToastProps) {
+  // action 없을 때만 자동 사라짐. action 있으면 사용자가 탭해야 닫힘(정책).
+  React.useEffect(() => {
+    if (action) return;
+    const t = setTimeout(onDismiss, autoDismissMs);
+    return () => clearTimeout(t);
+  }, [action, autoDismissMs, onDismiss]);
+
+  const handleAction = () => {
+    action?.onPress?.();
+    onDismiss();
+  };
+
   return (
     <View style={[styles.card, style]}>
       <View style={styles.content}>
@@ -56,7 +81,7 @@ export function Toast({
       </View>
       {action ? (
         <Pressable
-          onPress={action.onPress}
+          onPress={handleAction}
           accessibilityRole="button"
           accessibilityLabel={action.label}
           style={({ pressed }) => [
