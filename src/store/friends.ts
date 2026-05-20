@@ -1,10 +1,30 @@
-// 친구 관계 — Phase 1 로컬(메모리) 보관.
+// 친구 관계 — Phase 1 로컬(메모리) 보관 + Phase 2(2026-05-20) 서버 best-effort 동기.
 // 4상태: none(신청 가능) / outgoing(내가 신청중) / incoming(내가 신청 받음)
 //        / friend(친구). + blocked(영구 차단, 해제 불가·양방향 제외).
-// 백엔드 미연동: 실시간 동기화는 Phase 2. (앱 재시작 시 초기화.)
+//
+// Phase 2 동기 정책(친구코드 = profiles.id):
+// - 로컬 store(zustand)가 권위. UI는 즉시 반영, 서버는 백그라운드 best-effort.
+// - 모든 mutation에 friendsSync 호출 부착(실패 silent). 현재 유저 친구코드 없으면
+//   skip(가입 전·mock 일부). mock 친구(fr1 등)는 서버 profiles row 없어 FK
+//   위반 silent fail — 실 사용자끼리만 의미 있음(정상 동작).
+// - 다중 기기 동기화/재설치 복구는 실 auth 진입 후 — 현 단계 hydrate fetch 없음.
 
 import { create } from 'zustand';
 import { MOCK_FRIENDS, MOCK_NON_FRIENDS, type MockAccount } from '@/lib/mockData';
+import { useProfile } from '@/store/profile';
+import {
+  tryInsertFriendRequest,
+  tryCancelFriendRequest,
+  tryRejectFriendRequest,
+  tryAcceptFriendRequest,
+  tryDeleteFriendship,
+  tryInsertBlock,
+} from '@/lib/friendsSync';
+
+/** 현재 유저 친구코드 — 없으면 서버 호출 skip. */
+function myProfileId(): string | undefined {
+  return useProfile.getState().profile?.id;
+}
 
 export interface FriendRequest {
   id: string; // 요청자 계정 id
@@ -59,7 +79,9 @@ export const useFriends = create<FriendsState>((set) => ({
   requests: SEED_REQUESTS,
   sent: [],
   blocked: [],
-  accept: (id) =>
+  accept: (id) => {
+    const me = myProfileId();
+    if (me) void tryAcceptFriendRequest(me, id);
     set((s) => {
       const req = s.requests.find((r) => r.id === id);
       if (!req) return s;
@@ -77,18 +99,32 @@ export const useFriends = create<FriendsState>((set) => ({
         ? s.friends
         : [friend, ...s.friends];
       return { friends, requests: s.requests.filter((r) => r.id !== id) };
-    }),
-  reject: (id) =>
-    set((s) => ({ requests: s.requests.filter((r) => r.id !== id) })),
-  sendRequest: (id) =>
-    set((s) =>
-      s.sent.includes(id) ? s : { sent: [...s.sent, id] },
-    ),
-  cancelRequest: (id) =>
-    set((s) => ({ sent: s.sent.filter((x) => x !== id) })),
-  removeFriend: (id) =>
-    set((s) => ({ friends: s.friends.filter((f) => f.id !== id) })),
-  block: (id) =>
+    });
+  },
+  reject: (id) => {
+    const me = myProfileId();
+    if (me) void tryRejectFriendRequest(id, me);
+    set((s) => ({ requests: s.requests.filter((r) => r.id !== id) }));
+  },
+  sendRequest: (id) => {
+    const me = myProfileId();
+    if (me) void tryInsertFriendRequest(me, id);
+    set((s) => (s.sent.includes(id) ? s : { sent: [...s.sent, id] }));
+  },
+  cancelRequest: (id) => {
+    const me = myProfileId();
+    if (me) void tryCancelFriendRequest(me, id);
+    set((s) => ({ sent: s.sent.filter((x) => x !== id) }));
+  },
+  removeFriend: (id) => {
+    const me = myProfileId();
+    if (me) void tryDeleteFriendship(me, id);
+    set((s) => ({ friends: s.friends.filter((f) => f.id !== id) }));
+  },
+  block: (id) => {
+    const me = myProfileId();
+    if (me) void tryInsertBlock(me, id);
+    // 서버 트리거가 friendships/pending 요청 cleanup — 로컬도 동일하게.
     set((s) =>
       s.blocked.includes(id)
         ? s
@@ -98,7 +134,8 @@ export const useFriends = create<FriendsState>((set) => ({
             requests: s.requests.filter((r) => r.id !== id),
             sent: s.sent.filter((x) => x !== id),
           },
-    ),
+    );
+  },
 }));
 
 /** 특정 사용자와의 관계 — blocked 최우선, 그다음 friend/incoming/outgoing/none */
