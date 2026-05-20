@@ -209,12 +209,25 @@ export function MapScreen() {
   const cameraRef = React.useRef<Camera>(INITIAL_CAMERA);
   const [zoomInt, setZoomInt] = React.useState(Math.round(INITIAL_CAMERA.zoom));
 
-  // 카메라 idle 게이팅 — pan/zoom·programmatic 이동 중에는 스택을 unmount해서
-  // 비트맵 캡처(가장 비싼 비용) cascade 차단. 카메라가 STACK_IDLE_MS 동안 정지
-  // 하면 다시 그림. 사용자 인터랙션 중 끊김의 핵심 완화책 — 네이버/카카오맵
-  // 무거운 오버레이 표준 패턴. 초기값 true (마운트 직후 잠깐 그릴 수 있도록).
+  // 줌-정수 전환 게이팅 — supercluster가 클러스터 재구성하는 시점(integer zoom
+  // 변화)에만 스택을 잠깐 hide. pan/sub-integer zoom 에선 마커가 remount 안 돼
+  // 비트맵 캡처 cascade가 없으므로 가릴 필요 없음. 깜빡임 회귀(2026-05-21)
+  // 원인 = 모든 카메라 변화에 게이팅했던 것.
   const [cameraIdle, setCameraIdle] = React.useState(true);
   const idleTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const firstZoomEffectRef = React.useRef(true);
+  React.useEffect(() => {
+    // 초기 마운트(1회)는 게이트 발동 X — 마운트 직후 200ms blank가 보이지 않게.
+    if (firstZoomEffectRef.current) {
+      firstZoomEffectRef.current = false;
+      return;
+    }
+    setCameraIdle(false);
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = setTimeout(() => {
+      setCameraIdle(true);
+    }, STACK_IDLE_MS);
+  }, [zoomInt]);
   React.useEffect(
     () => () => {
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
@@ -405,20 +418,12 @@ export function MapScreen() {
   }) => {
     // ref만 즉시 갱신 — 리렌더 안 일어남
     cameraRef.current = { latitude: cam.latitude, longitude: cam.longitude, zoom: cam.zoom };
-    // 정수 zoom 바뀔 때만 state 업데이트 → visibleClusters 재계산
+    // 정수 zoom 바뀔 때만 state 업데이트 → visibleClusters 재계산.
+    // setZoomInt가 위 useEffect[zoomInt] 를 깨워 cameraIdle 게이트가 발동.
     const newZoomInt = Math.round(cam.zoom);
     if (newZoomInt !== zoomInt) {
       setZoomInt(newZoomInt);
     }
-
-    // 카메라 idle 게이팅 — 어떤 reason이든 카메라가 움직이는 순간 스택 hide,
-    // STACK_IDLE_MS 동안 추가 움직임 없으면 다시 보임. setCameraIdle(false)는
-    // 첫 transition만 일어나도록 가드(매 프레임 setState 폭발 방지).
-    setCameraIdle((prev) => (prev ? false : prev));
-    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-    idleTimerRef.current = setTimeout(() => {
-      setCameraIdle(true);
-    }, STACK_IDLE_MS);
 
     // 비-Gesture 이벤트(animateCameraTo 등)는 baseline만 갱신하고 deselect 평가 안함.
     // → 마커 탭으로 카메라가 zoom 15로 이동해도 카드 유지, 그 이후 사용자 핀치만 평가.
