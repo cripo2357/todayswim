@@ -25,6 +25,9 @@ import {
   StyleSheet,
   Alert,
   TextInput,
+  Keyboard,
+  Platform,
+  type KeyboardEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -62,6 +65,26 @@ export function DonationScreen() {
 
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [hideId, setHideId] = React.useState<string | null>(null);
+
+  // 키보드 회피 — 인라인 textarea 편집 시 키보드가 본인 카드를 가리지 않도록
+  // ScrollView contentContainerStyle.paddingBottom 을 키보드 높이만큼 늘려서
+  // focus된 TextInput 까지 자동 스크롤 가능하게 함(RN의 기본 keyboardOnFocus
+  // 스크롤이 paddingBottom 부족하면 안 동작). 외부 라이브러리 미사용.
+  const [kbHeight, setKbHeight] = React.useState(0);
+  React.useEffect(() => {
+    const showEvt =
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt =
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvt, (e: KeyboardEvent) =>
+      setKbHeight(e.endCoordinates.height),
+    );
+    const hideSub = Keyboard.addListener(hideEvt, () => setKbHeight(0));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   // 계좌 클립보드 복사 — expo-clipboard 동적 import.
   const onCopyAccount = async () => {
@@ -104,8 +127,14 @@ export function DonationScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={[
+          styles.scroll,
+          // 키보드 올라오면 그만큼 추가 여백 — 본인 카드 textarea가 키보드에
+          // 가려지지 않고 자동 스크롤로 visible 영역으로 올라옴.
+          kbHeight > 0 ? { paddingBottom: 24 + kbHeight } : null,
+        ]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         {/* 일러스트 */}
         <View style={styles.illustWrap}>
