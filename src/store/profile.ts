@@ -1,5 +1,11 @@
 /**
- * 사용자 프로필 — Phase 1: AsyncStorage 보관. Phase 2: Supabase user_profiles 테이블 동기화.
+ * 사용자 프로필.
+ *
+ * Phase 1: AsyncStorage 보관 (권위).
+ * Phase 2 진입(2026-05-20): Supabase `public.profiles`(migration 0047) 양방향 동기.
+ *   - hydrate: 로컬 우선 + 로컬 없을 때만 서버에서 복구(재설치/기기변경).
+ *   - save / regenerateId: 로컬 + 서버 best-effort upsert(실패 silent).
+ *   - 다중 기기 동기화는 실 auth 진입 후 — 그 전엔 로컬이 권위.
  *
  * 가입 흐름: 약관 동의 → 프로필 등록(이 store에 저장) → MapMain.
  * 다음 진입부터 SplashScreen이 프로필 존재 확인 후 MapMain 직진.
@@ -7,6 +13,11 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { DayOfWeek } from '@/types/schedule';
+import {
+  tryFetchProfileById,
+  tryUpsertProfile,
+  tryRenameProfileId,
+} from '@/lib/profileSync';
 
 export type Gender = 'male' | 'female' | 'other';
 export type Stroke = '자유형' | '배영' | '접영' | '평영';
@@ -135,6 +146,12 @@ export const useProfile = create<ProfileState>((set, get) => ({
         await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
       }
       set({ profile, hydrated: true });
+      // P2 백그라운드 동기: 로컬 존재 시 서버 upsert(저장된 적 없는 기기·미적용
+      // 마이그레이션 케이스에서 서버 빈 행 보장). 로컬 없으면 패스 — 가입
+      // 전이라 서버에 둘 친구코드도 없음(다중기기 복구는 실 auth 진입 후).
+      if (profile) {
+        void tryUpsertProfile(profile);
+      }
     } catch {
       set({ hydrated: true });
     }
@@ -145,21 +162,40 @@ export const useProfile = create<ProfileState>((set, get) => ({
     const withId = profile.id ? profile : { ...profile, id: genProfileId() };
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(withId));
     set({ profile: withId });
+    // 서버 best-effort upsert — 실패 silent, 로컬이 권위.
+    void tryUpsertProfile(withId);
   },
 
   clear: async () => {
     await AsyncStorage.removeItem(STORAGE_KEY);
     set({ profile: null });
+    // 서버 row delete는 P2 후속(friends/notifications 외부 참조 정리와 함께).
+    // 지금 지우면 옛 친구코드로 검색·초대했던 사람의 화면이 깨짐.
   },
 
   regenerateId: async () => {
     const cur = get().profile;
     const newId = genProfileId();
     if (cur) {
+      const prevId = cur.id;
       const next = { ...cur, id: newId };
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
       set({ profile: next });
+      // 서버에 새 PK row 삽입(옛 row는 보존 — profileSync 주석 참고).
+      void tryRenameProfileId(next, prevId);
     }
     return newId;
   },
 }));
+
+/** 재설치·기기변경 복구용 — SplashScreen 등에서 친구코드 알려진 경우만.
+ *  로컬에 프로필이 없고 서버에 row가 있을 때 끌어와 useProfile에 채움.
+ *  P2 첫 단계는 호출처 없음(친구코드 입력 UX 없음). 실 auth 진입 후
+ *  signIn 직후 auth.uid→profile 매핑이 잡힌 시점에 사용. */
+export async function recoverProfileFromServer(id: string): Promise<boolean> {
+  const fetched = await tryFetchProfileById(id);
+  if (!fetched) return false;
+  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(fetched));
+  useProfile.setState({ profile: fetched });
+  return true;
+}
