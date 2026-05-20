@@ -37,6 +37,7 @@ import {
   Copy,
   PiggyBank,
   Edit3,
+  Trash2,
   XCircle,
   MoveDiagonal2,
 } from 'lucide-react-native';
@@ -370,7 +371,7 @@ function DonationItemCard({
                 accessibilityRole="button"
                 accessibilityLabel="후원 비공개"
               >
-                <Copy size={16} color="#4B5563" strokeWidth={2} />
+                <Trash2 size={16} color="#4B5563" strokeWidth={2} />
                 <Text style={styles.actionBadgeLabel}>후원 비공개</Text>
               </Pressable>
               <Pressable
