@@ -118,19 +118,10 @@ export function SettingsScreen() {
   const signOut = useAuth((s) => s.signOut);
   const deleteAccount = useAuth((s) => s.deleteAccount);
   const authUser = useAuth((s) => s.user);
-  // 알림 행 아이콘 — "푸시 알림 1개라도 ON" → bell, "아무것도 안 받음" →
-  // bell-off. 마스터 OFF면 무조건 bell-off(어떤 푸시도 발송 X). 마스터 ON
-  // 이어도 카테고리·마케팅 전부 OFF면 bell-off(실효 발송 0).
-  const anyNotifOn = usePrefs(
-    (s) =>
-      s.pushOn &&
-      (s.notifFriendInvite ||
-        s.notifScheduleReminder ||
-        s.notifSubmissionResult ||
-        s.notifServiceAnnounce ||
-        s.notifMonthlyReport ||
-        s.notifMarketing),
-  );
+  // 알림 행 아이콘 — "푸시 1개라도 ON" → bell, 아니면 bell-off. pushOn은
+  // 5 sub의 OR(derived) — 마케팅을 더하면 정확히 "6개 중 하나라도 ON".
+  // 마케팅은 법적 분리(정통망법 §50)라 마스터 cascade·집계에 포함 X.
+  const anyNotifOn = usePrefs((s) => s.pushOn || s.notifMarketing);
 
   const scheduleInvite = usePrefs((s) => s.scheduleInvite);
   const setScheduleInvite = usePrefs((s) => s.setScheduleInvite);

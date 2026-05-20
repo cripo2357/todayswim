@@ -35,11 +35,11 @@ interface PrefsState {
   mapStartPoolId: string | null;
   /** 지도 수영 예정 친구 스택 노출 시점(슬롯 시작 N 전부터). 'off'=미표시. */
   mapFriendHorizon: MapFriendHorizon;
-  /** OS 푸시 알림 마스터(Figma 223:2799 "푸시 알림"). 카테고리·마케팅을
-   *  덮어쓰는 게이트 — OFF면 어떤 푸시도 발송 X(인박스는 적재). */
+  /** OS 푸시 알림 마스터(Figma 223:2799 "푸시 알림"). **5개 sub의 OR 집계
+   *  (derived)** — 별도 저장 X. 마케팅은 정통망법 §50 별도 동의라 집계에서
+   *  제외. 토글 시 5개 sub로 cascade(마케팅 무관). */
   pushOn: boolean;
-  /** 알림 유형 5개 카테고리 토글(Figma 223:2799 "알림 유형" 섹션).
-   *  마스터 OFF여도 값은 보존 — 사용자가 미리 조합 만들어두기 위함. */
+  /** 알림 유형 5개 카테고리 토글(Figma 223:2799 "알림 유형" 섹션). */
   notifFriendInvite: boolean;
   notifScheduleReminder: boolean;
   notifSubmissionResult: boolean;
@@ -76,7 +76,8 @@ const K_MAP_START = 'poolsday.prefs.mapStartPoolId';
 const K_MAP_FRIENDS = 'poolsday.prefs.mapFriendHorizon';
 const K_MAP_FRIENDS_LEGACY = 'poolsday.prefs.showMapFriendStack';
 const HORIZON_VALUES: MapFriendHorizon[] = ['d1', 'h12', 'h6', 'off'];
-const K_PUSH_ON = 'poolsday.prefs.pushOn';
+// 푸시 알림 마스터는 5 sub의 OR 집계(derived) — 별도 영속 키 없음.
+// 구 K_PUSH_ON('poolsday.prefs.pushOn') 키는 폐기(2026-05-20).
 const K_NOTIF_FRIEND = 'poolsday.prefs.notifFriendInvite';
 const K_NOTIF_SCHED = 'poolsday.prefs.notifScheduleReminder';
 const K_NOTIF_SUBMIT = 'poolsday.prefs.notifSubmissionResult';
@@ -108,7 +109,7 @@ export const usePrefs = create<PrefsState>((set) => ({
 
   hydrate: async () => {
     try {
-      const [i, p, f, ms, mf, mfLegacy, pn, nFi, nSc, nSu, nSv, nMo, marketing] =
+      const [i, p, f, ms, mf, mfLegacy, nFi, nSc, nSu, nSv, nMo, marketing] =
         await Promise.all([
           AsyncStorage.getItem(K_INVITE),
           AsyncStorage.getItem(K_PROFILE_VIS),
@@ -116,7 +117,6 @@ export const usePrefs = create<PrefsState>((set) => ({
           AsyncStorage.getItem(K_MAP_START),
           AsyncStorage.getItem(K_MAP_FRIENDS),
           AsyncStorage.getItem(K_MAP_FRIENDS_LEGACY),
-          AsyncStorage.getItem(K_PUSH_ON),
           AsyncStorage.getItem(K_NOTIF_FRIEND),
           AsyncStorage.getItem(K_NOTIF_SCHED),
           AsyncStorage.getItem(K_NOTIF_SUBMIT),
@@ -138,6 +138,11 @@ export const usePrefs = create<PrefsState>((set) => ({
         AsyncStorage.setItem(K_MAP_FRIENDS, mapFriendHorizon).catch(() => {});
         AsyncStorage.removeItem(K_MAP_FRIENDS_LEGACY).catch(() => {});
       }
+      const friendV = nFi === 'false' ? false : true;
+      const schedV = nSc === 'false' ? false : true;
+      const submitV = nSu === 'false' ? false : true;
+      const svcV = nSv === 'false' ? false : true;
+      const reportV = nMo === 'false' ? false : true;
       set({
         // '프로필과 일정 공유' 단일 제어 — 일정 공유는 항상 프로필 공개 미러
         othersScheduleView: pv,
@@ -148,12 +153,13 @@ export const usePrefs = create<PrefsState>((set) => ({
           : 'nickname',
         mapStartPoolId: ms || null,
         mapFriendHorizon,
-        pushOn: pn === 'false' ? false : true,
-        notifFriendInvite: nFi === 'false' ? false : true,
-        notifScheduleReminder: nSc === 'false' ? false : true,
-        notifSubmissionResult: nSu === 'false' ? false : true,
-        notifServiceAnnounce: nSv === 'false' ? false : true,
-        notifMonthlyReport: nMo === 'false' ? false : true,
+        notifFriendInvite: friendV,
+        notifScheduleReminder: schedV,
+        notifSubmissionResult: submitV,
+        notifServiceAnnounce: svcV,
+        notifMonthlyReport: reportV,
+        // pushOn = 5 sub의 OR (derived). 마케팅은 집계 제외.
+        pushOn: friendV || schedV || submitV || svcV || reportV,
         notifMarketing: !!marketing, // timestamp 존재 = 동의 상태
         hydrated: true,
       });
@@ -204,30 +210,87 @@ export const usePrefs = create<PrefsState>((set) => ({
     set({ mapFriendHorizon: v });
   },
 
+  // 마스터(푸시 알림) 토글 — 5 sub로 cascade. 마케팅은 정통망법 §50 별도
+  // 동의라 cascade 제외(독립 토글).
   setPushOn: async (v) => {
-    await AsyncStorage.setItem(K_PUSH_ON, v ? 'true' : 'false');
-    set({ pushOn: v });
+    const s = v ? 'true' : 'false';
+    await Promise.all([
+      AsyncStorage.setItem(K_NOTIF_FRIEND, s),
+      AsyncStorage.setItem(K_NOTIF_SCHED, s),
+      AsyncStorage.setItem(K_NOTIF_SUBMIT, s),
+      AsyncStorage.setItem(K_NOTIF_SVC, s),
+      AsyncStorage.setItem(K_NOTIF_REPORT, s),
+    ]);
+    set({
+      pushOn: v,
+      notifFriendInvite: v,
+      notifScheduleReminder: v,
+      notifSubmissionResult: v,
+      notifServiceAnnounce: v,
+      notifMonthlyReport: v,
+    });
   },
 
+  // sub 토글 — 자기 값 저장 + pushOn 재계산(5 sub의 OR).
   setNotifFriendInvite: async (v) => {
     await AsyncStorage.setItem(K_NOTIF_FRIEND, v ? 'true' : 'false');
-    set({ notifFriendInvite: v });
+    set((s) => ({
+      notifFriendInvite: v,
+      pushOn:
+        v ||
+        s.notifScheduleReminder ||
+        s.notifSubmissionResult ||
+        s.notifServiceAnnounce ||
+        s.notifMonthlyReport,
+    }));
   },
   setNotifScheduleReminder: async (v) => {
     await AsyncStorage.setItem(K_NOTIF_SCHED, v ? 'true' : 'false');
-    set({ notifScheduleReminder: v });
+    set((s) => ({
+      notifScheduleReminder: v,
+      pushOn:
+        s.notifFriendInvite ||
+        v ||
+        s.notifSubmissionResult ||
+        s.notifServiceAnnounce ||
+        s.notifMonthlyReport,
+    }));
   },
   setNotifSubmissionResult: async (v) => {
     await AsyncStorage.setItem(K_NOTIF_SUBMIT, v ? 'true' : 'false');
-    set({ notifSubmissionResult: v });
+    set((s) => ({
+      notifSubmissionResult: v,
+      pushOn:
+        s.notifFriendInvite ||
+        s.notifScheduleReminder ||
+        v ||
+        s.notifServiceAnnounce ||
+        s.notifMonthlyReport,
+    }));
   },
   setNotifServiceAnnounce: async (v) => {
     await AsyncStorage.setItem(K_NOTIF_SVC, v ? 'true' : 'false');
-    set({ notifServiceAnnounce: v });
+    set((s) => ({
+      notifServiceAnnounce: v,
+      pushOn:
+        s.notifFriendInvite ||
+        s.notifScheduleReminder ||
+        s.notifSubmissionResult ||
+        v ||
+        s.notifMonthlyReport,
+    }));
   },
   setNotifMonthlyReport: async (v) => {
     await AsyncStorage.setItem(K_NOTIF_REPORT, v ? 'true' : 'false');
-    set({ notifMonthlyReport: v });
+    set((s) => ({
+      notifMonthlyReport: v,
+      pushOn:
+        s.notifFriendInvite ||
+        s.notifScheduleReminder ||
+        s.notifSubmissionResult ||
+        s.notifServiceAnnounce ||
+        v,
+    }));
   },
   setNotifMarketing: async (v) => {
     // 마케팅 토글은 lib/terms.ts와 동기화 — 동의일(ISO)을 직접 쓴다.
