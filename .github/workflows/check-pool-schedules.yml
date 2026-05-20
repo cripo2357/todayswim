@@ -22,7 +22,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       # native deps(sharp 등) 빌드 회피 — 검증 스크립트는 순수 JS 의존성만 필요.
       - name: Install verification deps
