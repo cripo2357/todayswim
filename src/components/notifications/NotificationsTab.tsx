@@ -43,6 +43,8 @@ import IconReminder from '@assets/icons/announcement/reminder.svg'; // [리마�
 import IconSwim from '@assets/icons/announcement/swim.svg'; // [수영]
 import IconSchedule from '@assets/icons/announcement/schedule.svg'; // [시간표]
 import IconWelcome from '@assets/icons/announcement/welcome.svg'; // [환영]
+// 후원 감사 알림 — announcement 회색톤 별도 export 전엔 settings/hand-heart 재사용.
+import IconHandHeartSlot from '@assets/icons/settings/hand-heart.svg';
 
 type SvgIconCmp = React.FC<SvgProps>;
 
@@ -114,6 +116,7 @@ const SLOT_SWIM = svg(IconSwim); // [수영]
 const SLOT_EVENT = svg(IconEvent); // [이벤트] (marketing 3종 모두 — 스펙)
 const SLOT_APPROVED = svg(IconApproved); // [승인]
 const SLOT_REPORT = svg(IconReport); // [리포트]
+const SLOT_DONATION_THANKS = svg(IconHandHeartSlot); // [후원 감사]
 
 // 공통 샘플 변수 (v0.5 어휘 + v0.6 통일 날짜·시각 포맷)
 // 날짜·시각은 앱 전역 단일 포맷(YY.MM.DD(요일) 오전/오후 H:MM) — @/lib/dateFormat.
@@ -171,6 +174,8 @@ const GROUPS: { title: string; items: SampleSpec[] }[] = [
       { id: 's22', kind: 'schedule_reminder_1h', slot: SLOT_REMINDER, params: { pool: P } },
       { id: 's23', kind: 'terms_updated', slot: SLOT_TERMS, params: { effectiveDate: '2026년 6월 5일' } },
       { id: 's24', kind: 'nickname_changed_by_admin', slot: SLOT_PROFILE, params: { newNickname: '물개수영', reason: '부적절한 표현' } },
+      // 후원 감사 — 운영자가 donation_payments INSERT 시 트리거가 자동 발송(0070).
+      { id: 's27', kind: 'donation_thanks', slot: SLOT_DONATION_THANKS, params: { name: NM } },
 
       // ── 변수 폴백(별도 그룹 X, 평소 케이스에 섞임) ──
       // friend_request_accepted with no name → "[탈퇴 회원]"

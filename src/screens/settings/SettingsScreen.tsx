@@ -306,6 +306,11 @@ export function SettingsScreen() {
             label="Pool’s day에 메일 보내기"
             onPress={sendMail}
           />
+          <Row
+            icon={<IconHandHeart width={24} height={24} />}
+            label="후원으로 서비스 응원하기"
+            onPress={() => navigation.navigate('Donation')}
+          />
         </Section>
 
         {/* 서비스 약관 (Figma 129:5245) — 가입후 조회용 4종. 단일

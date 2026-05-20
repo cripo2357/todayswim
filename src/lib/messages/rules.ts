@@ -51,7 +51,8 @@ export type MessageKind =
   | 'nickname_changed_by_admin' // 운영자 닉네임 강제 변경(P0)
   | 'monthly_summary' // 월간 수영 결산 (8변형)
   | 'schedule_completion_prompt' // 일정 종료 후 완료 확인
-  | 'friend_schedule_overlap'; // 같은 수영장+시간 친구 일정 겹침
+  | 'friend_schedule_overlap' // 같은 수영장+시간 친구 일정 겹침
+  | 'donation_thanks'; // 후원 입금 확인 — 운영자 처리 후 자동 감사 인사
 
 export type MessageRecipient = 'self' | 'other' | 'both';
 
@@ -263,6 +264,19 @@ export const RULES: Record<MessageKind, Rule> = {
       title: '같은 수영 일정',
       body: [venueLine(p), `${nick(p)}님도 수영 일정이 있어요.`],
       actions: ['일정 보기'],
+    }),
+  },
+
+  // 후원 입금 확인 — 운영자가 donation_payments INSERT → 트리거가 자동 발송.
+  // {name} = 입금자 닉네임 스냅샷(트리거가 발송 시점에 박음). 본인 알림함.
+  donation_thanks: {
+    recipients: 'self',
+    build: (p) => ({
+      title: '후원 감사 인사',
+      body: [
+        `${nick(p)}님의 후원이 도착했어요.`,
+        "Pool's day 운영에 소중히 쓰일게요. 감사합니다.",
+      ],
     }),
   },
 

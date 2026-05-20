@@ -124,6 +124,23 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 - `useAuth.deleteAccount` = **P1 로컬 teardown만**(supabase signOut + 소셜 signOut + 로컬 프로필 clear). **서버측 계정/데이터 영구삭제는 미구현(TODO P2, Edge Function 예정).** 효과상 로그아웃과 동일.
 
 ### 3.7 사용자 제보 ✅(서버 insert)
+- 풀 등록/수정 요청 + 시간표 제보 — pool_submissions / schedule_submissions
+- 운영자 승인 후 본 테이블 반영(pool_submission_approved/rejected 알림)
+
+### 3.8 후원으로 서비스 응원 ✅
+- **진입점**: 설정 > 헬프 센터 > 후원으로 서비스 응원하기 (Donation 화면, Figma 238:8643)
+- **계좌 안내**: app_status(0068)의 donation_bank/account/holder를 운영자가 Dashboard에서 설정. 셋 다 있어야 카드 노출, 비어있으면 "준비 중" 표시. 계좌 복사 = expo-clipboard 동적 import.
+- **응원 메시지(donations 0069)**: 사용자가 작성. 사용자당 누적 가능, 화면은 최신 1건만 dedup. "후원 비공개"(hidden=true, 본인만 보임) / "문구 수정" 액션. RLS: write는 본인 검증, read는 (true) + 클라 hidden 필터.
+- **입금 확인(donation_payments 0070)**: 운영자만(service_role) 처리.
+  1. 운영자가 카카오뱅크 입금 확인 → 입금자명(=닉네임)
+  2. `select id from profiles where nickname='입금자명';` 으로 profile_id 매칭
+  3. `insert into donation_payments (profile_id, depositor_name, amount, received_at) ...`
+  4. **PostgreSQL 트리거가 자동으로 notifications에 'donation_thanks' insert** → 사용자 인앱 알림
+  - 매칭 실패 시 profile_id NULL로 INSERT만 → 운영자가 추후 매칭 UPDATE 시점에도 알림 발화(별도 트리거).
+- **약관 영향**:
+  - 서비스 이용약관: 후원금은 자발적 기증 / 반환 불가 / 운영비 사용 / 메시지·닉네임 공개(비공개 옵션)
+  - 개인정보 처리방침: 입금자명→닉네임 매칭으로 처리, 닉네임·메시지 공개 가능
+
 - 수영장 등록 요청(이름·레인·길이·수심·시설) 또는 정보 수정 요청(이름+설명 ≤300자) → Supabase `pool_submissions` insert(실제). 좌표는 수집 안 함(운영자 처리). 운영자만 열람.
 
 ---
@@ -144,6 +161,8 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 | `profile_nicknames` ✅ | 닉네임 선점(중복방지) | 필수: nickname(PK), created_at. **프로필 본문 아님 — 닉네임 문자열만** | **전체 SELECT/INSERT**(목업 인증단계), 금칙어 트리거 |
 | `nickname_blocklist` ✅ | 금칙·예약 닉네임(~80건) | 필수: term(PK), kind(reserved/profanity) | **전체 SELECT**, 운영자 write |
 | `notifications` ✅ | 메시지/알림 이력 | 필수: id(PK), user_code(=프로필 6자 ID, auth.uid 아님), kind, title, body(jsonb), read, created_at · 선택: params/actions/related(jsonb) | **전체 SELECT/INSERT(개방 RLS)**. P1은 작성자 본인 행만 insert |
+| `donations` ✅ | 후원 응원 메시지(공개) | 필수: id(PK), profile_id(FK→profiles cascade), message(1~300자), hidden, created_at, updated_at | RLS: read all, write 본인 검증(auth_uid). hidden=true는 본인만 본인 화면에서 표시 |
+| `donation_payments` ✅ | 후원 입금 기록(비공개) | 필수: id(PK), depositor_name, amount(>0), received_at · 선택: profile_id(FK→profiles set null) | **service_role 전용** (정책 없음). INSERT/UPDATE 시 트리거가 자동 'donation_thanks' notifications 적재 |
 
 **Storage 버킷:** `avatars` ✅ (마이그레이션 생성, public read / 소유자 폴더만 write, 경로 `{auth.uid}/avatar.jpg`+`avatar_thumb.jpg`) · `pool-photos` ✅ (마이그레이션 없음 — 운영자가 대시보드에서 수동 생성, public, 풀 INSERT에 URL 박힘)
 
@@ -227,6 +246,7 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 | 초대 취소(invite_canceled) | (행동+상대) | both | 서비스 | 🔵 미발송 | 인앱(기획) |
 | 초대 72h 무응답 자동만료(invite_auto_expired) | 시스템 | both | 서비스 | 🔵 미발송(타이머/크론 부재) | 인앱(기획) |
 | 가입 환영(welcome) | 시스템→신규 | self | 서비스 | 🔵 미발송(정적 샘플로만) | 인앱(기획) |
+| **후원 감사(donation_thanks)** | 운영자→후원자 | self | 서비스 | ✅ 동작(트리거 자동 발송) | 인앱(0070 트리거 — donation_payments INSERT 시) |
 
 - **분류:** 코드상 발송 룰은 전부 **서비스(거래성) 알림**. **마케팅 푸시는 코드에 없음** — `termsContent`의 마케팅 동의 문구("앱 푸시 알림으로")는 더미·미구현.
 - **수신키:** `notifications.user_code` = 프로필 6자 친구코드(개방 RLS — 코드 아는 누구나 read). 민감정보 미저장 전제이나 `params`에 상대 표시명·풀·시간 포함.
