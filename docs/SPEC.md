@@ -76,9 +76,11 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 ├─ OtherUserProfile 🟡 [인증]  타 사용자 프로필·친구신청/수락·일정참여·차단/삭제
 ├─ InviteFriends 🟡    [인증]  확정 일정에 친구 다중선택 초대
 ├─ InviteDone ✅       [인증]  초대 전송 확인
-├─ Settings ✅         [인증]  설정 허브(계정/알림/관계/지도/약관/탈퇴/로그아웃)
+├─ Settings ✅         [인증]  설정 허브(계정/알림/관계/지도/약관/헬프센터/탈퇴/로그아웃)
 │  ├─ MapStartLocation ✅      지도 시작 위치(내 위치/즐겨찾기 풀) 선택
-│  └─ FavoritePools 🟡         즐겨찾는 수영장 관리(로컬)
+│  ├─ FavoritePools 🟡         즐겨찾는 수영장 관리(로컬)
+│  ├─ Faq ✅                   자주 묻는 질문(서버 `faqs`, 카테고리 4탭, 단일오픈 아코디언)
+│  └─ Donation ✅              후원으로 서비스 응원하기(계좌 안내 + 응원자 카드 + 본인 메시지 수정/비공개)
 └─ (모달) WithdrawFlowModal ✅  회원 탈퇴 3단계(P1=로컬 teardown)
 ```
 
@@ -139,18 +141,33 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
      ```
   3. **PostgreSQL 트리거가 자동으로:**
      - BEFORE INSERT(0073 `match_donor_profile_id`): `depositor_name → profiles.nickname` 매칭 → `profile_id` 자동 채움
-     - AFTER INSERT(0072 `send_donation_thanks`): `profile_id` 확정되면 `donations` row + `notifications` 'donation_thanks' 적재
+     - AFTER INSERT(0072→0077 `send_donation_thanks`): `profile_id` 확정되면 `donations` row + `notifications` 'donation_thanks' 적재
   4. 사용자는 본인 카드의 **문구 수정 / 후원 비공개** 액션으로 message UPDATE 또는 hidden 토글
   - 매칭 실패(닉네임 오타·탈퇴) 시 `profile_id` NULL로 남음 → 운영자가 확인 후 수동 UPDATE → `send_donation_thanks_on_match` 트리거가 시점에 발화
+- **응원 메시지 초기값** (0077): 트리거가 donations row 생성 시 메시지를 **10개 후보 풀에서 랜덤 1개**로 채운다(응원/감사/일상/추천/보탬 톤 mix). 단일 디폴트만 박히면 카드 목록이 단조해 다양화. 사용자는 본인 카드에서 자유롭게 수정 가능.
+- **'응원글 보기' 자동 스크롤**: 알림 탭의 'donation_thanks' 카드에서 '응원글 보기' 액션 → `navigate('Donation', { scrollToMine: true })` → 화면 진입 시 본인 카드 위치(list y + mine card y onLayout 합산)로 자동 scrollTo. dedupe 로 본인 카드 1장이라 위치 정확.
+- **인라인 편집 키보드 회피**: 본인 카드 "문구 수정" → textarea autoFocus → 키보드 등장 → 카드 절대 bottom 계산(`listY + mineCardY + mineCardH`) - visibleH + 12px 마진 만큼 명시적 scrollTo. RN native auto-scroll 은 input top 만 보이게 해서 [취소][작성 완료] 배지 가려지는 문제를 카드 bottom 기준으로 해결.
 - **데이터 분리**:
   - `donations` (0069): 응원 메시지(공개). RLS write 본인 검증.
   - `donation_payments` (0070): 입금 기록(비공개). service_role 전용.
 - **비공개(hidden=true)** = 본인 포함 모든 사용자 화면에서 미노출. 이력은 DB 보존. 클라 `dedupeDonationsForDisplay`가 hidden 행 모두 제외.
+- **재후원 시 정책**(per-donation 독립): 같은 사용자가 이전 후원 row 를 hidden 처리한 뒤 또 후원하면 새 row 는 기본 hidden=false 로 등장. dedupe 가 latest 만 노출하므로 결과적으로 새 후원은 다시 노출. 사용자가 원하면 또 hidden 토글.
 - **약관 영향**:
   - 서비스 이용약관 제15조(후원금): 자발적 기증 / 반환 불가 / 운영비 사용 / 자동 등록 흐름 / 본인 항목 수정·비공개 권리
   - 개인정보 처리방침: 응원 메시지(자동 등록 후 이용자 수정 가능) + 입금 식별 정보(운영자만 접근) 처리
 
-- 수영장 등록 요청(이름·레인·길이·수심·시설) 또는 정보 수정 요청(이름+설명 ≤300자) → Supabase `pool_submissions` insert(실제). 좌표는 수집 안 함(운영자 처리). 운영자만 열람.
+### 3.9 자주 묻는 질문 (FAQ) ✅
+- **진입점**: 설정 > 헬프 센터 > 자주 묻는 질문 (Faq 화면, Figma 239:3560)
+- **구성**: 헤더 + 일러스트 + "Pool's day 에 메일 보내기" CTA(`mailto:cripo2357@gmail.com`) + **카테고리 탭 4그룹**(처음 / 정보 / 활동 / 설정) + 단일 오픈 아코디언 리스트(Figma 245:5819).
+- **데이터**: Supabase `faqs` 테이블(0071) — 운영자가 Dashboard 에서 직접 추가/수정/삭제. 화면은 `useFaqs` 가 `sort_order asc` 로 fetch.
+- **카테고리** (0073_faqs_category):
+  - `first` — 가입·계정 라이프사이클(서비스 소개·로그인·약관·닉네임·친구 ID·로그아웃·탈퇴)
+  - `info` — 수영장·시간표 조회(지도·필터·즐겨찾기·요금·시간표·제보)
+  - `activity` — 일정·친구·레슨(일정 추가/완료/초대·친구 추가/차단/삭제·레슨 등록/해제)
+  - `settings` — 프로필·공개범위·알림·개인정보(프로필 수정/공개·친구 신청 받기·레슨 가시성·알림 토글·위치/사진 권한)
+- **현재 시드**: 0072_faqs_expand 가 44개 질문으로 초기 채움. SPEC 의 P1 전기능을 균형 있게 커버. 톤앤매너는 따뜻하고 친근하게.
+- **운영**: announcements 와 동일 패턴 — RLS read all, write service_role 만. 운영자가 사용자 문의 패턴 보고 항목 가감.
+
 
 ---
 
@@ -170,8 +187,10 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 | `profile_nicknames` ✅ | 닉네임 선점(중복방지) | 필수: nickname(PK), created_at. **프로필 본문 아님 — 닉네임 문자열만** | **전체 SELECT/INSERT**(목업 인증단계), 금칙어 트리거 |
 | `nickname_blocklist` ✅ | 금칙·예약 닉네임(~80건) | 필수: term(PK), kind(reserved/profanity) | **전체 SELECT**, 운영자 write |
 | `notifications` ✅ | 메시지/알림 이력 | 필수: id(PK), user_code(=프로필 6자 ID, auth.uid 아님), kind, title, body(jsonb), read, created_at · 선택: params/actions/related(jsonb) | **전체 SELECT/INSERT(개방 RLS)**. P1은 작성자 본인 행만 insert |
-| `donations` ✅ | 후원 응원 메시지(공개) | 필수: id(PK), profile_id(FK→profiles cascade), message(1~300자), hidden, created_at, updated_at | RLS: read all, write 본인 검증(auth_uid). hidden=true는 본인만 본인 화면에서 표시 |
-| `donation_payments` ✅ | 후원 입금 기록(비공개) | 필수: id(PK), depositor_name, amount(>0), received_at · 선택: profile_id(FK→profiles set null) | **service_role 전용** (정책 없음). INSERT/UPDATE 시 트리거가 자동 'donation_thanks' notifications 적재 |
+| `donations` ✅ | 후원 응원 메시지(공개) | 필수: id(PK), profile_id(FK→profiles cascade), message(1~300자), hidden, created_at, updated_at | RLS: read all, write 본인 검증(auth_uid). hidden=true는 본인만 본인 화면에서 표시. trigger 가 INSERT 시 10개 풀에서 랜덤 디폴트 메시지 박음(0077) |
+| `donation_payments` ✅ | 후원 입금 기록(비공개) | 필수: id(PK), depositor_name, amount(>0), received_at · 선택: profile_id(FK→profiles set null) | **service_role 전용** (정책 없음). INSERT/UPDATE 시 트리거가 자동 'donation_thanks' notifications + donations row 적재 |
+| `faqs` ✅ | 자주 묻는 질문 | 필수: id(PK uuid), question, answer, sort_order, category('first'/'info'/'activity'/'settings'), created_at, updated_at | RLS read all, write service_role 만. 운영자가 Dashboard 에서 직접 추가/수정/삭제. 현재 시드 44개(0072_faqs_expand → 0073_faqs_category 분류) |
+| `app_status` ✅ | 운영자 설정 단일 row(점검·강제업데이트·후원 계좌) | 필수: id(=1 single-row), maintenance_mode, min_version · 선택: donation_bank, donation_account, donation_holder(0068) | RLS read all, write service_role 만. 클라가 Splash + Donation 화면에서 조회 |
 
 **Storage 버킷:** `avatars` ✅ (마이그레이션 생성, public read / 소유자 폴더만 write, 경로 `{auth.uid}/avatar.jpg`+`avatar_thumb.jpg`) · `pool-photos` ✅ (마이그레이션 없음 — 운영자가 대시보드에서 수동 생성, public, 풀 INSERT에 URL 박힘)
 
@@ -255,7 +274,7 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 | 초대 취소(invite_canceled) | (행동+상대) | both | 서비스 | 🔵 미발송 | 인앱(기획) |
 | 초대 72h 무응답 자동만료(invite_auto_expired) | 시스템 | both | 서비스 | 🔵 미발송(타이머/크론 부재) | 인앱(기획) |
 | 가입 환영(welcome) | 시스템→신규 | self | 서비스 | 🔵 미발송(정적 샘플로만) | 인앱(기획) |
-| **후원 감사(donation_thanks)** | 운영자→후원자 | self | 서비스 | ✅ 동작(트리거 자동 발송) | 인앱(0070 트리거 — donation_payments INSERT 시) |
+| **후원 감사(donation_thanks)** | 운영자→후원자 | self | 서비스 | ✅ 동작(트리거 자동 발송) | 인앱(0070→0077 트리거 — donation_payments INSERT 시. 알림 본문 "Pool's day 운영에 소중히 쓸게요. 고맙습니다.", 액션 '응원글 보기'→본인 카드 자동 스크롤) |
 
 - **분류:** 코드상 발송 룰은 전부 **서비스(거래성) 알림**. **마케팅 푸시는 코드에 없음** — `termsContent`의 마케팅 동의 문구("앱 푸시 알림으로")는 더미·미구현.
 - **수신키:** `notifications.user_code` = 프로필 6자 친구코드(개방 RLS — 코드 아는 누구나 read). 민감정보 미저장 전제이나 `params`에 상대 표시명·풀·시간 포함.
@@ -301,4 +320,4 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 
 ---
 
-*근거: `src/screens/**`, `src/components/**`, `src/store/**`, `src/lib/**`, `src/types/**`, `src/navigation/**`, `supabase/migrations/0001~0043`, `app.config.ts`, `package.json` 전수 확인. 본 문서는 P1 현행 사실 기록이며, 🔵/⛔ 항목은 후속 기획·구현 대상이다.*
+*근거: `src/screens/**`, `src/components/**`, `src/store/**`, `src/lib/**`, `src/types/**`, `src/navigation/**`, `supabase/migrations/0001~0077`, `app.config.ts`, `package.json` 전수 확인. 본 문서는 P1·P2 현행 사실 기록이며, 🔵/⛔ 항목은 후속 기획·구현 대상이다. 최근 갱신(2026-05-21): §3.8 후원 random pool/scrollToMine, §3.9 FAQ 신설, §4 faqs·app_status 테이블 추가.*
