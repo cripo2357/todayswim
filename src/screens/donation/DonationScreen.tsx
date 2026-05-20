@@ -156,9 +156,10 @@ export function DonationScreen() {
         style={styles.flex}
         contentContainerStyle={[
           styles.scroll,
-          // 키보드 올라오면 그만큼 추가 여백 — scrollTo 가 본인 카드를 충분히
-          // 위로 올릴 수 있는 contents 길이 확보용.
-          kbHeight > 0 ? { paddingBottom: 24 + kbHeight } : null,
+          // 키보드 올라올 때만 그만큼 가짜 여백 — 자동 스크롤이 본인 카드를
+          // 키보드 위로 올릴 수 있는 contents 길이 확보용. 닫혀있을 땐 0
+          // (콘텐츠 끝 + scroll.paddingBottom 기본값으로 자연스럽게 끝남).
+          kbHeight > 0 ? { paddingBottom: kbHeight } : null,
         ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -420,10 +421,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // 본문 패딩(238:8646) — 16px, gap 32
+  // 본문 패딩(238:8646) — 16px, gap 32.
+  // paddingBottom 0 — 키보드 닫혀있을 땐 자연스러운 콘텐츠 끝. 키보드 올라올
+  // 때만 contentContainerStyle 에서 kbHeight 만큼 가짜 여백을 추가한다.
   scroll: {
     paddingHorizontal: 16,
-    paddingBottom: 24,
     gap: 32,
   },
 
