@@ -454,7 +454,12 @@ export function FriendsTab() {
           <>
             <Pressable
               style={styles.searchBackdrop}
-              onPress={() => setSearchOpen(false)}
+              onPress={() => {
+                // 패널 밖 탭 = 닫기 + 검색 초기화(전체 친구 노출).
+                setDraft('');
+                setQuery('');
+                setSearchOpen(false);
+              }}
               accessibilityRole="button"
               accessibilityLabel="친구 검색 닫기"
             />
