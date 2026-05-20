@@ -60,7 +60,11 @@ function rowToOtherSchedule(
  *   실 사용자만 가입한 prod 환경에선 P3에서 mock 시드 미실행 + 폴백 제거.
  */
 export function useOtherSchedules(): OtherSchedule[] {
-  const friendIds = useFriends((s) => s.friends.map((f) => f.id));
+  // zustand selector는 reference-stable 값만 반환해야 함 — `.map()` 직접
+  // 반환하면 매 호출마다 새 array → useSyncExternalStore가 "값 바뀜" 판정
+  // → 무한 렌더. friends 자체를 구독하고 .map은 useMemo로 파생.
+  const friends = useFriends((s) => s.friends);
+  const friendIds = React.useMemo(() => friends.map((f) => f.id), [friends]);
   const friendIdsKey = React.useMemo(
     () => [...friendIds].sort().join(','),
     [friendIds],
