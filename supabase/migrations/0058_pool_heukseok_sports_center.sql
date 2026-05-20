@@ -16,6 +16,7 @@
 -- ## 메타데이터 출처
 --
 -- - 25m×5레인, 수심 1.2m: 첨벙(공식엔 미기재).
+-- - 유아풀 보유: 운영자 확인 → has_kids_pool=true.
 -- - 좌표 [신뢰도 높음]: 카카오 Local API "서울특별시 동작구 현충로 73" ROAD_ADDR
 --   정확 매치 + "흑석체육센터" 키워드 POI도 같은 위치(흑석동 116-1).
 -- - 공식 페이지가 주소를 "보라매로5길 35"라고 적은 건 동작구공단 본부 주소를
@@ -36,7 +37,7 @@ insert into public.pools (
     37.5100551187106, 126.963446342285, 'indoor', 'public',
     '02-823-2273', 'https://sports.idongjak.or.kr/home/35',
     5, 25, 1.2, 1.2,
-    '{}', false, false, false,
+    '{}', true, false, false,
     true, true,
     4400, 4400, 5700,
     'https://hldfsstyzbnqnrlqhhtc.supabase.co/storage/v1/object/public/pool-photos/POOL_SEOUL_0012.jpg',
