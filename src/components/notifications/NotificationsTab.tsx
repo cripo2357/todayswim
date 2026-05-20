@@ -13,12 +13,15 @@
 // Phase 2: 실제 notifications 적재/수신으로 데이터 소스만 교체.
 
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Alert } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { SvgProps } from 'react-native-svg';
 import { X, Check, ChevronRight } from 'lucide-react-native';
 import { tokens } from '@/styles/tokens';
 import { RULES, type MessageKind, type MessageParams } from '@/lib/messages/rules';
 import { BUNDLE_AVATARS, type AvatarId } from '@/lib/avatars';
+import type { RootStackParamList } from '@/navigation/types';
 
 // 프로젝트 SVG 아이콘 — 전부 announcement/ 회색톤(#1F2937)으로 통일.
 // 알림 전용 사본(설정 메뉴 등 원본은 자기 색 유지 — sed로 fill만 치환한 복제).
@@ -51,6 +54,8 @@ type Slot =
 
 interface Notif {
   id: string;
+  /** 버튼/탭 액션 디스패치에 필요(handleAction/handleCardTap). */
+  kind: MessageKind;
   slot: Slot;
   /** avatar slot일 때만 — relFor(kind)로 계산된 발송 시점 관계. */
   rel?: AvatarRel;
@@ -190,6 +195,7 @@ function toNotif(s: SampleSpec): Notif {
   const c = RULES[s.kind].build(s.params);
   return {
     id: s.id,
+    kind: s.kind,
     slot: s.slot,
     rel: s.slot.type === 'avatar' ? relFor(s.kind) : undefined,
     title: c.title,
@@ -197,6 +203,74 @@ function toNotif(s: SampleSpec): Notif {
     lines: c.body.filter((l) => l.length > 0),
     actions: c.actions && c.actions.length > 0 ? c.actions : undefined,
   };
+}
+
+// 패턴 E (이력 표시 — 탭 동작 없음). 패턴 A(탭→이동), B(1버튼), C(2버튼)
+// 와 구분하기 위해 명시적 화이트리스트(스펙 액션 패턴 요약 기준).
+const E_TRIGGERS: Set<MessageKind> = new Set([
+  'friend_request_rejected',
+  'invite_rejected',
+  'invite_canceled',
+  'invite_auto_expired',
+]);
+
+type Nav = NativeStackNavigationProp<RootStackParamList>;
+
+/**
+ * 버튼 액션 디스패치 — 스펙 §버튼 액션 정책 기준.
+ * 샘플 갤러리는 mock 데이터라 상태 변경은 Alert 피드백, 이동은 실 navigation.
+ */
+function handleAction(navigation: Nav, kind: MessageKind, label: string) {
+  // === 응답형(C 2버튼) — 상태 변경. 샘플: Alert 피드백 ===
+  if (kind === 'friend_request_received') {
+    if (label === '수락')
+      return Alert.alert('친구 추가됨', '실 운영 시 친구 추가 + 양측 알림 발송.');
+    if (label === '거절')
+      return Alert.alert('친구 신청 거절', '실 운영 시 본인 이력만 기록. 상대 무알림.');
+  }
+  if (kind === 'invite_received') {
+    if (label === '수락')
+      return Alert.alert('초대 수락', '실 운영 시 일정 참여 + 발신자에게 알림.');
+    if (label === '거절')
+      return Alert.alert('초대 거절', '실 운영 시 거절 기록 + 발신자에게 알림.');
+  }
+  // === B 1버튼 — 초대 취소(확인 모달) ===
+  if (kind === 'invite_sent' && label === '초대 취소') {
+    return Alert.alert('초대 취소', '초대를 취소할까요?', [
+      { text: '아니요', style: 'cancel' },
+      {
+        text: '취소',
+        style: 'destructive',
+        onPress: () => Alert.alert('취소됨', '실 운영 시 받은 사람에게 알림.'),
+      },
+    ]);
+  }
+  // === 이동 액션 (B 1버튼 — 이동 강조) ===
+  if (label === '약관 보기')
+    return navigation.navigate('TermsDetail', { termsKey: 'service' });
+  if (label === '일정 보기')
+    // 실 운영 시 ScheduleView(일정 id). 샘플은 mock id 없어 MyInfo로 안전 이동.
+    return navigation.navigate('MyInfo');
+  if (label === '보기' || label === '근처 수영장 보기')
+    return navigation.navigate('MapMain');
+  // 광고(참여) 등 미정 — Phase 2
+}
+
+/**
+ * 카드 탭 동작(액션 패턴 A) — 버튼 없는 카드의 탭 시 이동.
+ * E 트리거(이력)는 cardTappable=false라 호출되지 않음.
+ */
+function handleCardTap(navigation: Nav, kind: MessageKind) {
+  // 친구/프로필 관련 → MyInfo (실 운영 시 OtherUserProfile / 프로필탭)
+  if (kind === 'friend_request_accepted' || kind === 'nickname_changed_by_admin')
+    return navigation.navigate('MyInfo');
+  // 일정 리마인더 → MyInfo (실 운영 시 ScheduleView with id)
+  if (kind === 'schedule_reminder_prev_day' || kind === 'schedule_reminder_1h')
+    return navigation.navigate('MyInfo');
+  // 환영·결산 → MapMain
+  if (kind === 'welcome' || kind === 'monthly_summary')
+    return navigation.navigate('MapMain');
+  // 정보형(앱 업데이트·제보 반려 등) — 탭 대상 미정, no-op
 }
 
 // 샘플 갤러리는 '읽지 않음' 개념 없음 — 빨간 배지 미노출.
@@ -254,7 +328,11 @@ function NotifSlot({ slot, rel }: { slot: Slot; rel?: AvatarRel }) {
 }
 
 function NotifCard({ notif }: { notif: Notif }) {
-  return (
+  const navigation = useNavigation<Nav>();
+  // 패턴 A(탭→이동) = 버튼 없고 E 트리거도 아닌 카드.
+  const cardTappable = !notif.actions && !E_TRIGGERS.has(notif.kind);
+
+  const body = (
     <View style={styles.card}>
       <NotifSlot slot={notif.slot} rel={notif.rel} />
       <View style={styles.cardBody}>
@@ -276,7 +354,11 @@ function NotifCard({ notif }: { notif: Notif }) {
             {notif.actions.map((a) => {
               const AIcon = ACTION_ICON(a);
               return (
-                <Pressable key={a} style={styles.badge}>
+                <Pressable
+                  key={a}
+                  style={styles.badge}
+                  onPress={() => handleAction(navigation, notif.kind, a)}
+                >
                   <AIcon size={16} color="#4B5563" strokeWidth={2} />
                   <Text style={styles.badgeLabel}>{a}</Text>
                 </Pressable>
@@ -287,6 +369,15 @@ function NotifCard({ notif }: { notif: Notif }) {
       </View>
     </View>
   );
+
+  if (cardTappable) {
+    return (
+      <Pressable onPress={() => handleCardTap(navigation, notif.kind)}>
+        {body}
+      </Pressable>
+    );
+  }
+  return body;
 }
 
 const styles = StyleSheet.create({

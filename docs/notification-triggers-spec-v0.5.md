@@ -17,6 +17,7 @@ title: Pool's Day 알림 트리거 상세 스펙
 - **[프로필] 아이콘 = 맵 FAB 로그인 버튼 아이콘과 일치** — nickname_changed_by_admin은 ID 카드형(assets/icons/profile.svg, #1F2937 회색톤). 닉네임 정체성 컨텍스트를 앱 전반 프로필 진입점과 시각 일관화.
 - **프로필 사진 테두리 = 트리거 유형별 고정** — 발송 시점의 관계가 카드에 보존됨(런타임 친구목록 조회 X). 예: friend_request_received는 영구적으로 비친구(pd-gray) 테두리 — 그때 비친구였다는 기록. friend_request_accepted/invite_received/friend_schedule_overlap은 친구(pd-mint). 단일 출처 = `src/components/notifications/NotificationsTab.ts` `REL_BY_KIND`.
 - **발송 주체 매트릭스 추가** — 22트리거를 운영자(OPERATOR)·시스템(SYSTEM)·사용자(USER) 3분류. 운영자가 직접 발송해야 하는 트리거 = **11개** (시스템 안내 6 + 광고 3 + 약관·닉네임 강제 2). P2 백엔드 작업 시 운영자 콘솔/게시 인터페이스 범위 정의.
+- **버튼 액션 정책 신설** — 각 버튼·탭의 동작(이동 대상·상태 변경·확인 모달)을 트리거별로 정의. 광고 3종(이벤트 페이지 미구축) 제외 11트리거 구현. 코드 단일출처: `src/components/notifications/NotificationsTab.tsx` `handleAction`/`handleCardTap`.
 
 **v0.5 변경 사항**
 
@@ -973,6 +974,72 @@ P2 백엔드 작업 시 운영자 콘솔 인터페이스 구축 범위 = 운영�
 운영자 11종은 모두 P2 백엔드에서 콘솔/SQL/이메일 등 운영자 인터페이스가
 필요하다(자동 디스패치는 운영자 액션을 트리거로 받아 본문 템플릿 렌더만).
 시스템·사용자 11종은 자동 디스패치 — 크론 잡과 이벤트 핸들러로 구현.
+
+## 버튼 액션 정책
+
+각 액션 버튼·카드 탭의 동작(이동 대상·상태 변경·확인 모달)을 트리거
+별로 정의. 카피 규칙(§카피 작성 규칙 [버튼])과 함께 단일 출처.
+코드 구현: `src/components/notifications/NotificationsTab.tsx`
+`handleAction(kind, label)` / `handleCardTap(kind)`.
+
+### 응답형 액션 (패턴 C — 2버튼)
+
+| 트리거 | 버튼 | 동작 |
+|---|---|---|
+| friend_request_received | 거절 | dispatch friend_request_rejected (본인 이력). 상대 무알림. |
+|  | 수락 (강조) | 친구 관계 추가 + dispatch friend_request_accepted (양측). |
+| invite_received 상태 1 | 거절 | dispatch invite_rejected. 발신자에게 알림. |
+|  | 수락 (강조) | 일정 참여자로 등록 + dispatch invite_accepted (양측). |
+
+### 이동·실행 액션 (패턴 B — 1버튼)
+
+| 트리거 | 버튼 | 동작 |
+|---|---|---|
+| invite_accepted | 일정 보기 | ScheduleView (일정 id) 이동. |
+| invite_sent 상태 1-A/1-B | 초대 취소 | 확인 모달 "초대를 취소할까요?" → 확인 시 dispatch invite_canceled. |
+| friend_schedule_overlap | 일정 보기 | ScheduleView 이동. |
+| new_feature_announced | 보기 | 해당 기능 페이지/공지 상세 (없으면 MapMain). |
+| pool_submission_approved | 보기 | 추가된 수영장 상세(PoolDetail) 이동. |
+| schedule_submission_approved | 보기 | 해당 수영장 시간표 이동. |
+| terms_updated | 약관 보기 | TermsDetail 이동 (termsKey: 개정 약관). |
+| monthly_summary (idle) | 근처 수영장 보기 | MapMain 이동. |
+
+### 탭 동작 (패턴 A — 0버튼, 카드 전체 탭)
+
+| 트리거 | 카드 탭 시 |
+|---|---|
+| friend_request_accepted | OtherUserProfile 이동. |
+| schedule_reminder_prev_day | 해당 일정 상세(ScheduleView) 이동. |
+| schedule_reminder_1h | 해당 일정 상세 이동. |
+| nickname_changed_by_admin | MyInfo (프로필 탭) 이동. |
+| welcome | MapMain 이동. |
+| monthly_summary (idle 외) | (탭 대상 미정 — P2 결산 상세 마련 시 연결). |
+| app_version_updated | (탭 없음 — 카드 본문이 결과 자체). |
+| pool/schedule_submission_rejected | (탭 없음 — 결과 카드). |
+
+### 이력 표시 (패턴 E — 0버튼·탭 없음)
+
+| 트리거 | 표시 |
+|---|---|
+| friend_request_rejected | 회색 카드. 인터랙션 없음. |
+| invite_rejected | 회색 카드. 인터랙션 없음. |
+| invite_canceled | 회색 카드. 인터랙션 없음. |
+| invite_auto_expired | 회색 카드. 인터랙션 없음. |
+
+### 광고 (marketing × 3) — Phase 2 대기
+
+광고 트리거(`marketing_event` / `marketing_partnership` /
+`marketing_recommendation`)의 '참여'·'보기' 버튼은 **이벤트 페이지
+인프라가 P2에서 구축된 이후** 정의. v0.6 시점에 동작 미정 — 코드는
+no-op(클릭 무반응).
+
+### 샘플 갤러리 구현 메모 (P1)
+
+샘플 갤러리(NotificationsTab)는 mock 데이터라 상태 변경 액션(수락·
+거절·초대 취소)은 실 상태를 바꾸지 않고 **Alert 피드백**으로 동작을
+설명한다(예: "친구 추가됨 — 실 운영 시 친구 추가 + 양측 알림 발송").
+이동 액션은 navigation 실행. P2에서 실 notifications 적재 → 데이터
+교체 시 handleAction의 Alert 분기를 실 mutation/dispatch로 교체.
 
 ## 변수 폴백 매트릭스
 
