@@ -137,15 +137,36 @@ export async function tryUpsertProfile(p: UserProfile): Promise<void> {
 }
 
 /**
- * 친구코드 변경(regenerateId) — 새 PK로 row 삽입.
- * 옛 PK 행은 그대로 둠(현 단계 friends/notifications 외부 참조 없음,
- * 후속 마이그레이션에서 cascade 정책 결정). best-effort.
+ * 친구코드 변경(regenerateId) — profiles.id 를 UPDATE.
+ *
+ * 0048(friends/blocks/friend_requests) 진입 후 정책 전환: friendships
+ * /friend_requests/blocks가 profiles.id를 FK로 참조(ON UPDATE CASCADE) —
+ * PK를 UPDATE 하면 자식 자동 갱신, 옛 친구코드는 사라지고 새 코드로 통일.
+ *
+ * 이전 정책("옛 row 보존")은 외부 참조 없을 때의 임시안이었음.
+ * 외부 참조가 생긴 지금 옛 row를 두면 옛 코드로 검색한 사람이 "유령"
+ * row를 보고 친구추가가 옛 PK에 묶이는 UX 함정. cascade로 정정.
+ *
+ * 옛 row가 cascade로 사라지므로 별도 delete 불필요. 다른 필드도 함께
+ * 변경된 경우 fallback upsert로 보장.
  */
 export async function tryRenameProfileId(
   next: UserProfile,
-  _prevId: string,
+  prevId: string,
 ): Promise<void> {
-  await tryUpsertProfile(next);
-  // 옛 row delete는 P2 후속(friends/notifications 외부 참조 정리와 함께)
-  // — 지금 지우면 옛 친구코드로 검색한 사람들이 빈 결과 보게 됨.
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ id: next.id })
+      .eq('id', prevId);
+    if (error) {
+      // UPDATE 실패(미적용 마이그레이션 등) → 새 row 삽입 폴백.
+      await tryUpsertProfile(next);
+      return;
+    }
+    // PK 변경 후 나머지 필드도 동기화(닉네임 등이 같이 바뀐 경우).
+    await tryUpsertProfile(next);
+  } catch {
+    await tryUpsertProfile(next);
+  }
 }
