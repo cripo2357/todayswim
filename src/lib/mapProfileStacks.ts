@@ -13,9 +13,9 @@
 //    내 일정은 내 것이라 가시성 무관).
 //  · 순서: 나=맨앞(맵 그리드 좌측 하단 고정), 그 다음 친구, 마지막 사람들(비친구
 //    전체공개). 같은 우선순위 안에선 (시드+풀+사용자) 해시 셔플. 시드는 호출자가
-//    결정 — MapScreen은 useFocusEffect로 포커스마다 새 시드 발급. 9명 초과면
-//    친구가 먼저 자리 채우고 사람들은 남는 자리만 → 이름표를 '비친구가 친구를
-//    밀어내는' 회귀 방지. 9명 넘으면 "… more" 칸.
+//    결정 — MapScreen은 mount-once 시드(앱 세션당 1회). 9명 초과면 친구가 먼저
+//    자리 채우고 사람들은 남는 자리만 → '비친구가 친구를 밀어내는' 회귀 방지.
+//    9명 넘으면 "… more" 칸.
 //
 // Phase-1: 친구 일정 소스는 기존 participant 데이터(MOCK_OTHER_SCHEDULES, 달력
 //          resolveParticipants 와 동일 소스). 서버 친구 일정 적재는 Phase-2 갭.
@@ -99,8 +99,8 @@ export interface BuildStacksInput {
    *  profileVisibility='public'일 때만 의미. */
   publicHorizonMs?: number;
   /** 풀별 셔플 시드 — 호출자가 동일 시드를 유지하는 동안 결과 안정, 새 시드를
-   *  넘기면 9명 표본·순서 모두 재셔플. MapScreen은 useFocusEffect로 포커스
-   *  시점마다 새 시드 발급(맵 진입할 때마다 셔플). 미지정 시 '0' — 풀+사용자
+   *  넘기면 9명 표본·순서 모두 재셔플. MapScreen은 mount-once 시드(useState lazy
+   *  init) 사용 — 앱 세션당 1회, 화면 왕복 비용 회피. 미지정 시 '0' — 풀+사용자
    *  ID만으로 결정적 정렬(테스트·하위호환). */
   shuffleSeed?: string;
 }
