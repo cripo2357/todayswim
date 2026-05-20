@@ -18,12 +18,10 @@ import React from 'react';
 import {
   View,
   Text,
-  Image,
   ScrollView,
   Pressable,
   StyleSheet,
   Alert,
-  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -35,7 +33,6 @@ import { useAppStatus } from '@/hooks/useAppStatus';
 import { useProfile } from '@/store/profile';
 import {
   useDonations,
-  useCreateDonation,
   useUpdateDonationMessage,
   useToggleDonationHidden,
   type DonationItem,
@@ -43,24 +40,17 @@ import {
 import { DonationHideModal } from '@/components/donation/DonationHideModal';
 import { DonationEditModal } from '@/components/donation/DonationEditModal';
 
-const MAX_LEN = 300;
-
 export function DonationScreen() {
   const navigation = useNavigation();
   const profile = useProfile((s) => s.profile);
   const { data: appStatus } = useAppStatus();
-  const { items, mine } = useDonations();
-  const createDonation = useCreateDonation();
+  const { items } = useDonations();
   const updateMessage = useUpdateDonationMessage();
   const toggleHidden = useToggleDonationHidden();
 
-  const [draft, setDraft] = React.useState('');
   const [editId, setEditId] = React.useState<string | null>(null);
   const [editInitial, setEditInitial] = React.useState('');
   const [hideId, setHideId] = React.useState<string | null>(null);
-
-  const trimmed = draft.trim();
-  const canSubmit = !mine && trimmed.length > 0 && trimmed.length <= MAX_LEN;
 
   // 계좌 클립보드 복사 — expo-clipboard dynamic import(pending_native_batch).
   const onCopyAccount = async () => {
@@ -76,13 +66,6 @@ export function DonationScreen() {
         '복사를 지원하지 않는 환경이에요. 직접 입력해 주세요.',
       );
     }
-  };
-
-  const onSubmitDraft = async () => {
-    if (!canSubmit) return;
-    const ok = await createDonation(trimmed);
-    if (ok) setDraft('');
-    else Alert.alert('작성 실패', '잠시 후 다시 시도해 주세요.');
   };
 
   const accountReady =
@@ -175,50 +158,9 @@ export function DonationScreen() {
 
         <Text style={styles.sectionHeading}>Pool's day를 응원해주신 분들</Text>
 
-        {/* 본인이 응원 안 한 상태면 작성 입력 — 첫 카드 자리 */}
-        {!mine && profile ? (
-          <View style={styles.draftCard}>
-            <View style={styles.draftRowHead}>
-              <Avatar
-                photoUri={profile.photoUri}
-                thumbUri={profile.photoThumbUri}
-                size={36}
-                relation="me"
-              />
-              <View style={styles.draftHeadText}>
-                <Text style={styles.draftNickname} numberOfLines={1}>
-                  {profile.name}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.draftInputWrap}>
-              <TextInput
-                value={draft}
-                onChangeText={(t) => setDraft(t.slice(0, MAX_LEN))}
-                multiline
-                placeholder="Pool's day를 응원합니다."
-                placeholderTextColor={tokens.color.ink400}
-                style={styles.draftInput}
-                textAlignVertical="top"
-                maxLength={MAX_LEN}
-              />
-              <Text style={styles.draftCounter}>
-                {draft.length}/{MAX_LEN}
-              </Text>
-            </View>
-            <Pressable
-              onPress={onSubmitDraft}
-              disabled={!canSubmit}
-              style={[styles.draftSubmit, !canSubmit && styles.draftSubmitDim]}
-              accessibilityRole="button"
-              accessibilityLabel="응원 메시지 작성 완료"
-            >
-              <Text style={styles.draftSubmitLabel}>작성 완료</Text>
-            </Pressable>
-          </View>
-        ) : null}
-
-        {/* 응원자 리스트 — 사용자별 최신 1건 dedup, 최근순. 본인 카드도 포함. */}
+        {/* 응원자 리스트 — 사용자별 최신 1건 dedup, 최근순. 본인 카드도 포함.
+            카드 자체는 운영자가 입금 확인 시 트리거가 자동 등록(0072). 사용자는
+            본인 카드 액션(문구 수정/후원 비공개)만 가능 — 작성 인풋 없음. */}
         {items.map((item) => (
           <DonationItemCard
             key={item.id}
@@ -231,10 +173,10 @@ export function DonationScreen() {
           />
         ))}
 
-        {items.length === 0 && mine === null ? (
+        {items.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>
-              아직 응원 메시지가 없어요. 첫 응원자가 되어주세요.
+              아직 응원 메시지가 없어요.
             </Text>
           </View>
         ) : null}
@@ -420,56 +362,6 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sansBold,
     color: tokens.color.ink900,
     marginBottom: 12,
-  },
-
-  draftCard: {
-    backgroundColor: tokens.color.bgPaper,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: tokens.color.lineDefault,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    gap: 10,
-    marginBottom: 12,
-  },
-  draftRowHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  draftHeadText: { flex: 1 },
-  draftNickname: {
-    fontSize: 14,
-    fontFamily: tokens.font.sansBold,
-    color: tokens.color.ink900,
-  },
-  draftInputWrap: {
-    backgroundColor: tokens.color.bgSubtle,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  draftInput: {
-    minHeight: 80,
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: tokens.font.sans,
-    color: tokens.color.ink900,
-  },
-  draftCounter: {
-    marginTop: 6,
-    alignSelf: 'flex-end',
-    fontSize: 12,
-    color: tokens.color.ink400,
-  },
-  draftSubmit: {
-    height: 40,
-    borderRadius: 999,
-    backgroundColor: tokens.color.pdByellow,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  draftSubmitDim: { opacity: 0.5 },
-  draftSubmitLabel: {
-    fontSize: 14,
-    fontFamily: tokens.font.sansBold,
-    color: tokens.color.ink900,
   },
 
   itemCard: {

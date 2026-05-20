@@ -19,23 +19,10 @@ export interface DonationRow {
   updated_at: string;
 }
 
-/** 신규 후원 메시지 작성 — 본인 profile_id 로 1행 insert. */
-export async function tryInsertDonation(
-  profileId: string,
-  message: string,
-): Promise<DonationRow | null> {
-  try {
-    const { data, error } = await supabase
-      .from('donations')
-      .insert({ profile_id: profileId, message })
-      .select()
-      .maybeSingle();
-    if (error || !data) return null;
-    return data as DonationRow;
-  } catch {
-    return null;
-  }
-}
+// NOTE: 사용자 직접 작성 인터페이스는 0072 정정에서 폐기. donations row는
+// donation_payments INSERT 트리거가 자동 생성. 클라가 직접 insert 호출하는
+// 경로 없음 — 그래서 tryInsertDonation export 자체를 제거. 본문 수정/비공개만
+// 클라가 처리.
 
 /** 문구 수정 — id 로 update. 본인 row 한정(RLS). */
 export async function tryUpdateDonationMessage(
@@ -79,23 +66,26 @@ export async function tryFetchDonations(): Promise<DonationRow[]> {
 /**
  * 사용자별 최신 1건 dedup + visibility 필터.
  *
- *  - hidden=true 행은 본인(myProfileId)에게만 표시, 그 외에는 제외.
+ *  - **hidden=true 행은 본인 포함 전원 제외** (실질적 삭제 효과).
+ *    이력은 DB에 보존(0072 정정 정책)되지만 화면엔 안 보임.
  *  - 같은 profile_id 면 최신 created_at 1건만 채택.
  *  - 결과 = "Pool's day를 응원해주신 분들" 리스트 (Figma 238:8643).
+ *
+ *  myProfileId 인자는 호환성 유지(외부 호출 시그니처 변경 회피).
  */
 export function dedupeDonationsForDisplay<T extends DonationRow>(
   rows: readonly T[],
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   myProfileId: string | null,
 ): T[] {
   const seen = new Set<string>();
   const out: T[] = [];
   for (const r of rows) {
+    // 같은 사용자의 더 최신 row가 이미 처리됐으면 skip(최근순 정렬 전제).
     if (seen.has(r.profile_id)) continue;
-    if (r.hidden && r.profile_id !== myProfileId) {
-      seen.add(r.profile_id); // 비공개라도 사용자별 dedup 대상으로 처리 — 옛 메시지 노출 방지.
-      continue;
-    }
     seen.add(r.profile_id);
+    // hidden=true 인 최신 row면 본인 포함 모두 미노출 (사용자별 dedup은 유지).
+    if (r.hidden) continue;
     out.push(r);
   }
   return out;

@@ -9,7 +9,6 @@ import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import {
-  tryInsertDonation,
   tryUpdateDonationMessage,
   tryUpdateDonationHidden,
   dedupeDonationsForDisplay,
@@ -93,19 +92,9 @@ export function useDonations(): {
   return { items, mine, isLoading, refetch };
 }
 
-export function useCreateDonation(): (message: string) => Promise<boolean> {
-  const myProfileId = useProfile((s) => s.profile?.id);
-  const qc = useQueryClient();
-  return async (message: string) => {
-    if (!myProfileId || !message.trim()) return false;
-    const created = await tryInsertDonation(myProfileId, message.trim());
-    if (created) {
-      void qc.invalidateQueries({ queryKey: QUERY_KEY });
-      return true;
-    }
-    return false;
-  };
-}
+// useCreateDonation 폐기 — 사용자 직접 작성 인터페이스 제거(0072 정정).
+// donations row 는 donation_payments INSERT 트리거가 자동 생성하고, 사용자는
+// 본인 카드에서 message UPDATE / hidden 토글만 가능.
 
 export function useUpdateDonationMessage(): (
   id: string,

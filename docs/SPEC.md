@@ -130,16 +130,22 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 ### 3.8 후원으로 서비스 응원 ✅
 - **진입점**: 설정 > 헬프 센터 > 후원으로 서비스 응원하기 (Donation 화면, Figma 238:8643)
 - **계좌 안내**: app_status(0068)의 donation_bank/account/holder를 운영자가 Dashboard에서 설정. 셋 다 있어야 카드 노출, 비어있으면 "준비 중" 표시. 계좌 복사 = expo-clipboard 동적 import.
-- **응원 메시지(donations 0069)**: 사용자가 작성. 사용자당 누적 가능, 화면은 최신 1건만 dedup. "후원 비공개"(hidden=true, 본인만 보임) / "문구 수정" 액션. RLS: write는 본인 검증, read는 (true) + 클라 hidden 필터.
-- **입금 확인(donation_payments 0070)**: 운영자만(service_role) 처리.
-  1. 운영자가 카카오뱅크 입금 확인 → 입금자명(=닉네임)
-  2. `select id from profiles where nickname='입금자명';` 으로 profile_id 매칭
+- **흐름** (사용자 직접 작성 X — 운영자가 입금 확인 시 자동 등록):
+  1. 사용자가 카카오뱅크로 송금(입금자명에 닉네임 입력 안내)
+  2. 운영자가 입금 확인 → `select id from profiles where nickname='입금자명';` 매칭
   3. `insert into donation_payments (profile_id, depositor_name, amount, received_at) ...`
-  4. **PostgreSQL 트리거가 자동으로 notifications에 'donation_thanks' insert** → 사용자 인앱 알림
-  - 매칭 실패 시 profile_id NULL로 INSERT만 → 운영자가 추후 매칭 UPDATE 시점에도 알림 발화(별도 트리거).
+  4. **PostgreSQL 트리거(0072)가 자동으로:**
+     - `donations` 행 INSERT (기본 문구 `Pool's day를 응원합니다.`)
+     - `notifications` 'donation_thanks' INSERT (본인 알림함)
+  5. 사용자는 본인 카드의 **문구 수정 / 후원 비공개** 액션으로 message UPDATE 또는 hidden 토글
+  - 매칭 실패 시 `profile_id` NULL INSERT → 운영자 추후 매칭 UPDATE 시 별도 트리거가 발화
+- **데이터 분리**:
+  - `donations` (0069): 응원 메시지(공개). RLS write 본인 검증.
+  - `donation_payments` (0070): 입금 기록(비공개). service_role 전용.
+- **비공개(hidden=true)** = 본인 포함 모든 사용자 화면에서 미노출. 이력은 DB 보존. 클라 `dedupeDonationsForDisplay`가 hidden 행 모두 제외.
 - **약관 영향**:
-  - 서비스 이용약관: 후원금은 자발적 기증 / 반환 불가 / 운영비 사용 / 메시지·닉네임 공개(비공개 옵션)
-  - 개인정보 처리방침: 입금자명→닉네임 매칭으로 처리, 닉네임·메시지 공개 가능
+  - 서비스 이용약관 제15조(후원금): 자발적 기증 / 반환 불가 / 운영비 사용 / 자동 등록 흐름 / 본인 항목 수정·비공개 권리
+  - 개인정보 처리방침: 응원 메시지(자동 등록 후 이용자 수정 가능) + 입금 식별 정보(운영자만 접근) 처리
 
 - 수영장 등록 요청(이름·레인·길이·수심·시설) 또는 정보 수정 요청(이름+설명 ≤300자) → Supabase `pool_submissions` insert(실제). 좌표는 수집 안 함(운영자 처리). 운영자만 열람.
 
