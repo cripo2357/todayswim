@@ -45,31 +45,58 @@ title: Pool's day 알림 트리거 상세 스펙
 
 ```
 {nickname}      상대방 또는 본인 닉네임 (2~6자)
-                폴백: 탈퇴 회원이면 "[탈퇴 회원]"
-                
+                정체성(identity) — live lookup + 폴백
+                폴백: 탈퇴/삭제 회원이면 "[탈퇴 회원]"
+
 {pool}          수영장 이름
-                폴백: 삭제된 수영장이면 "[수영장 정보 없음]"
-                갱신: 운영자가 풀명 변경 시 현재 시점 이름으로 치환
-                
-{date}          일정 날짜 (M월 D일 또는 내일/오늘 등 상대 표현)
-{time}          일정 시작 시간 (HH:MM)
+                사실 기록(fact-snapshot) — 발송 시점 값 보존
+                폴백: dispatch 시점에 풀이 없었다면 "[수영장 정보 없음]"
+                ※ 이후 풀명 변경/풀 삭제는 옛 카드에 영향 없음
+
+{date}          일정 날짜 (앱 통일 포맷 YY.MM.DD(요일) 또는 내일/오늘 상대 표현)
+{time}          일정 시작 시간 (앱 통일 포맷 오전/오후 H:MM)
                 ※ 종료 시간은 본문에 표시 안 함 (시작 시간만)
+                ※ fact-snapshot — 일정 인스턴스 값이라 변경 시 새 카드
 {count}         수치 (N명 / N건 등)
 {feature_name}  기능 이름
 {version}       앱 버전
 ```
 
-### 변수 갱신 방식
+### 변수 갱신 방식 (v0.6 정책)
+
+축은 두 가지 — **"그 사람을 살아있는 듯 보이게 하면 안 됨"** vs **"그 시점 사실은 보존"**:
 
 ```
-원칙: 본문은 발송 시점 캡쳐 X, 변수 참조 O.
-     - notifications 테이블에는 trigger_type + 변수 ID만 저장.
-     - 렌더링 시점에 변수를 현재 값으로 치환.
-     - 풀명·닉네임이 바뀌면 카드에도 즉시 반영됨.
+[정체성(identity)] — live lookup + 폴백
+  · 닉네임  : params.user_id로 user 테이블에서 현재 닉네임 조회.
+              대상이 탈퇴/삭제됐다면 "[탈퇴 회원]".
+              근거: 탈퇴자를 마치 살아있는 듯 옛 닉네임으로 노출하면
+                    안 됨(프라이버시·정체성). 닉네임 변경도 즉시 반영.
+  · 아바타  : profile_avatar_storage 3단 폴백 (원본→thumb→번들).
+              친구 아바타 변경 시 카드에도 즉시 반영.
 
-폴백 처리: 변수 ID에 해당하는 데이터가 없거나 삭제된 경우
-     - {pool}: "[수영장 정보 없음]"
-     - {nickname}: "[탈퇴 회원]"
+[사실 기록(fact-snapshot)] — 발송 시점 값 보존, 이후 변경/삭제 무관
+  · 풀 이름 : dispatch 시점에 params.pool 문자열로 박아 저장.
+              그 후 운영자가 풀명 변경/풀 삭제해도 옛 카드는 옛 이름 유지.
+              dispatch 시점에 풀이 이미 없었다면 "[수영장 정보 없음]".
+              근거: 그 때 그 수영장에서 만난 사실은 사실.
+  · 시간표  : 옛 카드의 시간은 그 시점 값. 시간표 수정/삭제 무관.
+  · date/time: 일정 인스턴스 값. 변경 시 새 카드(취소+재초대).
+
+[저장 형식] notifications.params (jsonb)
+  · pool        : 발송 시점 풀명(snapshot string)        — fact
+  · pool_id     : 후속 액션 navigate / not-found 가드용  — 참조키
+  · user_id     : 닉네임 live lookup 키 (P2 도입)        — identity 키
+  · name        : 호환·로깅용 폴백                        — P1 mock
+  · date, time  : 표시 문자열                             — fact
+  · effectiveDate, version 등 그 외 변수: fact-snapshot 동일.
+
+[P1(현재) ↔ P2(서버 적재) 차이]
+  · P1: NotificationsTab은 정적 샘플 갤러리. params.name이 그대로 보임.
+        rules.ts `nick()`의 폴백은 "params.name 자체가 빈/공백일 때" 가드.
+  · P2: dispatch가 params에 user_id·pool_id를 함께 저장. render는
+        user_id로 닉네임을 live lookup(없으면 [탈퇴 회원]). pool 문자열은
+        그대로 사용.
 ```
 
 ### 액션 패턴
@@ -1073,6 +1100,89 @@ no-op(클릭 무반응).
 [표시 유지, [탈퇴 회원] 치환]
   - 이미 친구인 사람 탈퇴    → 과거 알림 카드 모두 유지
 ```
+
+---
+
+# 데이터 삭제·변경 대비 정책 (v0.6) — P2 서버 사이드
+
+> 위 §변수 갱신 방식의 두 축(identity / fact-snapshot)을 도메인별로 적용.
+> P1(현재) 코드 변경 없음 — 다수가 백엔드 cascade·소프트삭제·트리거 영역.
+
+## 1. 회원 탈퇴 (본인 또는 상대)
+
+**원칙:** 본인 데이터는 cascade 삭제, 상대 화면의 fact 카드는 보존하고 identity만 `[탈퇴 회원]`.
+
+| 본인이 탈퇴할 때 정리해야 할 것 | 처리 |
+|---|---|
+| `profile` 행 (avatar_url 포함) | 삭제(또는 soft-delete `withdrawn_at` 마킹) |
+| `avatars/{uid}/*` Storage 객체 | cascade 삭제 |
+| `friends`·`friend_requests` (양방향) | cascade 삭제 (sent/incoming 모두) |
+| `blocked` 행 (양방향) | cascade 삭제 |
+| 본인 `swim_schedules` | cascade 삭제. 단 이미 보낸 초대장의 받은 사람 카드는 fact 보존 + 자동 `invite_canceled` 발송 |
+| 본인 `swim_classes` | cascade 삭제 |
+| 본인이 만든 `pool_submissions` / `schedule_submissions` | 운영자 검토 화면에서 제보자 → `[탈퇴 회원]` (제보 자체는 유지) |
+| 본인이 받은 `notifications` | cascade 삭제 |
+| 본인이 보낸 `notifications` (상대 화면) | **보존** — params.user_id로 닉네임만 live lookup → `[탈퇴 회원]` |
+
+**같은 소셜 계정 재가입:** 신규 가입 취급(옛 데이터 복구 X). user_id 새로 발급.
+
+## 2. 수영장(pool) 삭제 — 운영자 액션
+
+**원칙:** 풀 이름·시간은 fact-snapshot. 옛 카드·옛 일정은 옛 값 유지.
+
+- `pools.deleted_at` soft-delete 컬럼 도입 권장 — 완전 삭제 대신 마킹.
+- `MySwimSchedule.poolName/poolPhotoUrl`은 이미 snapshot ✅. cascade 불필요.
+- 알림 카드: `params.pool` 문자열 그대로 사용 (live lookup X).
+- **dead-link 가드:** "수영장 보기"·"시간표 보기" 액션이 deleted_at != null인 풀로 향하면 → 토스트 "삭제된 수영장입니다" 후 카드 유지(자동 삭제 X — fact 보존).
+- 좌표 null/누락 풀: `usePools` 시점에서 lat/lng 유효성 필터 → 지도 마커 미노출(이미 운영중인지 확인 필요).
+
+## 3. 시간표(schedules) 삭제 — 운영자 액션
+
+- 풀은 살아있고 시간표만 사라진 경우 → ScheduleViewScreen 빈 상태 카피("시간표 정보가 등록되지 않았어요. 제보해주세요.") + 시간표 제보 진입점.
+- 내 `swim_schedules`는 시간표와 독립이라 영향 없음.
+
+## 4. 내 일정(SwimSchedule) 취소/삭제
+
+- 이미 보낸 초대장 → 자동 `invite_canceled` 발송(스펙 4·5상태) ✅ — P2 서버 트리거.
+- `schedule_reminder_prev_day / 1h` 크론: 발송 전 일정이 살아있는지 가드 → 없으면 스킵.
+- 친구의 `friend_schedule_overlap` 카드는 fact 보존(자동 삭제 X). 단 "일정 보기" dead-link 가드.
+
+## 5. 친구 관계 변경
+
+**친구 삭제(차단 아님):**
+- 과거 카드(친구 신청 수락·동행 알림 등) **유지**. 닉네임·아바타는 live(살아있는 사용자라).
+- 신규 알림 발송 정책: 둘 다 비친구 상태로 돌아간 만큼 일반 비친구 룰 따름.
+
+**차단(block):** [block_policy_enforcement] 양방향·영구·전면 접점차단.
+- 차단 시점 이후 그 사람과 관련된 **모든 알림 카드 숨김** (이력에서 query 단 `excluded_user_ids` 필터).
+- 차단 이후 그 사람이 등장하는 신규 알림은 발송 자체 차단.
+- 사람 이름 위치에 `[차단된 사용자]` 표시는 안 함 — 카드를 아예 안 보여줌(차단 사실 자체를 가린다).
+
+**친구 신청 후 상대 탈퇴:** 보낸 요청 자동 정리(상대 user_id가 삭제됐으면 sent에서 제거).
+
+## 6. 알림 dead-link 가드 (handleAction / handleCardTap)
+
+| 액션 대상 | 가드 |
+|---|---|
+| 일정 보기 → 일정 삭제됨 | 토스트 "삭제된 일정입니다", 카드 유지 |
+| 수영장 보기 → 풀 삭제됨 | 토스트 "삭제된 수영장입니다", 카드 유지 |
+| 약관 보기 → 약관 키 변경됨 | termsKey 유효성 검사 후 invalid면 약관 목록으로 폴백 |
+| 친구 신청 수락 → 상대 탈퇴됨 | 토스트 "[탈퇴 회원]의 신청은 만료됐어요", 카드 자동 숨김 |
+| 초대 수락 → 일정 삭제됨 | 토스트 "삭제된 일정입니다", 카드 자동 숨김 |
+| 초대 취소 → 본인이 이미 취소함 | 토스트 "이미 취소됨", 카드 갱신 |
+
+**원칙:** **응답형(C 2버튼)** 카드만 대상 entity 사라지면 자동 숨김. **이력형/이동형**은 카드 유지(fact-snapshot).
+
+## 7. 첨부 자산(Storage) 삭제
+
+- 아바타 누락 → `photoUri`→`photoThumbUri`→번들 아바타 3단 폴백 ✅ ([profile_avatar_storage]).
+- 풀 사진(`pool-photos/`) 누락 → 카드 placeholder (디자인 필요 — Figma 확인).
+- 풀 사진 변경 시 옛 카드: **현재 정책상 풀 사진은 fact-snapshot 대상 아님**(visual aid). 카드의 `poolPhotoUrl`은 dispatch 시점 URL이지만 Storage가 overwrite하면 깨질 수 있음. P2 의사결정 — versioned URL 도입 vs 풀 사진은 live 허용.
+
+## 8. 본인 닉네임 변경 — 본인 살아있음
+
+- 본인이 닉네임 바꾼 후: 상대 화면의 옛 알림 카드도 **새 닉네임으로 갱신**(identity = live).
+- 닉네임 강제 변경(`nickname_changed_by_admin`) 알림은 본인에게만 발송, 본문에 옛/새 둘 다 명시 가능(P2 정책).
 
 ---
 

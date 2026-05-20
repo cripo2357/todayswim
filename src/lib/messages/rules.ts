@@ -7,8 +7,19 @@
 // 카피·폴백 = docs/notification-triggers-spec-v0.5.md 확정본.
 //  - 카피 규칙: 이모지 금지, 과한 높임 제거(~하셨→~했), 종결어미→마침표·
 //    명사 끝→마침표 없음, 순서 장소→날짜→시간, 풀→수영장.
-//  - 변수 폴백: {nickname} 탈퇴 → "[탈퇴 회원]" / {pool} 삭제 →
-//    "[수영장 정보 없음]". (현재 시점 변수 치환 — 본문 통째 저장 X.)
+//
+// 변수 갱신 정책 (v0.6 — 스펙 §변수 갱신 방식)
+//  - **{nickname} = 정체성(identity), live lookup + 폴백.**
+//    탈퇴/삭제된 사용자는 "[탈퇴 회원]". `nick()` 헬퍼가 폴백을 담당.
+//    P2에서는 params.user_id로 user 테이블 lookup → 결과를 params.name에
+//    채워 build()를 호출(렌더 시점). P1은 mock string 그대로 사용.
+//
+//  - **{pool} = 사실 기록(fact-snapshot), 발송 시점 값 보존.**
+//    `poolName()`의 "[수영장 정보 없음]" 폴백은 **dispatch 시점**에만 의미
+//    있음(그 때도 풀이 없었음). dispatch가 정규화한 문자열을 params에
+//    저장하므로, 이후 운영자가 풀명 변경/풀 삭제해도 옛 카드는 옛 이름 유지.
+//    build()는 render에서도 호출되지만, params.pool이 이미 snapshot이라
+//    poolName() 폴백이 다시 트리거될 일은 없음(빈/공백 방어 가드로만 잔존).
 //
 // recipients: 이 메시지가 향하는 대상(역할). Phase 1은 'self'(액션을 한
 // 로컬 본인) 행만 적재. 'other'/'both' 광역 팬아웃·상태 전이·카드 자동
@@ -124,13 +135,18 @@ interface Rule {
   build: (p: MessageParams) => MessageContent;
 }
 
-// ── 변수 폴백 헬퍼 (스펙 §변수 폴백 매트릭스) ──
-/** {nickname} — 없거나 탈퇴 → "[탈퇴 회원]" */
+// ── 변수 폴백 헬퍼 (스펙 §변수 갱신 방식) ──
+/** {nickname} — identity, live lookup + 폴백.
+ *  탈퇴/삭제된 사용자는 "[탈퇴 회원]". P2: dispatch가 params.name을
+ *  user_id 기반으로 매번 갱신해 build()에 넘긴다. P1은 mock name 그대로. */
 function nick(p: MessageParams): string {
   const n = p.name?.trim();
   return n && n.length > 0 ? n : '[탈퇴 회원]';
 }
-/** {pool} / {pool_name} — 없거나 삭제 → "[수영장 정보 없음]" */
+/** {pool} — fact-snapshot. params.pool은 dispatch 시점 정규화된 문자열.
+ *  여기서의 "[수영장 정보 없음]" 폴백은 dispatch가 빈 값을 그대로 박아둔
+ *  방어 케이스용(정상 적재 시엔 트리거 안 됨). 풀명 변경/풀 삭제는 옛
+ *  카드에 영향 없음 — render는 snapshot 문자열만 사용. */
 function poolName(p: MessageParams): string {
   const v = p.pool?.trim();
   return v && v.length > 0 ? v : '[수영장 정보 없음]';

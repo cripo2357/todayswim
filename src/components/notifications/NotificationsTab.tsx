@@ -218,19 +218,44 @@ const E_TRIGGERS: Set<MessageKind> = new Set([
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
+/** Phase 2 dead-link 가드용 메타 — notifications.related의 부분 형태.
+ *  여기서는 mock이라 항상 undefined를 받고 가드는 결정만 시연한다.
+ *  실 적재 시 dispatch가 채워주는 ID 참조(scheduleId/poolId/senderUserId/termsKey)를
+ *  체크해 dead-link면 토스트만 띄우고 navigate 차단(스펙 §데이터 삭제·변경 대비 정책 6). */
+interface DeadLinkMeta {
+  scheduleAlive?: boolean; // 일정 살아있나
+  poolAlive?: boolean; // 풀 살아있나
+  senderAlive?: boolean; // 발신자/신청자 살아있나
+  termsKeyValid?: boolean; // 약관 키 유효한가
+}
+
 /**
  * 버튼 액션 디스패치 — 스펙 §버튼 액션 정책 기준.
  * 샘플 갤러리는 mock 데이터라 상태 변경은 Alert 피드백, 이동은 실 navigation.
+ * dead-link 가드(P2 정책): 액션 대상 entity가 살아있는지 확인 → 없으면 토스트.
  */
-function handleAction(navigation: Nav, kind: MessageKind, label: string) {
+function handleAction(
+  navigation: Nav,
+  kind: MessageKind,
+  label: string,
+  meta: DeadLinkMeta = {},
+) {
   // === 응답형(C 2버튼) — 상태 변경. 샘플: Alert 피드백 ===
   if (kind === 'friend_request_received') {
+    // 신청자가 탈퇴했을 수 있음 — meta.senderAlive 가드 (스펙 §6, P2).
+    if (meta.senderAlive === false) {
+      return Alert.alert('[탈퇴 회원]의 신청은 만료됐어요', '카드는 자동 정리됩니다.');
+    }
     if (label === '수락')
       return Alert.alert('친구 추가됨', '실 운영 시 친구 추가 + 양측 알림 발송.');
     if (label === '거절')
       return Alert.alert('친구 신청 거절', '실 운영 시 본인 이력만 기록. 상대 무알림.');
   }
   if (kind === 'invite_received') {
+    // 일정 자체가 삭제됐을 수 있음 — meta.scheduleAlive 가드.
+    if (meta.scheduleAlive === false) {
+      return Alert.alert('삭제된 일정입니다', '카드는 자동 정리됩니다.');
+    }
     if (label === '수락')
       return Alert.alert('초대 수락', '실 운영 시 일정 참여 + 발신자에게 알림.');
     if (label === '거절')
@@ -238,6 +263,9 @@ function handleAction(navigation: Nav, kind: MessageKind, label: string) {
   }
   // === B 1버튼 — 초대 취소(확인 모달) ===
   if (kind === 'invite_sent' && label === '초대 취소') {
+    if (meta.scheduleAlive === false) {
+      return Alert.alert('이미 취소된 일정입니다', '카드를 갱신합니다.');
+    }
     return Alert.alert('초대 취소', '초대를 취소할까요?', [
       { text: '아니요', style: 'cancel' },
       {
@@ -248,27 +276,49 @@ function handleAction(navigation: Nav, kind: MessageKind, label: string) {
     ]);
   }
   // === 이동 액션 (B 1버튼 — 이동 강조) ===
-  if (label === '약관 보기')
+  if (label === '약관 보기') {
+    if (meta.termsKeyValid === false) {
+      return Alert.alert('약관 키가 변경됐어요', '약관 목록으로 이동합니다.');
+    }
     return navigation.navigate('TermsDetail', { termsKey: 'service' });
-  if (label === '일정 보기')
+  }
+  if (label === '일정 보기') {
+    if (meta.scheduleAlive === false) {
+      return Alert.alert('삭제된 일정입니다', '');
+    }
     // 실 운영 시 ScheduleView(일정 id). 샘플은 mock id 없어 MyInfo로 안전 이동.
     return navigation.navigate('MyInfo');
-  if (label === '보기' || label === '근처 수영장 보기')
+  }
+  if (label === '보기' || label === '근처 수영장 보기') {
+    // "보기" = 풀 보기일 때 dead-link 가드 (pool_submission_approved 등).
+    if (meta.poolAlive === false) {
+      return Alert.alert('삭제된 수영장입니다', '');
+    }
     return navigation.navigate('MapMain');
+  }
   // 광고(참여) 등 미정 — Phase 2
 }
 
 /**
  * 카드 탭 동작(액션 패턴 A) — 버튼 없는 카드의 탭 시 이동.
  * E 트리거(이력)는 cardTappable=false라 호출되지 않음.
+ * dead-link 가드: navigate 전 entity 존재 확인 (스펙 §6 정책 가이드).
  */
-function handleCardTap(navigation: Nav, kind: MessageKind) {
+function handleCardTap(navigation: Nav, kind: MessageKind, meta: DeadLinkMeta = {}) {
   // 친구/프로필 관련 → MyInfo (실 운영 시 OtherUserProfile / 프로필탭)
-  if (kind === 'friend_request_accepted' || kind === 'nickname_changed_by_admin')
+  if (kind === 'friend_request_accepted' || kind === 'nickname_changed_by_admin') {
+    if (meta.senderAlive === false) {
+      return Alert.alert('탈퇴한 회원입니다', '');
+    }
     return navigation.navigate('MyInfo');
+  }
   // 일정 리마인더 → MyInfo (실 운영 시 ScheduleView with id)
-  if (kind === 'schedule_reminder_prev_day' || kind === 'schedule_reminder_1h')
+  if (kind === 'schedule_reminder_prev_day' || kind === 'schedule_reminder_1h') {
+    if (meta.scheduleAlive === false) {
+      return Alert.alert('삭제된 일정입니다', '');
+    }
     return navigation.navigate('MyInfo');
+  }
   // 환영·결산 → MapMain
   if (kind === 'welcome' || kind === 'monthly_summary')
     return navigation.navigate('MapMain');
