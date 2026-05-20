@@ -30,7 +30,8 @@ const SEED_REQUESTS: FriendRequest[] = MOCK_NON_FRIENDS.slice(0, 2).map(
     avatar: a.avatar,
     nickname: a.nickname,
     status: a.status,
-    time: i === 0 ? '26.05.11 오전 3:23' : '26.05.10 오후 9:12',
+    // 앱 통일 포맷 YY.MM.DD(요일) 오전/오후 H:MM — @/lib/dateFormat 기준.
+    time: i === 0 ? '26.05.11(월) 오전 3:23' : '26.05.10(일) 오후 9:12',
   }),
 );
 

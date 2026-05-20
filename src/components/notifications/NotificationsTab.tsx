@@ -108,11 +108,12 @@ const SLOT_EVENT = svg(IconEvent); // [이벤트] (marketing 3종 모두 — 스
 const SLOT_APPROVED = svg(IconApproved); // [승인]
 const SLOT_REPORT = svg(IconReport); // [리포트]
 
-// 공통 샘플 변수 (v0.5 어휘)
+// 공통 샘플 변수 (v0.5 어휘 + v0.6 통일 날짜·시각 포맷)
+// 날짜·시각은 앱 전역 단일 포맷(YY.MM.DD(요일) 오전/오후 H:MM) — @/lib/dateFormat.
 const P = '강남 스포츠센터';
 const NM = '강두형';
-const D = '5월 28일(수)';
-const T = '19:00';
+const D = '26.05.28(목)';
+const T = '오후 7:00';
 
 // Figma 134:9643 — 최근/이전 2단 구성. 샘플 갤러리 분배 기준:
 //   최근 = 사람 발신·시스템 안내·광고·자동필수 (active feed 성격)
@@ -189,7 +190,8 @@ const GROUPS: { title: string; items: SampleSpec[] }[] = [
 ];
 
 // 샘플 갤러리라 공통 표기 시각 1개 (실제 적재 시 발송 시각으로 대체).
-const SAMPLE_TIME = '26.05.20 오후 2:00';
+// 앱 전역 통일 포맷 — YY.MM.DD(요일) 오전/오후 H:MM.
+const SAMPLE_TIME = '26.05.20(수) 오후 2:00';
 
 function toNotif(s: SampleSpec): Notif {
   const c = RULES[s.kind].build(s.params);

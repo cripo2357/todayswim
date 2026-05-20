@@ -11,6 +11,7 @@ import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { useAnnouncements } from '@/hooks/useAnnouncements';
 import { tokens } from '@/styles/tokens';
+import { formatDate } from '@/lib/dateFormat';
 import type { Announcement, AnnouncementType } from '@/types/announcement';
 
 import IconNewFeature from '@assets/icons/announcement/new-feature.svg';
@@ -30,14 +31,7 @@ const ICON_BY_TYPE: Record<AnnouncementType, SvgIcon> = {
 const RECENT_DAYS = 7;
 const RECENT_MS = RECENT_DAYS * 24 * 60 * 60 * 1000;
 
-// Figma 26.05.11 형식 (yy.mm.dd)
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  const yy = String(d.getFullYear()).slice(2);
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${yy}.${mm}.${dd}`;
-}
+// 앱 통일 날짜 포맷 — @/lib/dateFormat.formatDate(YY.MM.DD(요일)) 위임.
 
 function isRecent(iso: string): boolean {
   return Date.now() - new Date(iso).getTime() < RECENT_MS;

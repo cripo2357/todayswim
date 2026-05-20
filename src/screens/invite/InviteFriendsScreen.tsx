@@ -28,6 +28,7 @@ import { useFriends } from '@/store/friends';
 import { useSentInvites, inviteSlotKey } from '@/store/sentInvites';
 import { dispatchMessage } from '@/lib/messages/dispatch';
 import { tokens } from '@/styles/tokens';
+import { formatDateTime } from '@/lib/dateFormat';
 
 const SCREEN_H = Dimensions.get('window').height;
 // 시트 본문 고정 높이 — 멀티선택 열림/닫힘과 무관하게 시트 총높이 일정.
@@ -35,17 +36,11 @@ const BODY_H = Math.round(SCREEN_H * 0.62);
 // 안정적 빈 배열(미초대 슬롯에서 매 렌더 새 [] 생성으로 인한 리렌더 방지)
 const EMPTY_IDS: string[] = [];
 
-const DOW_KR = ['일', '월', '화', '수', '목', '금', '토'];
-
-// Figma 150:8696 — "2026년 1월 23일(목) 오전 11:00" (날짜 + 시작시각 12h, 쉼표 없음)
+// 앱 통일 "YY.MM.DD(요일) 오전/오후 H:MM" — @/lib/dateFormat 위임.
 function formatScheduleLine(iso: string, start: string): string {
   const [y, m, d] = iso.split('-').map(Number);
-  const dow = DOW_KR[new Date(y, m - 1, d).getDay()];
-  const [hhStr, mm] = start.split(':');
-  const hh = Number(hhStr);
-  const ampm = hh < 12 ? '오전' : '오후';
-  const h12 = hh % 12 || 12;
-  return `${y}년 ${m}월 ${d}일(${dow}) ${ampm} ${h12}:${mm}`;
+  const [hh, mm] = start.split(':').map(Number);
+  return formatDateTime(new Date(y, m - 1, d, hh, mm));
 }
 
 export function InviteFriendsScreen() {

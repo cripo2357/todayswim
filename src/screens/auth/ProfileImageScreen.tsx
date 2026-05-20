@@ -24,6 +24,7 @@ import {
 } from '@/lib/avatars';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
+import { formatDate } from '@/lib/dateFormat';
 import IconArrowUpload from '@assets/icons/arrow-upload.svg';
 import IconAlertTriangle from '@assets/icons/alert-triangle.svg';
 import IconEmotionOverjoyed from '@assets/icons/emotion-overjoyed.svg';
@@ -48,11 +49,11 @@ const ERROR_COPY: Record<ErrorReason, { title: string; sub: string }> = {
 const AVATAR_SIZE = 120; // uploading 링용
 const IDLE_AVATAR = 80; // idle 아바타 (Figma 110:3316 / 130:3599 통일)
 
-/** 가입일 → "YYYY년 M월 D일부터 풀스데이와 수영중" */
+/** 가입일 → "YY.MM.DD(요일)부터 풀스데이와 수영중" (앱 통일 날짜 포맷). */
 function formatSince(createdAt?: string): string {
   const d = createdAt ? new Date(createdAt) : null;
   if (!d || Number.isNaN(d.getTime())) return '풀스데이와 수영중';
-  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일부터 풀스데이와 수영중`;
+  return `${formatDate(d)}부터 풀스데이와 수영중`;
 }
 
 export function ProfileImageScreen() {

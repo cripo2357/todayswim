@@ -26,7 +26,7 @@ export interface Schedule {
   poolId: string;
   /** 작성자 닉네임 — Figma "수영맨" 같은 크레딧 */
   authorNickname: string;
-  /** ISO 날짜 (YYYY-MM-DD) — "업데이트: 2026.10.31" */
+  /** 앱 통일 날짜 포맷 YY.MM.DD(요일) — useSchedules에서 formatDate로 변환 후 보관. */
   updatedAt: string;
   /** 요일별 시간 슬롯 */
   byDay: {

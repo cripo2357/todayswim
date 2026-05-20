@@ -32,16 +32,13 @@ import { BUNDLE_AVATARS } from '@/lib/avatars';
 import { ConfirmFriendActionModal } from '@/components/friends/ConfirmFriendActionModal';
 import { FriendRequestSentModal } from '@/components/friends/FriendRequestSentModal';
 import { tokens } from '@/styles/tokens';
+import { formatDateTime } from '@/lib/dateFormat';
 
-const DOW = ['일', '월', '화', '수', '목', '금', '토'];
-
+/** "YYYY-MM-DD","HH:MM" → 앱 통일 "YY.MM.DD(요일) 오전/오후 H:MM". */
 function formatWhen(date: string, start: string): string {
   const [y, m, d] = date.split('-').map(Number);
-  const dow = DOW[new Date(y, m - 1, d).getDay()];
   const [hh, mm] = start.split(':').map(Number);
-  const ampm = hh < 12 ? '오전' : '오후';
-  const h12 = hh % 12 === 0 ? 12 : hh % 12;
-  return `${y}년 ${m}월 ${d}일(${dow}) ${ampm} ${h12}:${String(mm).padStart(2, '0')}`;
+  return formatDateTime(new Date(y, m - 1, d, hh, mm));
 }
 
 // CTA: 상태별 라벨/색/동작. (Figma 172:9735/12010/11530)

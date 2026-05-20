@@ -31,18 +31,15 @@ import { useSwimSchedules, dateKey } from '@/store/swimSchedule';
 import { useAddScheduleIntent } from '@/store/addScheduleIntent';
 import { usePools } from '@/hooks/usePools';
 import { tokens } from '@/styles/tokens';
+import { formatDateTime } from '@/lib/dateFormat';
 
-const DOW = ['일', '월', '화', '수', '목', '금', '토'];
 const SCREEN_H = Dimensions.get('window').height;
 
-/** "YYYY-MM-DD","HH:MM" → "YYYY년 M월 D일(요일), 오전/오후 H:MM" */
+/** "YYYY-MM-DD","HH:MM" → 앱 통일 "YY.MM.DD(요일) 오전/오후 H:MM". */
 function formatWhen(date: string, start: string): string {
   const [y, m, d] = date.split('-').map(Number);
-  const dow = DOW[new Date(y, m - 1, d).getDay()];
   const [hh, mm] = start.split(':').map(Number);
-  const ampm = hh < 12 ? '오전' : '오후';
-  const h12 = hh % 12 === 0 ? 12 : hh % 12;
-  return `${y}년 ${m}월 ${d}일(${dow}) ${ampm} ${h12}:${String(mm).padStart(2, '0')}`;
+  return formatDateTime(new Date(y, m - 1, d, hh, mm));
 }
 
 interface FriendSlot {

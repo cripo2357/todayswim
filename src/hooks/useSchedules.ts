@@ -3,6 +3,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { formatDate } from '@/lib/dateFormat';
 import type { Schedule } from '@/types/schedule';
 
 interface ScheduleRow {
@@ -21,8 +22,8 @@ function rowToSchedule(row: ScheduleRow): Schedule {
     byDay: row.by_day,
     dayNotes: row.day_notes ?? undefined,
     slotGroups: row.slot_groups ?? undefined,
-    // 표시 형식 "2026.10.31"로 변환 (DB는 timestamptz)
-    updatedAt: row.updated_at.slice(0, 10).replace(/-/g, '.'),
+    // 앱 통일 날짜 포맷 YY.MM.DD(요일) — DB timestamptz의 날짜 부분만.
+    updatedAt: formatDate(row.updated_at.slice(0, 10)),
   };
 }
 

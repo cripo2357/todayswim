@@ -3,6 +3,7 @@
 
 import type { DayOfWeek } from '@/types/schedule';
 import type { SwimClass } from '@/store/profile';
+import { formatTimeHHMM } from '@/lib/dateFormat';
 
 /** 요일 정렬 순서 (월~일) */
 export const DAY_ORDER: DayOfWeek[] = ['월', '화', '수', '목', '금', '토', '일'];
@@ -11,14 +12,8 @@ export function genSwimClassId(): string {
   return `sc-${Date.now()}-${Math.floor(Math.random() * 1e4)}`;
 }
 
-/** "HH:MM" → "오전/오후 h:MM" (12h 한국식). 00시=오전 12시, 12시=오후 12시 */
-export function to12h(hhmm: string): string {
-  const [hStr, mStr] = hhmm.split(':');
-  const h = Number(hStr);
-  const ampm = h < 12 ? '오전' : '오후';
-  const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${ampm} ${h12}:${mStr}`;
-}
+/** "HH:MM" → "오전/오후 H:MM" — 앱 전역 시간 포맷 @/lib/dateFormat 위임. */
+export const to12h = formatTimeHHMM;
 
 /** 등록 화면 알약 라벨 — "HH:MM ~ HH:MM" (24h 그대로) */
 export function formatTimeRange(c: Pick<SwimClass, 'start' | 'end'>): string {
