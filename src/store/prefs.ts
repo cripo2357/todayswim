@@ -16,6 +16,11 @@ export type FriendRequest = 'off' | 'id' | 'nickname' | 'all';
 /** 지도 친구 수영 일정 스택 노출 시점 — 슬롯 시작 N 전 ~ 종료까지.
  *  'off'=스택 전체 미표시. mapProfileStacks 가 horizonMs 로 환산. */
 export type MapFriendHorizon = 'd1' | 'h12' | 'h6' | 'off';
+/** 내 레슨 예정의 지도 stack 노출 범위 — Figma 179:4793.
+ *  'off'=어디에도 표시 X / 'friends'=친구 지도에만 / 'public'=전체 공개.
+ *  'public'은 profileVisibility==='public'일 때만 선택 가능(설정 화면 강제).
+ *  profileVisibility 'public'→'friends' 변경 시 'public'은 'friends'로 강등. */
+export type LessonVisibility = 'off' | 'friends' | 'public';
 
 /** horizon → ms (스택 노출창 = 슬롯 시작 − horizonMs ~ 슬롯 종료). */
 export const MAP_FRIEND_HORIZON_MS: Record<MapFriendHorizon, number> = {
@@ -35,6 +40,8 @@ interface PrefsState {
   mapStartPoolId: string | null;
   /** 지도 친구 수영 일정 스택 노출 시점(슬롯 시작 N 전부터). 'off'=미표시. */
   mapFriendHorizon: MapFriendHorizon;
+  /** 내 레슨 예정 stack 노출 범위(off/friends/public). */
+  lessonVisibility: LessonVisibility;
   /** OS 푸시 알림 마스터(Figma 223:2799 "푸시 알림"). **5개 sub의 OR 집계
    *  (derived)** — 별도 저장 X. 마케팅은 정통망법 §50 별도 동의라 집계에서
    *  제외. 토글 시 5개 sub로 cascade(마케팅 무관). */
@@ -57,6 +64,7 @@ interface PrefsState {
   setFriendRequest: (v: FriendRequest) => Promise<void>;
   setMapStartPoolId: (v: string | null) => Promise<void>;
   setMapFriendHorizon: (v: MapFriendHorizon) => Promise<void>;
+  setLessonVisibility: (v: LessonVisibility) => Promise<void>;
   setPushOn: (v: boolean) => Promise<void>;
   setNotifFriendInvite: (v: boolean) => Promise<void>;
   setNotifScheduleReminder: (v: boolean) => Promise<void>;
@@ -76,6 +84,8 @@ const K_MAP_START = 'poolsday.prefs.mapStartPoolId';
 const K_MAP_FRIENDS = 'poolsday.prefs.mapFriendHorizon';
 const K_MAP_FRIENDS_LEGACY = 'poolsday.prefs.showMapFriendStack';
 const HORIZON_VALUES: MapFriendHorizon[] = ['d1', 'h12', 'h6', 'off'];
+const K_LESSON_VIS = 'poolsday.prefs.lessonVisibility';
+const LESSON_VIS_VALUES: LessonVisibility[] = ['off', 'friends', 'public'];
 // 푸시 알림 마스터는 5 sub의 OR 집계(derived) — 별도 영속 키 없음.
 // 구 K_PUSH_ON('poolsday.prefs.pushOn') 키는 폐기(2026-05-20).
 const K_NOTIF_FRIEND = 'poolsday.prefs.notifFriendInvite';
@@ -92,7 +102,7 @@ const K_TERMS_MARKETING_REJECTED = 'poolsday.terms.marketing.rejected';
 
 const FRIEND_REQ_VALUES: FriendRequest[] = ['off', 'id', 'nickname', 'all'];
 
-export const usePrefs = create<PrefsState>((set) => ({
+export const usePrefs = create<PrefsState>((set, get) => ({
   // 최초 가입자 기본값 (사용자 지정)
   othersScheduleView: 'friends', // 친구 일정만 보기
   scheduleInvite: 'on', // 초대 받기
@@ -100,6 +110,7 @@ export const usePrefs = create<PrefsState>((set) => ({
   friendRequest: 'nickname', // 닉네임으로만 신청 받기
   mapStartPoolId: null, // 내 위치
   mapFriendHorizon: 'd1', // 1일 전부터 보기 (Figma 기본값)
+  lessonVisibility: 'friends', // profileVisibility 기본 'friends'와 동조
   pushOn: true, // 푸시 알림 기본 ON
   // 알림 유형 5개 — 가입자 기본 ON. 마케팅은 가입 시 사용자 선택(기본 false).
   notifFriendInvite: true,
@@ -112,7 +123,7 @@ export const usePrefs = create<PrefsState>((set) => ({
 
   hydrate: async () => {
     try {
-      const [i, p, f, ms, mf, mfLegacy, nFi, nSc, nSu, nSv, nMo, marketing] =
+      const [i, p, f, ms, mf, mfLegacy, lv, nFi, nSc, nSu, nSv, nMo, marketing] =
         await Promise.all([
           AsyncStorage.getItem(K_INVITE),
           AsyncStorage.getItem(K_PROFILE_VIS),
@@ -120,6 +131,7 @@ export const usePrefs = create<PrefsState>((set) => ({
           AsyncStorage.getItem(K_MAP_START),
           AsyncStorage.getItem(K_MAP_FRIENDS),
           AsyncStorage.getItem(K_MAP_FRIENDS_LEGACY),
+          AsyncStorage.getItem(K_LESSON_VIS),
           AsyncStorage.getItem(K_NOTIF_FRIEND),
           AsyncStorage.getItem(K_NOTIF_SCHED),
           AsyncStorage.getItem(K_NOTIF_SUBMIT),
@@ -141,6 +153,17 @@ export const usePrefs = create<PrefsState>((set) => ({
         AsyncStorage.setItem(K_MAP_FRIENDS, mapFriendHorizon).catch(() => {});
         AsyncStorage.removeItem(K_MAP_FRIENDS_LEGACY).catch(() => {});
       }
+      // 레슨 가시성 — 저장값이 'public'이지만 profileVisibility가 'friends'면
+      // 'friends'로 강등(stale 상태 방어). hydrate 시점 보정 1회.
+      let lessonVisibility: LessonVisibility = LESSON_VIS_VALUES.includes(
+        lv as LessonVisibility,
+      )
+        ? (lv as LessonVisibility)
+        : 'friends';
+      if (lessonVisibility === 'public' && pv === 'friends') {
+        lessonVisibility = 'friends';
+        AsyncStorage.setItem(K_LESSON_VIS, 'friends').catch(() => {});
+      }
       const friendV = nFi === 'false' ? false : true;
       const schedV = nSc === 'false' ? false : true;
       const submitV = nSu === 'false' ? false : true;
@@ -156,6 +179,7 @@ export const usePrefs = create<PrefsState>((set) => ({
           : 'nickname',
         mapStartPoolId: ms || null,
         mapFriendHorizon,
+        lessonVisibility,
         notifFriendInvite: friendV,
         notifScheduleReminder: schedV,
         notifSubmissionResult: submitV,
@@ -188,12 +212,25 @@ export const usePrefs = create<PrefsState>((set) => ({
   setProfileVisibility: async (v) => {
     // '프로필과 일정 공유' 단일 제어(Figma 129:6006) — 일정 공유는
     // 항상 프로필 공개를 미러. 2기능 1제어로 병합(사용자 확정).
+    // 'public'→'friends' 강등 시: (a) 예정 일정 'public'→'friends'
+    // (b) 레슨 가시성 'public'→'friends' (둘 다 'public'이 의미를 잃음).
     await AsyncStorage.setItem(K_PROFILE_VIS, v);
     await AsyncStorage.setItem(K_VIEW, v);
-    set({ profileVisibility: v, othersScheduleView: v });
     if (v === 'friends') {
-      // 친구만 → 내 예정 일정 중 전체공개 → 친구공개로 강등
+      const curLesson = get().lessonVisibility;
+      if (curLesson === 'public') {
+        await AsyncStorage.setItem(K_LESSON_VIS, 'friends');
+        set({
+          profileVisibility: v,
+          othersScheduleView: v,
+          lessonVisibility: 'friends',
+        });
+      } else {
+        set({ profileVisibility: v, othersScheduleView: v });
+      }
       await useSwimSchedules.getState().downgradePublicToFriends();
+    } else {
+      set({ profileVisibility: v, othersScheduleView: v });
     }
   },
 
@@ -211,6 +248,15 @@ export const usePrefs = create<PrefsState>((set) => ({
   setMapFriendHorizon: async (v) => {
     await AsyncStorage.setItem(K_MAP_FRIENDS, v);
     set({ mapFriendHorizon: v });
+  },
+
+  setLessonVisibility: async (v) => {
+    // 'public'은 profileVisibility==='public'일 때만 허용 — UI에서 옵션 제거.
+    // 호출자 우회 방지로 store에서도 강등(profileVis='friends'면 'friends'로).
+    const pv = get().profileVisibility;
+    const next: LessonVisibility = v === 'public' && pv === 'friends' ? 'friends' : v;
+    await AsyncStorage.setItem(K_LESSON_VIS, next);
+    set({ lessonVisibility: next });
   },
 
   // 마스터(푸시 알림) 토글 — 5 sub로 cascade. 마케팅은 정통망법 §50 별도

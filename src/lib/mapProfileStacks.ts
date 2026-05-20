@@ -167,12 +167,14 @@ export function buildPoolProfileStacks(
     }
   }
 
-  // 친구 — 공개 레슨만. useFriends 경유(차단·실친구), private 제외.
+  // 친구 — 친구공개/전체공개 레슨. useFriends 경유(차단·실친구), private 제외.
+  // 일정과 동일하게 'private'만 가림 — 'friends'/'public' 모두 친구인 나에게 노출.
+  // (LessonVisibility 'off' 도입 후 mockData 갱신 시 'off'/'private' 둘 다 가림.)
   for (const o of input.otherLessons ?? []) {
     if (blockedSet.has(o.userId)) continue;
     const f = friendById.get(o.userId);
     if (!f) continue;
-    if (o.visibility !== 'public') continue;
+    if (o.visibility === 'private') continue;
     const occ = lessonOccurrenceMs(o.day, o.start, o.end, now);
     consider({
       userId: o.userId,

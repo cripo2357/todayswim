@@ -24,6 +24,7 @@ import {
   type ProfileVisibility,
   type FriendRequest,
   type MapFriendHorizon,
+  type LessonVisibility,
 } from '@/store/prefs';
 import { useProfile } from '@/store/profile';
 import { usePools } from '@/hooks/usePools';
@@ -54,6 +55,7 @@ import IconPerson from '@assets/icons/settings/person.svg';
 import IconUsers from '@assets/icons/settings/users.svg';
 import IconHandHeart from '@assets/icons/settings/hand-heart.svg';
 import IconMapPin from '@assets/icons/settings/map-pin.svg';
+import IconSwimming from '@assets/icons/settings/swimming.svg';
 
 const FEEDBACK_EMAIL = 'cripo2357@gmail.com';
 
@@ -76,7 +78,7 @@ const PROFILE_VIS_VALUE: Record<ProfileVisibility, string> = {
   friends: '친구만',
   public: '모두에게',
 };
-// 친구 수영 일정 (Figma 179:4793) — prefs.mapFriendHorizon 4값.
+// 수영 예정 친구 (Figma 236:4612) — prefs.mapFriendHorizon 4값.
 // 옵션 라벨과 우측 표시값은 동일 문구("일정 N 전부터 보기" / "안 보기").
 const MAP_FRIEND_VALUE: Record<MapFriendHorizon, string> = {
   d1: '일정 1일 전부터 보기',
@@ -90,6 +92,22 @@ const MAP_FRIEND_OPTIONS: Option<MapFriendHorizon>[] = [
   { value: 'h6', label: MAP_FRIEND_VALUE.h6 },
   { value: 'off', label: MAP_FRIEND_VALUE.off },
 ];
+// 내 레슨 예정 (Figma 179:4793) — prefs.lessonVisibility 3값.
+// 옵션 라벨(시트)과 우측 표시값(행)이 다름:
+//   off    : "안 보여주기"       → "보여주지 않음"
+//   friends: "친구만 보여주기"    → "친구 지도에만 표시"
+//   public : "모두에게 보여주기"  → "전체 공개"
+// 'public' 옵션은 profileVisibility==='public'일 때만 노출(친구공개면 숨김).
+const LESSON_VIS_VALUE: Record<LessonVisibility, string> = {
+  off: '보여주지 않음',
+  friends: '친구 지도에만 표시',
+  public: '전체 공개',
+};
+const LESSON_VIS_OPTION_LABEL: Record<LessonVisibility, string> = {
+  off: '안 보여주기',
+  friends: '친구만 보여주기',
+  public: '모두에게 보여주기',
+};
 // 친구 신청 받기
 const FRIEND_REQ_OPTIONS: Option<FriendRequest>[] = [
   { value: 'off', label: '신청 안 받기' },
@@ -134,12 +152,24 @@ export function SettingsScreen() {
   const [profileSheet, setProfileSheet] = React.useState(false);
   const [friendReqSheet, setFriendReqSheet] = React.useState(false);
   const [mapFriendSheet, setMapFriendSheet] = React.useState(false);
+  const [lessonVisSheet, setLessonVisSheet] = React.useState(false);
 
   // 지도 시작 위치 — 행 우측 표시값(내 위치 / 수영장명). 즐겨찾기 해제 시
   // useFavorites가 prefs.mapStartPoolId를 null로 리셋.
   const mapStartPoolId = usePrefs((s) => s.mapStartPoolId);
   const mapFriendHorizon = usePrefs((s) => s.mapFriendHorizon);
   const setMapFriendHorizon = usePrefs((s) => s.setMapFriendHorizon);
+  const lessonVisibility = usePrefs((s) => s.lessonVisibility);
+  const setLessonVisibility = usePrefs((s) => s.setLessonVisibility);
+  // 내 레슨 예정 옵션 — 'public'은 프로필 공개가 'public'일 때만 노출.
+  // 'friends'에서 'public' 선택은 모순(친구공개인데 레슨은 전체) → 숨김.
+  const lessonVisOptions = React.useMemo<Option<LessonVisibility>[]>(() => {
+    const base: LessonVisibility[] =
+      profileVis === 'public'
+        ? ['off', 'friends', 'public']
+        : ['off', 'friends'];
+    return base.map((v) => ({ value: v, label: LESSON_VIS_OPTION_LABEL[v] }));
+  }, [profileVis]);
   const { data: poolsData } = usePools();
   const startPool = mapStartPoolId
     ? (poolsData ?? []).find((p) => p.id === mapStartPoolId)
@@ -238,7 +268,7 @@ export function SettingsScreen() {
           />
         </Section>
 
-        {/* 지도 (Figma 179:4763) — 시작 위치(화면 이동) / 친구 스택 표시(시트) */}
+        {/* 지도 (Figma 179:4763) — 시작 위치 / 내 레슨 예정 / 수영 예정 친구 */}
         <Section title="지도">
           <Row
             icon={<IconMapPin width={24} height={24} />}
@@ -247,8 +277,14 @@ export function SettingsScreen() {
             onPress={() => navigation.navigate('MapStartLocation')}
           />
           <Row
+            icon={<IconSwimming width={24} height={24} />}
+            label="내 레슨 예정"
+            value={LESSON_VIS_VALUE[lessonVisibility]}
+            onPress={() => setLessonVisSheet(true)}
+          />
+          <Row
             icon={<IconUsers width={24} height={24} />}
-            label="친구 수영 일정"
+            label="수영 예정 친구"
             value={MAP_FRIEND_VALUE[mapFriendHorizon]}
             onPress={() => setMapFriendSheet(true)}
           />
@@ -378,10 +414,18 @@ export function SettingsScreen() {
       <OptionSheet<MapFriendHorizon>
         visible={mapFriendSheet}
         onClose={() => setMapFriendSheet(false)}
-        title="친구 수영 일정"
+        title="수영 예정 친구"
         options={MAP_FRIEND_OPTIONS}
         value={mapFriendHorizon}
         onConfirm={(v) => setMapFriendHorizon(v)}
+      />
+      <OptionSheet<LessonVisibility>
+        visible={lessonVisSheet}
+        onClose={() => setLessonVisSheet(false)}
+        title="내 레슨 예정"
+        options={lessonVisOptions}
+        value={lessonVisibility}
+        onConfirm={(v) => setLessonVisibility(v)}
       />
 
       <ConfirmLogoutModal

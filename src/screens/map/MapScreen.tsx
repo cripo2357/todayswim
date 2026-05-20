@@ -168,6 +168,7 @@ export function MapScreen() {
   // 지도 시작 위치(null=내 위치, 그 외=즐겨찾기 poolId) + 친구 스택 표시 설정
   const mapStartPoolId = usePrefs((s) => s.mapStartPoolId);
   const mapFriendHorizon = usePrefs((s) => s.mapFriendHorizon);
+  const lessonVisibility = usePrefs((s) => s.lessonVisibility);
   const showStack = mapFriendHorizon !== 'off';
 
   // 카메라 추적 — 두 가지로 분리해서 불필요한 리렌더 방지:
@@ -272,10 +273,12 @@ export function MapScreen() {
             friends,
             blocked,
             otherSchedules,
-            // 수영 레슨(공개 시). 일정과 통합돼 userId당 최임박 1곳만 노출.
+            // 수영 레슨 — prefs.lessonVisibility 'off'/'friends'/'public'.
+            // 내 지도에서는 나 자신을 보는 것이라 'off'만 가리고 친구/전체
+            // 둘 다 노출(서버단 친구·전체 가시성 필터링은 Phase 2).
             myLessonPoolId: profile?.lessonPoolId ?? null,
             mySwimClasses: profile?.swimClasses ?? [],
-            showMyLessons: profile?.showSwimClasses ?? true,
+            showMyLessons: lessonVisibility !== 'off',
             otherLessons: MOCK_OTHER_LESSONS,
             horizonMs: MAP_FRIEND_HORIZON_MS[mapFriendHorizon],
           })
@@ -288,6 +291,7 @@ export function MapScreen() {
       blocked,
       showStack,
       mapFriendHorizon,
+      lessonVisibility,
       otherSchedules,
     ],
   );
