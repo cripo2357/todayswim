@@ -212,11 +212,44 @@ for (const pool of pools) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────
+// 기본정보 누락 체크 — 전체 풀(schedule_source_url 유무와 무관) 대상.
+// 5개 필수 컬럼 + by_day 비어있음을 점검. 누락 있으면 Issue에 별도 섹션.
+// ──────────────────────────────────────────────────────────────────────────
+
+const REQUIRED_FIELDS = ['name', 'address', 'phone', 'price_weekday', 'schedule_source_url'];
+
+const { data: allPools, error: allErr } = await supabase
+  .from('pools')
+  .select('id, name, address, phone, price_weekday, schedule_source_url')
+  .order('id');
+if (allErr) {
+  console.error('[fatal] all pools fetch failed:', allErr);
+  process.exit(3);
+}
+
+const { data: allSchedules } = await supabase
+  .from('schedules')
+  .select('pool_id, by_day');
+const byDayByPool = new Map((allSchedules || []).map((s) => [s.pool_id, s.by_day]));
+
+const missing = [];
+for (const p of allPools) {
+  const missCols = REQUIRED_FIELDS.filter((f) => {
+    const v = p[f];
+    return v === null || v === undefined || (typeof v === 'string' && v.trim() === '');
+  });
+  const by = byDayByPool.get(p.id);
+  const byDayEmpty = !by || Object.keys(by).length === 0;
+  if (byDayEmpty) missCols.push('by_day');
+  if (missCols.length) missing.push({ pool: p, missing: missCols });
+}
+
+// ──────────────────────────────────────────────────────────────────────────
 
 const today = new Date().toISOString().slice(0, 10);
 
-if (changes.length === 0 && errors.length === 0) {
-  console.log(`[ok] ${pools.length}개 풀 모두 변동 없음. last_verified_at 갱신 완료.`);
+if (changes.length === 0 && errors.length === 0 && missing.length === 0) {
+  console.log(`[ok] ${pools.length}개 풀 모두 변동 없음 + 기본정보 누락 없음.`);
   if (process.env.GITHUB_OUTPUT) {
     fs.appendFileSync(process.env.GITHUB_OUTPUT, 'has_issues=false\n');
   }
@@ -227,7 +260,8 @@ let body = `# 수영장 시간표 검증 결과 (${today})\n\n`;
 body += `- 검증 대상: ${pools.length}\n`;
 body += `- ✅ 변동 없음: ${verified.length}\n`;
 body += `- 🔄 변경 감지: ${changes.length}\n`;
-body += `- ⚠️ 오류: ${errors.length}\n\n`;
+body += `- ⚠️ 오류: ${errors.length}\n`;
+body += `- 📋 기본정보 누락: ${missing.length}\n\n`;
 
 if (changes.length) {
   body += `## 🔄 시간표 변경 감지\n\n`;
@@ -256,6 +290,16 @@ if (errors.length) {
   }
   body += `\n`;
   body += `> 같은 \`http_error\`나 \`fetch_error\`가 반복되면 URL이 변경됐을 가능성 — 운영자가 새 URL 찾아 \`pools.schedule_source_url\` UPDATE.\n`;
+}
+
+if (missing.length) {
+  body += `\n## 📋 기본정보 누락 풀\n\n`;
+  body += `풀의 기본정보(이름·주소·연락처·요금·시간표 출처·자유수영 시간표)가 비어있습니다. 채워주세요.\n\n`;
+  for (const m of missing) {
+    body += `- **${m.pool.name || '(이름 없음)'}** \`${m.pool.id}\` — 누락: \`${m.missing.join('`, `')}\`\n`;
+  }
+  body += `\n`;
+  body += `> Studio SQL Editor에서 \`update pools set <컬럼> = '...' where id = '...';\` 또는 \`by_day\`/\`day_notes\`는 마이그레이션으로 보강.\n`;
 }
 
 fs.writeFileSync('issue-body.md', body);
