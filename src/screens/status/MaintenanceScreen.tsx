@@ -9,6 +9,7 @@ import { Clock, LogOut } from 'lucide-react-native';
 
 import { StatusScreen } from '@/components/layout/StatusScreen';
 import type { RootStackParamList } from '@/navigation/types';
+import IllustMaintenance from '@assets/illustrations/maintenance.svg';
 
 const DESTRUCTIVE = '#F43F5E';
 
@@ -25,7 +26,7 @@ export function MaintenanceScreen() {
 
   return (
     <StatusScreen
-      // TODO: assets/illustrations/maintenance.svg export 후 import
+      illustration={<IllustMaintenance width="100%" height="100%" />}
       badgeIcon={<Clock size={16} color={DESTRUCTIVE} strokeWidth={2} />}
       badgeText={reopenLabel}
       heading="서비스 점검 중"

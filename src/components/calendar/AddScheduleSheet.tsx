@@ -41,10 +41,12 @@ import { MOCK_FRIENDS } from '@/lib/mockData';
 import ScheduleCompleteIllust from '@assets/illustrations/schedule-complete.svg';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { SheetCloseButton } from '@/components/ui/SheetCloseButton';
+import { WEEKDAYS } from '@/lib/dateFormat';
 import { WeekCalendar } from './WeekCalendar';
 
 const SCREEN_H = Dimensions.get('window').height;
-const DOW: DayOfWeek[] = ['일', '월', '화', '수', '목', '금', '토'];
+// 단일 출처 [[datetime_format_unified]] — JS getDay() 0=일 정렬.
+const DOW = WEEKDAYS as readonly DayOfWeek[];
 
 function isSameDay(a: Date, b: Date): boolean {
   return (

@@ -7,6 +7,7 @@ import { AlertCircle, Home } from 'lucide-react-native';
 
 import { StatusScreen } from '@/components/layout/StatusScreen';
 import type { RootStackParamList } from '@/navigation/types';
+import Illust404 from '@assets/illustrations/error-404.svg';
 
 const DESTRUCTIVE = '#F43F5E';
 
@@ -19,8 +20,7 @@ export function ErrorNotFoundScreen() {
 
   return (
     <StatusScreen
-      // TODO: assets/illustrations/error-404.svg export 후 import
-      // illustration={<Illust404 width="100%" height={280} />}
+      illustration={<Illust404 width="100%" height="100%" />}
       badgeIcon={<AlertCircle size={16} color={DESTRUCTIVE} strokeWidth={2} />}
       badgeText="상태 코드: 404"
       heading="페이지 찾을 수 없음"

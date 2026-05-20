@@ -9,6 +9,7 @@ import { Smartphone, Download } from 'lucide-react-native';
 
 import { StatusScreen } from '@/components/layout/StatusScreen';
 import type { RootStackParamList } from '@/navigation/types';
+import IllustAppUpdate from '@assets/illustrations/app-update.svg';
 
 const BRAND = '#2563EB';
 
@@ -31,7 +32,7 @@ export function AppUpdateRequiredScreen() {
 
   return (
     <StatusScreen
-      // TODO: assets/illustrations/app-update.svg export 후 import
+      illustration={<IllustAppUpdate width="100%" height="100%" />}
       badgeIcon={<Smartphone size={16} color={BRAND} strokeWidth={2} />}
       badgeText={versionLabel}
       badgeVariant="brand"

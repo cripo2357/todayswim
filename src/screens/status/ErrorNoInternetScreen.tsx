@@ -8,6 +8,7 @@ import { WifiOff, RefreshCw } from 'lucide-react-native';
 
 import { StatusScreen } from '@/components/layout/StatusScreen';
 import type { RootStackParamList } from '@/navigation/types';
+import IllustNoInternet from '@assets/illustrations/error-internet.svg';
 
 const DESTRUCTIVE = '#F43F5E';
 
@@ -24,7 +25,7 @@ export function ErrorNoInternetScreen() {
 
   return (
     <StatusScreen
-      // TODO: assets/illustrations/error-internet.svg export 후 import
+      illustration={<IllustNoInternet width="100%" height="100%" />}
       badgeIcon={<WifiOff size={16} color={DESTRUCTIVE} strokeWidth={2} />}
       badgeText="연결해 주세요"
       heading="인터넷 연결 없음"

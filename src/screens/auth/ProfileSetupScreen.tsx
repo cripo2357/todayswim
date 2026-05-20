@@ -446,11 +446,13 @@ const styles = StyleSheet.create({
   },
 
   field: { gap: 6, marginBottom: 16 },
+  // Figma 라벨색 #1F2937 — ink900(#0F172A)이 아닌 리터럴 [[figma_color_token_mismatch]].
   fieldLabel: {
     fontSize: 14,
     lineHeight: 20,
+    letterSpacing: -0.084,
     fontFamily: tokens.font.sansSemibold,
-    color: tokens.color.ink900,
+    color: '#1F2937',
   },
   subLabel: {
     fontSize: 14,
