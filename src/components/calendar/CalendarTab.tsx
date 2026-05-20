@@ -21,7 +21,9 @@ import {
 import { isBundleAvatar, BUNDLE_AVATARS } from '@/lib/avatars';
 import { usePrefs } from '@/store/prefs';
 import { resolveParticipants } from '@/lib/scheduleParticipants';
-import { useOtherSchedules } from '@/hooks/useOtherSchedules';
+// debug(2026-05-20): useOtherSchedules 임시 격리. P2 6배치 회귀 진단.
+// import { useOtherSchedules } from '@/hooks/useOtherSchedules';
+import { MOCK_OTHER_SCHEDULES } from '@/lib/mockData';
 import { useFriends } from '@/store/friends';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
@@ -79,7 +81,7 @@ export function CalendarTab() {
   const viewPref = usePrefs((s) => s.othersScheduleView);
   const blockedIds = useFriends((s) => s.blocked);
   // P2: 친구 일정 서버 fetch (서버 0건이면 mock 폴백).
-  const otherSchedules = useOtherSchedules();
+  const otherSchedules = MOCK_OTHER_SCHEDULES; // debug: 임시 mock 직접 사용
   // 다른 사람 일정 보기가 '친구 일정만'이면 일정 관리 시트에서 '전체 공개' 미노출
   const manageOptions = React.useMemo(
     () =>
