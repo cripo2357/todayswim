@@ -94,11 +94,6 @@ const STACK_LIFT = 9;
 // (preview 측정: 스택이 release에서도 최대 부하 — 줌 게이팅이 핵심 레버)
 const STACK_MIN_ZOOM = 14;
 
-// 카메라 정지 후 이 ms가 지나면 idle로 간주 → 스택 다시 렌더. pan/zoom 중에는
-// 스택을 unmount해 비트맵 캡처 cascade 차단. 200ms는 사용자 손가락 떨림은
-// 무시하면서 의도적 정지에는 빠르게 반응하는 균형점.
-const STACK_IDLE_MS = 200;
-
 // 단순 평면 근사 거리(m). 짧은 거리/한국 위도에선 haversine과 차이 무시 가능.
 function approxDistanceMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const dLat = (lat2 - lat1) * 111_000;
@@ -209,31 +204,11 @@ export function MapScreen() {
   const cameraRef = React.useRef<Camera>(INITIAL_CAMERA);
   const [zoomInt, setZoomInt] = React.useState(Math.round(INITIAL_CAMERA.zoom));
 
-  // 줌-정수 전환 게이팅 — supercluster가 클러스터 재구성하는 시점(integer zoom
-  // 변화)에만 스택을 잠깐 hide. pan/sub-integer zoom 에선 마커가 remount 안 돼
-  // 비트맵 캡처 cascade가 없으므로 가릴 필요 없음. 깜빡임 회귀(2026-05-21)
-  // 원인 = 모든 카메라 변화에 게이팅했던 것.
-  const [cameraIdle, setCameraIdle] = React.useState(true);
-  const idleTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const firstZoomEffectRef = React.useRef(true);
-  React.useEffect(() => {
-    // 초기 마운트(1회)는 게이트 발동 X — 마운트 직후 200ms blank가 보이지 않게.
-    if (firstZoomEffectRef.current) {
-      firstZoomEffectRef.current = false;
-      return;
-    }
-    setCameraIdle(false);
-    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-    idleTimerRef.current = setTimeout(() => {
-      setCameraIdle(true);
-    }, STACK_IDLE_MS);
-  }, [zoomInt]);
-  React.useEffect(
-    () => () => {
-      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-    },
-    [],
-  );
+  // (2026-05-21) 카메라 idle 게이팅 시도 → 깜빡임으로 거부. 비트맵 캡처
+  // cascade는 이론적 우려였고 실제 frame drop이 측정되기 전까지 도입 X.
+  // 사전 perf 하드닝은 사용자 체감 UI 우선 (대화 기록: ae259a8 → 2308948 →
+  // 본 커밋에서 제거). 추후 진짜 느려지면 (a) avatar 비트맵 prefetch (b)
+  // viewport bbox 좁히기 순. idle 게이팅은 후보에서 빼는 게 맞음.
 
   // 좌표 잡히면 첫 1회 카메라를 사용자 위치로 이동
   // 비-Gesture 이벤트에서 마지막으로 본 zoom — 사용자 핀치 시작 직전의 baseline.
@@ -419,7 +394,6 @@ export function MapScreen() {
     // ref만 즉시 갱신 — 리렌더 안 일어남
     cameraRef.current = { latitude: cam.latitude, longitude: cam.longitude, zoom: cam.zoom };
     // 정수 zoom 바뀔 때만 state 업데이트 → visibleClusters 재계산.
-    // setZoomInt가 위 useEffect[zoomInt] 를 깨워 cameraIdle 게이트가 발동.
     const newZoomInt = Math.round(cam.zoom);
     if (newZoomInt !== zoomInt) {
       setZoomInt(newZoomInt);
@@ -614,8 +588,7 @@ export function MapScreen() {
               />
               {stack &&
               stack.entries.length > 0 &&
-              zoomInt >= STACK_MIN_ZOOM &&
-              cameraIdle ? (
+              zoomInt >= STACK_MIN_ZOOM ? (
                 <NaverMapMarkerOverlay
                   latitude={p.lat}
                   longitude={p.lng}
