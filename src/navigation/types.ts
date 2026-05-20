@@ -69,7 +69,10 @@ export type RootStackParamList = {
 
   // 후원으로 서비스 응원하기 (설정 > 헬프 센터 > 후원으로 서비스 응원하기).
   // Figma 238:8643. 카카오뱅크 계좌 안내 + 응원 메시지 목록 + 본인 작성/수정/비공개.
-  Donation: undefined;
+  //
+  // params.scrollToMine — 알림 '응원글 보기' 액션에서 진입 시 본인 카드 위치로
+  // 자동 스크롤하라는 신호. 본인 카드가 dedupe 로 1장이라 정확히 그 카드로.
+  Donation: { scrollToMine?: boolean } | undefined;
 
   // 수영장 검색 필터
   PoolFilter: undefined;

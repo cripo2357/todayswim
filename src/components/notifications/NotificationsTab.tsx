@@ -296,9 +296,10 @@ function handleAction(
     }
     return navigation.navigate('MapMain');
   }
-  // 후원 감사 → 본인 응원글로 이동 (Donation 화면). 본인 카드는 dedup으로 최상단 노출.
+  // 후원 감사 → 본인 응원글로 이동 + 본인 카드 위치로 자동 스크롤.
+  // 본인 카드는 dedupe 로 1장이라 정확히 그 카드로.
   if (label === '응원글 보기' && kind === 'donation_thanks') {
-    return navigation.navigate('Donation');
+    return navigation.navigate('Donation', { scrollToMine: true });
   }
   // 광고(참여) 등 미정 — Phase 2
 }

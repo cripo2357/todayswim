@@ -27,9 +27,11 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  type LayoutChangeEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import type { RootStackParamList } from '@/navigation/types';
 import {
   ChevronLeft,
   Copy,
@@ -64,6 +66,7 @@ const FIGMA_SHADOW_MD = {
 
 export function DonationScreen() {
   const navigation = useNavigation();
+  const route = useRoute<RouteProp<RootStackParamList, 'Donation'>>();
   const profile = useProfile((s) => s.profile);
   const { data: appStatus } = useAppStatus();
   const { items } = useDonations();
@@ -76,6 +79,49 @@ export function DonationScreen() {
   // 키보드 회피 = KAV(behavior padding/height) + 네이티브 auto-scroll 만.
   // 가짜 여백(kbHeight 추가 padding) / 명시적 scrollToEnd 같은 workaround 는
   // 폐기 — 베이스는 Figma p-16 그대로(2026-05-21 크리스 롤백 지시).
+
+  // 알림 '응원글 보기' 진입 시 본인 카드 위치로 자동 스크롤.
+  // 본인 카드는 dedupe 로 1장이라 정확히 그 카드로.
+  //
+  // 좌표 계산: list 의 y(=ScrollView content 안에서의 위치) + mine 카드의
+  // y(=list 안에서의 위치) = mine 카드의 절대 y. 두 onLayout 이 다 들어왔을
+  // 때만 scroll 발화(once-only 가드).
+  const scrollRef = React.useRef<ScrollView>(null);
+  const listYRef = React.useRef<number | null>(null);
+  const mineCardYRef = React.useRef<number | null>(null);
+  const scrolledRef = React.useRef(false);
+  const scrollToMine = !!route.params?.scrollToMine;
+
+  const tryScrollToMine = React.useCallback(() => {
+    if (!scrollToMine || scrolledRef.current) return;
+    if (listYRef.current === null || mineCardYRef.current === null) return;
+    const target = listYRef.current + mineCardYRef.current;
+    scrollRef.current?.scrollTo({ y: target, animated: true });
+    scrolledRef.current = true;
+  }, [scrollToMine]);
+
+  const onListLayout = React.useCallback(
+    (e: LayoutChangeEvent) => {
+      listYRef.current = e.nativeEvent.layout.y;
+      tryScrollToMine();
+    },
+    [tryScrollToMine],
+  );
+  const onMineCardLayout = React.useCallback(
+    (e: LayoutChangeEvent) => {
+      mineCardYRef.current = e.nativeEvent.layout.y;
+      tryScrollToMine();
+    },
+    [tryScrollToMine],
+  );
+
+  // 화면 진입 param 바뀔 때 가드 리셋 — 같은 인스턴스로 다시 navigate 되는 케이스.
+  React.useEffect(() => {
+    if (scrollToMine) {
+      scrolledRef.current = false;
+      tryScrollToMine();
+    }
+  }, [scrollToMine, tryScrollToMine]);
 
   // 계좌 클립보드 복사 — expo-clipboard 동적 import.
   const onCopyAccount = async () => {
@@ -124,6 +170,7 @@ export function DonationScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
       <ScrollView
+        ref={scrollRef}
         // 핵심: ScrollView 자체에 flex:1 — KAV 안에서 KAV의 줄어든 영역에 맞춰
         // ScrollView 도 줄어들어야 내부 자동 스크롤이 동작. style 없으면 ScrollView
         // 가 contents 길이로 무한 확장돼 KAV가 줄어들어도 영향 안 받음.
@@ -202,7 +249,7 @@ export function DonationScreen() {
         </Text>
 
         {/* 응원자 카드 리스트 */}
-        <View style={styles.list}>
+        <View style={styles.list} onLayout={onListLayout}>
           {items.map((item) => (
             <DonationItemCard
               key={item.id}
@@ -215,6 +262,8 @@ export function DonationScreen() {
                 setEditingId(null);
               }}
               onHide={() => setHideId(item.id)}
+              // 본인 카드만 위치 보고 — '응원글 보기' 진입 시 자동 스크롤 입력값.
+              onMineLayout={item.mine ? onMineCardLayout : undefined}
             />
           ))}
           {items.length === 0 ? (
@@ -245,6 +294,7 @@ function DonationItemCard({
   onCancelEdit,
   onSaveEdit,
   onHide,
+  onMineLayout,
 }: {
   item: DonationItem;
   editing: boolean;
@@ -252,6 +302,7 @@ function DonationItemCard({
   onCancelEdit: () => void;
   onSaveEdit: (msg: string) => Promise<void>;
   onHide: () => void;
+  onMineLayout?: (e: LayoutChangeEvent) => void;
 }) {
   const [draft, setDraft] = React.useState(item.message);
 
@@ -263,7 +314,7 @@ function DonationItemCard({
   const canSave = trimmed.length > 0 && trimmed.length <= MAX_LEN;
 
   return (
-    <View style={[styles.card, FIGMA_SHADOW_MD]}>
+    <View style={[styles.card, FIGMA_SHADOW_MD]} onLayout={onMineLayout}>
       <View style={styles.avatarWrap}>
         <Avatar
           photoUri={item.avatar}
