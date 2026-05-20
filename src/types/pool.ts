@@ -28,7 +28,7 @@ export interface Pool {
   depthMax?: number;            // 1.8 (m)
   facilities?: string[];        // ['샤워실', '주차장', '사물함'] — 세부 시설
   // 카드(Figma 93:10597) 1차 분류 칩 — cyan rounded square로 노출
-  hasKidsPool?: boolean;        // 유아풀 보유
+  hasKidsPool?: boolean;        // 어린이풀 보유
   hasDivingPool?: boolean;      // 다이빙풀 보유
   isHotelPool?: boolean;        // 호텔 부속 — 마커도 별도(marker-hotel)
   hasSchedule?: boolean;        // 자유수영 시간표 등록 여부

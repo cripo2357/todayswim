@@ -2,7 +2,7 @@
 //
 // 좌표는 사용자에게 받지 않음 (운영자 검수 시 처리).
 // Create 필수: 수영장 이름 + 레인 길이 (라디오라 항상 값 있음 → 실질 name만 검증).
-// Create 옵션: 레인 개수, 얕은/깊은 수심, 유아풀/다이빙풀/호텔 분류.
+// Create 옵션: 레인 개수, 얕은/깊은 수심, 어린이풀/다이빙풀/호텔 분류.
 
 import React from 'react';
 import {
@@ -189,11 +189,11 @@ function CreateForm() {
             </Field>
           </View>
 
-          {/* 옵션 — 유아풀/다이빙풀/호텔 */}
+          {/* 옵션 — 어린이풀/다이빙풀/호텔 */}
           <Field label="옵션">
             <View style={styles.optionsRow}>
               <OptionChip
-                label="유아풀"
+                label="어린이풀"
                 checked={hasKids}
                 onPress={() => setHasKids(!hasKids)}
                 icon={hasKids ? <IconKidsWhite width={20} height={20} /> : <IconKids width={20} height={20} />}
@@ -605,7 +605,7 @@ const styles = StyleSheet.create({
   // 수심 row (얕은 + 깊은)
   depthRow: { flexDirection: 'row', gap: 12, marginBottom: 0 },
 
-  // 옵션 칩 (유아/다이빙/호텔)
+  // 옵션 칩 (어린이/다이빙/호텔)
   optionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   optionChip: {
     flexDirection: 'row',

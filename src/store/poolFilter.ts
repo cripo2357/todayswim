@@ -13,13 +13,13 @@ import type { Pool } from '@/types/pool';
 export type LaneOption = '전체' | '25m' | '50m';
 /** 자유수영 요금 — 라디오 단일선택. '전체'면 미적용. Figma 85:3129 — 오천원 이하 추가. */
 export type FeeOption = '전체' | '오천원 이하' | '만원 이하';
-export type FacilityOption = '유아풀' | '다이빙' | '호텔';
+export type FacilityOption = '어린이풀' | '다이빙' | '호텔';
 
 /** 각 카테고리 전체 옵션. */
 export const ALL_DAYS: DayOfWeek[] = ['월', '화', '수', '목', '금', '토', '일'];
 export const ALL_LANES: LaneOption[] = ['전체', '25m', '50m'];
 export const ALL_FEES: FeeOption[] = ['전체', '오천원 이하', '만원 이하'];
-export const ALL_FACILITIES: FacilityOption[] = ['유아풀', '다이빙', '호텔'];
+export const ALL_FACILITIES: FacilityOption[] = ['어린이풀', '다이빙', '호텔'];
 
 interface FilterState {
   days: DayOfWeek[];
@@ -104,9 +104,9 @@ export function filterPools(
       if (s.fee === '만원 이하' && price > 10000) return false;
     }
     if (facActive) {
-      // 옵션 칩(유아풀/다이빙/호텔)은 boolean flag — 선택한 옵션 모두 보유해야 통과 (AND).
+      // 옵션 칩(어린이풀/다이빙/호텔)은 boolean flag — 선택한 옵션 모두 보유해야 통과 (AND).
       for (const f of s.facilities) {
-        if (f === '유아풀' && !p.hasKidsPool) return false;
+        if (f === '어린이풀' && !p.hasKidsPool) return false;
         if (f === '다이빙' && !p.hasDivingPool) return false;
         if (f === '호텔' && !p.isHotelPool) return false;
       }

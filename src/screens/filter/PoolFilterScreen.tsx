@@ -171,14 +171,14 @@ export function PoolFilterScreen() {
           </View>
         </Section>
 
-        {/* 옵션 — 유아풀/다이빙/호텔 */}
+        {/* 옵션 — 어린이풀/다이빙/호텔 */}
         <Section label="옵션">
           <View style={styles.chipRow}>
             {ALL_FACILITIES.map((f) => {
               const checked = facilities.has(f);
               // 선택 시: 글자색(white)과 동일한 white 아이콘으로 swap.
               const icon =
-                f === '유아풀'
+                f === '어린이풀'
                   ? checked
                     ? <IconKidsWhite width={20} height={20} />
                     : <IconKidsGray width={20} height={20} />
