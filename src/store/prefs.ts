@@ -85,7 +85,10 @@ const K_NOTIF_SVC = 'poolsday.prefs.notifServiceAnnounce';
 const K_NOTIF_REPORT = 'poolsday.prefs.notifMonthlyReport';
 // 마케팅 토글은 단말 단위 prefs와 별개로 동의일(ISO) = lib/terms.ts 'poolsday.terms.marketing'에 저장.
 // prefs.notifMarketing은 그 timestamp의 존재 여부(boolean)를 캐시 — hydrate 시 동기화.
+// 거부 시점도 별도 키로 보존(설정 화면에서 "거부일시" 표시 — 정통망법 §50
+// 수신거부 이력 가시화). 동의↔거부 토글 시 둘 중 하나만 존재(상호배타).
 const K_TERMS_MARKETING = 'poolsday.terms.marketing';
+const K_TERMS_MARKETING_REJECTED = 'poolsday.terms.marketing.rejected';
 
 const FRIEND_REQ_VALUES: FriendRequest[] = ['off', 'id', 'nickname', 'all'];
 
@@ -293,12 +296,22 @@ export const usePrefs = create<PrefsState>((set) => ({
     }));
   },
   setNotifMarketing: async (v) => {
-    // 마케팅 토글은 lib/terms.ts와 동기화 — 동의일(ISO)을 직접 쓴다.
-    // 토글 ON: 새 timestamp 기록 / OFF: 키 제거(철회 시점은 그 자체로 의미).
+    // 마케팅 토글은 lib/terms.ts와 동기화 — 동의↔거부 시점을 별도 키로 보존.
+    // ON: K_TERMS_MARKETING=now, rejected 키 제거.
+    // OFF: K_TERMS_MARKETING 제거, K_TERMS_MARKETING_REJECTED=now.
+    // 두 키는 상호배타(현재 상태 = 어느 키가 존재하느냐)지만 시점은 토글
+    // 시마다 갱신 — 설정 화면에서 동의일시/거부일시로 노출.
+    const now = new Date().toISOString();
     if (v) {
-      await AsyncStorage.setItem(K_TERMS_MARKETING, new Date().toISOString());
+      await Promise.all([
+        AsyncStorage.setItem(K_TERMS_MARKETING, now),
+        AsyncStorage.removeItem(K_TERMS_MARKETING_REJECTED),
+      ]);
     } else {
-      await AsyncStorage.removeItem(K_TERMS_MARKETING);
+      await Promise.all([
+        AsyncStorage.removeItem(K_TERMS_MARKETING),
+        AsyncStorage.setItem(K_TERMS_MARKETING_REJECTED, now),
+      ]);
     }
     set({ notifMarketing: v });
   },

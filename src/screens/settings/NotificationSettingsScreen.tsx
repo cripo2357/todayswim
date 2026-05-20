@@ -45,6 +45,7 @@ import IconGift from '@assets/icons/settings/gift.svg';
 import IconLock from '@assets/icons/lock-secure.svg';
 
 const K_TERMS_MARKETING = 'poolsday.terms.marketing';
+const K_TERMS_MARKETING_REJECTED = 'poolsday.terms.marketing.rejected';
 
 export function NotificationSettingsScreen() {
   const navigation =
@@ -65,18 +66,34 @@ export function NotificationSettingsScreen() {
   const marketing = usePrefs((s) => s.notifMarketing);
   const setMarketing = usePrefs((s) => s.setNotifMarketing);
 
-  // 마케팅 동의일(ISO) — 토글 ON 시 lib/terms.ts에 기록된 timestamp.
-  // 스토어엔 boolean만 캐시되므로 ISO는 따로 읽는다(화면 진입/토글 변경 시).
+  // 마케팅 동의/거부 시점(ISO) — prefs는 boolean만 캐시. 화면 진입·토글
+  // 변경 시 둘 다 읽어 현재 상태에 맞는 sublabel(동의일시 or 거부일시) 노출.
   const [consentAt, setConsentAt] = React.useState<string | null>(null);
+  const [rejectedAt, setRejectedAt] = React.useState<string | null>(null);
   React.useEffect(() => {
     let alive = true;
-    AsyncStorage.getItem(K_TERMS_MARKETING).then((v) => {
-      if (alive) setConsentAt(v);
+    Promise.all([
+      AsyncStorage.getItem(K_TERMS_MARKETING),
+      AsyncStorage.getItem(K_TERMS_MARKETING_REJECTED),
+    ]).then(([c, r]) => {
+      if (alive) {
+        setConsentAt(c);
+        setRejectedAt(r);
+      }
     });
     return () => {
       alive = false;
     };
   }, [marketing]);
+
+  // sublabel 결정 — ON이면 동의일시, OFF이면 (거부 이력 있을 때만) 거부일시.
+  const marketingSublabel = marketing
+    ? consentAt
+      ? `동의일시: ${formatDateTime(consentAt)}`
+      : undefined
+    : rejectedAt
+    ? `거부일시: ${formatDateTime(rejectedAt)}`
+    : undefined;
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
@@ -142,11 +159,7 @@ export function NotificationSettingsScreen() {
           <ToggleRow
             icon={<IconGift width={24} height={24} />}
             label="이벤트·마케팅 알림"
-            sublabel={
-              marketing && consentAt
-                ? `동의일: ${formatDateTime(consentAt)}`
-                : undefined
-            }
+            sublabel={marketingSublabel}
             on={marketing}
             onToggle={() => setMarketing(!marketing)}
           />
