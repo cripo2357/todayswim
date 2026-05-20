@@ -13,7 +13,7 @@ export type ScheduleInvite = 'on' | 'off';
 export type ProfileVisibility = 'friends' | 'public';
 /** 친구 신청 받기 범위 */
 export type FriendRequest = 'off' | 'id' | 'nickname' | 'all';
-/** 지도 수영 예정 친구 스택 노출 시점 — 슬롯 시작 N 전 ~ 종료까지.
+/** 지도 친구 수영 일정 스택 노출 시점 — 슬롯 시작 N 전 ~ 종료까지.
  *  'off'=스택 전체 미표시. mapProfileStacks 가 horizonMs 로 환산. */
 export type MapFriendHorizon = 'd1' | 'h12' | 'h6' | 'off';
 
@@ -33,7 +33,7 @@ interface PrefsState {
   friendRequest: FriendRequest;
   /** 지도 시작 위치 — null=내 위치, 그 외=즐겨찾기 poolId. 즐겨찾기 해제 시 null로 리셋(useFavorites). */
   mapStartPoolId: string | null;
-  /** 지도 수영 예정 친구 스택 노출 시점(슬롯 시작 N 전부터). 'off'=미표시. */
+  /** 지도 친구 수영 일정 스택 노출 시점(슬롯 시작 N 전부터). 'off'=미표시. */
   mapFriendHorizon: MapFriendHorizon;
   /** OS 푸시 알림 마스터(Figma 223:2799 "푸시 알림"). **5개 sub의 OR 집계
    *  (derived)** — 별도 저장 X. 마케팅은 정통망법 §50 별도 동의라 집계에서

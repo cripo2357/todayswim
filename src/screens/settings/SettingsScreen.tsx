@@ -76,7 +76,7 @@ const PROFILE_VIS_VALUE: Record<ProfileVisibility, string> = {
   friends: '친구만',
   public: '모두에게',
 };
-// 수영 예정 친구 보기 (Figma 179:4793) — prefs.mapFriendHorizon 4값.
+// 친구 수영 일정 (Figma 179:4793) — prefs.mapFriendHorizon 4값.
 // 옵션 라벨과 우측 표시값은 동일 문구("일정 N 전부터 보기" / "안 보기").
 const MAP_FRIEND_VALUE: Record<MapFriendHorizon, string> = {
   d1: '일정 1일 전부터 보기',
@@ -248,7 +248,7 @@ export function SettingsScreen() {
           />
           <Row
             icon={<IconUsers width={24} height={24} />}
-            label="수영 예정 친구 보기"
+            label="친구 수영 일정"
             value={MAP_FRIEND_VALUE[mapFriendHorizon]}
             onPress={() => setMapFriendSheet(true)}
           />
@@ -378,7 +378,7 @@ export function SettingsScreen() {
       <OptionSheet<MapFriendHorizon>
         visible={mapFriendSheet}
         onClose={() => setMapFriendSheet(false)}
-        title="수영 예정 친구 보기"
+        title="친구 수영 일정"
         options={MAP_FRIEND_OPTIONS}
         value={mapFriendHorizon}
         onConfirm={(v) => setMapFriendHorizon(v)}
