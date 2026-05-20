@@ -101,41 +101,47 @@ export function NotificationSettingsScreen() {
           />
         </Section>
 
-        {/* 알림 유형 — 5 카테고리. 마스터 OFF여도 값 보존(시각만 동일). */}
+        {/* 알림 유형 — 5 카테고리. 마스터 OFF면 토글 회색(저장값은 유지). */}
         <Section title="알림 유형">
           <ToggleRow
             icon={<IconUsers width={24} height={24} />}
             label="친구 초대"
             on={friend}
             onToggle={() => setFriend(!friend)}
+            inactive={!pushOn}
           />
           <ToggleRow
             icon={<IconSwimming width={24} height={24} />}
             label="예정된 수영 일정"
             on={sched}
             onToggle={() => setSched(!sched)}
+            inactive={!pushOn}
           />
           <ToggleRow
             icon={<IconCheckSeal width={24} height={24} />}
             label="정보 수정 요청 및 처리결과"
             on={submit}
             onToggle={() => setSubmit(!submit)}
+            inactive={!pushOn}
           />
           <ToggleRow
             icon={<IconMegaphone width={24} height={24} />}
             label="서비스 안내"
             on={svc}
             onToggle={() => setSvc(!svc)}
+            inactive={!pushOn}
           />
           <ToggleRow
             icon={<IconChartAxis width={24} height={24} />}
             label="수영 리포트"
             on={report}
             onToggle={() => setReport(!report)}
+            inactive={!pushOn}
           />
         </Section>
 
-        {/* 광고성 정보 — 정통망법 §50 별도 동의(인박스도 차단) */}
+        {/* 광고성 정보 — 정통망법 §50 별도 동의(인박스도 차단). 마스터 OFF
+            시에도 회색 처리(어차피 푸시 안 옴 — 사용자 오해 차단). */}
         <Section title="광고성 정보">
           <ToggleRow
             icon={<IconGift width={24} height={24} />}
@@ -147,6 +153,7 @@ export function NotificationSettingsScreen() {
             }
             on={marketing}
             onToggle={() => setMarketing(!marketing)}
+            inactive={!pushOn}
           />
           <NavRow
             icon={<IconGift width={24} height={24} />}
@@ -196,12 +203,16 @@ function ToggleRow({
   sublabel,
   on,
   onToggle,
+  inactive,
 }: {
   icon: React.ReactNode;
   label: string;
   sublabel?: string;
   on: boolean;
   onToggle: () => void;
+  /** 마스터(푸시 알림) OFF 시 sub 토글에 전달 — 저장값(knob 위치)은 유지하고
+   *  배경색만 회색으로(켜진 것처럼 안 보이게). 탭은 여전히 작동. */
+  inactive?: boolean;
 }) {
   return (
     <View style={styles.card}>
@@ -218,7 +229,7 @@ function ToggleRow({
           ) : null}
         </View>
       </View>
-      <Toggle on={on} onToggle={onToggle} />
+      <Toggle on={on} onToggle={onToggle} inactive={inactive} />
     </View>
   );
 }
@@ -250,16 +261,24 @@ function NavRow({
   );
 }
 
-function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+function Toggle({
+  on,
+  onToggle,
+  inactive,
+}: {
+  on: boolean;
+  onToggle: () => void;
+  /** 시각만 비활성(회색) — knob 위치(저장값)는 유지, 탭 작동도 유지.
+   *  마스터 OFF 시 sub들에 적용해 "켜져 있는데 안 와?" 오해 차단. */
+  inactive?: boolean;
+}) {
+  const bg = inactive ? '#CBD5E1' : on ? tokens.color.pdMint : '#CBD5E1';
   return (
     <Pressable
       onPress={onToggle}
       accessibilityRole="switch"
-      accessibilityState={{ checked: on }}
-      style={[
-        styles.toggle,
-        { backgroundColor: on ? tokens.color.pdMint : '#CBD5E1' },
-      ]}
+      accessibilityState={{ checked: on, disabled: inactive }}
+      style={[styles.toggle, { backgroundColor: bg }]}
     >
       <View style={[styles.toggleKnob, on ? styles.knobOn : styles.knobOff]} />
     </Pressable>
