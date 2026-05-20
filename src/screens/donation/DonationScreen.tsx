@@ -29,6 +29,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   type KeyboardEvent,
+  type LayoutChangeEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -75,14 +76,16 @@ export function DonationScreen() {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [hideId, setHideId] = React.useState<string | null>(null);
 
-  // 명시적 scrollTo 폐기 — KAV behavior='height' + ScrollView flex:1 +
-  // paddingBottom 만으로 RN 자동 키보드 스크롤이 정상 동작. 추가 scrollTo
-  // 는 카드를 너무 위로 밀어 헤더(아바타+닉네임) 가 사라지는 회귀(2026-05-21).
-
-  // 키보드 회피 — 인라인 textarea 편집 시 키보드가 본인 카드를 가리지 않도록
-  // ScrollView contentContainerStyle.paddingBottom 을 키보드 높이만큼 늘려서
-  // focus된 TextInput 까지 자동 스크롤 가능하게 함(RN의 기본 keyboardOnFocus
-  // 스크롤이 paddingBottom 부족하면 안 동작). 외부 라이브러리 미사용.
+  // 키보드 회피 — 인라인 textarea 편집 시 키보드가 본인 카드를 가리지 않도록.
+  //
+  // 1) ScrollView contentContainerStyle.paddingBottom 을 키보드 높이만큼 추가
+  //    (가짜 여백) — scrollTo 가 카드를 위로 올릴 수 있는 contents 길이 확보.
+  // 2) editing 카드의 **bottom** 을 키보드 위로 정확히 그만큼만 끌어올린다
+  //    (cardBottom - visibleH + margin). 카드 top 기준이 아니라 bottom 기준
+  //    이라 헤더(아바타+닉네임) 가 위로 사라지는 회귀 없이 "작성 완료" 배지
+  //    까지 모두 보이게 됨(2026-05-21).
+  //
+  // 외부 라이브러리 미사용.
   const [kbHeight, setKbHeight] = React.useState(0);
   React.useEffect(() => {
     const showEvt =
@@ -98,6 +101,42 @@ export function DonationScreen() {
       hideSub.remove();
     };
   }, []);
+
+  // 편집 카드 위치/높이 + ScrollView 높이 캡처 → 키보드 표시 시 정확한
+  // scrollTo 계산용. 카드의 마지막 액션 배지("작성 완료") 가 키보드 바로
+  // 위에 위치하도록 한다.
+  const scrollRef = React.useRef<ScrollView>(null);
+  const selfCardYRef = React.useRef(0);
+  const selfCardHRef = React.useRef(0);
+  const scrollViewHRef = React.useRef(0);
+
+  const onSelfCardLayout = React.useCallback((e: LayoutChangeEvent) => {
+    selfCardYRef.current = e.nativeEvent.layout.y;
+    selfCardHRef.current = e.nativeEvent.layout.height;
+  }, []);
+  const onScrollViewLayout = React.useCallback((e: LayoutChangeEvent) => {
+    scrollViewHRef.current = e.nativeEvent.layout.height;
+  }, []);
+
+  React.useEffect(() => {
+    if (kbHeight === 0 || !editingId) return;
+    // 다음 프레임 — KAV behavior='height' 가 ScrollView 를 shrink 한
+    // onLayout 이 반영된 뒤 계산.
+    const id = requestAnimationFrame(() => {
+      const sv = scrollRef.current;
+      if (!sv || !selfCardHRef.current || !scrollViewHRef.current) return;
+      // iOS behavior='padding' = ScrollView 높이 그대로 → kbHeight 만큼 가려짐.
+      // Android behavior='height' = ScrollView 가 이미 shrink 된 상태.
+      const visibleH =
+        scrollViewHRef.current - (Platform.OS === 'ios' ? kbHeight : 0);
+      const cardBottom = selfCardYRef.current + selfCardHRef.current;
+      // margin — 카드 ~ 키보드 사이 여백.
+      const MARGIN = 16;
+      const target = Math.max(0, cardBottom - visibleH + MARGIN);
+      sv.scrollTo({ y: target, animated: true });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [kbHeight, editingId]);
 
   // 계좌 클립보드 복사 — expo-clipboard 동적 import.
   const onCopyAccount = async () => {
@@ -149,6 +188,8 @@ export function DonationScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
       <ScrollView
+        ref={scrollRef}
+        onLayout={onScrollViewLayout}
         // 핵심: ScrollView 자체에 flex:1 — KAV 안에서 KAV의 줄어든 영역에 맞춰
         // ScrollView 도 줄어들어야 내부 자동 스크롤이 동작. style 없으면 ScrollView
         // 가 contents 길이로 무한 확장돼 KAV가 줄어들어도 영향 안 받음.
@@ -156,9 +197,8 @@ export function DonationScreen() {
         style={styles.flex}
         contentContainerStyle={[
           styles.scroll,
-          // 키보드 올라올 때만 그만큼 가짜 여백 — 자동 스크롤이 본인 카드를
-          // 키보드 위로 올릴 수 있는 contents 길이 확보용. 닫혀있을 땐 0
-          // (콘텐츠 끝 + scroll.paddingBottom 기본값으로 자연스럽게 끝남).
+          // 키보드 올라올 때 가짜 여백 — scrollTo 가 본인 카드 bottom 까지
+          // 충분히 끌어올릴 수 있는 contents 길이 확보용.
           kbHeight > 0 ? { paddingBottom: kbHeight } : null,
         ]}
         showsVerticalScrollIndicator={false}
@@ -246,6 +286,10 @@ export function DonationScreen() {
                 setEditingId(null);
               }}
               onHide={() => setHideId(item.id)}
+              // 편집 중인 본인 카드만 위치 측정 — scrollTo 계산 입력값.
+              onLayoutWhenEditing={
+                editingId === item.id ? onSelfCardLayout : undefined
+              }
             />
           ))}
           {items.length === 0 ? (
@@ -276,6 +320,7 @@ function DonationItemCard({
   onCancelEdit,
   onSaveEdit,
   onHide,
+  onLayoutWhenEditing,
 }: {
   item: DonationItem;
   editing: boolean;
@@ -283,6 +328,7 @@ function DonationItemCard({
   onCancelEdit: () => void;
   onSaveEdit: (msg: string) => Promise<void>;
   onHide: () => void;
+  onLayoutWhenEditing?: (e: LayoutChangeEvent) => void;
 }) {
   const [draft, setDraft] = React.useState(item.message);
 
@@ -294,7 +340,7 @@ function DonationItemCard({
   const canSave = trimmed.length > 0 && trimmed.length <= MAX_LEN;
 
   return (
-    <View style={[styles.card, FIGMA_SHADOW_MD]}>
+    <View style={[styles.card, FIGMA_SHADOW_MD]} onLayout={onLayoutWhenEditing}>
       <View style={styles.avatarWrap}>
         <Avatar
           photoUri={item.avatar}
