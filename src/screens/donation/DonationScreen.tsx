@@ -72,13 +72,16 @@ export function DonationScreen() {
   const scrollRef = React.useRef<ScrollView>(null);
   const selfCardYRef = React.useRef<number>(0);
   const scrollToSelfCard = React.useCallback(() => {
-    // 키보드 애니메이션 끝나는 시점(약 150ms)에 스크롤. 80px 위에 여백 둠.
+    // 키보드 + KeyboardAvoidingView 'height' 애니메이션이 끝나는 시점(약 250ms).
+    // selfCardY 잡혀 있으면 그 위치 - 40 으로, 아직 0이면 끝까지 스크롤 폴백.
     setTimeout(() => {
-      scrollRef.current?.scrollTo({
-        y: Math.max(0, selfCardYRef.current - 80),
-        animated: true,
-      });
-    }, 150);
+      const y = selfCardYRef.current;
+      if (y > 0) {
+        scrollRef.current?.scrollTo({ y: Math.max(0, y - 40), animated: true });
+      } else {
+        scrollRef.current?.scrollToEnd({ animated: true });
+      }
+    }, 250);
   }, []);
 
   // 키보드 회피 — 인라인 textarea 편집 시 키보드가 본인 카드를 가리지 않도록
@@ -142,11 +145,13 @@ export function DonationScreen() {
       </View>
 
       {/* 키보드 회피 — 화면 전체가 키보드 위로 올라오도록.
-       *  iOS: padding(contents 영역 shrink), Android: OS 기본 adjustResize.
-       *  내부 ScrollView paddingBottom + 명시적 scrollTo와 결합해 다층 처리. */}
+       *  iOS: padding, Android: 'height' (KAV 자체 높이를 키보드 높이만큼
+       *  shrink → ScrollView 가 그 안에서 자동 scroll 가능). Android에서
+       *  behavior=undefined는 no-op이라 스크롤이 안 됐던 회귀(2026-05-21).
+       *  내부 ScrollView paddingBottom + 명시적 scrollTo와 결합. */}
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
       <ScrollView
         ref={scrollRef}
