@@ -35,6 +35,7 @@ import { usePrefs } from '@/store/prefs';
 import { formatDateTime } from '@/lib/dateFormat';
 
 import IconBell from '@assets/icons/settings/bell.svg';
+import IconBellOff from '@assets/icons/settings/bell-off.svg';
 import IconUsers from '@assets/icons/settings/users.svg';
 import IconSwimming from '@assets/icons/settings/swimming.svg';
 import IconCheckSeal from '@assets/icons/settings/check-seal.svg';
@@ -84,10 +85,16 @@ export function NotificationSettingsScreen() {
         contentContainerStyle={styles.body}
         showsVerticalScrollIndicator={false}
       >
-        {/* 푸시 알림 (마스터) */}
+        {/* 푸시 알림 (마스터) — 행 아이콘은 토글 따라 bell↔bell-off 스왑 */}
         <Section title="푸시 알림">
           <ToggleRow
-            icon={<IconBell width={24} height={24} />}
+            icon={
+              pushOn ? (
+                <IconBell width={24} height={24} />
+              ) : (
+                <IconBellOff width={24} height={24} />
+              )
+            }
             label="푸시 알림"
             on={pushOn}
             onToggle={() => setPushOn(!pushOn)}
