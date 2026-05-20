@@ -26,6 +26,8 @@ import type {
 // Postgres row 형태 — public.profiles 컬럼과 1:1.
 interface ProfileRow {
   id: string;
+  /** auth.users.id 매핑(0059) — 실 가입자만 채워짐, mock 시드는 null. */
+  auth_uid: string | null;
   nickname: string;
   gender: string;
   birth_date: string;
@@ -77,9 +79,13 @@ function rowToProfile(row: ProfileRow): UserProfile {
 
 // upsert payload — DB가 채울 컬럼(updated_at)은 제외. 미지정 boolean은
 // DB default(true)로 떨어지므로 명시적으로 보내 클라이언트 상태와 일치 보장.
-function profileToRow(p: UserProfile): Omit<ProfileRow, 'updated_at'> {
+function profileToRow(
+  p: UserProfile,
+  authUid: string | null,
+): Omit<ProfileRow, 'updated_at'> {
   return {
     id: p.id,
+    auth_uid: authUid,
     nickname: p.name,
     gender: p.gender,
     birth_date: p.birthDate,
@@ -126,13 +132,43 @@ export async function tryFetchProfileById(
 /**
  * 서버 profiles에 upsert. 실패해도 silent — 로컬이 권위.
  * save·regenerateId 양쪽에서 동일하게 호출.
+ *
+ * 현 세션 auth.uid가 있으면 row에 함께 박음(0059 binding). 비로그인/mock
+ * 환경이면 auth_uid = null. 한 번이라도 실 로그인된 세션에서 save 호출되면
+ * 그 시점에 binding 확립 → 다음 로그인부터 tryFetchProfileByAuthUid로
+ * 즉시 복구 가능.
  */
 export async function tryUpsertProfile(p: UserProfile): Promise<void> {
   try {
-    const row = profileToRow(p);
+    const { data: sess } = await supabase.auth.getSession();
+    const authUid = sess?.session?.user?.id ?? null;
+    const row = profileToRow(p, authUid);
     await supabase.from('profiles').upsert(row, { onConflict: 'id' });
   } catch {
     /* best-effort */
+  }
+}
+
+/**
+ * 현 auth 세션의 user id로 profile 1건 조회(0059 binding).
+ *
+ * 사용 패턴: SIGNED_IN 이벤트 또는 앱 시작 hydrate 시점에 호출 — 있으면
+ * useProfile에 setState해서 즉시 MapMain. 없으면 신규 가입자(ProfileSetup
+ * 흐름)로 분기.
+ */
+export async function tryFetchProfileByAuthUid(
+  authUid: string,
+): Promise<UserProfile | null> {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('auth_uid', authUid)
+      .maybeSingle();
+    if (error || !data) return null;
+    return rowToProfile(data as ProfileRow);
+  } catch {
+    return null;
   }
 }
 

@@ -21,6 +21,7 @@ import * as Linking from 'expo-linking';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { useProfile } from '@/store/profile';
+import { tryFetchProfileByAuthUid } from '@/lib/profileSync';
 
 export type SocialProvider = 'google' | 'apple' | 'kakao';
 
@@ -80,6 +81,28 @@ function userFromSession(session: Session | null): AuthUser | null {
   };
 }
 
+/**
+ * auth 세션이 들어왔을 때 본인 profile 자동 복구(0059 binding).
+ *
+ * 호출 시점: hydrate 직후 / SIGNED_IN 이벤트 / signInWithGoogle·Kakao 성공 직후.
+ * - 서버 profiles에서 auth_uid 일치 row → useProfile에 setState → 다음 가드(MapMain)
+ *   가 자동 통과(기존 사용자 = 즉시 로그인).
+ * - 없으면 신규 가입자 — useProfile 비워둠(가입 가드가 ProfileSetup으로 분기).
+ * - 로컬 AsyncStorage profile은 useProfile.save가 별도로 처리 — 이 helper는
+ *   서버 fetch 결과만 적재(없으면 비움).
+ */
+async function syncProfileFromAuth(session: Session | null): Promise<void> {
+  const uid = session?.user?.id;
+  if (!uid) return; // 비로그인 세션 — 그대로
+  const fetched = await tryFetchProfileByAuthUid(uid);
+  if (fetched) {
+    // setState는 AsyncStorage save 안 거치고 메모리만 갱신 — 다음 useProfile.save
+    // 호출 시 자동으로 영속화(서버는 이미 권위).
+    useProfile.setState({ profile: fetched, hydrated: true });
+  }
+  // 없으면 그대로 두기 — 신규 가입자라 ProfileSetup 흐름 진입.
+}
+
 export const useAuth = create<AuthState>((set) => ({
   user: null,
   hydrated: false,
@@ -89,6 +112,8 @@ export const useAuth = create<AuthState>((set) => ({
       const { data } = await supabase.auth.getSession();
       if (data.session) {
         set({ user: userFromSession(data.session), hydrated: true });
+        // 0059 binding — 세션이 있으면 본인 profile 자동 복구(있을 때만).
+        await syncProfileFromAuth(data.session);
       } else {
         // Supabase 세션 없으면 Apple TEST MODE mock 세션 복원 시도.
         const raw = await AsyncStorage.getItem(MOCK_STORAGE_KEY);
@@ -99,7 +124,11 @@ export const useAuth = create<AuthState>((set) => ({
       }
       // 이후 세션 변화(자동 갱신/로그아웃) 추적.
       supabase.auth.onAuthStateChange((_event, session) => {
-        if (session) set({ user: userFromSession(session) });
+        if (session) {
+          set({ user: userFromSession(session) });
+          // SIGNED_IN/TOKEN_REFRESHED 어떤 경우든 binding 복구 시도.
+          void syncProfileFromAuth(session);
+        }
       });
     } catch {
       set({ hydrated: true });
@@ -123,6 +152,7 @@ export const useAuth = create<AuthState>((set) => ({
       });
       if (error) throw error;
       set({ user: userFromSession(data.session) });
+      await syncProfileFromAuth(data.session); // 0059 binding
     } catch (e) {
       const code = (e as { code?: string }).code;
       if (
@@ -171,6 +201,7 @@ export const useAuth = create<AuthState>((set) => ({
       await supabase.auth.exchangeCodeForSession(code);
     if (exErr) throw exErr;
     set({ user: userFromSession(sess.session) });
+    await syncProfileFromAuth(sess.session); // 0059 binding
   },
 
   signInMock: async (provider) => {
