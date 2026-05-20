@@ -25,10 +25,8 @@ import {
   StyleSheet,
   Alert,
   TextInput,
-  Keyboard,
   KeyboardAvoidingView,
   Platform,
-  type KeyboardEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -75,50 +73,9 @@ export function DonationScreen() {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [hideId, setHideId] = React.useState<string | null>(null);
 
-  // 키보드 회피 — 인라인 textarea 편집 시 키보드가 본인 카드를 가리지 않도록.
-  //
-  // 1) ScrollView contentContainerStyle.paddingBottom 을 키보드 높이만큼 추가
-  //    (가짜 여백) — scrollTo 가 카드를 위로 올릴 수 있는 contents 길이 확보.
-  // 2) editing 카드의 **bottom** 을 키보드 위로 정확히 그만큼만 끌어올린다
-  //    (cardBottom - visibleH + margin). 카드 top 기준이 아니라 bottom 기준
-  //    이라 헤더(아바타+닉네임) 가 위로 사라지는 회귀 없이 "작성 완료" 배지
-  //    까지 모두 보이게 됨(2026-05-21).
-  //
-  // 외부 라이브러리 미사용.
-  const [kbHeight, setKbHeight] = React.useState(0);
-  React.useEffect(() => {
-    const showEvt =
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvt =
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    const showSub = Keyboard.addListener(showEvt, (e: KeyboardEvent) =>
-      setKbHeight(e.endCoordinates.height),
-    );
-    const hideSub = Keyboard.addListener(hideEvt, () => setKbHeight(0));
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, []);
-
-  // 키보드 표시 시 편집 카드를 키보드 위로 끌어올림 — scrollToEnd 전략.
-  //
-  // 본인 카드(mine) 는 후원자 목록의 마지막에 위치라 scrollToEnd 가 곧
-  // "편집 카드 bottom 을 viewport 끝(=키보드 top)에 맞춤" 과 동일.
-  // 카드 자체 padding 16 덕분에 안의 "작성 완료" 배지는 키보드 위 16px
-  // 에 자연스럽게 위치. paddingBottom 별도 +16 추가 안 함(베이스는 Figma
-  // 그대로 유지).
-  const scrollRef = React.useRef<ScrollView>(null);
-
-  React.useEffect(() => {
-    if (kbHeight === 0 || !editingId) return;
-    // 약간 대기 — autoFocus 텍스트영역 layout 이 반영되어 content size 가
-    // 확장된 뒤 scrollToEnd.
-    const t = setTimeout(() => {
-      scrollRef.current?.scrollToEnd({ animated: true });
-    }, 32);
-    return () => clearTimeout(t);
-  }, [kbHeight, editingId]);
+  // 키보드 회피 = KAV(behavior padding/height) + 네이티브 auto-scroll 만.
+  // 가짜 여백(kbHeight 추가 padding) / 명시적 scrollToEnd 같은 workaround 는
+  // 폐기 — 베이스는 Figma p-16 그대로(2026-05-21 크리스 롤백 지시).
 
   // 계좌 클립보드 복사 — expo-clipboard 동적 import.
   const onCopyAccount = async () => {
@@ -160,28 +117,19 @@ export function DonationScreen() {
         <View style={styles.navSide} />
       </View>
 
-      {/* 키보드 회피 — 화면 전체가 키보드 위로 올라오도록.
-       *  iOS: padding, Android: 'height' (KAV 자체 높이를 키보드 높이만큼
-       *  shrink → ScrollView 가 그 안에서 자동 scroll 가능). Android에서
-       *  behavior=undefined는 no-op이라 스크롤이 안 됐던 회귀(2026-05-21).
-       *  내부 ScrollView paddingBottom + 명시적 scrollTo와 결합. */}
+      {/* 키보드 회피 — KAV 만. behavior 분기로 iOS padding / Android height.
+       *  추가 padding·scrollTo workaround 없음(2026-05-21 롤백). */}
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
       <ScrollView
-        ref={scrollRef}
         // 핵심: ScrollView 자체에 flex:1 — KAV 안에서 KAV의 줄어든 영역에 맞춰
         // ScrollView 도 줄어들어야 내부 자동 스크롤이 동작. style 없으면 ScrollView
         // 가 contents 길이로 무한 확장돼 KAV가 줄어들어도 영향 안 받음.
         // (PoolNameScreen 등 다른 키보드 화면의 검증된 패턴.)
         style={styles.flex}
-        contentContainerStyle={[
-          styles.scroll,
-          // 키보드 올라올 때만 scroll 런웨이 확보 (paddingBottom override).
-          // 닫혀있을 땐 Figma 기본값(16, scroll.paddingBottom) 그대로.
-          kbHeight > 0 ? { paddingBottom: kbHeight } : null,
-        ]}
+        contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
