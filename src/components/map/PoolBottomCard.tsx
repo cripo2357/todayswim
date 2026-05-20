@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
 import { Button } from '@/components/ui/Button';
 import { FavoriteHeart } from '@/components/ui/FavoriteHeart';
+import { Tooltip } from '@/components/ui/Tooltip';
 import type { Pool } from '@/types/pool';
 import { tokens } from '@/styles/tokens';
 import Swimmer from '@assets/icons/swimmer.svg';
@@ -10,6 +11,13 @@ import IconDepth from '@assets/icons/depth.svg';
 import IconKids from '@assets/icons/facility-kids.svg';
 import IconDiving from '@assets/icons/facility-diving.svg';
 import IconHotel from '@assets/icons/facility-hotel.svg';
+
+type ChipKey = 'kids' | 'diving' | 'hotel';
+const CHIP_LABEL: Record<ChipKey, string> = {
+  kids: '어린이풀',
+  diving: '다이빙풀',
+  hotel: '호텔',
+};
 
 /**
  * 3-state CTA:
@@ -37,6 +45,21 @@ export function PoolBottomCard({
   const hasDiving = !!pool.hasDivingPool;
   const isHotel = !!pool.isHotelPool;
   const showChips = hasKids || hasDiving || isHotel;
+
+  // 칩 탭 → 위툴팁 5초 노출 (AddScheduleSheet 충돌 슬롯과 동일 패턴).
+  const [tipChip, setTipChip] = React.useState<ChipKey | null>(null);
+  const tipTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showTip = React.useCallback((c: ChipKey) => {
+    setTipChip(c);
+    if (tipTimer.current) clearTimeout(tipTimer.current);
+    tipTimer.current = setTimeout(() => setTipChip(null), 5000);
+  }, []);
+  React.useEffect(
+    () => () => {
+      if (tipTimer.current) clearTimeout(tipTimer.current);
+    },
+    [],
+  );
 
   return (
     <View style={styles.card}>
@@ -98,19 +121,28 @@ export function PoolBottomCard({
           {showChips ? (
             <View style={styles.chipGroup}>
               {hasKids ? (
-                <View style={styles.chip}>
+                <Pressable style={styles.chip} onPress={() => showTip('kids')}>
+                  {tipChip === 'kids' ? (
+                    <Tooltip label={CHIP_LABEL.kids} style={styles.chipTip} />
+                  ) : null}
                   <IconKids width={16} height={16} />
-                </View>
+                </Pressable>
               ) : null}
               {hasDiving ? (
-                <View style={styles.chip}>
+                <Pressable style={styles.chip} onPress={() => showTip('diving')}>
+                  {tipChip === 'diving' ? (
+                    <Tooltip label={CHIP_LABEL.diving} style={styles.chipTip} />
+                  ) : null}
                   <IconDiving width={16} height={16} />
-                </View>
+                </Pressable>
               ) : null}
               {isHotel ? (
-                <View style={styles.chip}>
+                <Pressable style={styles.chip} onPress={() => showTip('hotel')}>
+                  {tipChip === 'hotel' ? (
+                    <Tooltip label={CHIP_LABEL.hotel} style={styles.chipTip} />
+                  ) : null}
                   <IconHotel width={16} height={16} />
-                </View>
+                </Pressable>
               ) : null}
             </View>
           ) : null}
@@ -240,6 +272,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...tokens.shadow.lg,
+  },
+  // 칩 위쪽 툴팁 — 칩(20px)보다 넓게 양옆 -26으로 확장(총 72px). 꼬리는 가운데로 정렬.
+  chipTip: {
+    position: 'absolute',
+    bottom: '100%',
+    left: -26,
+    width: 72,
+    zIndex: 50,
   },
 
   // 'impossible' / 'no_schedule' 공통 disabled CTA
