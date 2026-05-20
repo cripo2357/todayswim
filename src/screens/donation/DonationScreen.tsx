@@ -26,6 +26,7 @@ import {
   Alert,
   TextInput,
   Keyboard,
+  KeyboardAvoidingView,
   Platform,
   type KeyboardEvent,
 } from 'react-native';
@@ -140,6 +141,13 @@ export function DonationScreen() {
         <View style={styles.navSide} />
       </View>
 
+      {/* 키보드 회피 — 화면 전체가 키보드 위로 올라오도록.
+       *  iOS: padding(contents 영역 shrink), Android: OS 기본 adjustResize.
+       *  내부 ScrollView paddingBottom + 명시적 scrollTo와 결합해 다층 처리. */}
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
       <ScrollView
         ref={scrollRef}
         contentContainerStyle={[
@@ -247,6 +255,8 @@ export function DonationScreen() {
           ) : null}
         </View>
       </ScrollView>
+
+      </KeyboardAvoidingView>
 
       <DonationHideModal
         visible={!!hideId}
@@ -391,6 +401,7 @@ function DonationItemCard({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#FFFFFF' },
+  flex: { flex: 1 },
 
   // TopNav — Figma 238:8645
   topNav: {
