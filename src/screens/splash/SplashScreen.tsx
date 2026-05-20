@@ -203,7 +203,7 @@ export function SplashScreen() {
             },
           ]}
         >
-          <DropletComma width={DROPLET_W} height={DROPLET_H} />
+          <DropletComma width={DROPLET_W} height={DROPLET_H} color="#FFFFFF" />
         </Animated.View>
       ))}
 

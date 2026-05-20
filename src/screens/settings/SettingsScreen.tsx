@@ -32,6 +32,7 @@ import { ConfirmLogoutModal } from '@/components/settings/ConfirmLogoutModal';
 import { WithdrawFlowModal } from '@/components/settings/WithdrawFlowModal';
 import { tokens } from '@/styles/tokens';
 import BrandWordmark from '@assets/illustrations/wordmark-poolsday-light.svg';
+import { WordmarkDroplets } from '@/components/ui/WordmarkDroplets';
 import IconProfile from '@assets/icons/settings/profile.svg';
 // 프로필과 일정 공유 행 아이콘 변경(Figma 163:6666 → share, baked pd-mint)
 import IconShare from '@assets/icons/settings/share.svg';
@@ -311,9 +312,14 @@ export function SettingsScreen() {
           />
         </Section>
 
-        {/* 푸터 (129:5971) — 워드마크 + 버전 + 카피라이트 */}
+        {/* 푸터 (129:5971) — 워드마크 + 버전 + 카피라이트.
+            워드마크 apostrophe(#EAFF00) 위치에서 노란 쉼표 물방울이 솟아오름
+            (스플래시와 동일 모션, 색은 apostrophe 컬러). */}
         <View style={styles.footer}>
-          <BrandWordmark width={256} height={152} />
+          <View style={styles.wordmarkBox}>
+            <BrandWordmark width={256} height={152} />
+            <WordmarkDroplets width={256} height={152} />
+          </View>
           <View style={styles.footerText}>
             <Text style={styles.version}>Pool’s day v1.0.0</Text>
             <Text style={styles.copyright}>© 2026 CRIPO. All right reserved</Text>
@@ -548,6 +554,8 @@ const styles = StyleSheet.create({
 
   // 푸터 (129:5971) — column center, gap 20
   footer: { alignItems: 'center', gap: 20 },
+  // 워드마크 + droplet 오버레이 공용 박스. 워드마크 표시 크기와 동일.
+  wordmarkBox: { width: 256, height: 152 },
   footerText: { alignItems: 'center', gap: 8 },
   // Figma 129:5976 — Regular (bold 제거)
   version: {

@@ -11,6 +11,7 @@ import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useRoute, type RouteProp } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BrandWordmark from '@assets/illustrations/wordmark-poolsday-light.svg';
+import { WordmarkDroplets } from '@/components/ui/WordmarkDroplets';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { TERMS_META } from '@/lib/termsContent';
 import type { RootStackParamList } from '@/navigation/types';
@@ -29,7 +30,11 @@ export function TermsDetailScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.wordmarkWrap}>
-          <BrandWordmark width={256} height={152} />
+          {/* 워드마크 apostrophe(#EAFF00)에서 노란 쉼표 물방울이 솟아오름 (스플래시와 동일 모션). */}
+          <View style={styles.wordmarkBox}>
+            <BrandWordmark width={256} height={152} />
+            <WordmarkDroplets width={256} height={152} />
+          </View>
         </View>
 
         {/* 헤더 — 버전 배지 + (제목/발효일) */}
@@ -66,6 +71,7 @@ const styles = StyleSheet.create({
   // Figma 101:3834 — w 343 (375 - 32 padding)
   scrollContent: { paddingHorizontal: 16, paddingBottom: 16 },
   wordmarkWrap: { alignItems: 'center', paddingTop: 24 },
+  wordmarkBox: { width: 256, height: 152 },
   // Figma 101:3838 — gap 20 (배지 ↔ 제목 그룹)
   headerBlock: { alignItems: 'center', gap: 20, marginTop: 32 },
   titleGroup: { alignSelf: 'stretch', alignItems: 'center', gap: 16 },
