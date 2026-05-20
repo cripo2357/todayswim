@@ -8,8 +8,6 @@ import React from 'react';
 import {
   View, Text, TextInput, ScrollView, StyleSheet, Pressable,
   KeyboardAvoidingView, Platform, Keyboard, Alert,
-  type StyleProp,
-  type ViewStyle,
 } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -414,7 +412,7 @@ function Field({
 }: {
   label: string;
   children: React.ReactNode;
-  style?: StyleProp<ViewStyle>;
+  style?: any;
 }) {
   return (
     <View style={[styles.field, style]}>
@@ -511,13 +509,12 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   field: { gap: 8, marginBottom: 24 },
-  // Figma 라벨색 #1F2937 — ink900(#0F172A)이 아닌 리터럴 [[figma_color_token_mismatch]].
   fieldLabel: {
     fontSize: 14,
     lineHeight: 20,
     letterSpacing: -0.084,
     fontFamily: tokens.font.sansSemibold,
-    color: '#1F2937',
+    color: tokens.color.ink900,
   },
   // 공통 input box (Figma — radius 14, border #CBD5E1, padding 12, gap 12, min-h 48)
   inputBox: {

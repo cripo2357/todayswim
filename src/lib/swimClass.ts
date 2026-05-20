@@ -12,15 +12,17 @@ export function genSwimClassId(): string {
   return `sc-${Date.now()}-${Math.floor(Math.random() * 1e4)}`;
 }
 
+/** "HH:MM" → "오전/오후 H:MM" — 앱 전역 시간 포맷 @/lib/dateFormat 위임. */
+export const to12h = formatTimeHHMM;
+
 /** 등록 화면 알약 라벨 — "HH:MM ~ HH:MM" (24h 그대로) */
 export function formatTimeRange(c: Pick<SwimClass, 'start' | 'end'>): string {
   return `${c.start} ~ ${c.end}`;
 }
 
-/** 프로필 칩 라벨 — "{요일}요일 {오전/오후 h:MM}" (시작 시각 기준).
- *  시간 포맷은 단일 출처 @/lib/dateFormat 위임 [[datetime_format_unified]]. */
+/** 프로필 칩 라벨 — "{요일}요일 {오전/오후 h:MM}" (시작 시각 기준) */
 export function formatClassChip(c: SwimClass): string {
-  return `${c.day}요일 ${formatTimeHHMM(c.start)}`;
+  return `${c.day}요일 ${to12h(c.start)}`;
 }
 
 // 요일 → JS Date.getDay() (일=0..토=6)
