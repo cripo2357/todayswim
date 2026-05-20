@@ -36,9 +36,11 @@ import { useNotifications } from '@/store/notifications';
 import { useSwimSchedules } from '@/store/swimSchedule';
 import { useFriends } from '@/store/friends';
 import { MOCK_OTHER_LESSONS, MOCK_OTHER_SCHEDULES } from '@/lib/mockData';
-// debug(2026-05-20): useOtherSchedules 임시 격리 — naver-map OOB 회귀 진단용.
-// 6배치(f529ecf) 변경을 임시 revert. 동작 확인 후 안전 패턴으로 재진입.
-// import { useOtherSchedules } from '@/hooks/useOtherSchedules';
+// MapScreen 한정 — useOtherSchedules 사용 금지 ([[naver_map_oob_mock_only]]).
+// 2026-05-20 회귀: 6배치(f529ecf)에서 useOtherSchedules 도입 시 naver-map
+// 마운트에서 java.lang.IndexOutOfBoundsException(ArrayList.get) 발생.
+// CalendarTab은 무영향 — 같은 훅 사용 OK. MapScreen만 mock 직접 사용.
+// React Query 캐시 효과는 CalendarTab의 useOtherSchedules 호출로 살아있음.
 import {
   buildPoolProfileStacks,
   type PoolStack,
@@ -253,7 +255,9 @@ export function MapScreen() {
 
   // 풀별 프로필 스택 — 나/친구 중 노출창(슬롯 시작 N 전 ~ 종료) 내 일정자.
   // N = prefs.mapFriendHorizon ('d1'/'h12'/'h6'). 'off'면 스택 전체 미표시(나 포함).
-  // debug: 임시로 MOCK_OTHER_SCHEDULES 직접 사용 (P2 6배치 격리 진단).
+  // 친구 일정 소스 — naver-map race 회피로 mock 직접 사용
+  // (위 import 코멘트 / [[naver_map_oob_mock_only]] 메모리). 노출/차단은
+  // useFriends 경유. 실 서버 친구 일정 노출은 SDK race 해결 후 재진입 가능.
   const mySchedules = useSwimSchedules((s) => s.schedules);
   const friends = useFriends((s) => s.friends);
   const blocked = useFriends((s) => s.blocked);
