@@ -1,12 +1,30 @@
 /**
- * 내 수영 일정 — Phase 1: AsyncStorage 로컬 보관 (내 일정만).
- * Phase 2: Supabase 테이블 + 친구 초대/공개범위 실동작 (친구 시스템 선행 필요).
+ * 내 수영 일정 — Phase 1 AsyncStorage 로컬 + Phase 2(2026-05-20) 서버
+ * best-effort 동기(user_schedules 테이블, 0049).
+ *
+ * 정책(profileSync/friendsSync와 동일 톤):
+ * - 로컬(AsyncStorage)이 권위. UI 즉시 반영, 서버는 백그라운드.
+ * - 5개 mutation에 userSchedulesSync 호출 부착(실패 silent).
+ * - 친구 일정 fetch(MOCK_OTHER_SCHEDULES 교체)는 후속 배치.
  *
  * 달력 탭(Figma 120:3156) / 일정 추가 시트(122:6779·7490·8027) / 완료(125:3342).
  */
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MOCK_SCHEDULES } from '@/lib/mockData';
+import { useProfile } from '@/store/profile';
+import {
+  tryInsertSchedule,
+  tryDeleteSchedule,
+  tryUpdateScheduleVisibility,
+  tryUpdateScheduleCompleted,
+  tryDowngradePublicToFriends,
+} from '@/lib/userSchedulesSync';
+
+/** 현재 유저 친구코드 — 없으면 서버 호출 skip. */
+function myProfileId(): string | undefined {
+  return useProfile.getState().profile?.id;
+}
 
 export type ScheduleVisibility = 'private' | 'friends' | 'public';
 
@@ -75,12 +93,15 @@ export const useSwimSchedules = create<SwimScheduleState>((set, get) => ({
     const next = [...get().schedules, item];
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     set({ schedules: next });
+    const me = myProfileId();
+    if (me) void tryInsertSchedule(me, item);
   },
 
   remove: async (id) => {
     const next = get().schedules.filter((x) => x.id !== id);
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     set({ schedules: next });
+    if (myProfileId()) void tryDeleteSchedule(id);
   },
 
   setVisibility: async (id, visibility) => {
@@ -89,6 +110,7 @@ export const useSwimSchedules = create<SwimScheduleState>((set, get) => ({
     );
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     set({ schedules: next });
+    if (myProfileId()) void tryUpdateScheduleVisibility(id, visibility);
   },
 
   setCompleted: async (id, completed) => {
@@ -97,6 +119,7 @@ export const useSwimSchedules = create<SwimScheduleState>((set, get) => ({
     );
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     set({ schedules: next });
+    if (myProfileId()) void tryUpdateScheduleCompleted(id, completed);
   },
 
   downgradePublicToFriends: async () => {
@@ -111,6 +134,8 @@ export const useSwimSchedules = create<SwimScheduleState>((set, get) => ({
     if (!changed) return;
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     set({ schedules: next });
+    const me = myProfileId();
+    if (me) void tryDowngradePublicToFriends(me, dateKey(new Date()));
   },
 }));
 
