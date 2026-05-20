@@ -23,6 +23,7 @@ import {
   type ScheduleInvite,
   type ProfileVisibility,
   type FriendRequest,
+  type MapFriendHorizon,
 } from '@/store/prefs';
 import { useProfile } from '@/store/profile';
 import { usePools } from '@/hooks/usePools';
@@ -75,16 +76,20 @@ const PROFILE_VIS_VALUE: Record<ProfileVisibility, string> = {
   friends: '친구만',
   public: '모두에게',
 };
-// 수영 예정 친구 보기 (Figma 179:4793) — prefs.showMapFriendStack(boolean) ↔ 'show'|'hide'
-type MapFriendShow = 'show' | 'hide';
-const MAP_FRIEND_OPTIONS: Option<MapFriendShow>[] = [
-  { value: 'show', label: '지도에서 보기' },
-  { value: 'hide', label: '안 보기' },
-];
-const MAP_FRIEND_VALUE: Record<MapFriendShow, string> = {
-  show: '일정 1일 전부터 보기',
-  hide: '안 보기',
+// 수영 예정 친구 보기 (Figma 179:4793) — prefs.mapFriendHorizon 4값.
+// 옵션 라벨과 우측 표시값은 동일 문구("일정 N 전부터 보기" / "안 보기").
+const MAP_FRIEND_VALUE: Record<MapFriendHorizon, string> = {
+  d1: '일정 1일 전부터 보기',
+  h12: '일정 12시간 전부터 보기',
+  h6: '일정 6시간 전부터 보기',
+  off: '안 보기',
 };
+const MAP_FRIEND_OPTIONS: Option<MapFriendHorizon>[] = [
+  { value: 'd1', label: MAP_FRIEND_VALUE.d1 },
+  { value: 'h12', label: MAP_FRIEND_VALUE.h12 },
+  { value: 'h6', label: MAP_FRIEND_VALUE.h6 },
+  { value: 'off', label: MAP_FRIEND_VALUE.off },
+];
 // 친구 신청 받기
 const FRIEND_REQ_OPTIONS: Option<FriendRequest>[] = [
   { value: 'off', label: '신청 안 받기' },
@@ -113,9 +118,19 @@ export function SettingsScreen() {
   const signOut = useAuth((s) => s.signOut);
   const deleteAccount = useAuth((s) => s.deleteAccount);
   const authUser = useAuth((s) => s.user);
-  // 알림 마스터 — 행 아이콘 bell↔bell-off 스왑(모든 알림 OFF 시 bell-off).
-  // 카테고리별 토글 도입 시 "그룹 합집합 OFF"로 확장(스펙 §1191 잔여 작업).
-  const pushOn = usePrefs((s) => s.pushOn);
+  // 알림 행 아이콘 — "푸시 알림 1개라도 ON" → bell, "아무것도 안 받음" →
+  // bell-off. 마스터 OFF면 무조건 bell-off(어떤 푸시도 발송 X). 마스터 ON
+  // 이어도 카테고리·마케팅 전부 OFF면 bell-off(실효 발송 0).
+  const anyNotifOn = usePrefs(
+    (s) =>
+      s.pushOn &&
+      (s.notifFriendInvite ||
+        s.notifScheduleReminder ||
+        s.notifSubmissionResult ||
+        s.notifServiceAnnounce ||
+        s.notifMonthlyReport ||
+        s.notifMarketing),
+  );
 
   const scheduleInvite = usePrefs((s) => s.scheduleInvite);
   const setScheduleInvite = usePrefs((s) => s.setScheduleInvite);
@@ -132,14 +147,13 @@ export function SettingsScreen() {
   // 지도 시작 위치 — 행 우측 표시값(내 위치 / 수영장명). 즐겨찾기 해제 시
   // useFavorites가 prefs.mapStartPoolId를 null로 리셋.
   const mapStartPoolId = usePrefs((s) => s.mapStartPoolId);
-  const showMapFriend = usePrefs((s) => s.showMapFriendStack);
-  const setShowMapFriend = usePrefs((s) => s.setShowMapFriendStack);
+  const mapFriendHorizon = usePrefs((s) => s.mapFriendHorizon);
+  const setMapFriendHorizon = usePrefs((s) => s.setMapFriendHorizon);
   const { data: poolsData } = usePools();
   const startPool = mapStartPoolId
     ? (poolsData ?? []).find((p) => p.id === mapStartPoolId)
     : null;
   const startLocLabel = startPool?.name ?? '내 위치';
-  const mapFriendVal: MapFriendShow = showMapFriend ? 'show' : 'hide';
 
   const [logoutOpen, setLogoutOpen] = React.useState(false);
   const onLogout = () => setLogoutOpen(true);
@@ -173,12 +187,12 @@ export function SettingsScreen() {
           />
         </Section>
 
-        {/* 알림 (Figma 129:5998) — 마스터 토글 진입형. 모든 알림 OFF 시
-            아이콘 bell→bell-off 스왑. */}
+        {/* 알림 (Figma 129:5998) — 진입형 단일 Row. 푸시 알림 1개라도 ON
+            이면 bell, 아무것도 안 받으면 bell-off. */}
         <Section title="알림">
           <Row
             icon={
-              pushOn ? (
+              anyNotifOn ? (
                 <IconBell width={24} height={24} />
               ) : (
                 <IconBellOff width={24} height={24} />
@@ -244,7 +258,7 @@ export function SettingsScreen() {
           <Row
             icon={<IconUsers width={24} height={24} />}
             label="수영 예정 친구 보기"
-            value={MAP_FRIEND_VALUE[mapFriendVal]}
+            value={MAP_FRIEND_VALUE[mapFriendHorizon]}
             onPress={() => setMapFriendSheet(true)}
           />
         </Section>
@@ -370,13 +384,13 @@ export function SettingsScreen() {
         value={friendReq}
         onConfirm={(v) => setFriendReq(v)}
       />
-      <OptionSheet<MapFriendShow>
+      <OptionSheet<MapFriendHorizon>
         visible={mapFriendSheet}
         onClose={() => setMapFriendSheet(false)}
         title="수영 예정 친구 보기"
         options={MAP_FRIEND_OPTIONS}
-        value={mapFriendVal}
-        onConfirm={(v) => setShowMapFriend(v === 'show')}
+        value={mapFriendHorizon}
+        onConfirm={(v) => setMapFriendHorizon(v)}
       />
 
       <ConfirmLogoutModal

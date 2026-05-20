@@ -13,6 +13,17 @@ export type ScheduleInvite = 'on' | 'off';
 export type ProfileVisibility = 'friends' | 'public';
 /** 친구 신청 받기 범위 */
 export type FriendRequest = 'off' | 'id' | 'nickname' | 'all';
+/** 지도 수영 예정 친구 스택 노출 시점 — 슬롯 시작 N 전 ~ 종료까지.
+ *  'off'=스택 전체 미표시. mapProfileStacks 가 horizonMs 로 환산. */
+export type MapFriendHorizon = 'd1' | 'h12' | 'h6' | 'off';
+
+/** horizon → ms (스택 노출창 = 슬롯 시작 − horizonMs ~ 슬롯 종료). */
+export const MAP_FRIEND_HORIZON_MS: Record<MapFriendHorizon, number> = {
+  d1: 24 * 60 * 60 * 1000,
+  h12: 12 * 60 * 60 * 1000,
+  h6: 6 * 60 * 60 * 1000,
+  off: 0,
+};
 // 나이 공개여부 설정은 제거됨 — 나이는 항상 비공개(프로필 안내문구만 제공).
 
 interface PrefsState {
@@ -22,12 +33,22 @@ interface PrefsState {
   friendRequest: FriendRequest;
   /** 지도 시작 위치 — null=내 위치, 그 외=즐겨찾기 poolId. 즐겨찾기 해제 시 null로 리셋(useFavorites). */
   mapStartPoolId: string | null;
-  /** 지도에 수영 예정 친구 스택 표시 (false=안 보기) */
-  showMapFriendStack: boolean;
-  /** OS 푸시 알림 마스터(현재 단일 토글). false=모든 알림 OFF — 설정 행
-   *  아이콘이 bell→bell-off로 스왑. 카테고리별 토글 도입 시 이 값 ↔
-   *  하위 그룹 합집합으로 확장(스펙 §1191 잔여 작업). */
+  /** 지도 수영 예정 친구 스택 노출 시점(슬롯 시작 N 전부터). 'off'=미표시. */
+  mapFriendHorizon: MapFriendHorizon;
+  /** OS 푸시 알림 마스터(Figma 223:2799 "푸시 알림"). 카테고리·마케팅을
+   *  덮어쓰는 게이트 — OFF면 어떤 푸시도 발송 X(인박스는 적재). */
   pushOn: boolean;
+  /** 알림 유형 5개 카테고리 토글(Figma 223:2799 "알림 유형" 섹션).
+   *  마스터 OFF여도 값은 보존 — 사용자가 미리 조합 만들어두기 위함. */
+  notifFriendInvite: boolean;
+  notifScheduleReminder: boolean;
+  notifSubmissionResult: boolean;
+  notifServiceAnnounce: boolean;
+  notifMonthlyReport: boolean;
+  /** 마케팅 동의(Figma 223:2799 "광고성 정보"). 정통망법 §50 별도 동의
+   *  대상이라 인박스도 차단. 동의일은 lib/terms.ts AsyncStorage가 보유
+   *  (poolsday.terms.marketing = ISO timestamp). 토글 ↔ setConsent 양방향. */
+  notifMarketing: boolean;
   hydrated: boolean;
   hydrate: () => Promise<void>;
   setOthersScheduleView: (v: OthersScheduleView) => Promise<void>;
@@ -35,8 +56,14 @@ interface PrefsState {
   setProfileVisibility: (v: ProfileVisibility) => Promise<void>;
   setFriendRequest: (v: FriendRequest) => Promise<void>;
   setMapStartPoolId: (v: string | null) => Promise<void>;
-  setShowMapFriendStack: (v: boolean) => Promise<void>;
+  setMapFriendHorizon: (v: MapFriendHorizon) => Promise<void>;
   setPushOn: (v: boolean) => Promise<void>;
+  setNotifFriendInvite: (v: boolean) => Promise<void>;
+  setNotifScheduleReminder: (v: boolean) => Promise<void>;
+  setNotifSubmissionResult: (v: boolean) => Promise<void>;
+  setNotifServiceAnnounce: (v: boolean) => Promise<void>;
+  setNotifMonthlyReport: (v: boolean) => Promise<void>;
+  setNotifMarketing: (v: boolean) => Promise<void>;
 }
 
 const K_VIEW = 'poolsday.prefs.othersScheduleView';
@@ -44,8 +71,20 @@ const K_INVITE = 'poolsday.prefs.scheduleInvite';
 const K_PROFILE_VIS = 'poolsday.prefs.profileVisibility';
 const K_FRIEND_REQ = 'poolsday.prefs.friendRequest';
 const K_MAP_START = 'poolsday.prefs.mapStartPoolId';
-const K_MAP_FRIENDS = 'poolsday.prefs.showMapFriendStack';
+// 노출 horizon 키는 v0.6에서 boolean → enum 으로 교체(이전 키 폐기).
+// 옛 'true'/'false' 값은 hydrate 시 'd1'/'off' 로 1회 마이그레이션.
+const K_MAP_FRIENDS = 'poolsday.prefs.mapFriendHorizon';
+const K_MAP_FRIENDS_LEGACY = 'poolsday.prefs.showMapFriendStack';
+const HORIZON_VALUES: MapFriendHorizon[] = ['d1', 'h12', 'h6', 'off'];
 const K_PUSH_ON = 'poolsday.prefs.pushOn';
+const K_NOTIF_FRIEND = 'poolsday.prefs.notifFriendInvite';
+const K_NOTIF_SCHED = 'poolsday.prefs.notifScheduleReminder';
+const K_NOTIF_SUBMIT = 'poolsday.prefs.notifSubmissionResult';
+const K_NOTIF_SVC = 'poolsday.prefs.notifServiceAnnounce';
+const K_NOTIF_REPORT = 'poolsday.prefs.notifMonthlyReport';
+// 마케팅 토글은 단말 단위 prefs와 별개로 동의일(ISO) = lib/terms.ts 'poolsday.terms.marketing'에 저장.
+// prefs.notifMarketing은 그 timestamp의 존재 여부(boolean)를 캐시 — hydrate 시 동기화.
+const K_TERMS_MARKETING = 'poolsday.terms.marketing';
 
 const FRIEND_REQ_VALUES: FriendRequest[] = ['off', 'id', 'nickname', 'all'];
 
@@ -56,21 +95,49 @@ export const usePrefs = create<PrefsState>((set) => ({
   profileVisibility: 'friends', // 친구에게만 공개
   friendRequest: 'nickname', // 닉네임으로만 신청 받기
   mapStartPoolId: null, // 내 위치
-  showMapFriendStack: true, // 지도에 표시 (Figma 기본값)
+  mapFriendHorizon: 'd1', // 1일 전부터 보기 (Figma 기본값)
   pushOn: true, // 푸시 알림 기본 ON
+  // 알림 유형 5개 — 가입자 기본 ON. 마케팅은 가입 시 사용자 선택(기본 false).
+  notifFriendInvite: true,
+  notifScheduleReminder: true,
+  notifSubmissionResult: true,
+  notifServiceAnnounce: true,
+  notifMonthlyReport: true,
+  notifMarketing: false,
   hydrated: false,
 
   hydrate: async () => {
     try {
-      const [i, p, f, ms, mf, pn] = await Promise.all([
-        AsyncStorage.getItem(K_INVITE),
-        AsyncStorage.getItem(K_PROFILE_VIS),
-        AsyncStorage.getItem(K_FRIEND_REQ),
-        AsyncStorage.getItem(K_MAP_START),
-        AsyncStorage.getItem(K_MAP_FRIENDS),
-        AsyncStorage.getItem(K_PUSH_ON),
-      ]);
+      const [i, p, f, ms, mf, mfLegacy, pn, nFi, nSc, nSu, nSv, nMo, marketing] =
+        await Promise.all([
+          AsyncStorage.getItem(K_INVITE),
+          AsyncStorage.getItem(K_PROFILE_VIS),
+          AsyncStorage.getItem(K_FRIEND_REQ),
+          AsyncStorage.getItem(K_MAP_START),
+          AsyncStorage.getItem(K_MAP_FRIENDS),
+          AsyncStorage.getItem(K_MAP_FRIENDS_LEGACY),
+          AsyncStorage.getItem(K_PUSH_ON),
+          AsyncStorage.getItem(K_NOTIF_FRIEND),
+          AsyncStorage.getItem(K_NOTIF_SCHED),
+          AsyncStorage.getItem(K_NOTIF_SUBMIT),
+          AsyncStorage.getItem(K_NOTIF_SVC),
+          AsyncStorage.getItem(K_NOTIF_REPORT),
+          AsyncStorage.getItem(K_TERMS_MARKETING),
+        ]);
       const pv: ProfileVisibility = p === 'public' ? 'public' : 'friends';
+      // 신 키 우선. 없으면 옛 boolean 키 → enum 마이그레이션(true→d1, false→off).
+      const mapFriendHorizon: MapFriendHorizon = HORIZON_VALUES.includes(
+        mf as MapFriendHorizon,
+      )
+        ? (mf as MapFriendHorizon)
+        : mfLegacy === 'false'
+        ? 'off'
+        : 'd1';
+      if (!mf && mfLegacy != null) {
+        // 옛 키 정리 + 신 키로 1회 백필.
+        AsyncStorage.setItem(K_MAP_FRIENDS, mapFriendHorizon).catch(() => {});
+        AsyncStorage.removeItem(K_MAP_FRIENDS_LEGACY).catch(() => {});
+      }
       set({
         // '프로필과 일정 공유' 단일 제어 — 일정 공유는 항상 프로필 공개 미러
         othersScheduleView: pv,
@@ -80,8 +147,14 @@ export const usePrefs = create<PrefsState>((set) => ({
           ? (f as FriendRequest)
           : 'nickname',
         mapStartPoolId: ms || null,
-        showMapFriendStack: mf === 'false' ? false : true,
+        mapFriendHorizon,
         pushOn: pn === 'false' ? false : true,
+        notifFriendInvite: nFi === 'false' ? false : true,
+        notifScheduleReminder: nSc === 'false' ? false : true,
+        notifSubmissionResult: nSu === 'false' ? false : true,
+        notifServiceAnnounce: nSv === 'false' ? false : true,
+        notifMonthlyReport: nMo === 'false' ? false : true,
+        notifMarketing: !!marketing, // timestamp 존재 = 동의 상태
         hydrated: true,
       });
     } catch {
@@ -126,13 +199,44 @@ export const usePrefs = create<PrefsState>((set) => ({
     set({ mapStartPoolId: v });
   },
 
-  setShowMapFriendStack: async (v) => {
-    await AsyncStorage.setItem(K_MAP_FRIENDS, v ? 'true' : 'false');
-    set({ showMapFriendStack: v });
+  setMapFriendHorizon: async (v) => {
+    await AsyncStorage.setItem(K_MAP_FRIENDS, v);
+    set({ mapFriendHorizon: v });
   },
 
   setPushOn: async (v) => {
     await AsyncStorage.setItem(K_PUSH_ON, v ? 'true' : 'false');
     set({ pushOn: v });
+  },
+
+  setNotifFriendInvite: async (v) => {
+    await AsyncStorage.setItem(K_NOTIF_FRIEND, v ? 'true' : 'false');
+    set({ notifFriendInvite: v });
+  },
+  setNotifScheduleReminder: async (v) => {
+    await AsyncStorage.setItem(K_NOTIF_SCHED, v ? 'true' : 'false');
+    set({ notifScheduleReminder: v });
+  },
+  setNotifSubmissionResult: async (v) => {
+    await AsyncStorage.setItem(K_NOTIF_SUBMIT, v ? 'true' : 'false');
+    set({ notifSubmissionResult: v });
+  },
+  setNotifServiceAnnounce: async (v) => {
+    await AsyncStorage.setItem(K_NOTIF_SVC, v ? 'true' : 'false');
+    set({ notifServiceAnnounce: v });
+  },
+  setNotifMonthlyReport: async (v) => {
+    await AsyncStorage.setItem(K_NOTIF_REPORT, v ? 'true' : 'false');
+    set({ notifMonthlyReport: v });
+  },
+  setNotifMarketing: async (v) => {
+    // 마케팅 토글은 lib/terms.ts와 동기화 — 동의일(ISO)을 직접 쓴다.
+    // 토글 ON: 새 timestamp 기록 / OFF: 키 제거(철회 시점은 그 자체로 의미).
+    if (v) {
+      await AsyncStorage.setItem(K_TERMS_MARKETING, new Date().toISOString());
+    } else {
+      await AsyncStorage.removeItem(K_TERMS_MARKETING);
+    }
+    set({ notifMarketing: v });
   },
 }));
