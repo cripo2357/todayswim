@@ -231,6 +231,7 @@ export function NotificationSettingsScreen() {
                 ? `${formatKoreanLong(toast.at)}에 마케팅 정보 수신에 동의하였습니다.`
                 : `${formatKoreanLong(toast.at)}에 마케팅 정보 수신 동의를 철회하였습니다.`
             }
+            action={{ label: '확인', onPress: dismissToast }}
             onClose={dismissToast}
           />
         </View>
