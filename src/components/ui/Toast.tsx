@@ -99,7 +99,7 @@ export function Toast({
 }
 
 const styles = StyleSheet.create({
-  // Figma 225:3670 — bg white, border 1px pd-gray, r16, p12, gap12, row center
+  // Figma 225:3670 — bg white, r16, p12, gap12, row center (외곽선 없음)
   card: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -107,8 +107,6 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: tokens.color.bgPaper,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: tokens.color.pdGray,
   },
   // 좌측 텍스트 컬럼 — flex 1, gap 6, center
   content: { flex: 1, gap: 6, justifyContent: 'center', minWidth: 0 },
