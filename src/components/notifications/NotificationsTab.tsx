@@ -43,8 +43,9 @@ import IconReminder from '@assets/icons/announcement/reminder.svg'; // [리마�
 import IconSwim from '@assets/icons/announcement/swim.svg'; // [수영]
 import IconSchedule from '@assets/icons/announcement/schedule.svg'; // [시간표]
 import IconWelcome from '@assets/icons/announcement/welcome.svg'; // [환영]
-// 후원 감사 알림 — announcement 회색톤 별도 export 전엔 settings/hand-heart 재사용.
-import IconHandHeartSlot from '@assets/icons/settings/hand-heart.svg';
+// 후원 감사 알림 — settings/piggy-bank 재사용(베이크 색은 #63CBE8 pdMint이라
+// announcement 회색톤과 약간 다르지만 후원 슬롯 단일 자원 통일).
+import IconPiggyBankSlot from '@assets/icons/settings/piggy-bank.svg';
 
 type SvgIconCmp = React.FC<SvgProps>;
 
@@ -116,7 +117,7 @@ const SLOT_SWIM = svg(IconSwim); // [수영]
 const SLOT_EVENT = svg(IconEvent); // [이벤트] (marketing 3종 모두 — 스펙)
 const SLOT_APPROVED = svg(IconApproved); // [승인]
 const SLOT_REPORT = svg(IconReport); // [리포트]
-const SLOT_DONATION_THANKS = svg(IconHandHeartSlot); // [후원 감사]
+const SLOT_DONATION_THANKS = svg(IconPiggyBankSlot); // [후원 감사]
 
 // 공통 샘플 변수 (v0.5 어휘 + v0.6 통일 날짜·시각 포맷)
 // 날짜·시각은 앱 전역 단일 포맷(YY.MM.DD(요일) 오전/오후 H:MM) — @/lib/dateFormat.

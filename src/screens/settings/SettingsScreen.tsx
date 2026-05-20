@@ -54,6 +54,7 @@ import IconGavel from '@assets/icons/settings/gavel.svg';
 import IconPerson from '@assets/icons/settings/person.svg';
 import IconUsers from '@assets/icons/settings/users.svg';
 import IconHandHeart from '@assets/icons/settings/hand-heart.svg';
+import IconPiggyBank from '@assets/icons/settings/piggy-bank.svg';
 import IconMapPin from '@assets/icons/settings/map-pin.svg';
 import IconSwimming from '@assets/icons/settings/swimming.svg';
 
@@ -308,7 +309,7 @@ export function SettingsScreen() {
             onPress={sendMail}
           />
           <Row
-            icon={<IconHandHeart width={24} height={24} />}
+            icon={<IconPiggyBank width={24} height={24} />}
             label="후원으로 서비스 응원하기"
             onPress={() => navigation.navigate('Donation')}
           />

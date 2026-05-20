@@ -1,8 +1,12 @@
 // 후원 비공개 확인 모달 — Figma 239:3426.
 //
-// 본문: "후원 내용을 삭제하겠습니까?" — UI 텍스트는 "삭제" 늬앙스이지만 실제
-// 동작은 hidden = true (이력은 보존, 다른 사용자에게만 미노출). row delete X.
-// 노란(pdByellow) "비공개" CTA 버튼 + 캔슬 영역.
+// Figma 형식: 화면 중앙 카드 (alert toast 스타일)
+//  - bg white / border 1px pd-gray (#C8C8C8) / rounded 16 / padding 12 / gap 12
+//  - 좌측: 텍스트 영역 (제목 #1F2937 Bold 16 + 본문 #4B5563 Medium 14)
+//  - 우측: 노란 CTA "비공개" — pd-byellow / rounded 12 / padding 16×10
+//
+// 동작: hidden=true 토글(실질적 삭제 효과 — 본인 포함 모든 화면에서 미노출,
+// DB 이력은 보존). UI 텍스트의 "삭제" 늬앙스는 사용자 인지와 일치.
 
 import React from 'react';
 import {
@@ -59,40 +63,47 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.32)',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
   },
   card: {
-    width: '100%',
-    maxWidth: 340,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: tokens.color.bgPaper,
+    width: '100%',
+    maxWidth: 343,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: tokens.color.pdGray, // #C8C8C8
     borderRadius: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    padding: 12,
     gap: 12,
-    ...tokens.shadow.lg,
   },
-  body: { flex: 1, gap: 4 },
+  body: { flex: 1, gap: 6 },
+  // Figma 충실도 — Gray/80 = #1F2937, Gray/60 = #4B5563 (ink900/500 토큰과 다름).
   title: {
-    fontSize: 16,
     fontFamily: tokens.font.sansBold,
-    color: tokens.color.ink900,
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    color: '#1F2937',
   },
   message: {
+    fontFamily: tokens.font.sansMedium,
     fontSize: 14,
-    fontFamily: tokens.font.sans,
-    color: tokens.color.ink500,
+    lineHeight: 20,
+    letterSpacing: -0.084,
+    color: '#4B5563',
   },
   cta: {
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: tokens.color.pdByellow,
-    borderRadius: 999,
+    backgroundColor: tokens.color.pdByellow, // #EAFF00
+    borderRadius: 12,
   },
   ctaLabel: {
+    fontFamily: tokens.font.sansSemibold,
     fontSize: 14,
-    fontFamily: tokens.font.sansBold,
-    color: tokens.color.ink900,
+    lineHeight: 20,
+    letterSpacing: -0.084,
+    color: '#000000',
   },
 });
