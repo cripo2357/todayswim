@@ -421,11 +421,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // 본문 패딩(238:8646) — 16px, gap 32.
-  // paddingBottom 0 — 키보드 닫혀있을 땐 자연스러운 콘텐츠 끝. 키보드 올라올
-  // 때만 contentContainerStyle 에서 kbHeight 만큼 가짜 여백을 추가한다.
+  // 본문 패딩(238:8646) — Frame p-16, gap-32 (디자인 스펙).
+  // paddingBottom 16 = baseline 디자인 여백. 키보드 올라올 때만
+  // contentContainerStyle 에서 kbHeight 만큼 가짜 여백을 추가로 깐다.
   scroll: {
     paddingHorizontal: 16,
+    paddingBottom: 16,
     gap: 32,
   },
 

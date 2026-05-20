@@ -13,7 +13,7 @@ import {
   type Camera,
 } from '@mj-studio/react-native-naver-map';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Supercluster from 'supercluster';
 
@@ -190,17 +190,18 @@ export function MapScreen() {
     mapFriendHorizon !== 'off' ||
     effectivePublicHorizon !== 'off';
 
-  // 스택 셔플 시드 — 맵 활성화(focus) 1회 = 새 시드 1개 발급. buildPoolProfileStacks
-  // 가 시드를 받아 풀별 9명 표본·순서를 매번 다르게 추출(나는 시드 무관 0번 고정).
-  // 화면 안에서 setting/friends 변경으로 memo가 재실행돼도 시드는 유지 → 진입한
-  // 사이엔 같은 9명. 다른 화면 갔다 돌아오면 다른 9명.
-  const [shuffleSeed, setShuffleSeed] = React.useState(() =>
+  // 스택 셔플 시드 — 앱 세션당 1회(useState lazy init). buildPoolProfileStacks
+  // 가 시드를 받아 풀별 9명 표본·순서를 추출(나는 시드 무관 0번 고정). MapMain은
+  // freezeOnBlur로 unmount 안 되므로 한 세션 = 같은 9명, 앱 재실행 = 다른 9명.
+  //
+  // (회귀 정정 2026-05-21) 이전엔 useFocusEffect로 focus마다 새 시드를 발급했으나
+  // 두 가지 비용을 일으킴:
+  //   ① 초기 마운트에서 useFocusEffect도 fire → poolStacks가 2번 렌더 →
+  //      stack overlay 비트맵 캡처 2배
+  //   ② 다른 화면 갔다 돌아올 때마다 전체 마커 re-render
+  // 화면 왕복 부담 제거 위해 mount-once로 전환.
+  const [shuffleSeed] = React.useState(() =>
     Math.random().toString(36).slice(2),
-  );
-  useFocusEffect(
-    React.useCallback(() => {
-      setShuffleSeed(Math.random().toString(36).slice(2));
-    }, []),
   );
 
   // 카메라 추적 — 두 가지로 분리해서 불필요한 리렌더 방지:
