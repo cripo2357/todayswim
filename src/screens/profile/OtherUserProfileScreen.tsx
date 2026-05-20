@@ -26,7 +26,9 @@ import {
   upcomingSchedulesFor,
 } from '@/lib/otherProfile';
 import { useSwimSchedules } from '@/store/swimSchedule';
+import { useProfile } from '@/store/profile';
 import { useAddScheduleIntent } from '@/store/addScheduleIntent';
+import { dispatchMessage, dispatchMessageTo } from '@/lib/messages/dispatch';
 import { usePools } from '@/hooks/usePools';
 import { BUNDLE_AVATARS } from '@/lib/avatars';
 import { ConfirmFriendActionModal } from '@/components/friends/ConfirmFriendActionModal';
@@ -117,9 +119,34 @@ export function OtherUserProfileScreen() {
     if (!cta) return;
     if (cta.action === 'send') {
       fStore.sendRequest(userId);
+      // P2: 상대 알림함에 friend_request_received(name=내 닉) 적재.
+      const my = useProfile.getState().profile;
+      if (my?.name) {
+        void dispatchMessageTo(
+          userId,
+          'friend_request_received',
+          { name: my.name },
+          { senderUserId: my.id },
+        );
+      }
       setSentOpen(true);
     } else if (cta.action === 'accept') {
       fStore.accept(userId);
+      // P2: friend_request_accepted 양측 적재. recipients='both'지만 본문의
+      // {name}이 양측에서 다르므로(나는 상대닉 / 상대는 내닉) 명시적 두 번 호출.
+      const my = useProfile.getState().profile;
+      const otherName = profile?.name;
+      if (otherName) {
+        void dispatchMessage('friend_request_accepted', { name: otherName });
+      }
+      if (my?.name) {
+        void dispatchMessageTo(
+          userId,
+          'friend_request_accepted',
+          { name: my.name },
+          { senderUserId: my.id },
+        );
+      }
     } else if (cta.action === 'cancel') {
       // 보낸 요청 — 확인 모달 띄우고 사용자 컨펌 후 cancelRequest.
       setCancelOpen(true);

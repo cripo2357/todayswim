@@ -24,7 +24,8 @@ import { useFriendList } from '@/hooks/useFriendList';
 import { RejectFriendModal } from '@/components/friends/RejectFriendModal';
 import { AddFriendSheet } from '@/components/friends/AddFriendSheet';
 import { FriendRequestSentModal } from '@/components/friends/FriendRequestSentModal';
-import { dispatchMessage } from '@/lib/messages/dispatch';
+import { dispatchMessage, dispatchMessageTo } from '@/lib/messages/dispatch';
+import { useProfile } from '@/store/profile';
 import { WeekCalendar } from '@/components/calendar/WeekCalendar';
 import { useFriends, type FriendRequest } from '@/store/friends';
 import { useSwimSchedules, dateKey } from '@/store/swimSchedule';
@@ -274,7 +275,21 @@ export function FriendsTab() {
                       </Pressable>
                       <Pressable
                         style={styles.badgeOutline}
-                        onPress={() => accept(req.id)}
+                        onPress={() => {
+                          accept(req.id);
+                          // P2: friend_request_accepted 양측 적재. 본문의 {name}이
+                          // 양측에서 달라(나=상대닉, 상대=내닉) 명시적 두 번 호출.
+                          const my = useProfile.getState().profile;
+                          void dispatchMessage('friend_request_accepted', { name: req.name });
+                          if (my?.name) {
+                            void dispatchMessageTo(
+                              req.id,
+                              'friend_request_accepted',
+                              { name: my.name },
+                              { senderUserId: my.id },
+                            );
+                          }
+                        }}
                         accessibilityRole="button"
                         accessibilityLabel={`${req.name} 친구로 등록`}
                       >
