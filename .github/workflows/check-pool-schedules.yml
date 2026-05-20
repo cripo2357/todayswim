@@ -41,6 +41,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # 라벨 없으면 만들고, 있으면 그냥 통과 (|| true).
+          gh label create schedule-check \
+            --color FBCA04 \
+            --description "풀 시간표 자동 검증 알림" \
+            2>/dev/null || true
+
           gh issue create \
             --title "풀 시간표 검증 결과 ($(date -u -d '+9 hours' +%Y-%m-%d))" \
             --body-file issue-body.md \
