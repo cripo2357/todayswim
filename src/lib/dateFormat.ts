@@ -7,7 +7,8 @@
 // 시(hour)만 1~2자리 가변(1·12 모두 자연수 표기). 연·월·일·분은 전부 2자리.
 // 모든 화면(알림·캘린더·시간표·일정 등)에서 본 모듈만 호출 — 직접 포맷 금지.
 
-const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+/** JS Date.getDay() (일=0..토=6) 인덱스 정렬의 한국어 요일 — 단일 출처. */
+export const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
 
 function toDate(d: Date | string | number): Date {
   if (d instanceof Date) return d;
@@ -42,6 +43,13 @@ export function formatTime(d: Date | string | number): string {
 /** YY.MM.DD(요일) 오전/오후 H:MM — 풀. */
 export function formatDateTime(d: Date | string | number): string {
   return `${formatDate(d)} ${formatTime(d)}`;
+}
+
+/** YYYY년 M월 D일 오전/오후 H:MM — 자연 국문 (법정·동의 안내 토스트 본문 등).
+ *  연 4자리, 월·일 1~2자리 가변. v0.6 통일 포맷의 "법정 텍스트는 예외" 경로. */
+export function formatKoreanLong(d: Date | string | number): string {
+  const date = toDate(d);
+  return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 ${formatTimeHM(date.getHours(), date.getMinutes())}`;
 }
 
 /** "HH:MM" 또는 "H:MM" 시간 문자열 → 오전/오후 H:MM. */

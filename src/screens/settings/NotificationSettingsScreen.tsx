@@ -30,9 +30,10 @@ import { ChevronRight } from 'lucide-react-native';
 
 import type { RootStackParamList } from '@/navigation/types';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
+import { Toast } from '@/components/ui/Toast';
 import { tokens } from '@/styles/tokens';
 import { usePrefs } from '@/store/prefs';
-import { formatDateTime } from '@/lib/dateFormat';
+import { formatDateTime, formatKoreanLong } from '@/lib/dateFormat';
 
 import IconBell from '@assets/icons/settings/bell.svg';
 import IconBellOff from '@assets/icons/settings/bell-off.svg';
@@ -94,6 +95,37 @@ export function NotificationSettingsScreen() {
     : rejectedAt
     ? `거부일시: ${formatDateTime(rejectedAt)}`
     : undefined;
+
+  // 마케팅 토글 변경 시 토스트(정통망법 §50 — 사용자 의사 확인용 가시화).
+  // ~4초 자동 사라짐, X 탭 즉시 닫힘. 토글 핸들러에서 직접 trigger(useEffect로
+  // 마케팅 변화 감지하면 hydrate 단계에서도 false-positive로 튀는 위험 있음).
+  type MarketingToastVariant = 'agreed' | 'rejected';
+  const [toast, setToast] = React.useState<
+    { variant: MarketingToastVariant; at: string } | null
+  >(null);
+  const toastTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const dismissToast = React.useCallback(() => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = null;
+    setToast(null);
+  }, []);
+  React.useEffect(
+    () => () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    },
+    [],
+  );
+
+  const onToggleMarketing = () => {
+    const next = !marketing;
+    setMarketing(next);
+    const now = new Date().toISOString();
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ variant: next ? 'agreed' : 'rejected', at: now });
+    toastTimerRef.current = setTimeout(() => setToast(null), 4000);
+  };
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
@@ -161,7 +193,7 @@ export function NotificationSettingsScreen() {
             label="이벤트·마케팅 알림"
             sublabel={marketingSublabel}
             on={marketing}
-            onToggle={() => setMarketing(!marketing)}
+            onToggle={onToggleMarketing}
           />
           <NavRow
             icon={<IconGift width={24} height={24} />}
@@ -184,6 +216,25 @@ export function NotificationSettingsScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* 마케팅 토글 변경 토스트 — 헤더 아래, 좌우 16px, 4초 후 자동 사라짐. */}
+      {toast ? (
+        <View style={styles.toastWrap} pointerEvents="box-none">
+          <Toast
+            title={
+              toast.variant === 'agreed'
+                ? '마케팅 정보 수신 동의'
+                : '마케팅 정보 수신 동의 철회'
+            }
+            message={
+              toast.variant === 'agreed'
+                ? `${formatKoreanLong(toast.at)}에 마케팅 정보 수신에 동의하였습니다.`
+                : `${formatKoreanLong(toast.at)}에 마케팅 정보 수신 동의를 철회하였습니다.`
+            }
+            onClose={dismissToast}
+          />
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -360,6 +411,15 @@ const styles = StyleSheet.create({
   },
   knobOn: { alignSelf: 'flex-end' },
   knobOff: { alignSelf: 'flex-start' },
+
+  // 토스트 위치 — ScreenHeader(minHeight 48) 바로 아래 + 8px 여백, 좌우 16
+  toastWrap: {
+    position: 'absolute',
+    top: 56,
+    left: 16,
+    right: 16,
+    zIndex: 10,
+  },
 
   // 잠금 섹션 — 광고성 정보 아래 구분선 + 자물쇠 + 2줄 텍스트(중앙)
   lockSection: { gap: 32, alignItems: 'stretch' },
