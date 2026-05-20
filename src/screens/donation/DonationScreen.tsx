@@ -174,8 +174,8 @@ export function DonationScreen() {
         scrollViewHRef.current - (Platform.OS === 'ios' ? kbHeight : 0);
       const cardBottomY =
         listYRef.current + mineCardYRef.current + mineCardHRef.current;
-      // +5 — 카드 bottom 이 키보드 top 에 딱 붙으면 답답해서 5px 추가 마진.
-      const target = Math.max(0, cardBottomY - visibleH + 5);
+      // +12 — 카드 bottom 이 키보드 top 에 딱 붙으면 답답해서 12px 추가 마진.
+      const target = Math.max(0, cardBottomY - visibleH + 12);
       sv.scrollTo({ y: target, animated: true });
     }, 100);
     return () => clearTimeout(t);
