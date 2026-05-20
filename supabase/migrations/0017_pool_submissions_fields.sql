@@ -1,4 +1,4 @@
--- Pool's Day v1 — pool_submissions에 상세 필드 추가 (Figma 90:7386 재기획).
+-- Pool's day v1 — pool_submissions에 상세 필드 추가 (Figma 90:7386 재기획).
 -- 사용자가 추가 요청 시 보낼 수 있는 정보:
 --   - lane_count: 레인 개수 (옵션)
 --   - pool_length: 25 / 50 (필수, 라디오)

@@ -1,4 +1,4 @@
--- Pool's Day v1 — pools 분류 flag 3개 추가.
+-- Pool's day v1 — pools 분류 flag 3개 추가.
 -- 카드(Figma 93:10597)에서 cyan 칩으로 노출되는 1차 분류:
 --   - has_kids_pool: 유아풀 보유
 --   - has_diving_pool: 다이빙풀 보유

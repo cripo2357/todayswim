@@ -1,4 +1,4 @@
-// Pool's Day — Naver Geocoding 프록시 (Supabase Edge Function).
+// Pool's day — Naver Geocoding 프록시 (Supabase Edge Function).
 //
 // 모바일 / Python import 스크립트 → 이 함수 호출 → Naver Geocoding API → 좌표 반환.
 // Naver Client Secret은 Supabase 환경변수로만 보관 (NAVER_CLIENT_SECRET).

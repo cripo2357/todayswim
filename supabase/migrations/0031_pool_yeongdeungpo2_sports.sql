@@ -1,4 +1,4 @@
--- Pool's Day v1 — 수영장 1곳 추가: 영등포제2스포츠센터 (POOL_SEOUL_0007).
+-- Pool's day v1 — 수영장 1곳 추가: 영등포제2스포츠센터 (POOL_SEOUL_0007).
 -- 출처: cbswim webflow + 공식(영등포구시설관리공단 spc2.y-sisul.or.kr/page/center/center.03.asp).
 --        시간표는 공식이 권위 — cbswim과 일치 확인(평일 월·수·금만, 일요일 2·4주만 개관).
 -- 풀 등록 워크플로: 운영자 검토 후 마이그레이션 1곳 + 시간표 동시 등록.

@@ -1,4 +1,4 @@
--- Pool's Day v1 — KBS스포츠월드(POOL_SEOUL_0008) slot_groups에 months 추가.
+-- Pool's day v1 — KBS스포츠월드(POOL_SEOUL_0008) slot_groups에 months 추가.
 -- 시간표 타임 더블탭 → 일정 등록 플로우가 "그 날짜가 몇 월이냐"로 시즌 그룹을
 -- 골라 타임표를 보여주려면, 각 그룹이 어느 달에 적용되는지 구조적 데이터 필요.
 --   · 기본 운영   → 1~5, 10~12월 (비하절기)

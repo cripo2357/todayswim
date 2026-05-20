@@ -1,4 +1,4 @@
--- Pool's Day v1 — pools 테이블 스키마.
+-- Pool's day v1 — pools 테이블 스키마.
 -- 풀(수영장) 정보 저장. 일반 사용자는 read-only, write는 service_role만 (관리자/시드).
 -- 컬럼명은 Postgres 컨벤션에 따라 snake_case — 클라이언트 hook에서 camelCase로 매핑.
 

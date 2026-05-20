@@ -1,5 +1,5 @@
 /**
- * Pool's Day — 디자인 토큰 (TypeScript)
+ * Pool's day — 디자인 토큰 (TypeScript)
  *
  * DESIGN.md 기반. RN StyleSheet에서 직접 사용.
  * 하드코딩 hex 절대 금지 — 색상은 항상 tokens.color.xxx 로.

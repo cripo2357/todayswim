@@ -366,7 +366,7 @@ export const RULES: Record<MessageKind, Rule> = {
     recipients: 'self',
     build: () => ({
       title: '반가워요',
-      body: ["Pool's Day에 오신 걸 환영해요.", '가까운 수영장부터 둘러봐요.'],
+      body: ["Pool's day에 오신 걸 환영해요.", '가까운 수영장부터 둘러봐요.'],
     }),
   },
   monthly_summary: {
@@ -377,12 +377,12 @@ export const RULES: Record<MessageKind, Rule> = {
       switch (p.variant) {
         case 'first_month':
           return {
-            title: "Pool's Day 첫 달 리포트",
+            title: "Pool's day 첫 달 리포트",
             body: [`${m}월 첫 수영, ${c}번 다녀왔어요.`],
           };
         case 'best_day':
           return {
-            title: `${m}월 Pool's Day 리포트`,
+            title: `${m}월 Pool's day 리포트`,
             body: [
               `${p.bestDate ?? ''}, ${p.bestMinutes ?? ''}분 수영했어요.`,
               '이번 달 장시간 수영',
@@ -390,34 +390,34 @@ export const RULES: Record<MessageKind, Rule> = {
           };
         case 'new_pools':
           return {
-            title: `${m}월 Pool's Day 리포트`,
+            title: `${m}월 Pool's day 리포트`,
             body: [`새 수영장 ${p.newPoolCount ?? 0}곳에 다녀왔어요.`],
           };
         case 'with_friends':
           return {
-            title: `${m}월 Pool's Day 리포트`,
+            title: `${m}월 Pool's day 리포트`,
             body: [`${m}월의 ${p.percent ?? 0}%는 친구와 수영했어요.`],
           };
         case 'total_hours':
           return {
-            title: `${m}월 Pool's Day 리포트`,
+            title: `${m}월 Pool's day 리포트`,
             body: [`${m}월에 ${p.totalHours ?? '0'}시간 수영했어요.`],
           };
         case 'pattern':
           return {
-            title: `${m}월 Pool's Day 리포트`,
+            title: `${m}월 Pool's day 리포트`,
             body: [`${p.weekday ?? ''} ${p.timePeriod ?? ''}마다 수영했네요.`],
           };
         case 'idle':
           return {
-            title: `${m}월 Pool's Day 리포트`,
+            title: `${m}월 Pool's day 리포트`,
             body: [`${m}월엔 한 번도 못 만났네요.`, '가까운 수영장이 기다리고 있어요.'],
             actions: ['근처 수영장 보기'],
           };
         case 'frequency':
         default:
           return {
-            title: `${m}월 Pool's Day 리포트`,
+            title: `${m}월 Pool's day 리포트`,
             body: [
               `${m}월에 ${c}번 다녀왔어요.`,
               `자주 간 수영장: ${p.favoritePool?.trim() || '[수영장 정보 없음]'}`,

@@ -2,10 +2,10 @@
 version: 0.6.0
 lastModified: 2026-05-20
 documentType: internal-spec
-title: Pool's Day 알림 트리거 상세 스펙
+title: Pool's day 알림 트리거 상세 스펙
 ---
 
-# Pool's Day 알림 트리거 상세 스펙 (v0.6)
+# Pool's day 알림 트리거 상세 스펙 (v0.6)
 
 > 본 문서는 PUSH_POLICY.md(상위 정책)에 따라 23개 알림 트리거의 *발송 조건, 수신자, 본문, 액션, 이미지*를 정의하는 운영 명세서다.
 
@@ -743,7 +743,7 @@ UI 제약:    카드 이미지 영역은 1개 슬롯. 다수 프로필 동시 �
 액션 패턴:  A (0버튼, 탭 시 메인 지도 이동)
 
 제목:       반가워요
-본문:       Pool's Day에 오신 걸 환영해요.
+본문:       Pool's day에 오신 걸 환영해요.
             가까운 수영장부터 둘러봐요.
 
 끌 수 있음: 가능 (1회성이라 실질 의미는 없음).
@@ -777,37 +777,37 @@ UI 제약:    카드 이미지 영역은 1개 슬롯. 다수 프로필 동시 �
 변형별 카피:
 
   first_month:
-    제목: Pool's Day 첫 달 리포트
+    제목: Pool's day 첫 달 리포트
     본문: {month} 첫 수영, {count}번 다녀왔어요.
 
   best_day:
-    제목: {month} Pool's Day 리포트
+    제목: {month} Pool's day 리포트
     본문: {best_date}, {best_minutes}분 수영했어요.
           이번 달 장시간 수영
 
   new_pools:
-    제목: {month} Pool's Day 리포트
+    제목: {month} Pool's day 리포트
     본문: 새 수영장 {new_pool_count}곳에 다녀왔어요.
 
   with_friends:
-    제목: {month} Pool's Day 리포트
+    제목: {month} Pool's day 리포트
     본문: {month}의 {percent}%는 친구와 수영했어요.
 
   total_hours:
-    제목: {month} Pool's Day 리포트
+    제목: {month} Pool's day 리포트
     본문: {month}에 {total_hours}시간 수영했어요.
 
   pattern:
-    제목: {month} Pool's Day 리포트
+    제목: {month} Pool's day 리포트
     본문: {weekday} {time_period}마다 수영했네요.
 
   frequency:
-    제목: {month} Pool's Day 리포트
+    제목: {month} Pool's day 리포트
     본문: {month}에 {count}번 다녀왔어요.
           자주 간 수영장: {favorite_pool}
 
   idle:
-    제목: {month} Pool's Day 리포트
+    제목: {month} Pool's day 리포트
     본문: {month}엔 한 번도 못 만났네요.
           가까운 수영장이 기다리고 있어요.
     

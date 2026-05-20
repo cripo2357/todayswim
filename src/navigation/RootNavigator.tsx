@@ -43,7 +43,7 @@ const DIM_MODAL_OPTIONS = {
 } as const;
 
 /**
- * Pool's Day 루트 네비게이터.
+ * Pool's day 루트 네비게이터.
  *
  * 헤더는 화면별로 옵션 다르므로 기본 hidden, 필요 시 각 화면이 자체 AppHeader 렌더.
  * (DESIGN.md §10-1: bg-cream 배경, 64/72px 헤더 — 통일된 헤더 컴포넌트로 처리)

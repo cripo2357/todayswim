@@ -1,4 +1,4 @@
-# Pool's Day — Progress Log
+# Pool's day — Progress Log
 
 ## 2026-05-07/08 — 초기 셋업 + 9개 화면 1차 구현 (자율 모드)
 

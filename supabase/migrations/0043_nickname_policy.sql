@@ -1,4 +1,4 @@
--- Pool's Day — 닉네임 정책 서버측 강제 (운영 사칭 / 욕설 차단).
+-- Pool's day — 닉네임 정책 서버측 강제 (운영 사칭 / 욕설 차단).
 --
 -- 클라이언트(lib/nicknames.nicknameBlockReason)는 즉시 UX 피드백용 1차 필터.
 -- 최종 권위·우회 불가 방어선은 여기: profile_nicknames INSERT 시 트리거가

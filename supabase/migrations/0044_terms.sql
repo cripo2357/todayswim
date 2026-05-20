@@ -1,4 +1,4 @@
--- Pool's Day — 약관 버전 관리 + 동의 이력 (Phase 2 초안 / 미적용).
+-- Pool's day — 약관 버전 관리 + 동의 이력 (Phase 2 초안 / 미적용).
 --
 -- ⚠️ Phase 2 설계 초안. 아직 적용하지 말 것.
 --   현행(P1)은 src/lib/terms.ts 가 AsyncStorage 에 "기기 단위"로 service /

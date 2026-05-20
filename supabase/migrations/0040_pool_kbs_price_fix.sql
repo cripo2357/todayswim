@@ -1,4 +1,4 @@
--- Pool's Day v1 — KBS스포츠월드(POOL_SEOUL_0008) 이용요금 공식 정정.
+-- Pool's day v1 — KBS스포츠월드(POOL_SEOUL_0008) 이용요금 공식 정정.
 -- 출처: 사용자 제공 공식 요금(kbssw.co.kr 기준).
 --   · 평일 성인 9,000원  → price_weekday
 --   · 주말 성인 10,000원 → price_weekend

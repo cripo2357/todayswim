@@ -1,8 +1,8 @@
-# Pool's Day — 디자인 가이드라인
+# Pool's day — 디자인 가이드라인
 
 > *수영 바보들을 위한 수영장 지도*
 
-이 문서는 Pool's Day의 디자인 철학과 기초 시스템을 정의합니다. 컴포넌트를 만들거나 카피를 쓸 때, 항상 이 문서로 돌아와 결을 맞추세요.
+이 문서는 Pool's day의 디자인 철학과 기초 시스템을 정의합니다. 컴포넌트를 만들거나 카피를 쓸 때, 항상 이 문서로 돌아와 결을 맞추세요.
 
 ---
 
@@ -29,7 +29,7 @@
 - 가까운 풀 3개부터 보여주는 게 30개 보여주는 것보다 낫다
 
 **4. 한국과 영어가 같이**
-- *Pool's Day / 풀스데이* — 두 언어가 자연스럽게 섞이는 디자인
+- *Pool's day / 풀스데이* — 두 언어가 자연스럽게 섞이는 디자인
 - 영문 헤딩과 국문 본문이 같은 화면에 섞여도 *조화롭게*
 - 폰트 페어링이 핵심
 
@@ -86,7 +86,7 @@
 | `--pool-500` | 메인 버튼, 링크, 활성 상태, 실내 풀 마커 |
 | `--pool-700` | 헤딩, 진한 텍스트 |
 | `--pool-100` | 활성 칩 배경, 호버 효과 |
-| `--fool-yellow` | 마스코트 포인트, *Pool's Day* 한정 카피 강조, 별 아이콘 |
+| `--fool-yellow` | 마스코트 포인트, *Pool's day* 한정 카피 강조, 별 아이콘 |
 | `--warm-coral` | 찜 하트, 즐겨찾기 액션, 야외 풀 마커 |
 | `--bg-cream` | 메인 배경 (절대 순백 #FFFFFF 쓰지 말 것) |
 | `--bg-paper` | 카드, 모달 |
@@ -130,7 +130,7 @@ font-family: 'Fraunces', 'Pretendard Variable', serif;
 
 **왜 이 조합?**
 - **Pretendard** — 한국어 가독성 최고, 무료, 가변 폰트. 차분하지만 딱딱하지 않음
-- **Fraunces** — 가변 세리프, 영문 헤딩에 *위트와 캐릭터*를 더함. *Pool's Day* 로고에 이상적
+- **Fraunces** — 가변 세리프, 영문 헤딩에 *위트와 캐릭터*를 더함. *Pool's day* 로고에 이상적
 - 두 폰트 모두 가변(variable) 지원으로 weight 자유롭게 조절
 
 ### 2-2. 텍스트 스케일
@@ -160,7 +160,7 @@ font-family: 'Fraunces', 'Pretendard Variable', serif;
 
 ### 2-3. 한·영 페어링 규칙
 
-- 헤더 로고: `Pool's Day` (Fraunces, italic) + 작은 *풀스데이* (Pretendard)
+- 헤더 로고: `Pool's day` (Fraunces, italic) + 작은 *풀스데이* (Pretendard)
 - 한글 헤딩 + 영문 본문 섞을 때: 영문은 `Pretendard` (Fraunces 안 씀, 너무 다름)
 - 위트 한 줄 (영문): `Fraunces italic` — *"No fooling. Just swimming."*
 - 한국어 위트: `Pretendard 500 italic` — *수영 안 하면 안 되는 분들께.*
@@ -425,7 +425,7 @@ font-family: 'Fraunces', 'Pretendard Variable', serif;
 - 이모지 남발 (한 메시지에 1개 이하, 신중히)
 - 느낌표 남발 (느낌표 = 신난 분위기, 적재적소만)
 - 자기 어필 (*"우리는 …"*, *"저희가 …"*) 거의 안 씀
-- 영어·한국어 무분별 섞기 — *Pool's Day*는 OK, *user는 swim 좋아함* 같은 건 X
+- 영어·한국어 무분별 섞기 — *Pool's day*는 OK, *user는 swim 좋아함* 같은 건 X
 
 ---
 
@@ -447,7 +447,7 @@ font-family: 'Fraunces', 'Pretendard Variable', serif;
 ```
 배경: bg-cream
 높이: 64px (모바일) / 72px (데스크톱)
-좌측: 로고 "Pool's Day" (Fraunces italic 700, pool-700) + 풀이 아이콘
+좌측: 로고 "Pool's day" (Fraunces italic 700, pool-700) + 풀이 아이콘
 우측: 검색 아이콘 + 찜 아이콘 (line, 1.5 stroke)
 보더: 하단 1px line-subtle
 ```
@@ -509,4 +509,4 @@ font-family: 'Fraunces', 'Pretendard Variable', serif;
 
 ---
 
-*이 문서를 따라 만들면, Pool's Day는 어디에 놓여도 *Pool's Day*처럼 보일 거예요.*
+*이 문서를 따라 만들면, Pool's day는 어디에 놓여도 *Pool's day*처럼 보일 거예요.*

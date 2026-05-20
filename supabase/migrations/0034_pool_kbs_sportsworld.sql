@@ -1,4 +1,4 @@
--- Pool's Day v1 — 수영장 1곳 추가: KBS스포츠월드 (POOL_SEOUL_0008).
+-- Pool's day v1 — 수영장 1곳 추가: KBS스포츠월드 (POOL_SEOUL_0008).
 -- 출처: cbswim webflow. ※ 공식(kbssw.co.kr)은 SSL 인증서 오류로 fetch 검증 실패 —
 --   시간표는 cbswim 단독(공식 교차검증 못 함). 추후 공식 확인되면 UPDATE 보정 가능.
 -- 좌표 [신뢰도 높음]: 카카오 Local API 도로명주소 정확 매치 "서울 강서구 공항대로 376"

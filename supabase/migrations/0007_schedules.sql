@@ -1,4 +1,4 @@
--- Pool's Day v1 — schedules 테이블 (자유수영 시간표 게시본).
+-- Pool's day v1 — schedules 테이블 (자유수영 시간표 게시본).
 -- 풀당 1행 (최신 승인본). 사용자 제출은 schedule_submissions에서 관리되고, 운영자가 승인 시 여기에 INSERT/UPDATE.
 -- by_day는 JSONB — TS 타입 Schedule.byDay와 1:1 매칭 ({ '월': [{start, end, hours?}, ...], ... }).
 

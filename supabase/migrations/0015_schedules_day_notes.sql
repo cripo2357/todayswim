@@ -1,4 +1,4 @@
--- Pool's Day v1 — schedules.day_notes 컬럼 추가.
+-- Pool's day v1 — schedules.day_notes 컬럼 추가.
 -- 요일별 예외 안내 문구 (격주 운영, 매월 N주차만 등) JSONB.
 -- 구조 예: { "토": "매월 첫째 주에만 운영합니다.", "월": "격주 운영" }
 -- TS Schedule.dayNotes와 1:1 매칭. 키는 DayOfWeek('월'~'일'), 값은 자유 텍스트.

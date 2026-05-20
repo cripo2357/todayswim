@@ -1,4 +1,4 @@
--- Pool's Day v1 — 정책: 자유수영 시간표 없는 수영장은 등록 X.
+-- Pool's day v1 — 정책: 자유수영 시간표 없는 수영장은 등록 X.
 -- 기존 샘플 풀 중 시간표 미등록 3곳(충무체육관/두류/시그니엘)에 시간표 추가 + has_schedule=true 갱신.
 
 -- 1) schedules INSERT — pool_id PK, ON CONFLICT do nothing.

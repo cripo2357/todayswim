@@ -1,4 +1,4 @@
--- Pool's Day v1 — 관악구민종합체육센터(POOL_SEOUL_0005) 좌표 보정.
+-- Pool's day v1 — 관악구민종합체육센터(POOL_SEOUL_0005) 좌표 보정.
 -- 0021은 낙성대동 근사값(37.4772, 126.9588) — 실제보다 약 450m 북쪽.
 -- 정밀 좌표: OpenStreetMap Nominatim 건물 단위 매치
 --   "37, 낙성대로3길, 낙성대동, 관악구, 서울특별시" · class leisure=fitness_centre

@@ -1,5 +1,5 @@
 -- ============================================================
--- Pool's Day — Supabase 서울 리전 이관 단일 번들 (0001~0043)
+-- Pool's day — Supabase 서울 리전 이관 단일 번들 (0001~0043)
 -- ref: hldfsstyzbnqnrlqhhtc (서울). 0044(terms,P2) 제외.
 -- 의존성 순서 보정: 0013(분류 flag 컬럼)을 0012(샘플 시드) 앞으로.
 -- 맨 앞 TEARDOWN: 신규(빈) 프로젝트 가정 — 부분 적용분 정리 후
@@ -31,7 +31,7 @@ drop policy if exists "avatars p1 open delete" on storage.objects;
 -- ============================================================
 -- 0001_pools.sql
 -- ============================================================
--- Pool's Day v1 — pools 테이블 스키마.
+-- Pool's day v1 — pools 테이블 스키마.
 -- 풀(수영장) 정보 저장. 일반 사용자는 read-only, write는 service_role만 (관리자/시드).
 -- 컬럼명은 Postgres 컨벤션에 따라 snake_case — 클라이언트 hook에서 camelCase로 매핑.
 
@@ -918,7 +918,7 @@ on conflict (id) do update set
 -- ============================================================
 -- 0004_announcements.sql
 -- ============================================================
--- Pool's Day v1 — announcements 테이블.
+-- Pool's day v1 — announcements 테이블.
 -- 공지사항 4종(신기능/기능 업데이트/정보 업데이트/이벤트). 사용자는 read-only.
 -- bullets는 본문 다음 줄의 글머리 항목 (선택). button_label/url은 이벤트 CTA용 (선택).
 
@@ -955,7 +955,7 @@ insert into public.announcements (type, title, body, bullets, button_label, butt
 -- ============================================================
 -- 0005_pools_free_swim_available.sql
 -- ============================================================
--- Pool's Day v1 — pools.free_swim_available 컬럼 추가.
+-- Pool's day v1 — pools.free_swim_available 컬럼 추가.
 -- 자유수영 자체가 가능한 풀인지 (false면 PoolBottomCard에서 "자유수영 불가능" 표시).
 -- NULL = 미상 (UI에서 가능으로 간주). false = 명시적으로 불가능.
 
@@ -966,7 +966,7 @@ alter table public.pools
 -- ============================================================
 -- 0006_announcements_seed_test.sql
 -- ============================================================
--- Pool's Day v1 — announcements 테스트용 더미 10건.
+-- Pool's day v1 — announcements 테스트용 더미 10건.
 -- 4가지 유형(신기능/기능 업데이트/정보 업데이트/이벤트) + 최근(7일 이내)/이전 섹션 모두 커버.
 -- 운영 전 시드 데이터로 활용. 본 운영 시작 시 삭제하거나 실 데이터로 교체.
 
@@ -1039,7 +1039,7 @@ insert into public.announcements (type, title, body, bullets, button_label, butt
 -- ============================================================
 -- 0007_schedules.sql
 -- ============================================================
--- Pool's Day v1 — schedules 테이블 (자유수영 시간표 게시본).
+-- Pool's day v1 — schedules 테이블 (자유수영 시간표 게시본).
 -- 풀당 1행 (최신 승인본). 사용자 제출은 schedule_submissions에서 관리되고, 운영자가 승인 시 여기에 INSERT/UPDATE.
 -- by_day는 JSONB — TS 타입 Schedule.byDay와 1:1 매칭 ({ '월': [{start, end, hours?}, ...], ... }).
 
@@ -1097,7 +1097,7 @@ where id in (select pool_id from public.schedules);
 -- ============================================================
 -- 0008_submissions.sql
 -- ============================================================
--- Pool's Day v1 — 사용자 제출(submissions) 테이블 2종.
+-- Pool's day v1 — 사용자 제출(submissions) 테이블 2종.
 -- (a) schedule_submissions: 시간표 작성/수정 요청
 -- (b) pool_submissions: 수영장 추가/수정 요청
 --
@@ -1160,7 +1160,7 @@ create policy pool_submissions_insert_any on public.pool_submissions
 -- ============================================================
 -- 0011_pools_truncate.sql
 -- ============================================================
--- Pool's Day v1 — pools 전체 비우기.
+-- Pool's day v1 — pools 전체 비우기.
 -- 컨셉 변경: bulk import 폐기, 운영자가 대형 수영장만 수동 등록.
 -- schedules / schedule_submissions는 FK cascade로 자동 삭제.
 -- pool_submissions(edit mode)는 RESTRICT라 CASCADE 필수.
@@ -1171,7 +1171,7 @@ truncate table public.pools restart identity cascade;
 -- ============================================================
 -- 0013_pools_classification_flags.sql  (의존성 순서상 0012보다 먼저)
 -- ============================================================
--- Pool's Day v1 — pools 분류 flag 3개 추가.
+-- Pool's day v1 — pools 분류 flag 3개 추가.
 -- 카드(Figma 93:10597)에서 cyan 칩으로 노출되는 1차 분류:
 --   - has_kids_pool: 유아풀 보유
 --   - has_diving_pool: 다이빙풀 보유
@@ -1193,7 +1193,7 @@ create index if not exists pools_has_diving_pool_idx on public.pools (has_diving
 -- ============================================================
 -- 0012_pools_sample_seed.sql
 -- ============================================================
--- Pool's Day v1 — 샘플 풀 11개 시드 (UI 테스트용).
+-- Pool's day v1 — 샘플 풀 11개 시드 (UI 테스트용).
 -- 컨셉: 자유수영 가능한 대형/공공 위주 + 호텔풀 1곳(분류 칩·마커 테스트).
 -- 광역시 다양화 (서울 4 + 인천·부산·대전·대구·광주·경기 6 + 호텔 1) + 25m/50m 혼합.
 -- 좌표는 공개된 시설 인근 근사값. 사진은 photo_url NULL (Storage 업로드 후 별도 UPDATE).
@@ -1278,7 +1278,7 @@ on conflict (id) do nothing;
 -- ============================================================
 -- 0014_schedules_sample_seed.sql
 -- ============================================================
--- Pool's Day v1 — 자유수영 시간표 샘플 8개.
+-- Pool's day v1 — 자유수영 시간표 샘플 8개.
 -- 0012 샘플 풀 중 has_schedule=true인 8곳에 다양한 패턴 시드.
 -- 패턴 변주:
 --   - 새벽형: 06-08 위주 (직장인 출근 전)
@@ -1382,7 +1382,7 @@ on conflict (pool_id) do nothing;
 -- ============================================================
 -- 0015_schedules_day_notes.sql
 -- ============================================================
--- Pool's Day v1 — schedules.day_notes 컬럼 추가.
+-- Pool's day v1 — schedules.day_notes 컬럼 추가.
 -- 요일별 예외 안내 문구 (격주 운영, 매월 N주차만 등) JSONB.
 -- 구조 예: { "토": "매월 첫째 주에만 운영합니다.", "월": "격주 운영" }
 -- TS Schedule.dayNotes와 1:1 매칭. 키는 DayOfWeek('월'~'일'), 값은 자유 텍스트.
@@ -1413,7 +1413,7 @@ update public.schedules set day_notes = $${
 -- ============================================================
 -- 0016_schedule_submissions_day_notes.sql
 -- ============================================================
--- Pool's Day v1 — schedule_submissions.day_notes 컬럼 추가.
+-- Pool's day v1 — schedule_submissions.day_notes 컬럼 추가.
 -- 사용자 시간표 등록 요청 시 요일별 안내 문구도 같이 받음.
 -- 0015에서 schedules에 day_notes 추가했고, 검수 시 submissions → schedules로 그대로 이관.
 -- 구조 예: { "토": "매월 첫째 주에만 운영합니다." }
@@ -1425,7 +1425,7 @@ alter table public.schedule_submissions
 -- ============================================================
 -- 0017_pool_submissions_fields.sql
 -- ============================================================
--- Pool's Day v1 — pool_submissions에 상세 필드 추가 (Figma 90:7386 재기획).
+-- Pool's day v1 — pool_submissions에 상세 필드 추가 (Figma 90:7386 재기획).
 -- 사용자가 추가 요청 시 보낼 수 있는 정보:
 --   - lane_count: 레인 개수 (옵션)
 --   - pool_length: 25 / 50 (필수, 라디오)
@@ -1447,7 +1447,7 @@ alter table public.pool_submissions
 -- ============================================================
 -- 0018_schedules_complete_coverage.sql
 -- ============================================================
--- Pool's Day v1 — 정책: 자유수영 시간표 없는 수영장은 등록 X.
+-- Pool's day v1 — 정책: 자유수영 시간표 없는 수영장은 등록 X.
 -- 기존 샘플 풀 중 시간표 미등록 3곳(충무체육관/두류/시그니엘)에 시간표 추가 + has_schedule=true 갱신.
 
 -- 1) schedules INSERT — pool_id PK, ON CONFLICT do nothing.
@@ -1506,7 +1506,7 @@ where id in (select pool_id from public.schedules);
 -- ============================================================
 -- 0019_profile_nicknames.sql
 -- ============================================================
--- Pool's Day v1 — 가입 닉네임 중복 방지용 전용 레지스트리.
+-- Pool's day v1 — 가입 닉네임 중복 방지용 전용 레지스트리.
 -- 프로필 본체는 아직 클라이언트 로컬(AsyncStorage). 여기엔 '선점된 닉네임'만 보관해서
 -- ProfileSetup 입력 중 중복 여부를 조회하고, 가입 완료 시 닉네임을 선점(insert)한다.
 
@@ -1563,7 +1563,7 @@ create policy "avatars p1 open delete" on storage.objects
 -- ============================================================
 -- 0021_pool_gwanak_community.sql
 -- ============================================================
--- Pool's Day v1 — 수영장 1곳 추가: 관악구민종합체육센터.
+-- Pool's day v1 — 수영장 1곳 추가: 관악구민종합체육센터.
 -- 출처: https://cbswim.webflow.io/suyeongjang/gwanagguminjonghabceyugsenteo
 --        (관악도시관리공단 공식 https://www.gwanakgongdan.or.kr/fmcs/13, 시간표 기준일 2023-12-01)
 -- 풀 등록 워크플로: bulk import 폐기 — 운영자가 검토 후 마이그레이션으로 1곳씩 추가.
@@ -1624,7 +1624,7 @@ where id = 'POOL_SEOUL_0005'
 -- ============================================================
 -- 0022_pool_gwanak_coords_fix.sql
 -- ============================================================
--- Pool's Day v1 — 관악구민종합체육센터(POOL_SEOUL_0005) 좌표 보정.
+-- Pool's day v1 — 관악구민종합체육센터(POOL_SEOUL_0005) 좌표 보정.
 -- 0021은 낙성대동 근사값(37.4772, 126.9588) — 실제보다 약 450m 북쪽.
 -- 정밀 좌표: OpenStreetMap Nominatim 건물 단위 매치
 --   "37, 낙성대로3길, 낙성대동, 관악구, 서울특별시" · class leisure=fitness_centre
@@ -1639,7 +1639,7 @@ where id = 'POOL_SEOUL_0005';
 -- ============================================================
 -- 0023_pool_gwanak_photo_fix.sql
 -- ============================================================
--- Pool's Day v1 — 관악구민종합체육센터(POOL_SEOUL_0005) photo_url 보정.
+-- Pool's day v1 — 관악구민종합체육센터(POOL_SEOUL_0005) photo_url 보정.
 -- 0021은 photo_url 없는 버전으로 먼저 적용됨 → 행이 photo_url NULL로 생성.
 -- 0021에 photo_url을 추가했지만 INSERT의 `ON CONFLICT (id) DO NOTHING` 때문에
 -- 재실행해도 기존 행은 갱신 안 됨 → 명시적 UPDATE 필요.
@@ -1654,7 +1654,7 @@ where id = 'POOL_SEOUL_0005'
 -- ============================================================
 -- 0024_pool_sadang_culture.sql
 -- ============================================================
--- Pool's Day v1 — 수영장 1곳 추가: 사당문화회관 (POOL_SEOUL_0006).
+-- Pool's day v1 — 수영장 1곳 추가: 사당문화회관 (POOL_SEOUL_0006).
 -- 출처: https://cbswim.webflow.io/suyeongjang/sadangmunhwahoegwan
 --        (동작구도시관리공단 http://sports.idongjak.or.kr/home/59, 시간표 기준 2023-12-01)
 -- 풀 등록 워크플로: 운영자가 검토 후 마이그레이션으로 1곳씩 + 시간표 동시 등록.
@@ -1714,7 +1714,7 @@ where id = 'POOL_SEOUL_0006'
 -- ============================================================
 -- 0025_pool_sadang_coords_fix.sql
 -- ============================================================
--- Pool's Day v1 — 사당문화회관(POOL_SEOUL_0006) 좌표 보정.
+-- Pool's day v1 — 사당문화회관(POOL_SEOUL_0006) 좌표 보정.
 -- 0024는 OSM Nominatim 도로 중심값 근사(37.4836888, 126.9683910) — 도로/번지 매치 실패.
 -- 정밀 좌표: 카카오 Local API(scripts/geocode-kakao.mjs) — 도로명주소 정확 매치
 --   "서울 동작구 사당로8길 9" (ROAD_ADDR, 신뢰도 높음). OSM값 대비 ~110m 차이.
@@ -1730,7 +1730,7 @@ where id = 'POOL_SEOUL_0006';
 -- ============================================================
 -- 0026_pools_price_weekday_weekend.sql
 -- ============================================================
--- Pool's Day v1 — 가격을 평일/주말 분리 저장 (성인 1회 기준, 쉼표 없는 정수).
+-- Pool's day v1 — 가격을 평일/주말 분리 저장 (성인 1회 기준, 쉼표 없는 정수).
 -- 기존 price_per_session(단일)는 레거시로 유지 — 클라이언트는 price_weekday 우선,
 --   없으면 price_per_session으로 평일가 폴백(0012 샘플풀 표시 깨지지 않게).
 -- 값 출처: cbswim webflow (사용자 확인).
@@ -1751,7 +1751,7 @@ update public.pools set price_weekday = 4400, price_weekend = 5700
 -- ============================================================
 -- 0027_pool_gwanak_kids_pool.sql
 -- ============================================================
--- Pool's Day v1 — 관악구민종합체육센터(POOL_SEOUL_0005) 유아풀 보유 반영.
+-- Pool's day v1 — 관악구민종합체육센터(POOL_SEOUL_0005) 유아풀 보유 반영.
 -- 0021은 출처에 시설 정보 없어 has_kids_pool=false로 등록 → 사용자 확인: 유아풀 있음.
 -- 0021 ON CONFLICT DO NOTHING이라 INSERT 재실행 무효 → UPDATE 보정.
 -- has_kids_pool=true → 카드 cyan 칩(0013) 노출 대상이 됨.
@@ -1764,7 +1764,7 @@ where id = 'POOL_SEOUL_0005';
 -- ============================================================
 -- 0028_pool_sadang_depth.sql
 -- ============================================================
--- Pool's Day v1 — 사당문화회관(POOL_SEOUL_0006) 수심 반영.
+-- Pool's day v1 — 사당문화회관(POOL_SEOUL_0006) 수심 반영.
 -- 0024는 출처 "전화문의 필요"라 수심 컬럼 생략(NULL). 사용자 확인값으로 보정.
 -- min == max (수심 차이 없음) → 클라이언트는 "1.2m"로 단일 표시(범위 표기 안 함).
 -- 사용자가 Supabase에 직접 입력한 값을 마이그레이션으로 고정(재현성/소스 일치).
@@ -1780,7 +1780,7 @@ where id = 'POOL_SEOUL_0006';
 -- ============================================================
 -- 0029_pool_sadang_schedule_fix.sql
 -- ============================================================
--- Pool's Day v1 — 사당문화회관(POOL_SEOUL_0006) 자유수영 시간표 보정.
+-- Pool's day v1 — 사당문화회관(POOL_SEOUL_0006) 자유수영 시간표 보정.
 -- 0024는 cbswim webflow의 뭉뚱그린 표("월~금 13:00~13:50/19:00~19:50")를
 --   잘못 해석해 월·수에도 19:00~19:50을 넣었음.
 -- 공식 출처(동작구도시관리공단 https://sports.idongjak.or.kr/home/61) 기준 정정:
@@ -1813,7 +1813,7 @@ where pool_id = 'POOL_SEOUL_0006';
 -- ============================================================
 -- 0030_schedules_operator_to_poolsday.sql
 -- ============================================================
--- Pool's Day v1 — 운영자 시드 시간표의 작성자 표기를 '운영자' → '풀스데이'.
+-- Pool's day v1 — 운영자 시드 시간표의 작성자 표기를 '운영자' → '풀스데이'.
 -- 시간표 마지막 등록자가 운영자(서비스가 공식 등록)인 경우, 사용자 화면엔
 --   '운영자님'이 아니라 '풀스데이님'으로 노출되게.
 -- 대상: 운영자 시드(0021 관악, 0024/0029 사당) — author_nickname='운영자'.
@@ -1829,7 +1829,7 @@ where author_nickname = '운영자';
 -- ============================================================
 -- 0031_pool_yeongdeungpo2_sports.sql
 -- ============================================================
--- Pool's Day v1 — 수영장 1곳 추가: 영등포제2스포츠센터 (POOL_SEOUL_0007).
+-- Pool's day v1 — 수영장 1곳 추가: 영등포제2스포츠센터 (POOL_SEOUL_0007).
 -- 출처: cbswim webflow + 공식(영등포구시설관리공단 spc2.y-sisul.or.kr/page/center/center.03.asp).
 --        시간표는 공식이 권위 — cbswim과 일치 확인(평일 월·수·금만, 일요일 2·4주만 개관).
 -- 풀 등록 워크플로: 운영자 검토 후 마이그레이션 1곳 + 시간표 동시 등록.
@@ -1887,7 +1887,7 @@ where id = 'POOL_SEOUL_0007'
 -- ============================================================
 -- 0032_schedule_daynote_tone.sql
 -- ============================================================
--- Pool's Day v1 — 요일 안내문구(day_notes) 톤앤매너 통일.
+-- Pool's day v1 — 요일 안내문구(day_notes) 톤앤매너 통일.
 -- 표준 톤(사당 0024 기준): "매월 {주차}주차에만 운영합니다." — 숫자 주차, "에만 운영합니다." 종결.
 -- 영등포제2스포츠센터(0031) "매월 둘째·넷째 일요일만 개관합니다." → 표준 톤으로 정정.
 --   (둘째·넷째 = 2·4주차) 0031 ON CONFLICT라 INSERT 재실행 무효 → day_notes UPDATE.
@@ -1901,7 +1901,7 @@ where pool_id = 'POOL_SEOUL_0007';
 -- ============================================================
 -- 0033_schedule_daynote_tone_fix.sql
 -- ============================================================
--- Pool's Day v1 — 요일 안내문구 톤 표준 확정 + 사당/영등포 정규화.
+-- Pool's day v1 — 요일 안내문구 톤 표준 확정 + 사당/영등포 정규화.
 -- 표준(사용자 확정 2026-05-16): "매월 {주차} 일요일에만 운영합니다."
 --   · 단일:  "매월 1주차 일요일에만 운영합니다."
 --   · 복수:  "매월 2, 4주차 일요일에만 운영합니다." (주차는 쉼표, 요일어 '일요일' 포함)
@@ -1923,7 +1923,7 @@ where pool_id = 'POOL_SEOUL_0007';
 -- ============================================================
 -- 0034_pool_kbs_sportsworld.sql
 -- ============================================================
--- Pool's Day v1 — 수영장 1곳 추가: KBS스포츠월드 (POOL_SEOUL_0008).
+-- Pool's day v1 — 수영장 1곳 추가: KBS스포츠월드 (POOL_SEOUL_0008).
 -- 출처: cbswim webflow. ※ 공식(kbssw.co.kr)은 SSL 인증서 오류로 fetch 검증 실패 —
 --   시간표는 cbswim 단독(공식 교차검증 못 함). 추후 공식 확인되면 UPDATE 보정 가능.
 -- 좌표 [신뢰도 높음]: 카카오 Local API 도로명주소 정확 매치 "서울 강서구 공항대로 376"
@@ -1976,7 +1976,7 @@ where id = 'POOL_SEOUL_0008'
 -- ============================================================
 -- 0035_schedules_slot_groups.sql
 -- ============================================================
--- Pool's Day v1 — 자유수영 시간표에 계절/변형 운영(슬롯 그룹) 지원.
+-- Pool's day v1 — 자유수영 시간표에 계절/변형 운영(슬롯 그룹) 지원.
 -- 일부 풀(예: KBS스포츠월드)은 하절기(6~9월) 등 시즌별로 운영시간이 다름.
 -- Figma 144:3716 — 요일 슬롯을 라벨 붙은 그룹으로 분할 표시
 --   (예: "기본 운영 (매월 2,4주차 일요일은 쉽니다.)" / "6~9월 운영 (하절기는 휴장일이 없습니다.)").
@@ -1995,7 +1995,7 @@ alter table public.schedules
 -- ============================================================
 -- 0036_pool_kbs_schedule_seasonal.sql
 -- ============================================================
--- Pool's Day v1 — KBS스포츠월드(POOL_SEOUL_0008) 시간표 공식 정정 + 하절기 그룹.
+-- Pool's day v1 — KBS스포츠월드(POOL_SEOUL_0008) 시간표 공식 정정 + 하절기 그룹.
 -- 출처: 공식 kbssw.co.kr (WebFetch는 SSL 체인 오류 → curl -k 로 취득; 페이지 인코딩
 --   깨졌으나 시각은 ASCII라 신뢰 가능 + Figma 144:3716의 하절기 수치와 정확 일치 = 교차검증).
 -- 0034는 cbswim 기준(토·일 09:00~17:00 단일)이라 정정. 0034 ON CONFLICT → UPDATE.
@@ -2050,7 +2050,7 @@ where pool_id = 'POOL_SEOUL_0008';
 -- ============================================================
 -- 0037_pool_kbs_schedule_label_fix.sql
 -- ============================================================
--- Pool's Day v1 — KBS스포츠월드(POOL_SEOUL_0008) slot_groups 라벨 문구 정정.
+-- Pool's day v1 — KBS스포츠월드(POOL_SEOUL_0008) slot_groups 라벨 문구 정정.
 -- 사용자 제공 화면(렌더 이미지) 기준 문구 통일:
 --   · 일: "기본 운영 (매월 2, 4주차 일요일은 쉽니다.)"
 --         "6~9월 운영 (하절기는 매주 일요일 운영합니다.)"  ← 0036의 "휴장일이 없습니다" 정정
@@ -2089,7 +2089,7 @@ where pool_id = 'POOL_SEOUL_0008';
 -- ============================================================
 -- 0038_pool_kbs_slot_groups_months.sql
 -- ============================================================
--- Pool's Day v1 — KBS스포츠월드(POOL_SEOUL_0008) slot_groups에 months 추가.
+-- Pool's day v1 — KBS스포츠월드(POOL_SEOUL_0008) slot_groups에 months 추가.
 -- 시간표 타임 더블탭 → 일정 등록 플로우가 "그 날짜가 몇 월이냐"로 시즌 그룹을
 -- 골라 타임표를 보여주려면, 각 그룹이 어느 달에 적용되는지 구조적 데이터 필요.
 --   · 기본 운영   → 1~5, 10~12월 (비하절기)
@@ -2127,7 +2127,7 @@ where pool_id = 'POOL_SEOUL_0008';
 -- ============================================================
 -- 0039_pool_yeongdeungpo2_daynote_resync.sql
 -- ============================================================
--- Pool's Day v1 — 영등포제2스포츠센터(POOL_SEOUL_0007) 일요일 안내문구 재동기화.
+-- Pool's day v1 — 영등포제2스포츠센터(POOL_SEOUL_0007) 일요일 안내문구 재동기화.
 -- 표준(사용자 확정 2026-05-16): "매월 {주차} 일요일에만 운영합니다."
 --   복수 주차는 쉼표(2, 4), 가운뎃점 금지, 요일어('일요일') 포함.
 -- 0033에서 이미 표준값으로 정정했으나 DB 미반영 상태 → 본 마이그레이션으로 재설정.
@@ -2144,7 +2144,7 @@ where pool_id = 'POOL_SEOUL_0007';
 -- ============================================================
 -- 0040_pool_kbs_price_fix.sql
 -- ============================================================
--- Pool's Day v1 — KBS스포츠월드(POOL_SEOUL_0008) 이용요금 공식 정정.
+-- Pool's day v1 — KBS스포츠월드(POOL_SEOUL_0008) 이용요금 공식 정정.
 -- 출처: 사용자 제공 공식 요금(kbssw.co.kr 기준).
 --   · 평일 성인 9,000원  → price_weekday
 --   · 주말 성인 10,000원 → price_weekend
@@ -2163,7 +2163,7 @@ where id = 'POOL_SEOUL_0008';
 -- ============================================================
 -- 0041_pool_kbs_has_kids_pool.sql
 -- ============================================================
--- Pool's Day v1 — KBS스포츠월드(POOL_SEOUL_0008) 유아풀 보유 정정.
+-- Pool's day v1 — KBS스포츠월드(POOL_SEOUL_0008) 유아풀 보유 정정.
 -- 출처: 사용자 확인(KBS에 유아풀 있음). 0034가 has_kids_pool=false로 박았고
 -- ON CONFLICT (id) DO NOTHING이라 INSERT 재실행 무효 → UPDATE로 정정. 멱등.
 -- (0027 관악구민종합체육센터 유아풀 정정과 동일 패턴.)
@@ -2176,7 +2176,7 @@ where id = 'POOL_SEOUL_0008';
 -- ============================================================
 -- 0042_notifications.sql
 -- ============================================================
--- Pool's Day v1 — 메시지(알림) 발송 이력.
+-- Pool's day v1 — 메시지(알림) 발송 이력.
 --
 -- 발송 Rule은 코드 레지스트리(src/lib/messages/rules.ts)에서 관리하고,
 -- 액션 발생 시 클라이언트(dispatchMessage)가 이 테이블에 직접 insert 한다.
@@ -2221,7 +2221,7 @@ create policy notifications_insert_any on public.notifications
 -- ============================================================
 -- 0043_nickname_policy.sql
 -- ============================================================
--- Pool's Day — 닉네임 정책 서버측 강제 (운영 사칭 / 욕설 차단).
+-- Pool's day — 닉네임 정책 서버측 강제 (운영 사칭 / 욕설 차단).
 --
 -- 클라이언트(lib/nicknames.nicknameBlockReason)는 즉시 UX 피드백용 1차 필터.
 -- 최종 권위·우회 불가 방어선은 여기: profile_nicknames INSERT 시 트리거가

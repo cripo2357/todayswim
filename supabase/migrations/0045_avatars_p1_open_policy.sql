@@ -1,4 +1,4 @@
--- Pool's Day — 아바타 Storage 정책 P1 개방형 전환 (0020 재정의).
+-- Pool's day — 아바타 Storage 정책 P1 개방형 전환 (0020 재정의).
 --
 -- 배경: 0020은 avatars 버킷 쓰기를 본인 폴더 한정(`to authenticated`,
 --   `(storage.foldername(name))[1] = auth.uid()::text`)으로 잠갔다. 그러나

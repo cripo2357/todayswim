@@ -1,4 +1,4 @@
--- Pool's Day v1 — KBS스포츠월드(POOL_SEOUL_0008) 시간표 공식 정정 + 하절기 그룹.
+-- Pool's day v1 — KBS스포츠월드(POOL_SEOUL_0008) 시간표 공식 정정 + 하절기 그룹.
 -- 출처: 공식 kbssw.co.kr (WebFetch는 SSL 체인 오류 → curl -k 로 취득; 페이지 인코딩
 --   깨졌으나 시각은 ASCII라 신뢰 가능 + Figma 144:3716의 하절기 수치와 정확 일치 = 교차검증).
 -- 0034는 cbswim 기준(토·일 09:00~17:00 단일)이라 정정. 0034 ON CONFLICT → UPDATE.

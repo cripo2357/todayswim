@@ -1,4 +1,4 @@
--- Pool's Day v1 — 수영장 1곳 추가: 사당문화회관 (POOL_SEOUL_0006).
+-- Pool's day v1 — 수영장 1곳 추가: 사당문화회관 (POOL_SEOUL_0006).
 -- 출처: https://cbswim.webflow.io/suyeongjang/sadangmunhwahoegwan
 --        (동작구도시관리공단 http://sports.idongjak.or.kr/home/59, 시간표 기준 2023-12-01)
 -- 풀 등록 워크플로: 운영자가 검토 후 마이그레이션으로 1곳씩 + 시간표 동시 등록.

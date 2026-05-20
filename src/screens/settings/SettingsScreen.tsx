@@ -146,7 +146,7 @@ export function SettingsScreen() {
 
   const sendMail = () => {
     const url = `mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent(
-      "[Pool's Day] 운영진에게 문의",
+      "[Pool's day] 운영진에게 문의",
     )}`;
     Linking.openURL(url).catch(() => {
       Alert.alert('메일 앱을 열 수 없어요', `직접 ${FEEDBACK_EMAIL} 로 보내주세요.`);

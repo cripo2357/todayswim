@@ -1,4 +1,4 @@
--- Pool's Day v1 — 메시지(알림) 발송 이력.
+-- Pool's day v1 — 메시지(알림) 발송 이력.
 --
 -- 발송 Rule은 코드 레지스트리(src/lib/messages/rules.ts)에서 관리하고,
 -- 액션 발생 시 클라이언트(dispatchMessage)가 이 테이블에 직접 insert 한다.

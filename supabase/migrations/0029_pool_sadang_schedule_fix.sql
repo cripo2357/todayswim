@@ -1,4 +1,4 @@
--- Pool's Day v1 — 사당문화회관(POOL_SEOUL_0006) 자유수영 시간표 보정.
+-- Pool's day v1 — 사당문화회관(POOL_SEOUL_0006) 자유수영 시간표 보정.
 -- 0024는 cbswim webflow의 뭉뚱그린 표("월~금 13:00~13:50/19:00~19:50")를
 --   잘못 해석해 월·수에도 19:00~19:50을 넣었음.
 -- 공식 출처(동작구도시관리공단 https://sports.idongjak.or.kr/home/61) 기준 정정:

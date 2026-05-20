@@ -1,4 +1,4 @@
--- Pool's Day v1 — 사용자 제출(submissions) 테이블 2종.
+-- Pool's day v1 — 사용자 제출(submissions) 테이블 2종.
 -- (a) schedule_submissions: 시간표 작성/수정 요청
 -- (b) pool_submissions: 수영장 추가/수정 요청
 --

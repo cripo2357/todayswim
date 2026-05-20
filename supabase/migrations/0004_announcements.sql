@@ -1,4 +1,4 @@
--- Pool's Day v1 — announcements 테이블.
+-- Pool's day v1 — announcements 테이블.
 -- 공지사항 4종(신기능/기능 업데이트/정보 업데이트/이벤트). 사용자는 read-only.
 -- bullets는 본문 다음 줄의 글머리 항목 (선택). button_label/url은 이벤트 CTA용 (선택).
 

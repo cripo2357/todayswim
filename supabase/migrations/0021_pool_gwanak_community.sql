@@ -1,4 +1,4 @@
--- Pool's Day v1 — 수영장 1곳 추가: 관악구민종합체육센터.
+-- Pool's day v1 — 수영장 1곳 추가: 관악구민종합체육센터.
 -- 출처: https://cbswim.webflow.io/suyeongjang/gwanagguminjonghabceyugsenteo
 --        (관악도시관리공단 공식 https://www.gwanakgongdan.or.kr/fmcs/13, 시간표 기준일 2023-12-01)
 -- 풀 등록 워크플로: bulk import 폐기 — 운영자가 검토 후 마이그레이션으로 1곳씩 추가.
