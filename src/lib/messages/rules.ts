@@ -269,6 +269,7 @@ export const RULES: Record<MessageKind, Rule> = {
 
   // 후원 입금 확인 — 운영자가 donation_payments INSERT → 트리거가 자동 발송.
   // {name} = 입금자 닉네임 스냅샷(트리거가 발송 시점에 박음). 본인 알림함.
+  // 액션 '내 응원글 보기' = NotificationsTab.handleAction이 Donation 화면 navigate.
   donation_thanks: {
     recipients: 'self',
     build: (p) => ({
@@ -277,6 +278,7 @@ export const RULES: Record<MessageKind, Rule> = {
         `${nick(p)}님의 후원이 도착했어요.`,
         "Pool's day 운영에 소중히 쓰일게요. 감사합니다.",
       ],
+      actions: ['내 응원글 보기'],
     }),
   },
 

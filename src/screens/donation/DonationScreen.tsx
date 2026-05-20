@@ -32,7 +32,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { ChevronLeft, Copy, PiggyBank, Edit3 } from 'lucide-react-native';
+import {
+  ChevronLeft,
+  Copy,
+  PiggyBank,
+  Edit3,
+  XCircle,
+  MoveDiagonal2,
+} from 'lucide-react-native';
 import DonationIllust from '@assets/illustrations/donation-thanks.svg';
 import { tokens } from '@/styles/tokens';
 import { Avatar } from '@/components/ui/Avatar';
@@ -337,12 +344,14 @@ function DonationItemCard({
                 textAlignVertical="top"
                 maxLength={MAX_LEN}
                 autoFocus
-                onFocus={onFocusInput}
+                onFocus={() => onFocusInput?.()}
               />
               <View style={styles.editCounterRow}>
                 <Text style={styles.editCounter}>
                   {draft.length}/{MAX_LEN}
                 </Text>
+                {/* resize notch 데코레이션 — Figma 239:3408 */}
+                <MoveDiagonal2 size={16} color="#94A3B8" strokeWidth={2} />
               </View>
             </View>
           ) : (
@@ -373,6 +382,7 @@ function DonationItemCard({
                 accessibilityRole="button"
                 accessibilityLabel="문구 수정 취소"
               >
+                <XCircle size={16} color="#4B5563" strokeWidth={2} />
                 <Text style={styles.cancelBadgeLabel}>취소</Text>
               </Pressable>
             </View>
@@ -592,7 +602,9 @@ const styles = StyleSheet.create({
   },
   editCounterRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'flex-end',
+    gap: 8,
   },
   editCounter: {
     fontFamily: tokens.font.sans,
@@ -623,13 +635,16 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   cancelBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
   },
   cancelBadgeLabel: {
     fontFamily: tokens.font.sansMedium,

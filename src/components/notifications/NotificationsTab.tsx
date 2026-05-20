@@ -296,6 +296,10 @@ function handleAction(
     }
     return navigation.navigate('MapMain');
   }
+  // 후원 감사 → 본인 응원글로 이동 (Donation 화면). 본인 카드는 dedup으로 최상단 노출.
+  if (label === '내 응원글 보기' && kind === 'donation_thanks') {
+    return navigation.navigate('Donation');
+  }
   // 광고(참여) 등 미정 — Phase 2
 }
 
