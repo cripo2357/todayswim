@@ -160,7 +160,7 @@ export const RULES: Record<MessageKind, Rule> = {
   friend_request_rejected: {
     recipients: 'self',
     build: (p) => ({
-      title: '',
+      title: '친구 신청 거절',
       body: [`${nick(p)}님의 친구 신청을 거절했어요.`],
     }),
   },
@@ -235,7 +235,7 @@ export const RULES: Record<MessageKind, Rule> = {
         ? `${p.count}명에게 수영 일정 초대를 보냈어요.`
         : `${nick(p)}님에게 수영 일정 초대를 보냈어요.`;
       return {
-        title: '',
+        title: many ? `수영 일정 초대(${p.count}명)` : '수영 일정 초대',
         body: [head, venueLine(p)],
         actions: ['초대 취소'],
       };
@@ -244,7 +244,7 @@ export const RULES: Record<MessageKind, Rule> = {
   friend_schedule_overlap: {
     recipients: 'self',
     build: (p) => ({
-      title: '같은 시간 수영',
+      title: '같은 수영 일정',
       body: [venueLine(p), `${nick(p)}님도 수영 일정이 있어요.`],
       actions: ['일정 보기'],
     }),
@@ -254,7 +254,7 @@ export const RULES: Record<MessageKind, Rule> = {
   new_feature_announced: {
     recipients: 'self',
     build: (p) => ({
-      title: '',
+      title: '신규 기능',
       body: [`${p.featureName ?? '새'} 기능이 추가됐어요.`],
       actions: ['보기'],
     }),
@@ -272,7 +272,7 @@ export const RULES: Record<MessageKind, Rule> = {
   pool_submission_approved: {
     recipients: 'self',
     build: (p) => ({
-      title: '',
+      title: '수영장 추가 승인',
       body: [`${poolName(p)}이 추가됐어요.`],
       actions: ['보기'],
     }),
@@ -280,14 +280,14 @@ export const RULES: Record<MessageKind, Rule> = {
   pool_submission_rejected: {
     recipients: 'self',
     build: (p) => ({
-      title: '',
+      title: '수영장 추가 거절',
       body: [`${poolName(p)} 제보가 반영되지 않았어요.`],
     }),
   },
   schedule_submission_approved: {
     recipients: 'self',
     build: (p) => ({
-      title: '',
+      title: '시간표 수정 승인',
       body: [`${poolName(p)} 시간표 제보가 등록됐어요.`],
       actions: ['보기'],
     }),
@@ -295,7 +295,7 @@ export const RULES: Record<MessageKind, Rule> = {
   schedule_submission_rejected: {
     recipients: 'self',
     build: (p) => ({
-      title: '',
+      title: '시간표 수정 거절',
       body: [`${poolName(p)} 시간표 제보가 반영되지 않았어요.`],
     }),
   },
@@ -330,14 +330,14 @@ export const RULES: Record<MessageKind, Rule> = {
   schedule_reminder_prev_day: {
     recipients: 'self',
     build: (p) => ({
-      title: '내일 수영 일정 있어요.',
+      title: '내일 수영 일정',
       body: [[poolName(p), p.time].filter(Boolean).join(' ')],
     }),
   },
   schedule_reminder_1h: {
     recipients: 'self',
     build: (p) => ({
-      title: '1시간 후 수영 시작이에요.',
+      title: '곧 수영 일정',
       body: [poolName(p)],
     }),
   },
