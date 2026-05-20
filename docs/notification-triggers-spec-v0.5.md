@@ -931,6 +931,49 @@ ID 카드형(assets/icons/profile.svg, #1F2937) — 닉네임 정체성 컨텍�
 src/components/notifications/NotificationsTab.tsx `REL_BY_KIND`.
 ```
 
+## 발송 주체
+
+각 트리거의 발송 주체를 3가지로 분류한다 — 운영자가 직접 관여해야
+발송되는 것 / 시스템이 자동 발송 / 사용자 행동에 시스템이 반응.
+P2 백엔드 작업 시 운영자 콘솔 인터페이스 구축 범위 = 운영자 11종.
+
+```
+운영자 (OPERATOR) — 운영자 액션이 트리거 (11개):
+
+  new_feature_announced          announcements 테이블 등록
+  app_version_updated            announcements 테이블 등록
+  pool_submission_approved       pool_submissions.status = approved
+  pool_submission_rejected       pool_submissions.status = rejected
+  schedule_submission_approved   schedule_submissions.status = approved
+  schedule_submission_rejected   schedule_submissions.status = rejected
+  marketing_event                announcements + 마케팅 발송 옵션 ON
+  marketing_partnership          운영자 수동 발송
+  marketing_recommendation       운영자 수동 발송 (개인화 추천)
+  terms_updated                  약관 개정 게시
+  nickname_changed_by_admin      운영자 닉네임 강제 변경 액션
+
+시스템 (SYSTEM) — 크론/타이머/이벤트 (5개):
+
+  schedule_reminder_prev_day     cron: 일정 전날 20:00
+  schedule_reminder_1h           cron: 일정 1시간 전
+  welcome                        Welcome 화면 종료 후 5분
+  monthly_summary                cron: 매월 1일 09:00
+  schedule_completion_prompt     cron: 일정 종료 + 1시간
+
+사용자 (USER) — 사용자 행동에 시스템이 반응 (6개):
+
+  friend_request_received        다른 사용자가 친구 신청
+  friend_request_accepted        다른 사용자가 수락
+  friend_request_rejected        본인이 거절
+  invite_received                다른 사용자가 초대
+  invite_sent                    본인이 초대 발송
+  friend_schedule_overlap        친구가 일정 등록 → 겹침 감지
+```
+
+운영자 11종은 모두 P2 백엔드에서 콘솔/SQL/이메일 등 운영자 인터페이스가
+필요하다(자동 디스패치는 운영자 액션을 트리거로 받아 본문 템플릿 렌더만).
+시스템·사용자 11종은 자동 디스패치 — 크론 잡과 이벤트 핸들러로 구현.
+
 ## 변수 폴백 매트릭스
 
 ```
