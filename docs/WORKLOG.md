@@ -1,8 +1,8 @@
 # Pool's day 작업일지
 
 > git 커밋 기록(실제 author date) 기반 날짜별 정리. 추측 없이 커밋 사실만.
-> 기간: 2026-05-06(레포 초기화) ~ 2026-05-20(현재). 총 367 커밋.
-> 단계: **P1(목업·UX 완성, 현재) → P2(백엔드 SSOT) → P3(하드닝·prod 분리·출시)**.
+> 기간: 2026-05-06(레포 초기화) ~ 2026-05-21(현재).
+> 단계: **P1 ✅ tag `phase1-complete` (2026-05-20) → P2 ✅ tag `phase2-complete` (2026-05-20) → P3(하드닝·prod 분리·출시, 진행 중)**.
 
 ---
 
@@ -80,12 +80,54 @@
 - 로그인 화면 dim 탭 닫기, 로그아웃 내 위치 마커 47px(25m 수영장 마커와 동일)
 - **메시지 Rule 레지스트리 v0.5 스펙 확정**(22트리거 카피·변수 폴백·monthly 8변형) — 크론·실푸시·서버 팬아웃은 P2
 
+### 동시 진행 트랙 — P1 마무리 → P2 풀 배치 (1일 완성)
+
+같은 날 별도 세션에서 P1 마무리 + P2 13배치를 하루 안에 끝냄. 외부 OAuth 셋팅은 P1에서 이미 다 돼 있어 코드·DB만 박으면 되는 상태였음.
+
+- **P1 마무리 → tag `phase1-complete`**: 아바타 임계값 회귀(sm≤64→≤28) 마지막 정정 후 마일스톤
+- **P2 진입 — 0047 profiles 본체** (PK=친구코드 text, mock-auth 톤 RLS) + useProfile 서버 best-effort upsert (`a7dcbd4`)
+- **P2 2배치 — 0048 friends 시스템** (friend_requests / friendships 양방향 / blocks + cascade + 차단 안전망 트리거). 친구코드 변경 정책을 PK UPDATE cascade로 정정 (`507048a`)
+- **P2 3배치 — friendsSync 부착**: useFriends 7 mutation 모두 서버 best-effort 동기. mock 친구는 FK silent fail (정상) (`66cdf30`)
+- **P2 4배치 — 0049 user_schedules**: MySwimSchedule + OtherSchedule 통합 테이블, useSwimSchedules 5 mutation 동기 (`4156801`)
+- **P2 5배치 — mock 친구 → 서버 시드 + 친구코드 단일 출처**(`lib/friendCode.ts`로 추출). 모든 mock id를 `accountCode(seed)` 결과(6자리)로 통일, App.tsx에서 `seedMockProfilesOnce` 호출(AsyncStorage SEED_KEY로 1회) (`2869856`)
+- **P2 6배치 — useOtherSchedules**: MOCK_OTHER_SCHEDULES → React Query 서버 fetch + profiles join + mock 폴백. CalendarTab + MapScreen 교체 (`f529ecf`)
+- **P2 7배치 — notifications 서버 fetch**: useNotifications 훅 + NotificationsTab kind→slot 매핑 + mock 갤러리 폴백. `dispatchMessageTo` 신규 + InviteFriendsScreen 첫 'other' 적재 (`af5e0a8`)
+- **P2 8배치 — 친구 요청·수락 양측 알림**: sendRequest 2곳 + accept 2곳에 양측 적재. friend_request_accepted는 본문 `{name}` 양측 다름 → 명시적 두 번 호출 (`5a1fcd1`)
+- **P2 9배치 — friend_search 서버 결합**: `useNicknameSearch` / `useCodeSearch` 훅이 mock 즉시 + 서버 profiles 검색 합쳐 dedupe + eligibility 필터 (`03eddec`)
+
+#### 회귀 정정 2건 — verify_baseline_before_migration_debug 패턴
+
+- **naver-map OOB 회귀**: 6배치 MapScreen useOtherSchedules 도입 시 `java.lang.IndexOutOfBoundsException` (ArrayList.get). phase1-complete 체크아웃 비교 → `39b44e8` 격리 → `51d8831` narrowing(CalendarTab 무영향 확정) → `0ff4d3b` final (MapScreen만 mock 유지). 메모리 [[naver_map_oob_mock_only]]
+- **selector 무한 렌더**: useOtherSchedules의 `useFriends((s) => s.friends.map(...))`이 매 호출마다 새 array → `getSnapshot should be cached` + `Maximum update depth exceeded` → MyInfo 진입 시 흰화면. friends 자체 구독 + useMemo 파생으로 정정 (`ee29541`)
+
+#### P2 마무리 — Auth binding + RLS
+
+- **OAuth 외부 점검**: Google Cloud / Kakao Developers / Supabase Providers / .env / EAS env / Android SHA-1 모두 P1에서 이미 셋팅됨 확인. 새 EAS dev 빌드(`150c2ca9`) install → 실 OAuth 검증(`auth.users`에 `provider=google` 본인 row 확인)
+- **0059 profiles.auth_uid 컬럼** + profileSync `tryFetchProfileByAuthUid` + `tryUpsertProfile`이 현 세션 auth.uid 자동 동봉 + `store/auth.ts`에 `syncProfileFromAuth` helper (hydrate/onAuthStateChange/signIn 셋 다 호출). 효과: 기존 가입자 재로그인 시 즉시 MapMain 진입 (`8ff922b`)
+- **0060 RLS 보수적 하드닝**: 6개 테이블 write에 본인 검증 (`auth_uid = auth.uid()`), select은 `(true)` 유지. mock 시드 호환을 위해 `auth_uid is null` 허용 분기. friendships 양방향 insert 위해 양쪽 본인 완화. notifications.insert는 (true) 유지(dispatchMessageTo 'other' 적재). (`f09d070`)
+- **검증**: 일정 추가 / 친구 요청 / 수락 / 차단 / 알림 적재 모두 RLS 통과 → **tag `phase2-complete`** (`578755b`)
+
+## 2026-05-21 (오늘) — P3 진입 준비
+
+- **사업자 등록 완료 예정**(5/21) — 외부 critical path 첫 단추
+- P3 외부 의존 작업 시작 옵션:
+  - Apple Developer Account 가입 (2-3일 심사) — Sign in with Apple 의무([[email_account_key]] 카카오 비즈와 함께)
+  - Google Play 개발자 등록 (즉시)
+  - 카카오 비즈 앱 전환 신청 (사업자 등록증 필요)
+- P3 코드/DB 작업 진입(외부 대기 시간 활용):
+  - prod Supabase 프로젝트 분리 (빈 프로젝트 + 0001~0060 일괄 + 풀/시간표 시드)
+  - 클라이언트 env 분기 (EAS profile별 URL/key)
+  - 0061 RLS strict 마이그레이션 작성 (prod 적용용 — dev는 mock 호환 위해 보수적 유지)
+  - 풀 사진 prod Storage 재업로드
+  - mock 데이터 prod 가드 (seedMockProfilesOnce + useOther* fallback)
+- Apple Sign-In 코드 구현 보류 → Apple Developer 가입 통과 후
+
 ---
 
 ## 단계 요약 (현 위치)
 
-- **P1 (목업·UX) — 거의 완료.** 제품 정의·정책·디자인·약관·기본 데이터까지 결판. 남은 건 폴리시·검수·설정 알림 토글(별도).
-- **P2 (백엔드 SSOT) — 최대 물량.** device-local→서버(프로필·친구·일정), 메시지 엔진(크론·FCM/APNS·팬아웃), 0044 약관 DB, 계정 통합. *주로 P1 결정의 실행.*
-- **P3 (하드닝·출시).** 아바타 RLS owner 재하드닝, prod Supabase 분리, 사업자등록·Kakao 비즈앱, 약관 법률자문, 스토어 심사.
+- **P1 (목업·UX) — ✅ 완료** (2026-05-20, tag `phase1-complete`). 제품 정의·정책·디자인·약관·기본 데이터 결판.
+- **P2 (백엔드 SSOT) — ✅ 완료** (2026-05-20, tag `phase2-complete`). 13배치 + 마이그 0047/0048/0049/0059/0060 + 회귀 정정 2건. profiles/friends/blocks/user_schedules/notifications/auth_uid binding/RLS 보수적 하드닝.
+- **P3 (하드닝·출시) — 진행 중** (2026-05-21~). prod Supabase 분리 + RLS strict + Apple Sign-In + 사업자등록·Kakao 비즈앱 전환 + EAS production + 스토어 심사. 외부 시간(사업자/심사) 1-2개월 예상, 코드는 1주 안.
 
-*무게중심: (P1 = 이데이션+결정+목업) > P2(구현량) > P3(하드닝·출시). P1은 사람(크리스)이 달린 시간, P2/P3는 실행이라 도구(Claude Code)가 더 달림.*
+*무게중심: 코드 비중 P3 < P2 < P1. P3는 외부 의존(사업자 등록·스토어 심사)이 critical path.*
