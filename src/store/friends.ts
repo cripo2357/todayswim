@@ -28,7 +28,6 @@ function myProfileId(): string | undefined {
 
 export interface FriendRequest {
   id: string; // 요청자 계정 id
-  name: string;
   avatar: MockAccount['avatar'];
   nickname: string;
   status: string;
@@ -46,7 +45,6 @@ export type FriendRelation =
 const SEED_REQUESTS: FriendRequest[] = MOCK_NON_FRIENDS.slice(0, 2).map(
   (a, i) => ({
     id: a.id,
-    name: a.name,
     avatar: a.avatar,
     nickname: a.nickname,
     status: a.status,
@@ -89,7 +87,6 @@ export const useFriends = create<FriendsState>((set) => ({
       const friend: MockAccount =
         acc ?? {
           id: req.id,
-          name: req.name,
           nickname: req.nickname,
           status: req.status,
           code: '',

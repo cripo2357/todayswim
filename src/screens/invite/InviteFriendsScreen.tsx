@@ -89,12 +89,12 @@ export function InviteFriendsScreen() {
     () =>
       friends
         .filter((f) => !excludedIds.has(f.id))
-        .sort((a, b) => a.name.localeCompare(b.name, 'ko')),
+        .sort((a, b) => a.nickname.localeCompare(b.nickname, 'ko')),
     [friends, excludedIds],
   );
   const q = query.trim().toLowerCase();
   const filtered = q
-    ? sorted.filter((f) => f.name.toLowerCase().includes(q))
+    ? sorted.filter((f) => f.nickname.toLowerCase().includes(q))
     : sorted;
   const selectedIds = new Set(selected.map((f) => f.id));
 
@@ -113,7 +113,7 @@ export function InviteFriendsScreen() {
     void dispatchMessage(
       'invite_sent',
       {
-        name: selected.length === 1 ? selected[0].name : undefined,
+        name: selected.length === 1 ? selected[0].nickname : undefined,
         count: selected.length,
         pool: poolName,
         when: formatScheduleLine(date, start),
@@ -196,7 +196,7 @@ export function InviteFriendsScreen() {
                 <View key={f.id} style={styles.selectedRow}>
                   <Avatar f={f} />
                   <Text style={styles.name} numberOfLines={1}>
-                    {f.name}
+                    {f.nickname}
                   </Text>
                   <Text style={styles.sub} numberOfLines={1}>
                     {f.status}
@@ -209,7 +209,7 @@ export function InviteFriendsScreen() {
                       pressed && { opacity: 0.7 },
                     ]}
                     accessibilityRole="button"
-                    accessibilityLabel={`${f.name} 삭제`}
+                    accessibilityLabel={`${f.nickname} 삭제`}
                   >
                     <Text style={styles.removeLabel}>삭제</Text>
                   </Pressable>
@@ -300,7 +300,7 @@ export function InviteFriendsScreen() {
                       </View>
                       <Avatar f={f} />
                       <Text style={styles.name} numberOfLines={1}>
-                        {f.name}
+                        {f.nickname}
                       </Text>
                       <Text style={styles.sub} numberOfLines={1}>
                         {f.status}

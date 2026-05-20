@@ -25,7 +25,6 @@ const STROKE_POOL = ['자유형', '평영', '배영', '접영'];
 
 export interface OtherProfile {
   id: string;
-  name: string;
   nickname: string;
   bio: string; // 한 줄 자기소개(status 재사용)
   avatar: MockAccount['avatar'];
@@ -91,7 +90,6 @@ export function getOtherProfile(userId: string): OtherProfile | null {
 
   return {
     id: acc.id,
-    name: acc.name,
     nickname: acc.nickname,
     bio: acc.status,
     avatar: acc.avatar,

@@ -57,7 +57,7 @@ function SelectedUserRow({ user }: { user: FriendSearchUser }) {
         borderWidth={1}
       />
       <Text style={styles.selName} numberOfLines={1}>
-        {user.name}
+        {user.nickname}
       </Text>
       <Text style={styles.selStatus} numberOfLines={1}>
         {user.status}
@@ -135,7 +135,7 @@ export function AddFriendSheet({
         { senderUserId: my.id },
       );
     }
-    onSent(picked.name);
+    onSent(picked.nickname);
   };
 
   return (
@@ -265,7 +265,7 @@ export function AddFriendSheet({
                             borderWidth={1}
                           />
                           <Text style={styles.itemName} numberOfLines={1}>
-                            {u.name}
+                            {u.nickname}
                           </Text>
                         </View>
                         <Text style={styles.itemSub} numberOfLines={1}>

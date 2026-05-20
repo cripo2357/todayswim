@@ -40,13 +40,9 @@ export function useFriendList(): FriendListResult {
   // 정렬·필터는 friends/검색어 변화 시에만 (매 렌더 재정렬 방지).
   const sorted = React.useMemo<MockAccount[]>(() => {
     const base = q
-      ? friends.filter(
-          (f) =>
-            f.nickname.toLowerCase().includes(q) ||
-            f.name.toLowerCase().includes(q),
-        )
+      ? friends.filter((f) => f.nickname.toLowerCase().includes(q))
       : friends;
-    return [...base].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+    return [...base].sort((a, b) => a.nickname.localeCompare(b.nickname, 'ko'));
   }, [friends, q]);
 
   const items = searching ? sorted : sorted.slice(0, visible);

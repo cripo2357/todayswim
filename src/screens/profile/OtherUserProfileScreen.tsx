@@ -135,7 +135,7 @@ export function OtherUserProfileScreen() {
       // P2: friend_request_accepted 양측 적재. recipients='both'지만 본문의
       // {name}이 양측에서 다르므로(나는 상대닉 / 상대는 내닉) 명시적 두 번 호출.
       const my = useProfile.getState().profile;
-      const otherName = profile?.name;
+      const otherName = profile?.nickname;
       if (otherName) {
         void dispatchMessage('friend_request_accepted', { name: otherName });
       }
@@ -202,7 +202,7 @@ export function OtherUserProfileScreen() {
               {/* Figma 172:10641 — gap 4 (이름 + 한 줄 소개) */}
               <View style={styles.nameGroup}>
                 <Text style={styles.name} numberOfLines={1}>
-                  {profile.name}
+                  {profile.nickname}
                 </Text>
                 <Text style={styles.bio} numberOfLines={2}>
                   {profile.bio}
@@ -358,7 +358,7 @@ export function OtherUserProfileScreen() {
 
       <ConfirmFriendActionModal
         visible={modal === 'block'}
-        title={`${profile.name} 영구 차단`}
+        title={`${profile.nickname} 영구 차단`}
         descLines={[
           '차단하면 서로에게 모든 정보가 비공개되며,',
           '영구 차단이므로 차단 해제 불가합니다.',
@@ -377,7 +377,7 @@ export function OtherUserProfileScreen() {
       />
       <ConfirmFriendActionModal
         visible={modal === 'delete'}
-        title={`${profile.name} 친구 삭제`}
+        title={`${profile.nickname} 친구 삭제`}
         descLines={[
           '친구를 삭제하겠습니까?',
           '나중에 다시 친구 추가는 가능합니다.',
@@ -395,7 +395,7 @@ export function OtherUserProfileScreen() {
       />
       <FriendRequestSentModal
         visible={sentOpen}
-        name={profile.name}
+        name={profile.nickname}
         onClose={() => {
           setSentOpen(false);
           close();
@@ -403,7 +403,7 @@ export function OtherUserProfileScreen() {
       />
       <CancelFriendRequestModal
         visible={cancelOpen}
-        name={profile.name}
+        name={profile.nickname}
         onCancel={() => {
           fStore.cancelRequest(userId);
           setCancelOpen(false);

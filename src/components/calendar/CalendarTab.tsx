@@ -263,7 +263,7 @@ export function CalendarTab() {
                                 })
                               }
                               accessibilityRole="button"
-                              accessibilityLabel={`${o.name} 프로필 보기`}
+                              accessibilityLabel={`${o.nickname} 프로필 보기`}
                             >
                               <View
                                 style={[
@@ -277,7 +277,7 @@ export function CalendarTab() {
                                 )}
                               </View>
                               <Text style={styles.ptName} numberOfLines={1}>
-                                {o.name}
+                                {o.nickname}
                               </Text>
                             </Pressable>
                           ))}
@@ -332,7 +332,7 @@ export function CalendarTab() {
                                 })
                               }
                               accessibilityRole="button"
-                              accessibilityLabel={`${o.name} 프로필 보기`}
+                              accessibilityLabel={`${o.nickname} 프로필 보기`}
                             >
                               <View
                                 style={[
@@ -346,7 +346,7 @@ export function CalendarTab() {
                                 )}
                               </View>
                               <Text style={styles.ptName} numberOfLines={1}>
-                                {o.name}
+                                {o.nickname}
                               </Text>
                             </Pressable>
                           ))}

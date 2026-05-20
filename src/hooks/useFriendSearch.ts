@@ -28,7 +28,6 @@ function rowToUser(row: ProfileSearchRow): FriendSearchUser {
   const avatar = (a.startsWith('avatar-') ? a : 'avatar-male-1') as AvatarId;
   return {
     id: row.id,
-    name: row.nickname,
     nickname: row.nickname,
     status: row.bio ?? '',
     avatar,

@@ -38,7 +38,7 @@ function rowToOtherSchedule(
   return {
     id: row.id,
     userId: row.profile_id,
-    name: owner?.nickname ?? '',
+    nickname: owner?.nickname ?? '',
     avatar,
     isFriend: friendIds.has(row.profile_id),
     poolId: row.pool_id ?? '',

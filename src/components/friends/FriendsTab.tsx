@@ -50,7 +50,7 @@ interface FriendSlot {
   date: string;
   start: string;
   end: string;
-  participants: { userId: string; name: string; avatar: AvatarId }[];
+  participants: { userId: string; nickname: string; avatar: AvatarId }[];
 }
 
 export function FriendsTab() {
@@ -113,10 +113,10 @@ export function FriendsTab() {
         };
         m.set(key, g);
       }
-      if (!g.participants.some((p) => p.name === o.name)) {
+      if (!g.participants.some((p) => p.nickname === o.nickname)) {
         g.participants.push({
           userId: o.userId,
-          name: o.name,
+          nickname: o.nickname,
           avatar: o.avatar,
         });
       }
@@ -197,22 +197,18 @@ export function FriendsTab() {
   };
 
   const draftQ = draft.trim().toLowerCase();
-  // 드롭다운 친구 목록도 항상 이름 가나다순 (목록과 동일 기준).
+  // 드롭다운 친구 목록도 항상 닉네임 가나다순 (목록과 동일 기준).
   const dropdownFriends = React.useMemo(() => {
     const base = draftQ
-      ? friends.filter(
-          (f) =>
-            f.nickname.toLowerCase().includes(draftQ) ||
-            f.name.toLowerCase().includes(draftQ),
-        )
+      ? friends.filter((f) => f.nickname.toLowerCase().includes(draftQ))
       : friends;
-    return [...base].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+    return [...base].sort((a, b) => a.nickname.localeCompare(b.nickname, 'ko'));
   }, [draftQ, friends]);
   // 친구 목록 정렬·필터·페이징은 useFriendList(pagedFriends)가 담당.
 
   const confirmReject = () => {
     if (!rejectTarget) return;
-    void dispatchMessage('friend_request_rejected', { name: rejectTarget.name });
+    void dispatchMessage('friend_request_rejected', { name: rejectTarget.nickname });
     reject(rejectTarget.id);
     setRejectTarget(null);
   };
@@ -242,7 +238,7 @@ export function FriendsTab() {
                       })
                     }
                     accessibilityRole="button"
-                    accessibilityLabel={`${req.name} 프로필 보기`}
+                    accessibilityLabel={`${req.nickname} 프로필 보기`}
                   >
                     <Avatar size={40} avatarId={req.avatar} />
                   </Pressable>
@@ -250,13 +246,13 @@ export function FriendsTab() {
                     <View style={styles.cardHeadGroup}>
                       <View style={styles.cardHead}>
                         <Text style={styles.notifTitle} numberOfLines={1}>
-                          {req.name}
+                          {req.nickname}
                         </Text>
                         <Text style={styles.time}>{req.time}</Text>
                       </View>
                       <View style={styles.lines}>
                         <Text style={styles.line}>
-                          {req.name}님이 친구가 되고 싶어합니다.
+                          {req.nickname}님이 친구가 되고 싶어합니다.
                         </Text>
                         <Text style={styles.line}>
                           서로 친구로 추가하겠습니까?
@@ -268,7 +264,7 @@ export function FriendsTab() {
                         style={styles.badgeOutline}
                         onPress={() => setRejectTarget(req)}
                         accessibilityRole="button"
-                        accessibilityLabel={`${req.name} 친구 요청 거절`}
+                        accessibilityLabel={`${req.nickname} 친구 요청 거절`}
                       >
                         <XCircle size={16} color="#4B5563" strokeWidth={2} />
                         <Text style={styles.badgeOutlineLabel}>거절</Text>
@@ -280,7 +276,7 @@ export function FriendsTab() {
                           // P2: friend_request_accepted 양측 적재. 본문의 {name}이
                           // 양측에서 달라(나=상대닉, 상대=내닉) 명시적 두 번 호출.
                           const my = useProfile.getState().profile;
-                          void dispatchMessage('friend_request_accepted', { name: req.name });
+                          void dispatchMessage('friend_request_accepted', { name: req.nickname });
                           if (my?.name) {
                             void dispatchMessageTo(
                               req.id,
@@ -291,7 +287,7 @@ export function FriendsTab() {
                           }
                         }}
                         accessibilityRole="button"
-                        accessibilityLabel={`${req.name} 친구로 등록`}
+                        accessibilityLabel={`${req.nickname} 친구로 등록`}
                       >
                         <IconUserDouble width={16} height={16} />
                         <Text style={styles.badgeOutlineLabel}>친구로 등록</Text>
@@ -380,7 +376,7 @@ export function FriendsTab() {
                           })
                         }
                         accessibilityRole="button"
-                        accessibilityLabel={`${p.name} 프로필 보기`}
+                        accessibilityLabel={`${p.nickname} 프로필 보기`}
                       >
                         <View style={styles.miniAvatar}>
                           {/* SVG 벡터 트리 다수 마운트 회피 — PNG 티어
@@ -391,7 +387,7 @@ export function FriendsTab() {
                           />
                         </View>
                         <Text style={styles.miniName} numberOfLines={1}>
-                          {p.name}
+                          {p.nickname}
                         </Text>
                       </Pressable>
                     ))}
@@ -505,14 +501,14 @@ export function FriendsTab() {
                     key={f.id}
                     style={styles.searchItem}
                     onPress={() => {
-                      setQuery(f.name);
-                      setDraft(f.name);
+                      setQuery(f.nickname);
+                      setDraft(f.nickname);
                       setSearchOpen(false);
                     }}
                   >
                     <Avatar size={32} avatarId={f.avatar} />
                     <Text style={styles.searchItemName} numberOfLines={1}>
-                      {f.name}
+                      {f.nickname}
                     </Text>
                     <Text style={styles.searchItemSub} numberOfLines={1}>
                       {f.status}
@@ -530,7 +526,7 @@ export function FriendsTab() {
 
       <RejectFriendModal
         visible={rejectTarget !== null}
-        name={rejectTarget?.name ?? ''}
+        name={rejectTarget?.nickname ?? ''}
         onReject={confirmReject}
         onLater={() => setRejectTarget(null)}
       />
@@ -579,13 +575,13 @@ const FriendRow = React.memo(function FriendRow({
       <Pressable
         onPress={() => onOpen(friend.id)}
         accessibilityRole="button"
-        accessibilityLabel={`${friend.name} 프로필 보기`}
+        accessibilityLabel={`${friend.nickname} 프로필 보기`}
       >
         <Avatar size={48} avatarId={friend.avatar} />
       </Pressable>
       <View style={styles.friendInfo}>
         <Text style={styles.friendName} numberOfLines={1}>
-          {friend.name}
+          {friend.nickname}
         </Text>
         <View style={styles.friendStatusRow}>
           <IconChatSmile width={20} height={20} />
@@ -598,7 +594,7 @@ const FriendRow = React.memo(function FriendRow({
         style={styles.profileBtn}
         onPress={() => onOpen(friend.id)}
         accessibilityRole="button"
-        accessibilityLabel={`${friend.name} 프로필`}
+        accessibilityLabel={`${friend.nickname} 프로필`}
       >
         <Text style={styles.profileBtnLabel}>프로필</Text>
         <IconIdBadgeWhite width={16} height={16} />

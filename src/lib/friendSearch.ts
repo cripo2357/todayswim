@@ -14,7 +14,6 @@ export { accountCode, sanitizeCode } from '@/lib/friendCode';
 
 export interface FriendSearchUser {
   id: string;
-  name: string;
   nickname: string;
   status: string;
   avatar: AvatarId;
@@ -38,7 +37,6 @@ function eligible(a: MockAccount, o: FriendSearchOpts): boolean {
 function toUser(a: MockAccount): FriendSearchUser {
   return {
     id: a.id,
-    name: a.name,
     nickname: a.nickname,
     status: a.status,
     avatar: a.avatar,
@@ -47,7 +45,7 @@ function toUser(a: MockAccount): FriendSearchUser {
   };
 }
 
-/** 닉네임/이름 부분일치(대소문자 무시). 정확>접두>포함 순, 최대 20. */
+/** 닉네임 부분일치(대소문자 무시). 정확>접두>포함 순, 최대 20. */
 export function searchByNickname(
   query: string,
   o: FriendSearchOpts,
@@ -58,14 +56,13 @@ export function searchByNickname(
   for (const a of ALL) {
     if (!eligible(a, o)) continue;
     const nk = a.nickname.toLowerCase();
-    const nm = a.name.toLowerCase();
     let rank = -1;
-    if (nk === q || nm === q) rank = 0;
-    else if (nk.startsWith(q) || nm.startsWith(q)) rank = 1;
-    else if (nk.includes(q) || nm.includes(q)) rank = 2;
+    if (nk === q) rank = 0;
+    else if (nk.startsWith(q)) rank = 1;
+    else if (nk.includes(q)) rank = 2;
     if (rank >= 0) out.push({ u: toUser(a), rank });
   }
-  out.sort((x, y) => x.rank - y.rank || x.u.name.localeCompare(y.u.name));
+  out.sort((x, y) => x.rank - y.rank || x.u.nickname.localeCompare(y.u.nickname));
   return out.slice(0, 20).map((x) => x.u);
 }
 
