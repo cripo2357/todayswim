@@ -139,7 +139,7 @@ export function NotificationSettingsScreen() {
         <Section title="광고성 정보">
           <ToggleRow
             icon={<IconGift width={24} height={24} />}
-            label="마케팅·이벤트·제휴"
+            label="이벤트·마케팅 알림"
             sublabel={
               marketing && consentAt
                 ? `동의일: ${formatDateTime(consentAt)}`
