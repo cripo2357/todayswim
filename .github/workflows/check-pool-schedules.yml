@@ -1,0 +1,46 @@
+name: 풀 시간표 자동 검증
+
+# pools.schedule_source_url 채워진 풀의 공식 페이지를 fetch → Claude로 by_day 추출 →
+# DB와 diff → 변경/오류 있으면 Issue 자동 생성 (cripo2357@gmail.com 메일 알림).
+#
+# 수동 실행은 Actions 탭에서 "Run workflow".
+
+on:
+  schedule:
+    # 매월 1·15일 00:00 UTC = KST 09:00
+    - cron: '0 0 1,15 * *'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # native deps(sharp 등) 빌드 회피 — 검증 스크립트는 순수 JS 의존성만 필요.
+      - name: Install verification deps
+        run: npm install --no-save --ignore-scripts @supabase/supabase-js@^2.45.0 @anthropic-ai/sdk@^0.32.0
+
+      - name: Run verification
+        id: check
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node scripts/check-pool-schedules.mjs
+
+      - name: Create Issue if changes or errors detected
+        if: steps.check.outputs.has_issues == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "풀 시간표 검증 결과 ($(date -u -d '+9 hours' +%Y-%m-%d))" \
+            --body-file issue-body.md \
+            --label schedule-check
