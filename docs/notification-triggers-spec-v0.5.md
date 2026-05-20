@@ -12,7 +12,7 @@ title: Pool's Day 알림 트리거 상세 스펙
 **v0.6 변경 사항**
 
 - 모든 메시지에 제목 필수 정책 — 8개 트리거의 `제목: (없음)`을 구체 제목으로 신설(friend_request_rejected / invite_sent 1-A·1-B / new_feature_announced / pool_submission_approved·rejected / schedule_submission_approved·rejected).
-- 기존 제목 3건 다듬기 — friend_schedule_overlap "같은 시간 수영"→"같은 수영 일정", schedule_reminder_prev_day "내일 수영 일정 있어요."→"내일 수영 일정", schedule_reminder_1h "1시간 후 수영 시작이에요."→"곧 수영 일정" (모두 명사형·라벨형, 마침표 제거).
+- 기존 제목 4건 다듬기 — friend_request_accepted "새 친구"→"새로운 친구", friend_schedule_overlap "같은 시간 수영"→"같은 수영 일정", schedule_reminder_prev_day "내일 수영 일정 있어요."→"내일 수영 일정", schedule_reminder_1h "1시간 후 수영 시작이에요."→"곧 수영 일정" (모두 명사형·라벨형, 마침표 제거).
 
 **v0.5 변경 사항**
 
@@ -182,7 +182,7 @@ P3: 부가 알림 (기본 ON, 사용자가 자주 끔)
 이미지:     상대방 프로필 사진 (상대 행동)
 액션 패턴:  A (0버튼, 탭 시 친구 프로필 이동)
 
-제목:       새 친구
+제목:       새로운 친구
 본문:       {nickname}님과 친구가 됐어요.
 푸시:       {nickname}님과 친구가 됐어요.
 

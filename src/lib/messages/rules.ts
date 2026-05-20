@@ -153,7 +153,7 @@ export const RULES: Record<MessageKind, Rule> = {
   friend_request_accepted: {
     recipients: 'both',
     build: (p) => ({
-      title: '새 친구',
+      title: '새로운 친구',
       body: [`${nick(p)}님과 친구가 됐어요.`],
     }),
   },
