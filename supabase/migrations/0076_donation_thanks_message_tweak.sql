@@ -32,7 +32,7 @@ begin
 
   v_body := jsonb_build_array(
     coalesce(v_nickname, '회원') || '님의 후원이 도착했어요.',
-    '운영에 소중히 쓸게요.'
+    'Pool''s day 운영에 소중히 쓸게요. 고맙습니다.'
   );
 
   insert into public.notifications (user_code, kind, title, body, params, actions, related)
@@ -72,7 +72,7 @@ begin
 
   v_body := jsonb_build_array(
     coalesce(v_nickname, '회원') || '님의 후원이 도착했어요.',
-    '운영에 소중히 쓸게요.'
+    'Pool''s day 운영에 소중히 쓸게요. 고맙습니다.'
   );
 
   insert into public.notifications (user_code, kind, title, body, params, actions, related)
@@ -91,6 +91,11 @@ end;
 $$;
 
 -- 기존 row 일괄 정정 — body[1] (2번째 줄) 을 새 문구로 교체.
+-- to_jsonb 사용 — 본문에 작은따옴표(') 가 들어가 있어도 SQL 이스케이프만으로 안전.
 update public.notifications
-set body = jsonb_set(body, '{1}', '"운영에 소중히 쓸게요."'::jsonb)
+set body = jsonb_set(
+  body,
+  '{1}',
+  to_jsonb('Pool''s day 운영에 소중히 쓸게요. 고맙습니다.'::text)
+)
 where kind = 'donation_thanks';

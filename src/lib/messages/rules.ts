@@ -277,7 +277,7 @@ export const RULES: Record<MessageKind, Rule> = {
       title: '후원 감사 인사',
       body: [
         `${nick(p)}님의 후원이 도착했어요.`,
-        '운영에 소중히 쓸게요.',
+        "Pool's day 운영에 소중히 쓸게요. 고맙습니다.",
       ],
       actions: ['응원글 보기'],
     }),
