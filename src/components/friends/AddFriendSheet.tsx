@@ -34,11 +34,10 @@ import { useFriends } from '@/store/friends';
 import { useProfile } from '@/store/profile';
 import { dispatchMessageTo } from '@/lib/messages/dispatch';
 import {
-  searchByNickname,
-  findByCode,
   sanitizeCode,
   type FriendSearchUser,
 } from '@/lib/friendSearch';
+import { useNicknameSearch, useCodeSearch } from '@/hooks/useFriendSearch';
 
 // 시트를 길게 고정 — 검색 트리거/드롭다운이 화면 위쪽에 와서 키보드(아래
 // ~40%)에 안 가리도록(사용자 확정: 시트 전체를 올리지 말고 길게).
@@ -104,16 +103,12 @@ export function AddFriendSheet({
     }
   }, [visible]);
 
-  const results = React.useMemo(
-    () => searchByNickname(nq, opts),
-    [nq, opts],
-  );
+  // P2: mock 즉시 결과 + 서버 profiles 검색 합쳐 dedupe. opts(친구/차단) 동일 필터.
+  const results = useNicknameSearch(nq, opts);
 
   // ID는 6자리 정확 일치 자동 조회(타이핑 중 실시간). 부분검색 아님.
-  const idFound = React.useMemo(
-    () => (code.length === 6 ? findByCode(code, opts) : null),
-    [code, opts],
-  );
+  // mock 즉시 + 서버 폴백(둘 중 누구든 찾으면).
+  const idFound = useCodeSearch(code, opts);
   const idMiss = code.length === 6 && !idFound;
 
   // 드롭다운 닫힘 = 검색칸 focus out(키보드/커서 해제). 선택/백드롭/

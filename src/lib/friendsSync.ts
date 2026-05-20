@@ -181,3 +181,52 @@ export async function tryFetchBlockedIds(meId: string): Promise<string[]> {
     return [];
   }
 }
+
+// ─── 친구 검색 (P2 진입 후 — mock 검색과 결합 사용) ───
+//   nickname 부분일치(ILIKE) + photo_uri/nickname 노출용. profiles_nickname_idx
+//   인덱스(0047) 활용. 결과 형식은 FriendSearchUser 와 호환되도록 호출부에서 매핑.
+
+export interface ProfileSearchRow {
+  id: string;
+  nickname: string;
+  bio: string | null;
+  photo_uri: string | null;
+}
+
+/** 닉네임 부분일치(대소문자 무시) — Supabase ilike 와일드카드. 최대 20행. */
+export async function trySearchProfilesByNickname(
+  query: string,
+): Promise<ProfileSearchRow[]> {
+  const q = query.trim();
+  if (!q) return [];
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, nickname, bio, photo_uri')
+      .ilike('nickname', `%${q}%`)
+      .limit(20);
+    if (error || !data) return [];
+    return data as ProfileSearchRow[];
+  } catch {
+    return [];
+  }
+}
+
+/** 6자리 친구코드 정확 일치(대문자). 없으면 null. */
+export async function tryFindProfileByCode(
+  code: string,
+): Promise<ProfileSearchRow | null> {
+  const c = code.trim().toUpperCase();
+  if (c.length !== 6) return null;
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, nickname, bio, photo_uri')
+      .eq('id', c)
+      .maybeSingle();
+    if (error || !data) return null;
+    return data as ProfileSearchRow;
+  } catch {
+    return null;
+  }
+}
