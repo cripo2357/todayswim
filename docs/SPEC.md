@@ -132,13 +132,16 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 - **계좌 안내**: app_status(0068)의 donation_bank/account/holder를 운영자가 Dashboard에서 설정. 셋 다 있어야 카드 노출, 비어있으면 "준비 중" 표시. 계좌 복사 = expo-clipboard 동적 import.
 - **흐름** (사용자 직접 작성 X — 운영자가 입금 확인 시 자동 등록):
   1. 사용자가 카카오뱅크로 송금(입금자명에 닉네임 입력 안내)
-  2. 운영자가 입금 확인 → `select id from profiles where nickname='입금자명';` 매칭
-  3. `insert into donation_payments (profile_id, depositor_name, amount, received_at) ...`
-  4. **PostgreSQL 트리거(0072)가 자동으로:**
-     - `donations` 행 INSERT (기본 문구 `Pool's day를 응원합니다.`)
-     - `notifications` 'donation_thanks' INSERT (본인 알림함)
-  5. 사용자는 본인 카드의 **문구 수정 / 후원 비공개** 액션으로 message UPDATE 또는 hidden 토글
-  - 매칭 실패 시 `profile_id` NULL INSERT → 운영자 추후 매칭 UPDATE 시 별도 트리거가 발화
+  2. 운영자가 Dashboard에서 **닉네임만 INSERT** (id 조회 불필요):
+     ```sql
+     insert into donation_payments (depositor_name, amount, received_at)
+     values ('입금자명', 10000, now());
+     ```
+  3. **PostgreSQL 트리거가 자동으로:**
+     - BEFORE INSERT(0073 `match_donor_profile_id`): `depositor_name → profiles.nickname` 매칭 → `profile_id` 자동 채움
+     - AFTER INSERT(0072 `send_donation_thanks`): `profile_id` 확정되면 `donations` row + `notifications` 'donation_thanks' 적재
+  4. 사용자는 본인 카드의 **문구 수정 / 후원 비공개** 액션으로 message UPDATE 또는 hidden 토글
+  - 매칭 실패(닉네임 오타·탈퇴) 시 `profile_id` NULL로 남음 → 운영자가 확인 후 수동 UPDATE → `send_donation_thanks_on_match` 트리거가 시점에 발화
 - **데이터 분리**:
   - `donations` (0069): 응원 메시지(공개). RLS write 본인 검증.
   - `donation_payments` (0070): 입금 기록(비공개). service_role 전용.
