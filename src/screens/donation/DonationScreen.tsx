@@ -29,7 +29,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   type KeyboardEvent,
-  type LayoutChangeEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -102,40 +101,23 @@ export function DonationScreen() {
     };
   }, []);
 
-  // 편집 카드 위치/높이 + ScrollView 높이 캡처 → 키보드 표시 시 정확한
-  // scrollTo 계산용. 카드의 마지막 액션 배지("작성 완료") 가 키보드 바로
-  // 위에 위치하도록 한다.
+  // 키보드 표시 시 편집 카드를 키보드 위로 끌어올림 — scrollToEnd 전략.
+  //
+  // 본인 카드(mine) 는 후원자 목록의 마지막에 위치라 scrollToEnd 가 곧
+  // "편집 카드 bottom 을 viewport 끝(=키보드 top)에 맞춤" 과 동일.
+  // 카드 자체 padding 16 덕분에 안의 "작성 완료" 배지는 키보드 위 16px
+  // 에 자연스럽게 위치. paddingBottom 별도 +16 추가 안 함(베이스는 Figma
+  // 그대로 유지).
   const scrollRef = React.useRef<ScrollView>(null);
-  const selfCardYRef = React.useRef(0);
-  const selfCardHRef = React.useRef(0);
-  const scrollViewHRef = React.useRef(0);
-
-  const onSelfCardLayout = React.useCallback((e: LayoutChangeEvent) => {
-    selfCardYRef.current = e.nativeEvent.layout.y;
-    selfCardHRef.current = e.nativeEvent.layout.height;
-  }, []);
-  const onScrollViewLayout = React.useCallback((e: LayoutChangeEvent) => {
-    scrollViewHRef.current = e.nativeEvent.layout.height;
-  }, []);
 
   React.useEffect(() => {
     if (kbHeight === 0 || !editingId) return;
-    // 다음 프레임 — KAV behavior='height' 가 ScrollView 를 shrink 한
-    // onLayout 이 반영된 뒤 계산.
-    const id = requestAnimationFrame(() => {
-      const sv = scrollRef.current;
-      if (!sv || !selfCardHRef.current || !scrollViewHRef.current) return;
-      // iOS behavior='padding' = ScrollView 높이 그대로 → kbHeight 만큼 가려짐.
-      // Android behavior='height' = ScrollView 가 이미 shrink 된 상태.
-      const visibleH =
-        scrollViewHRef.current - (Platform.OS === 'ios' ? kbHeight : 0);
-      const cardBottom = selfCardYRef.current + selfCardHRef.current;
-      // margin — 카드 ~ 키보드 사이 여백.
-      const MARGIN = 16;
-      const target = Math.max(0, cardBottom - visibleH + MARGIN);
-      sv.scrollTo({ y: target, animated: true });
-    });
-    return () => cancelAnimationFrame(id);
+    // 약간 대기 — autoFocus 텍스트영역 layout 이 반영되어 content size 가
+    // 확장된 뒤 scrollToEnd.
+    const t = setTimeout(() => {
+      scrollRef.current?.scrollToEnd({ animated: true });
+    }, 32);
+    return () => clearTimeout(t);
   }, [kbHeight, editingId]);
 
   // 계좌 클립보드 복사 — expo-clipboard 동적 import.
@@ -189,7 +171,6 @@ export function DonationScreen() {
       >
       <ScrollView
         ref={scrollRef}
-        onLayout={onScrollViewLayout}
         // 핵심: ScrollView 자체에 flex:1 — KAV 안에서 KAV의 줄어든 영역에 맞춰
         // ScrollView 도 줄어들어야 내부 자동 스크롤이 동작. style 없으면 ScrollView
         // 가 contents 길이로 무한 확장돼 KAV가 줄어들어도 영향 안 받음.
@@ -197,8 +178,8 @@ export function DonationScreen() {
         style={styles.flex}
         contentContainerStyle={[
           styles.scroll,
-          // 키보드 올라올 때 가짜 여백 — scrollTo 가 본인 카드 bottom 까지
-          // 충분히 끌어올릴 수 있는 contents 길이 확보용.
+          // 키보드 올라올 때만 scroll 런웨이 확보 (paddingBottom override).
+          // 닫혀있을 땐 Figma 기본값(16, scroll.paddingBottom) 그대로.
           kbHeight > 0 ? { paddingBottom: kbHeight } : null,
         ]}
         showsVerticalScrollIndicator={false}
@@ -286,10 +267,6 @@ export function DonationScreen() {
                 setEditingId(null);
               }}
               onHide={() => setHideId(item.id)}
-              // 편집 중인 본인 카드만 위치 측정 — scrollTo 계산 입력값.
-              onLayoutWhenEditing={
-                editingId === item.id ? onSelfCardLayout : undefined
-              }
             />
           ))}
           {items.length === 0 ? (
@@ -320,7 +297,6 @@ function DonationItemCard({
   onCancelEdit,
   onSaveEdit,
   onHide,
-  onLayoutWhenEditing,
 }: {
   item: DonationItem;
   editing: boolean;
@@ -328,7 +304,6 @@ function DonationItemCard({
   onCancelEdit: () => void;
   onSaveEdit: (msg: string) => Promise<void>;
   onHide: () => void;
-  onLayoutWhenEditing?: (e: LayoutChangeEvent) => void;
 }) {
   const [draft, setDraft] = React.useState(item.message);
 
@@ -340,7 +315,7 @@ function DonationItemCard({
   const canSave = trimmed.length > 0 && trimmed.length <= MAX_LEN;
 
   return (
-    <View style={[styles.card, FIGMA_SHADOW_MD]} onLayout={onLayoutWhenEditing}>
+    <View style={[styles.card, FIGMA_SHADOW_MD]}>
       <View style={styles.avatarWrap}>
         <Avatar
           photoUri={item.avatar}
@@ -383,10 +358,19 @@ function DonationItemCard({
           )}
         </View>
 
-        {/* 액션 영역 — 본인 카드만. editing=true면 "작성 완료" CTA로 단일 액션 */}
+        {/* 액션 영역 — 본인 카드만. editing=true면 [취소][작성 완료] (Figma 246:5946) */}
         {item.mine ? (
           editing ? (
             <View style={styles.cardActions}>
+              <Pressable
+                style={styles.cancelBadge}
+                onPress={onCancelEdit}
+                accessibilityRole="button"
+                accessibilityLabel="문구 수정 취소"
+              >
+                <XCircle size={16} color="#4B5563" strokeWidth={2} />
+                <Text style={styles.cancelBadgeLabel}>취소</Text>
+              </Pressable>
               <Pressable
                 style={styles.saveCta}
                 onPress={async () => {
@@ -399,15 +383,6 @@ function DonationItemCard({
               >
                 <Edit3 size={16} color="#FFFFFF" strokeWidth={2} />
                 <Text style={styles.saveCtaLabel}>작성 완료</Text>
-              </Pressable>
-              <Pressable
-                style={styles.cancelBadge}
-                onPress={onCancelEdit}
-                accessibilityRole="button"
-                accessibilityLabel="문구 수정 취소"
-              >
-                <XCircle size={16} color="#4B5563" strokeWidth={2} />
-                <Text style={styles.cancelBadgeLabel}>취소</Text>
               </Pressable>
             </View>
           ) : (
