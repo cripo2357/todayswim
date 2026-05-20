@@ -1,9 +1,10 @@
-// 후원 비공개 확인 모달 — Figma 239:3426.
+// 후원 비공개 확인 토스트 — Figma 239:3426.
 //
-// Figma 형식: 화면 중앙 카드 (alert toast 스타일)
+// 화면 하단 토스트 형식 (사용자 정정 2026-05-21 — 중앙 X / 하단 O):
 //  - bg white / border 1px pd-gray (#C8C8C8) / rounded 16 / padding 12 / gap 12
 //  - 좌측: 텍스트 영역 (제목 #1F2937 Bold 16 + 본문 #4B5563 Medium 14)
 //  - 우측: 노란 CTA "비공개" — pd-byellow / rounded 12 / padding 16×10
+//  - 화면 하단 + safe-area 인셋 + 좌우 16px 마진
 //
 // 동작: hidden=true 토글(실질적 삭제 효과 — 본인 포함 모든 화면에서 미노출,
 // DB 이력은 보존). UI 텍스트의 "삭제" 늬앙스는 사용자 인지와 일치.
@@ -16,6 +17,7 @@ import {
   Pressable,
   StyleSheet,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '@/styles/tokens';
 
 export function DonationHideModal({
@@ -27,14 +29,21 @@ export function DonationHideModal({
   onClose: () => void;
   onConfirm: () => void;
 }) {
+  const insets = useSafeAreaInsets();
   return (
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
+      animationType="slide"
       onRequestClose={onClose}
     >
-      <Pressable style={styles.backdrop} onPress={onClose}>
+      <Pressable
+        style={[
+          styles.backdrop,
+          { paddingBottom: 16 + insets.bottom },
+        ]}
+        onPress={onClose}
+      >
         <Pressable style={styles.card} onPress={() => undefined}>
           <View style={styles.body}>
             <Text style={styles.title}>후원 비공개</Text>
@@ -62,7 +71,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.32)',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     paddingHorizontal: 16,
   },
   card: {
