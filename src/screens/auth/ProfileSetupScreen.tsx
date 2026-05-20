@@ -13,6 +13,7 @@ import IconChevronDown from '@assets/icons/chevron-down.svg';
 import IconCake from '@assets/icons/cake.svg';
 
 import { useProfile, genProfileId, type Gender, type Stroke } from '@/store/profile';
+import { useAuth } from '@/store/auth';
 import {
   isNicknameTaken,
   claimNickname,
@@ -37,11 +38,14 @@ const EXP_MAX = 30;
 export function ProfileSetupScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const saveProfile = useProfile((s) => s.save);
+  const authUser = useAuth((s) => s.user);
 
-  // 닉네임은 사용자가 직접 입력 — 앱 닉네임은 in-app 식별자(2~6자, 영소문자/
-  // 한글/숫자만)라 소셜 표시명을 자동 채움해도 sanitize에서 거의 깎이고
-  // 정체성도 분리(memory nickname_policy). 사진 자동기본값은 다음 단계
-  // (ProfileImage)에서 처리.
+  // 닉네임 정책: in-app 식별자(2~6자, 영소문자/한글/숫자만, 사칭/욕설 X).
+  // 소셜 표시명(authUser.nickname)을 sanitize한 결과가 정책을 통과할 때만
+  // 자동 채움 — Korean 닉네임("정해린") / 짧은 영문("alice")처럼 그대로 맞는
+  // 경우만. "Joshua Smith"→"joshuasmith"(11자)·운영진 사칭 단어는 미채움
+  // (사용자 직접 입력). 채워진 값도 일반 onChangeName 경로 거쳐 중복·원격
+  // 차단어 검사가 동일하게 동작(memory nickname_policy).
   const [name, setName] = React.useState('');
   const [gender, setGender] = React.useState<Gender | null>(null);
   const [birthDate, setBirthDate] = React.useState(''); // YYYY-MM-DD
@@ -99,6 +103,23 @@ export function ProfileSetupScreen() {
       setNickStatus(taken ? 'taken' : 'ok');
     }, 500);
   };
+
+  // 소셜 닉네임 자동 채움 — 정책 통과 시 1회만. sanitize+lowercase 후
+  // 2~6자 & 사칭/욕설 X 통과해야 채움. 그 외엔 빈 칸 유지(직접 입력).
+  // onChangeName 경로로 흘려 중복·원격 차단어 검사도 동일하게 작동.
+  const prefilledRef = React.useRef(false);
+  React.useEffect(() => {
+    if (prefilledRef.current) return;
+    const raw = authUser?.nickname;
+    if (!raw) return;
+    const candidate = sanitizeNickname(raw.toLowerCase().trim());
+    if (candidate.length < 2 || candidate.length > 6) return;
+    if (nicknameBlockReason(candidate)) return;
+    prefilledRef.current = true;
+    onChangeName(candidate);
+    // onChangeName은 동일 컴포넌트 클로저 — deps에서 제외(매 렌더 재실행 방지).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authUser]);
 
   // 필수 — 닉네임(중복 아님) + 성별 + 생년월일.
   const canSubmit =
