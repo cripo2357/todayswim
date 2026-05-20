@@ -25,8 +25,10 @@ import {
   StyleSheet,
   Alert,
   TextInput,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
+  type KeyboardEvent,
   type LayoutChangeEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -76,22 +78,26 @@ export function DonationScreen() {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [hideId, setHideId] = React.useState<string | null>(null);
 
-  // 키보드 회피 = KAV(behavior padding/height) + 네이티브 auto-scroll 만.
-  // 가짜 여백(kbHeight 추가 padding) / 명시적 scrollToEnd 같은 workaround 는
-  // 폐기 — 베이스는 Figma p-16 그대로(2026-05-21 크리스 롤백 지시).
-
-  // 알림 '응원글 보기' 진입 시 본인 카드 위치로 자동 스크롤.
-  // 본인 카드는 dedupe 로 1장이라 정확히 그 카드로.
+  // ─────────────────────────────────────────────────────────────────────
+  // 좌표 인프라 — 두 용도 공유:
+  //   A) 알림 '응원글 보기' 진입 시 본인 카드 위치로 자동 스크롤
+  //   B) 인라인 편집 시 키보드가 카드 가리지 않게 카드 bottom 까지 스크롤
   //
-  // 좌표 계산: list 의 y(=ScrollView content 안에서의 위치) + mine 카드의
-  // y(=list 안에서의 위치) = mine 카드의 절대 y. 두 onLayout 이 다 들어왔을
-  // 때만 scroll 발화(once-only 가드).
+  // 좌표 계산: list 의 y(=ScrollView content 안에서의 위치)
+  //         + mine 카드의 y(=list 안에서의 위치)
+  //         = mine 카드의 절대 y (in scroll content).
+  // 카드 height (편집 시 textarea 로 커짐) 도 추적.
+  // ScrollView 자체 height 도 추적 — 키보드시 visible viewport 계산용.
+  // ─────────────────────────────────────────────────────────────────────
   const scrollRef = React.useRef<ScrollView>(null);
   const listYRef = React.useRef<number | null>(null);
   const mineCardYRef = React.useRef<number | null>(null);
+  const mineCardHRef = React.useRef<number | null>(null);
+  const scrollViewHRef = React.useRef<number | null>(null);
   const scrolledRef = React.useRef(false);
   const scrollToMine = !!route.params?.scrollToMine;
 
+  // ── A) 알림 '응원글 보기' 자동 스크롤 — 본인 카드 top 으로
   const tryScrollToMine = React.useCallback(() => {
     if (!scrollToMine || scrolledRef.current) return;
     if (listYRef.current === null || mineCardYRef.current === null) return;
@@ -110,18 +116,69 @@ export function DonationScreen() {
   const onMineCardLayout = React.useCallback(
     (e: LayoutChangeEvent) => {
       mineCardYRef.current = e.nativeEvent.layout.y;
+      mineCardHRef.current = e.nativeEvent.layout.height;
       tryScrollToMine();
     },
     [tryScrollToMine],
   );
+  const onScrollViewLayout = React.useCallback((e: LayoutChangeEvent) => {
+    scrollViewHRef.current = e.nativeEvent.layout.height;
+  }, []);
 
-  // 화면 진입 param 바뀔 때 가드 리셋 — 같은 인스턴스로 다시 navigate 되는 케이스.
+  // 화면 진입 param 바뀔 때 A 가드 리셋 — 같은 인스턴스로 다시 navigate 되는 케이스.
   React.useEffect(() => {
     if (scrollToMine) {
       scrolledRef.current = false;
       tryScrollToMine();
     }
   }, [scrollToMine, tryScrollToMine]);
+
+  // ── B) 인라인 편집 키보드 회피 — 편집 카드 bottom 을 키보드 top 에 정확히 맞춤
+  //
+  // 1) `paddingBottom: kbHeight` — scroll 런웨이 확보 (가짜 여백)
+  // 2) `keyboardDidShow` + 100ms 대기 → KAV shrink + content layout 안정화 후
+  //    listY + mineCardY + mineCardH 로 카드 절대 bottom 계산 → 그 값 - visibleH
+  //    만큼 scrollTo. 카드 자체 padding 16 덕에 작성 완료 배지는 키보드 위
+  //    16px 여백.
+  const [kbHeight, setKbHeight] = React.useState(0);
+  React.useEffect(() => {
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvt, (e: KeyboardEvent) =>
+      setKbHeight(e.endCoordinates.height),
+    );
+    const hideSub = Keyboard.addListener(hideEvt, () => setKbHeight(0));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (kbHeight === 0 || !editingId) return;
+    // 100ms — keyboardDidShow 직후 KAV shrink + textarea autoFocus 인한 layout
+    // 변화가 다 반영되도록 약간 대기.
+    const t = setTimeout(() => {
+      const sv = scrollRef.current;
+      if (
+        !sv ||
+        listYRef.current === null ||
+        mineCardYRef.current === null ||
+        mineCardHRef.current === null ||
+        scrollViewHRef.current === null
+      )
+        return;
+      // iOS behavior='padding' → ScrollView height 그대로, kbHeight 만큼 가려짐.
+      // Android behavior='height' → ScrollView 가 이미 shrink 된 상태.
+      const visibleH =
+        scrollViewHRef.current - (Platform.OS === 'ios' ? kbHeight : 0);
+      const cardBottomY =
+        listYRef.current + mineCardYRef.current + mineCardHRef.current;
+      const target = Math.max(0, cardBottomY - visibleH);
+      sv.scrollTo({ y: target, animated: true });
+    }, 100);
+    return () => clearTimeout(t);
+  }, [kbHeight, editingId]);
 
   // 계좌 클립보드 복사 — expo-clipboard 동적 import.
   const onCopyAccount = async () => {
@@ -163,20 +220,24 @@ export function DonationScreen() {
         <View style={styles.navSide} />
       </View>
 
-      {/* 키보드 회피 — KAV 만. behavior 분기로 iOS padding / Android height.
-       *  추가 padding·scrollTo workaround 없음(2026-05-21 롤백). */}
+      {/* 키보드 회피 — KAV(iOS padding / Android height) + 편집시 명시적 scrollTo. */}
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
       <ScrollView
         ref={scrollRef}
+        onLayout={onScrollViewLayout}
         // 핵심: ScrollView 자체에 flex:1 — KAV 안에서 KAV의 줄어든 영역에 맞춰
         // ScrollView 도 줄어들어야 내부 자동 스크롤이 동작. style 없으면 ScrollView
         // 가 contents 길이로 무한 확장돼 KAV가 줄어들어도 영향 안 받음.
-        // (PoolNameScreen 등 다른 키보드 화면의 검증된 패턴.)
         style={styles.flex}
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={[
+          styles.scroll,
+          // 키보드 올라올 때만 scroll 런웨이 — Figma baseline(16) override.
+          // 닫혀있을 땐 그대로 16.
+          kbHeight > 0 ? { paddingBottom: kbHeight } : null,
+        ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
