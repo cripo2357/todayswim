@@ -45,7 +45,11 @@ import {
   buildPoolProfileStacks,
   type PoolStack,
 } from '@/lib/mapProfileStacks';
-import { usePrefs, MAP_FRIEND_HORIZON_MS } from '@/store/prefs';
+import {
+  usePrefs,
+  MAP_FRIEND_HORIZON_MS,
+  MAP_PUBLIC_HORIZON_MS,
+} from '@/store/prefs';
 import {
   MapProfileStack,
   STACK_W,
@@ -168,8 +172,17 @@ export function MapScreen() {
   // 지도 시작 위치(null=내 위치, 그 외=즐겨찾기 poolId) + 친구 스택 표시 설정
   const mapStartPoolId = usePrefs((s) => s.mapStartPoolId);
   const mapFriendHorizon = usePrefs((s) => s.mapFriendHorizon);
-  const lessonVisibility = usePrefs((s) => s.lessonVisibility);
-  const showStack = mapFriendHorizon !== 'off';
+  const mapPublicHorizon = usePrefs((s) => s.mapPublicHorizon);
+  const myScheduleVisibility = usePrefs((s) => s.myScheduleVisibility);
+  const profileVis = usePrefs((s) => s.profileVisibility);
+  // 사람들(비친구 전체공개) horizon은 프로필 공개='public'일 때만 유효
+  const effectivePublicHorizon =
+    profileVis === 'public' ? mapPublicHorizon : 'off';
+  // 스택을 아예 빈 채로 둘 수 있는 조건 — 내 일정/친구/사람들 셋 다 미표시.
+  const showStack =
+    myScheduleVisibility !== 'off' ||
+    mapFriendHorizon !== 'off' ||
+    effectivePublicHorizon !== 'off';
 
   // 카메라 추적 — 두 가지로 분리해서 불필요한 리렌더 방지:
   // (1) cameraRef: 최신 카메라 (lat/lng/zoom). 매 onCameraChanged마다 갱신. 리렌더 X.
@@ -273,14 +286,16 @@ export function MapScreen() {
             friends,
             blocked,
             otherSchedules,
-            // 수영 레슨 — prefs.lessonVisibility 'off'/'friends'/'public'.
-            // 내 지도에서는 나 자신을 보는 것이라 'off'만 가리고 친구/전체
-            // 둘 다 노출(서버단 친구·전체 가시성 필터링은 Phase 2).
+            // 내 수영 일정·레슨 — Figma 179:4763. 'off'면 내 일정·레슨 모두
+            // 내 지도에서도 가림. 'self'/'friends'/'public'은 내 지도에선 동일하게
+            // 노출(내가 내 거 보는 것). 친구·전체 가시성 필터링은 서버단 Phase 2.
+            showMine: myScheduleVisibility !== 'off',
             myLessonPoolId: profile?.lessonPoolId ?? null,
             mySwimClasses: profile?.swimClasses ?? [],
-            showMyLessons: lessonVisibility !== 'off',
+            showMyLessons: myScheduleVisibility !== 'off',
             otherLessons: MOCK_OTHER_LESSONS,
-            horizonMs: MAP_FRIEND_HORIZON_MS[mapFriendHorizon],
+            friendHorizonMs: MAP_FRIEND_HORIZON_MS[mapFriendHorizon],
+            publicHorizonMs: MAP_PUBLIC_HORIZON_MS[effectivePublicHorizon],
           })
         : new Map(),
     [
@@ -291,7 +306,8 @@ export function MapScreen() {
       blocked,
       showStack,
       mapFriendHorizon,
-      lessonVisibility,
+      effectivePublicHorizon,
+      myScheduleVisibility,
       otherSchedules,
     ],
   );

@@ -80,11 +80,18 @@ export interface BuildStacksInput {
   myLessonPoolId?: string | null;
   mySwimClasses?: SwimClass[];
   showMyLessons?: boolean;
+  /** 내 일정·레슨을 내 지도에서 노출할지(prefs.myScheduleVisibility !== 'off').
+   *  기본 true(하위호환). 'off'면 내 마커도 가림. */
+  showMine?: boolean;
   otherLessons?: OtherLesson[];
   /** 기준 시각(ms). 미지정 시 Date.now(). */
   now?: number;
-  /** 노출창 시작 = 슬롯 시작 − horizonMs. 미지정 시 1일(24h). */
-  horizonMs?: number;
+  /** 친구 일정 노출창 시작 = 슬롯 시작 − friendHorizonMs. 미지정 시 1일(24h).
+   *  publicHorizonMs와 별개 — 'off'면 0(즉시 비노출). */
+  friendHorizonMs?: number;
+  /** 사람들(비친구 전체공개) 일정 노출창. 미지정 또는 0이면 사람들 일정 미노출.
+   *  profileVisibility='public'일 때만 의미. */
+  publicHorizonMs?: number;
 }
 
 interface Cand {
@@ -95,6 +102,9 @@ interface Cand {
   poolId: string;
   startMs: number;
   endMs: number;
+  /** 후보별 적용 horizon — 나/친구/사람들 각각 다름. consider에서 단일 horizonMs를
+   *  사용하면 셋을 한번에 처리 불가 → 후보 자체에 묶어 전달. */
+  horizonMs: number;
 }
 
 /** 풀별 프로필 스택 산출. key=poolId, 마커 있는 풀만 포함. */
@@ -102,20 +112,27 @@ export function buildPoolProfileStacks(
   input: BuildStacksInput,
 ): Map<string, PoolStack> {
   const now = input.now ?? Date.now();
-  const horizonMs = input.horizonMs ?? DEFAULT_HORIZON_MS;
+  const friendHorizonMs = input.friendHorizonMs ?? DEFAULT_HORIZON_MS;
+  const publicHorizonMs = input.publicHorizonMs ?? 0;
+  const showMine = input.showMine ?? true;
   const poolIds = new Set(input.pools.map((p) => p.id));
 
   // userId 당 가장 임박한 후보 1건만 유지(여러 슬롯 → 최임박 풀 배치).
   const best = new Map<string, Cand>();
   const consider = (c: Cand) => {
     if (!poolIds.has(c.poolId)) return; // 마커 없는 풀은 무시
+    if (c.horizonMs <= 0) return; // 해당 관계군 미노출
     // 노출창: 시작 horizonMs 전 ~ 종료시각 (사용자 설정).
-    if (now < c.startMs - horizonMs || now > c.endMs) return;
+    if (now < c.startMs - c.horizonMs || now > c.endMs) return;
     const prev = best.get(c.userId);
     if (!prev || c.startMs < prev.startMs) best.set(c.userId, c);
   };
+  // 내 일정은 가시성 토글만 통과하면 horizon 무관 (내 거니까 노출창 제한 X).
+  // 단순화를 위해 매우 큰 horizon(=항상 노출창 안)을 부여.
+  const ALWAYS_HORIZON = Number.MAX_SAFE_INTEGER;
+  const mineHorizon = showMine ? ALWAYS_HORIZON : 0;
 
-  // 나 — 내 일정은 가시성 무관(내 것).
+  // 나 — 내 일정은 가시성 무관(내 것). showMine='off'면 mineHorizon=0 → 미노출.
   if (input.myProfile) {
     const meId = input.myProfile.id || 'me';
     for (const s of input.mySchedules) {
@@ -127,26 +144,44 @@ export function buildPoolProfileStacks(
         poolId: s.poolId,
         startMs: slotMs(s.date, s.start),
         endMs: slotMs(s.date, s.end),
+        horizonMs: mineHorizon,
       });
     }
   }
 
-  // 친구 — useFriends 경유. 차단 제외, 실제 친구만, private 제외.
+  // 친구·사람들 — useFriends 경유. 차단 제외, 친구/사람들 분기, private 제외.
+  // 친구 = friendById에 있는 사용자 (visibility friends/public 둘 다 노출).
+  // 사람들 = friendById에 없는 사용자 중 visibility==='public'만 노출 +
+  //        profileVis='public' 사용자만 (publicHorizonMs로 게이팅).
   const friendById = new Map(input.friends.map((f) => [f.id, f]));
   const blockedSet = new Set(input.blocked);
   for (const o of input.otherSchedules) {
     if (blockedSet.has(o.userId)) continue;
-    const f = friendById.get(o.userId);
-    if (!f) continue;
     if (o.visibility === 'private') continue;
-    consider({
-      userId: o.userId,
-      relation: 'friend',
-      photoUri: f.avatar, // 노출 아바타는 useFriends 소스 기준
-      poolId: o.poolId,
-      startMs: slotMs(o.date, o.start),
-      endMs: slotMs(o.date, o.end),
-    });
+    const f = friendById.get(o.userId);
+    if (f) {
+      consider({
+        userId: o.userId,
+        relation: 'friend',
+        photoUri: f.avatar, // 노출 아바타는 useFriends 소스 기준
+        poolId: o.poolId,
+        startMs: slotMs(o.date, o.start),
+        endMs: slotMs(o.date, o.end),
+        horizonMs: friendHorizonMs,
+      });
+    } else if (o.visibility === 'public' && publicHorizonMs > 0) {
+      // 사람들(비친구) — 친구 아닌 사람의 전체공개 일정. avatar 소스는 mock
+      // OtherSchedule 자체에 보존된 photoUri 또는 미상.
+      consider({
+        userId: o.userId,
+        relation: 'friend', // 시각 표현은 friend와 동일(차후 구분 필요 시 'public')
+        photoUri: o.avatar,
+        poolId: o.poolId,
+        startMs: slotMs(o.date, o.start),
+        endMs: slotMs(o.date, o.end),
+        horizonMs: publicHorizonMs,
+      });
+    }
   }
 
   // 나 — 수영 레슨(공개 시). 레슨풀 + 주간 슬롯 → 다음 회차로 consider.
@@ -163,27 +198,39 @@ export function buildPoolProfileStacks(
         poolId: input.myLessonPoolId,
         startMs: occ.startMs,
         endMs: occ.endMs,
+        horizonMs: mineHorizon,
       });
     }
   }
 
   // 친구 — 친구공개/전체공개 레슨. useFriends 경유(차단·실친구), private 제외.
   // 일정과 동일하게 'private'만 가림 — 'friends'/'public' 모두 친구인 나에게 노출.
-  // (LessonVisibility 'off' 도입 후 mockData 갱신 시 'off'/'private' 둘 다 가림.)
   for (const o of input.otherLessons ?? []) {
     if (blockedSet.has(o.userId)) continue;
-    const f = friendById.get(o.userId);
-    if (!f) continue;
     if (o.visibility === 'private') continue;
+    const f = friendById.get(o.userId);
     const occ = lessonOccurrenceMs(o.day, o.start, o.end, now);
-    consider({
-      userId: o.userId,
-      relation: 'friend',
-      photoUri: f.avatar,
-      poolId: o.poolId,
-      startMs: occ.startMs,
-      endMs: occ.endMs,
-    });
+    if (f) {
+      consider({
+        userId: o.userId,
+        relation: 'friend',
+        photoUri: f.avatar,
+        poolId: o.poolId,
+        startMs: occ.startMs,
+        endMs: occ.endMs,
+        horizonMs: friendHorizonMs,
+      });
+    } else if (o.visibility === 'public' && publicHorizonMs > 0) {
+      consider({
+        userId: o.userId,
+        relation: 'friend',
+        photoUri: o.avatar,
+        poolId: o.poolId,
+        startMs: occ.startMs,
+        endMs: occ.endMs,
+        horizonMs: publicHorizonMs,
+      });
+    }
   }
 
   // 풀별 그룹 → 정렬(나 먼저, 나머지 고정 셔플) → cap.
