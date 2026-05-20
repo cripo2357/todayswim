@@ -217,7 +217,11 @@ export function SwimClassRegisterScreen() {
             >
               수영 레슨 정보 등록
             </Text>
-            <IconUniversityHat width={20} height={20} />
+            {/* baked SVG는 색 props 무효 → 라벨과 함께 opacity로 톤다운
+                (button_icon_always_visible). */}
+            <View style={!canRegister ? styles.ctaIconDisabled : undefined}>
+              <IconUniversityHat width={20} height={20} />
+            </View>
           </Pressable>
 
           <Pressable
@@ -429,6 +433,8 @@ const styles = StyleSheet.create({
     color: tokens.color.black,
   },
   ctaLabelDisabled: { color: tokens.color.pdGray },
+  // baked SVG 아이콘 비활성 톤다운 — SheetCtaButton과 동일 정책(opacity 0.4).
+  ctaIconDisabled: { opacity: 0.4 },
   // Figma 179:7282 — calendar-x + pd-blue 텍스트
   noLesson: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   noLessonText: {
