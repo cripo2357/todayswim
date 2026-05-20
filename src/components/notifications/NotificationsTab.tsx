@@ -39,16 +39,21 @@ import IconWelcome from '@assets/icons/announcement/welcome.svg'; // [환영]
 type SvgIconCmp = React.FC<SvgProps>;
 
 /** 카드 좌측 슬롯 — 프로필 사진 또는 명명 아이콘 (스펙 이미지 매핑).
- *  아바타 rel = 관계별 테두리(profile_border_policy):
- *  나=pd-byellow / 친구=pd-mint / 비친구=pd-gray. */
+ *  아바타 rel = profile_border_policy: 나=pd-byellow/친구=pd-mint/비친구=pd-gray.
+ *  ⚠️ rel은 트리거 유형별 고정(REL_BY_KIND) — 런타임 친구목록 조회 X.
+ *  트리거 자체가 발송 시점의 관계를 함축하므로, 시간이 흘러 관계가 바뀌어도
+ *  카드는 그 시점의 관계를 보존(예: friend_request_received는 영구적으로
+ *  '비친구' 테두리 — 그때 비친구였음의 기록). v0.6 정책. */
 type AvatarRel = 'me' | 'friend' | 'stranger';
 type Slot =
-  | { type: 'avatar'; id: AvatarId; rel: AvatarRel }
+  | { type: 'avatar'; id: AvatarId }
   | { type: 'icon'; render: () => React.ReactNode };
 
 interface Notif {
   id: string;
   slot: Slot;
+  /** avatar slot일 때만 — relFor(kind)로 계산된 발송 시점 관계. */
+  rel?: AvatarRel;
   title: string;
   time: string;
   lines: string[];
@@ -71,9 +76,17 @@ const lucide = (Cmp: React.ComponentType<{ size?: number; color?: string; stroke
   type: 'icon',
   render: () => <Cmp size={20} color="#4B5563" strokeWidth={2} />,
 });
-// 기본 rel='friend' — 알림 카드 프로필 사진은 대부분 친구 관계.
-// 친구신청 받음은 'stranger'로 명시.
-const avatar = (id: AvatarId, rel: AvatarRel = 'friend'): Slot => ({ type: 'avatar', id, rel });
+const avatar = (id: AvatarId): Slot => ({ type: 'avatar', id });
+
+// 트리거 유형 → 발송 시점 관계 (테두리 색의 단일 출처). 누락 = 'friend' 기본.
+// 트리거가 곧 관계를 함축 — 시간 지나도 그 시점 관계 보존.
+const REL_BY_KIND: Partial<Record<MessageKind, AvatarRel>> = {
+  friend_request_received: 'stranger', // 신청자 = 아직 친구 아님
+  // friend_request_accepted: 'friend' (기본) — 방금 친구 됨
+  // invite_received: 'friend' (기본) — 이미 친구라 초대받음
+  // friend_schedule_overlap: 'friend' (기본) — 친구 일정 겹침
+};
+const relFor = (kind: MessageKind): AvatarRel => REL_BY_KIND[kind] ?? 'friend';
 
 // 명명 아이콘 (스펙) → 프로젝트 SVG 슬롯 (재사용 편의)
 const SLOT_INVITE = svg(IconInvite); // [초대]
@@ -106,13 +119,12 @@ const GROUPS: { title: string; items: SampleSpec[] }[] = [
     title: '최근',
     items: [
       // ── 유형 1. 사람 발신 ──
-      // 상대 행동 → 프로필 사진
-      // friend_request_received: 신청자 = 아직 친구 아님 → stranger 테두리(pd-gray)
-      { id: 's1', kind: 'friend_request_received', slot: avatar('avatar-male-1', 'stranger'), params: { name: NM } },
+      // 상대 행동 → 프로필 사진 (테두리 색은 relFor(kind) 자동 결정)
+      { id: 's1', kind: 'friend_request_received', slot: avatar('avatar-male-1'), params: { name: NM } },
       { id: 's2', kind: 'friend_request_accepted', slot: avatar('avatar-female-2'), params: { name: NM } },
       // 부정 성격(거절·취소·만료) → [반려] 아이콘으로 통일 (정책)
       { id: 's3', kind: 'friend_request_rejected', slot: SLOT_REJECT, params: { name: NM } },
-      // 초대 받은 직후 → 초대자 프로필
+      // 초대 받은 직후 → 초대자 프로필 (테두리: relFor 자동 = 친구)
       { id: 's4', kind: 'invite_received', slot: avatar('avatar-male-3'), params: { name: NM, pool: P, date: D, time: T } },
       // 본인 수락 → [초대] 아이콘 (긍정)
       { id: 's5', kind: 'invite_accepted', slot: SLOT_INVITE, params: { name: NM, date: D } },
@@ -179,6 +191,7 @@ function toNotif(s: SampleSpec): Notif {
   return {
     id: s.id,
     slot: s.slot,
+    rel: s.slot.type === 'avatar' ? relFor(s.kind) : undefined,
     title: c.title,
     time: SAMPLE_TIME,
     lines: c.body.filter((l) => l.length > 0),
@@ -228,11 +241,11 @@ const REL_BORDER: Record<AvatarRel, string> = {
   stranger: tokens.color.pdGray,
 };
 
-function NotifSlot({ slot }: { slot: Slot }) {
+function NotifSlot({ slot, rel }: { slot: Slot; rel?: AvatarRel }) {
   if (slot.type === 'avatar') {
     const Avatar = BUNDLE_AVATARS[slot.id];
     return (
-      <View style={[styles.avatarWrap, { borderColor: REL_BORDER[slot.rel] }]}>
+      <View style={[styles.avatarWrap, { borderColor: REL_BORDER[rel ?? 'friend'] }]}>
         <Avatar width={40} height={40} />
       </View>
     );
@@ -243,7 +256,7 @@ function NotifSlot({ slot }: { slot: Slot }) {
 function NotifCard({ notif }: { notif: Notif }) {
   return (
     <View style={styles.card}>
-      <NotifSlot slot={notif.slot} />
+      <NotifSlot slot={notif.slot} rel={notif.rel} />
       <View style={styles.cardBody}>
         <View style={styles.cardHead}>
           <Text style={styles.title} numberOfLines={2}>

@@ -15,6 +15,7 @@ title: Pool's Day 알림 트리거 상세 스펙
 - 기존 제목 4건 다듬기 — friend_request_accepted "새 친구"→"새로운 친구", friend_schedule_overlap "같은 시간 수영"→"같은 수영 일정", schedule_reminder_prev_day "내일 수영 일정 있어요."→"내일 수영 일정", schedule_reminder_1h "1시간 후 수영 시작이에요."→"곧 수영 일정" (모두 명사형·라벨형, 마침표 제거).
 - **부정 성격 메시지 아이콘 통일** — friend_request_rejected / invite_received·sent 상태 3·4·5(거절·취소·만료) / pool/schedule_submission_rejected 전부 **[반려] 아이콘** 으로 통일(이미지가 본문의 부정 결과를 일관되게 신호). 이전 매핑(상태별 프로필·[초대] 회색 톤)을 대체.
 - **[프로필] 아이콘 = 맵 FAB 로그인 버튼 아이콘과 일치** — nickname_changed_by_admin은 ID 카드형(assets/icons/profile.svg, #1F2937 회색톤). 닉네임 정체성 컨텍스트를 앱 전반 프로필 진입점과 시각 일관화.
+- **프로필 사진 테두리 = 트리거 유형별 고정** — 발송 시점의 관계가 카드에 보존됨(런타임 친구목록 조회 X). 예: friend_request_received는 영구적으로 비친구(pd-gray) 테두리 — 그때 비친구였다는 기록. friend_request_accepted/invite_received/friend_schedule_overlap은 친구(pd-mint). 단일 출처 = `src/components/notifications/NotificationsTab.ts` `REL_BY_KIND`.
 
 **v0.5 변경 사항**
 
@@ -914,6 +915,19 @@ P3 (부가):       10개 — 그 외.
 [프로필] 아이콘 (nickname_changed_by_admin): 맵 FAB 로그인 버튼과 동일한
 ID 카드형(assets/icons/profile.svg, #1F2937) — 닉네임 정체성 컨텍스트를
 앱 전반 프로필 진입점과 시각 일관화 (v0.6).
+
+프로필 사진 테두리 (트리거 유형별 고정 — 발송 시점 관계 보존, v0.6):
+
+  friend_request_received    → pd-gray  (비친구 — 신청자, 아직 친구 아님)
+  friend_request_accepted    → pd-mint  (친구 — 방금 친구 됨)
+  invite_received 상태 1     → pd-mint  (친구 — 이미 친구라 초대받음)
+  invite_sent 상태 2         → pd-mint  (친구 — 상대 수락)
+  friend_schedule_overlap    → pd-mint  (친구 — 친구 일정 겹침)
+
+런타임 친구목록 조회 X — 트리거 자체가 그 시점의 관계를 함축하므로
+이후 관계가 바뀌어도 카드는 그때의 관계를 보존한다(예: 친구였다가
+탈퇴/차단된 사람의 과거 카드는 mint 테두리 유지). 코드 단일 출처:
+src/components/notifications/NotificationsTab.tsx `REL_BY_KIND`.
 ```
 
 ## 변수 폴백 매트릭스
