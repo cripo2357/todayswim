@@ -74,6 +74,8 @@ interface Notif {
   actions?: string[];
   /** 확인 모달(거절/취소)에서 상대 표시명으로 사용 — params.name 그대로 전달. */
   name?: string;
+  /** 미읽음 여부 — true 면 시간 옆에 노란 dot 표시. mock 갤러리는 read=true. */
+  read?: boolean;
 }
 
 interface SampleSpec {
@@ -219,6 +221,8 @@ function toNotif(s: SampleSpec): Notif {
     lines: c.body.filter((l) => l.length > 0),
     actions: c.actions && c.actions.length > 0 ? c.actions : undefined,
     name: s.params.name,
+    // mock 갤러리는 '읽음' 상태로 표시 — 미읽음 dot 노출 X (시각 노이즈 회피).
+    read: true,
   };
 }
 
@@ -370,6 +374,7 @@ function rowToNotif(row: NotificationRow): Notif {
     lines: (row.body ?? []).filter((l) => l.length > 0),
     actions: row.actions && row.actions.length > 0 ? row.actions : undefined,
     name: row.params?.name,
+    read: row.read,
   };
 }
 
@@ -458,6 +463,11 @@ function NotifCard({ notif }: { notif: Notif }) {
           <Text style={styles.title} numberOfLines={2}>
             {notif.title}
           </Text>
+          {/* 미읽음 dot — read=false 일 때만. mock 갤러리는 read=true 라 노출 X.
+           *  탭 진입 시 markAllRead 가 모든 read=true 갱신해 dot 즉시 사라짐. */}
+          {notif.read === false ? (
+            <View style={styles.unreadDot} accessibilityLabel="미읽음" />
+          ) : null}
           <Text style={styles.time}>{notif.time}</Text>
         </View>
         <View style={styles.lines}>
@@ -598,6 +608,15 @@ const styles = StyleSheet.create({
     letterSpacing: -0.06,
     fontFamily: tokens.font.sans,
     color: '#4B5563',
+  },
+  // 미읽음 dot — Figma 패턴: 시간 옆 8px 노란 원. 탭 진입 시 일괄 read 처리되어 사라짐.
+  // marginTop 4 로 시각 행 baseline 살짝 위에 떠 보이게 (시각 fontSize 12 lineHeight 16 의 중앙 정렬).
+  unreadDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: tokens.color.pdByellow,
+    marginTop: 4,
   },
   lines: { gap: 2 },
   // 본문 — Regular 14, lineHeight 1.6(≈22) #4B5563
