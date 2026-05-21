@@ -250,7 +250,7 @@ export function SplashScreen() {
       {/* 중앙 워드마크 + 태그라인 */}
       <View style={styles.center} pointerEvents="none">
         <BrandWordmark width={WORDMARK_WIDTH} height={WORDMARK_HEIGHT} />
-        <Text style={styles.tagline}>같이 수영할래?</Text>
+        <Text style={styles.tagline}>매일매일 수영하는 날, Pool’s day</Text>
       </View>
 
       {/* 하단 진행바 + 카피라이트 */}

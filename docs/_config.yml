@@ -1,0 +1,42 @@
+# GitHub Pages — Pool's day 공개 문서 (약관·지원 페이지).
+#
+# 출시 시점 Privacy Policy URL / Support URL 확보용. 무료, public repo 필요.
+# 활성화: GitHub repo > Settings > Pages > Source = Deploy from a branch,
+#         Branch = main, Folder = /docs → Save.
+#
+# Live URL: https://cripo2357.github.io/todayswim/
+#
+# Privacy 관련 의도적 노출만 — 내부 작업 문서(SPEC / PROGRESS_LOG /
+# WORKLOG / store-meta 등) 는 아래 exclude 로 빌드에서 제외 (단, repo
+# 자체가 public 이면 git 차원에선 누구나 열람 가능 — 이건 별개 layer).
+
+title: Pool's day
+description: 동네 자유수영장 + 시간표 + 친구 일정
+url: https://cripo2357.github.io
+baseurl: /todayswim
+
+# 클린 URL — /terms/privacy-policy/ (확장자 없음, trailing slash).
+permalink: pretty
+
+# GitHub Pages 기본 테마 — minimal. 디자인 욕심 없으면 충분.
+theme: jekyll-theme-minimal
+
+markdown: kramdown
+kramdown:
+  input: GFM
+
+# 공개 의도 없는 내부 작업 문서는 빌드 제외.
+exclude:
+  - SPEC.md
+  - PROGRESS_LOG.md
+  - WORKLOG.md
+  - SUPABASE_SEOUL_MIGRATION.md
+  - notification-triggers-spec-v0.5.md
+  - pools-day-terms-input.md
+  - terms-revision-push-infra.md
+  - terms-revision-request.md
+  - store-meta/
+  - "*.bak"
+  - Gemfile
+  - Gemfile.lock
+  - vendor/
