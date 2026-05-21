@@ -170,8 +170,7 @@ export function CalendarTab() {
                   {(() => {
                     const past = isSchedulePast(s);
                     // 지난 일정 — "수영 완료" 배지(Figma 133:3874). 탭하면
-                    // 일정 관리 시트(수영 완료 / 일정 삭제). 완료 확정 시
-                    // 라벨 "수영 완료" → "수영완료".
+                    // 일정 관리 시트(수영 완료 / 일정 삭제).
                     if (past) {
                       return (
                         <Pressable
@@ -180,9 +179,7 @@ export function CalendarTab() {
                           accessibilityRole="button"
                           accessibilityLabel="지난 일정 관리"
                         >
-                          <Text style={styles.doneChipLabel}>
-                            {s.completed ? '수영완료' : '수영 완료'}
-                          </Text>
+                          <Text style={styles.doneChipLabel}>수영 완료</Text>
                           <IconSwim width={12} height={12} />
                         </Pressable>
                       );

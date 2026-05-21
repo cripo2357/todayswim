@@ -196,7 +196,7 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 | `announcements` ✅ | 공지사항 | 필수: id(PK), type(new_feature/feature_update/info_update/event), title, body, published_at · 선택: bullets[], button_label, button_url | 운영자 write, **전체 read** |
 | `profile_nicknames` ✅ | 닉네임 선점(중복방지) | 필수: nickname(PK), created_at. **프로필 본문 아님 — 닉네임 문자열만** | **전체 SELECT/INSERT**(목업 인증단계), 금칙어 트리거 |
 | `nickname_blocklist` ✅ | 금칙·예약 닉네임(~80건) | 필수: term(PK), kind(reserved/profanity) | **전체 SELECT**, 운영자 write |
-| `notifications` ✅ | 메시지/알림 이력 | 필수: id(PK), user_code(=프로필 6자 ID, auth.uid 아님), kind, title, body(jsonb), read, created_at · 선택: params/actions/related(jsonb) | **전체 SELECT/INSERT(개방 RLS)**. P1은 작성자 본인 행만 insert |
+| `notifications` ✅ | 메시지/알림 이력 | 필수: id(PK), user_code(=프로필 6자 ID, auth.uid 아님), kind, title, body(jsonb), read, created_at · 선택: params/actions/related(jsonb) | RLS — **select 본인 행만**(P3-C2 / `user_code = profiles.id where auth_uid = auth.uid()`), update/delete 본인 행, insert any (dispatchMessageTo RPC 리팩 전까지 P3 후속) |
 | `donations` ✅ | 후원 응원 메시지(공개) | 필수: id(PK), profile_id(FK→profiles cascade), message(1~300자), hidden, created_at, updated_at | RLS: read all, write 본인 검증(auth_uid). hidden=true는 본인만 본인 화면에서 표시. trigger 가 INSERT 시 10개 풀에서 랜덤 디폴트 메시지 박음(0077) |
 | `donation_payments` ✅ | 후원 입금 기록(비공개) | 필수: id(PK), depositor_name, amount(>0), received_at · 선택: profile_id(FK→profiles set null) | **service_role 전용** (정책 없음). INSERT/UPDATE 시 트리거가 자동 'donation_thanks' notifications + donations row 적재 |
 | `donation_totals_v` ✅ | 종합 후원 누적 view (0080) | profile_id, total_amount, payment_count, first_at, last_at | service_role 전용(`security_invoker=on` → base table RLS 상속). 운영자가 큰손 식별·보고용 |
@@ -206,7 +206,7 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 | `terms` ✅ | 약관 문서·버전 마스터 (0044 + 0079) | 필수: id(PK), type(service/privacy_consent/privacy_policy/location/marketing), version, effective_date, content(jsonb), is_required, requires_consent, is_active | RLS read all, write service_role 만. 5종 시드 v1.0.0. 운영자가 개정 시 새 row + is_active 교체 |
 | `terms_agreements` ✅ | 약관 동의 이력 — append-only 감사 로그 (0044) | 필수: id(PK), user_id(FK→auth.users CASCADE), terms_type, terms_version(스냅샷), action(agree/withdraw), meta(jsonb), created_at | RLS: 본인 행만 select/insert, UPDATE/DELETE 정책 없음 = 불변. Apple mock 은 auth.users 없어 로컬 폴백 |
 
-**Storage 버킷:** `avatars` ✅ (마이그레이션 생성, public read / 소유자 폴더만 write, 경로 `{auth.uid}/avatar.jpg`+`avatar_thumb.jpg`) · `pool-photos` ✅ (마이그레이션 없음 — 운영자가 대시보드에서 수동 생성, public, 풀 INSERT에 URL 박힘)
+**Storage 버킷:** `avatars` ✅ (public read / **본인 폴더만 write/update/delete**, P3-C3 하드닝 0081 로 0045 개방 폐기 + 0020 원형 복원, 경로 `{auth.uid}/avatar.jpg`+`avatar_thumb.jpg`) · `pool-photos` ✅ (마이그레이션 없음 — 운영자가 대시보드에서 수동 생성, public, 풀 INSERT에 URL 박힘)
 
 ### 4.2 기기 로컬 데이터 (AsyncStorage / 메모리) — 서버 미전송
 
@@ -291,7 +291,7 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 | **후원 감사(donation_thanks)** | 운영자→후원자 | self | 서비스 | ✅ 동작(트리거 자동 발송) | 인앱(0070→0077 트리거 — donation_payments INSERT 시. 알림 본문 "Pool's day 운영에 소중히 쓸게요. 고맙습니다.", 액션 '응원글 보기'→본인 카드 자동 스크롤) |
 
 - **분류:** 코드상 발송 룰은 전부 **서비스(거래성) 알림**. **마케팅 푸시는 코드에 없음** — `termsContent`의 마케팅 동의 문구("앱 푸시 알림으로")는 더미·미구현.
-- **수신키:** `notifications.user_code` = 프로필 6자 친구코드(개방 RLS — 코드 아는 누구나 read). 민감정보 미저장 전제이나 `params`에 상대 표시명·풀·시간 포함.
+- **수신키:** `notifications.user_code` = 프로필 6자 친구코드. **RLS: 본인 행만 read** (P3-C2 — `user_code = profiles.id where auth_uid = auth.uid()`). insert 는 dispatchMessageTo 패턴 위해 개방 유지(P3 후속 RPC 도입 시 좁힘). `params` 에 상대 표시명·풀·시간 포함.
 
 ---
 
@@ -299,7 +299,7 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 
 | 서비스 | 용도 | 전송 데이터 | 키/비고 |
 |---|---|---|---|
-| **Supabase** (DB·Auth·Storage) | 백엔드 | 소셜 인증, 닉네임 문자열, 아바타 JPEG, 알림 이력, 풀/시간표 제보 | URL+anon key(공개, RLS 보호 — 현재 개방/목업단계). service_role 클라 미포함 |
+| **Supabase** (DB·Auth·Storage) | 백엔드 | 소셜 인증, 닉네임 문자열, 아바타 JPEG, 알림 이력, 풀/시간표 제보 | URL+anon key(공개, RLS 보호 — 0060/0081 본인 검증 하드닝). service_role 클라 미포함 (Edge Function `delete-account` 만 service_role 사용) |
 | **Naver Maps SDK** (`@mj-studio/react-native-naver-map`) | 지도 렌더·네이티브 마커/클러스터 | 기기 위치(지도 중심), 지도뷰 요청 | Client ID는 app.config(번들ID 제한). **Secret 클라 제외**(지오코딩은 백엔드 이관 예정) |
 | **Google Sign-In** | Google 로그인 | idToken(Supabase 교환) | Web client ID(env) |
 | **Kakao OAuth** (Supabase Auth provider + expo-web-browser) | Kakao 로그인 | OAuth code(Supabase 교환), redirect `poolsday://auth/callback` | 키는 Supabase 서버측 |
@@ -334,7 +334,17 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 - ~~**회원 탈퇴 서버 삭제**: P1 로컬 teardown만, 서버 계정/데이터 영구삭제 Edge Function 미구현.~~ → **P3 완료** (Edge Function `delete-account`, §3.6 참고). 90일 후 cron 으로 notifications · profile_nicknames 파기는 후속.
 - **약관 본문**: `lib/termsContent.ts` 전부 "임시 더미 — 교체 예정" 표식. 실제 5종(서비스 이용약관 / 개인정보 수집·이용 동의 / 개인정보 처리방침 / 위치기반서비스 이용약관 / 마케팅 정보 수신 동의) 문구 미작성.
 
-### 8.3 상태 화면 트리거 (P3-A3 완료)
+### 8.3 RLS·Storage 최종 하드닝 (P3-C2/C3 완료, 2026-05-21)
+- 0060 (P2 마무리) 가 profiles/friend_requests/friendships/blocks/user_schedules/notifications 의 **write 정책**을 본인 검증으로 잠굼.
+- 0081 (P3) 가 남은 두 영역 마저 잠굼:
+  - `notifications.select` → 본인 행만 (`user_code = profiles.id where auth_uid = auth.uid()`)
+  - `avatars` Storage → 본인 폴더만 (0020 원형 복원, 0045 P1 개방 폐기)
+- **P3 후속 남은 작업**:
+  - `notifications.insert_any` → security-definer RPC 함수 (dispatchMessageTo 패턴 RPC 로 이관 후 본인 행 강제)
+  - 90일 후 자동 파기 cron (탈퇴 후 notifications · profile_nicknames 파기)
+- ⚠️ Apple TEST MODE 사용자는 auth.uid 가 없어 0081 하에서 알림 fetch / 아바타 업로드 불가. 출시 시점에 Apple TEST MODE 비활성화 + 정식 Apple 로그인 전환 필요.
+
+### 8.4 상태 화면 트리거 (P3-A3 완료)
 - ✅ **Maintenance / AppUpdateRequired** — Splash 부팅 게이트(`fetchAppStatus` → 분기) + **런타임 게이트** (`RuntimeStatusGate`: 5분 폴링 + AppState 'active' 시 즉시 재조회 → 변화 시 `navigation.reset`). 운영자가 세션 중 점검 ON / min_app_version 상향해도 사용자가 자동으로 게이트로 이동.
 - ✅ **ErrorNoInternet** — `OfflineGate` (App.tsx) 가 expo-network 동적 import 로 isConnected/isInternetReachable 구독 → false 시 reset. 복귀는 사용자 "새로 고침" 수동(자동 복귀 시 화면 상태 손실 회피).
 - ✅ **ErrorNotFound** — `NavigationContainer` linking `getStateFromPath` 가 매칭 안 되는 deep link 를 404 라우트로 fallback.
@@ -342,4 +352,4 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 
 ---
 
-*근거: `src/screens/**`, `src/components/**`, `src/store/**`, `src/lib/**`, `src/types/**`, `src/navigation/**`, `supabase/migrations/0001~0079`, `supabase/functions/**`, `app.config.ts`, `package.json` 전수 확인. 본 문서는 P1·P2·P3 진행 현황 사실 기록이며, 🔵/⛔ 항목은 후속 기획·구현 대상이다. 최근 갱신(2026-05-21): §3.6 회원 탈퇴 서버 영구 삭제(P3-A1), §3.9 FAQ 신설, §4 faqs·app_status·terms·terms_agreements 테이블 추가, §6 미읽음 카운트 서버화(P3-A5), §8.2 약관 동의 서버화(P3-A2), §8.3 상태 화면 런타임 게이트(P3-A3).*
+*근거: `src/screens/**`, `src/components/**`, `src/store/**`, `src/lib/**`, `src/types/**`, `src/navigation/**`, `supabase/migrations/0001~0081`, `supabase/functions/**`, `app.config.ts`, `package.json` 전수 확인. 본 문서는 P1·P2·P3 진행 현황 사실 기록이며, 🔵/⛔ 항목은 후속 기획·구현 대상이다. 최근 갱신(2026-05-21): §3.6 회원 탈퇴 서버 영구 삭제(P3-A1), §3.9 FAQ 신설, §4 faqs·app_status·terms·terms_agreements 테이블 추가, §6 미읽음 카운트 서버화(P3-A5), §8.2 약관 동의 서버화(P3-A2), §8.3 RLS·Storage 최종 하드닝(P3-C2/C3), §8.4 상태 화면 런타임 게이트(P3-A3).*
