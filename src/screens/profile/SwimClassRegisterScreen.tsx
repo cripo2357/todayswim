@@ -35,6 +35,7 @@ import type { RootStackParamList } from '@/navigation/types';
 import { genSwimClassId, groupByDay, DAY_ORDER } from '@/lib/swimClass';
 import { SwimClassDaySheet } from '@/components/profile/SwimClassDaySheet';
 import { SwimClassTimeSheet } from '@/components/profile/SwimClassTimeSheet';
+import { logEvent } from '@/lib/analytics';
 import HeartFilled from '@assets/icons/heart-filled.svg';
 import IconUniversityHat from '@assets/icons/university-hat.svg';
 import { tokens } from '@/styles/tokens';
@@ -108,6 +109,7 @@ export function SwimClassRegisterScreen() {
       lessonPoolName: poolName,
       swimClasses: classes,
     });
+    void logEvent('lesson_register_complete', { class_count: classes.length });
     navigation.goBack();
   };
 

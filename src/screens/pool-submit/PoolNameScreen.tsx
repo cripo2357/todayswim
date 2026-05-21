@@ -18,6 +18,7 @@ import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { useSubmitPool } from '@/hooks/useSubmitPool';
 import type { RootStackParamList } from '@/navigation/types';
+import { logEvent } from '@/lib/analytics';
 import { tokens } from '@/styles/tokens';
 // Figma 90:7386 — 폼 내 unselected 아이콘 색상 = #4B5563 (Gray/60)
 import IconLifeBuoy from '@assets/icons/life-buoy-gray.svg';
@@ -84,6 +85,7 @@ function CreateForm() {
         hasDivingPool: hasDiving,
         isHotelPool: isHotel,
       });
+      void logEvent('pool_submit_complete', { mode: 'create' });
       navigation.navigate('PoolDone', { mode: 'create' });
     } catch (e) {
       console.error('[PoolSubmit] 에러:', e);
@@ -291,6 +293,7 @@ function EditForm({ poolId }: { poolId?: string }) {
         poolName: name,
         description: desc,
       });
+      void logEvent('pool_submit_complete', { mode: 'edit' });
       navigation.navigate('PoolDone', { mode: 'edit' });
     } catch (e) {
       console.error('[PoolSubmit] 에러:', e);

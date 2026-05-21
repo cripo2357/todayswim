@@ -31,6 +31,7 @@ import type { Pool } from '@/types/pool';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
 import Swimmer from '@assets/icons/swimmer.svg';
+import { logEvent } from '@/lib/analytics';
 import ArrowH from '@assets/icons/arrow-horizontal.svg';
 import IconDepth from '@assets/icons/depth.svg';
 import IconKids from '@assets/icons/facility-kids.svg';
@@ -55,6 +56,10 @@ function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
 
 export function PoolListScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  React.useEffect(() => {
+    void logEvent('pool_list_open');
+  }, []);
 
   const { data: poolsData } = usePools();
   const { data: schedulesData } = useSchedules();

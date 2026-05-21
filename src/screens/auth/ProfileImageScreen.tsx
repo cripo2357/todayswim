@@ -17,6 +17,7 @@ import { useProfile } from '@/store/profile';
 import { useAuth } from '@/store/auth';
 import { pickProfileImage } from '@/lib/pickProfileImage';
 import { uploadProfileAvatar } from '@/lib/uploadProfileAvatar';
+import { logEvent } from '@/lib/analytics';
 import {
   BUNDLE_AVATARS,
   defaultAvatarForGender,
@@ -110,6 +111,13 @@ export function ProfileImageScreen() {
   const onComplete = async () => {
     if (!profile) return;
     await saveProfile({ ...profile, photoUri: photo, photoThumbUri: photoThumb });
+    // mode 식별: photoUri 가 avatar-* 면 default, 'http' 시작이면 upload(or social),
+    // 그 외(빈 값 등)은 unknown. social 과 upload 는 둘 다 URL 이라 추정만 가능.
+    const mode: 'default' | 'upload' = photo.startsWith('avatar-')
+      ? 'default'
+      : 'upload';
+    void logEvent('profile_image_set', { mode });
+    void logEvent('signup_complete');
     navigation.replace('Welcome');
   };
 

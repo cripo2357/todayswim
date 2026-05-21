@@ -160,6 +160,9 @@ export function AddScheduleSheet({
   React.useEffect(() => {
     if (visible && !openedRef.current) {
       openedRef.current = true;
+      void logEvent('schedule_add_started', {
+        source: initialPoolId ? 'timetable' : 'direct',
+      });
       setPhase('form');
       setPoolOpen(false);
       setPoolQuery('');
@@ -226,6 +229,12 @@ export function AddScheduleSheet({
   ]);
 
   const close = () => {
+    // 완료(phase='done')가 아닌 상태에서 닫히면 cancellation 으로 집계.
+    if (phase !== 'done') {
+      void logEvent('schedule_add_cancelled', {
+        step: selectedPool ? (slotIdx === null ? 'slot' : 'review') : 'pool',
+      });
+    }
     Animated.timing(slideY, {
       toValue: SCREEN_H,
       duration: 220,
@@ -465,6 +474,9 @@ export function AddScheduleSheet({
                               key={`${s.start}-${s.end}-${i}`}
                               onPress={() => {
                                 if (conflict) {
+                                  void logEvent('schedule_add_conflict_block', {
+                                    type: conflict,
+                                  });
                                   showTip(i, CONFLICT_LABEL[conflict]);
                                   return;
                                 }

@@ -4,6 +4,7 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { usePrefs } from './prefs';
+import { logEvent } from '@/lib/analytics';
 
 const STORAGE_KEY = 'poolsday.favorites';
 
@@ -38,6 +39,9 @@ export const useFavorites = create<FavoritesState>((set, get) => ({
     const has = prev.includes(poolId);
     const next = has ? prev.filter((id) => id !== poolId) : [...prev, poolId];
     set({ ids: next });
+    void logEvent(has ? 'pool_favorite_remove' : 'pool_favorite_add', {
+      pool_id: poolId,
+    });
     try {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {

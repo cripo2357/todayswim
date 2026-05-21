@@ -11,6 +11,7 @@ import IconDepth from '@assets/icons/depth.svg';
 import IconKids from '@assets/icons/facility-kids.svg';
 import IconDiving from '@assets/icons/facility-diving.svg';
 import IconHotel from '@assets/icons/facility-hotel.svg';
+import { logEvent } from '@/lib/analytics';
 
 type ChipKey = 'kids' | 'diving' | 'hotel';
 const CHIP_LABEL: Record<ChipKey, string> = {
@@ -60,6 +61,11 @@ export function PoolBottomCard({
     },
     [],
   );
+
+  // 카드가 보일 때 1회 — pool_id 별 카드 노출 카운트 (인기 풀 입력).
+  React.useEffect(() => {
+    void logEvent('pool_card_open', { pool_id: pool.id, status });
+  }, [pool.id, status]);
 
   return (
     <View style={styles.card}>

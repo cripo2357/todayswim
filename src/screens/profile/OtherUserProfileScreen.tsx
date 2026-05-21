@@ -36,6 +36,7 @@ import { FriendRequestSentModal } from '@/components/friends/FriendRequestSentMo
 import { CancelFriendRequestModal } from '@/components/friends/CancelFriendRequestModal';
 import { tokens } from '@/styles/tokens';
 import { formatDateTime } from '@/lib/dateFormat';
+import { logEvent } from '@/lib/analytics';
 
 /** "YYYY-MM-DD","HH:MM" → 앱 통일 "YY.MM.DD(요일) 오전/오후 H:MM". */
 function formatWhen(date: string, start: string): string {
@@ -72,6 +73,10 @@ export function OtherUserProfileScreen() {
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { userId } =
     useRoute<RouteProp<RootStackParamList, 'OtherUserProfile'>>().params;
+
+  React.useEffect(() => {
+    void logEvent('other_profile_view');
+  }, [userId]);
 
   const fStore = useFriends();
   const rel = friendRelation(fStore, userId);

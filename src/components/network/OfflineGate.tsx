@@ -10,6 +10,7 @@
 
 import React from 'react';
 import { navigationRef } from '@/navigation/navigationRef';
+import { logEvent } from '@/lib/analytics';
 
 // 게이트가 가로채지 않아야 하는 화면 — Splash 초기 / 이미 ErrorNoInternet / 점검 / 업데이트 게이트 위에선
 // 중복 reset 금지.
@@ -68,6 +69,7 @@ export function OfflineGate() {
     if (!navigationRef.isReady()) return;
     const current = navigationRef.getCurrentRoute()?.name;
     if (current && PASSTHROUGH_ROUTES.has(current)) return;
+    void logEvent('error_no_internet_shown', { from: current ?? 'unknown' });
     navigationRef.reset({ index: 0, routes: [{ name: 'ErrorNoInternet' }] });
   }, [isOffline]);
 

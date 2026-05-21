@@ -27,6 +27,7 @@ import { RejectScheduleInviteModal } from '@/components/schedule/RejectScheduleI
 import { CancelScheduleInviteModal } from '@/components/schedule/CancelScheduleInviteModal';
 import { useNotifications, type NotificationRow } from '@/hooks/useNotifications';
 import { formatDateTime } from '@/lib/dateFormat';
+import { logEvent } from '@/lib/analytics';
 
 // 프로젝트 SVG 아이콘 — 전부 announcement/ 회색톤(#1F2937)으로 통일.
 // 알림 전용 사본(설정 메뉴 등 원본은 자기 색 유지 — sed로 fill만 치환한 복제).
@@ -254,6 +255,7 @@ function handleAction(
   label: string,
   meta: DeadLinkMeta = {},
 ) {
+  void logEvent('notification_tap', { kind, label });
   // === 응답형(C 2버튼) — 상태 변경. 샘플: Alert 피드백 ===
   if (kind === 'friend_request_received') {
     // 신청자가 탈퇴했을 수 있음 — meta.senderAlive 가드 (스펙 §6, P2).
@@ -270,8 +272,10 @@ function handleAction(
     if (meta.scheduleAlive === false) {
       return Alert.alert('삭제된 일정입니다', '카드는 자동 정리됩니다.');
     }
-    if (label === '수락')
+    if (label === '수락') {
+      void logEvent('invite_accepted');
       return Alert.alert('초대 수락', '실 운영 시 일정 참여 + 발신자에게 알림.');
+    }
     // '거절'은 RejectScheduleInviteModal에서 처리(NotifCard.onActionPress 분기).
   }
   // '초대 취소'는 CancelScheduleInviteModal에서 처리(NotifCard.onActionPress 분기).
@@ -371,6 +375,9 @@ function rowToNotif(row: NotificationRow): Notif {
 
 export function NotificationsTab() {
   const { rows } = useNotifications();
+  React.useEffect(() => {
+    void logEvent('notification_tab_open', { unread_count: 0 });
+  }, []);
   // 서버 row가 있으면 단일 "최근" 그룹으로 통합(시간 정렬은 fetch에서 desc).
   // 0건 → mock 갤러리 폴백(가입 직후·검증 매끄러움).
   return (
@@ -487,6 +494,7 @@ function NotifCard({ notif }: { notif: Notif }) {
         visible={rejectVisible}
         name={notif.name ?? '[탈퇴 회원]'}
         onReject={() => {
+          void logEvent('invite_rejected');
           setRejectVisible(false);
           // 샘플 갤러리 — 실 운영 시 거절 기록 + 발신자에게 알림.
           Alert.alert('초대 거절', '실 운영 시 거절 기록 + 발신자에게 알림.');

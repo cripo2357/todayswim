@@ -73,6 +73,10 @@ export function DonationScreen() {
   const profile = useProfile((s) => s.profile);
   const { data: appStatus } = useAppStatus();
   const { items } = useDonations();
+
+  React.useEffect(() => {
+    void logEvent('donation_screen_open');
+  }, []);
   const updateMessage = useUpdateDonationMessage();
   const toggleHidden = useToggleDonationHidden();
 
@@ -323,6 +327,7 @@ export function DonationScreen() {
               onCancelEdit={() => setEditingId(null)}
               onSaveEdit={async (msg) => {
                 await updateMessage(item.id, msg);
+                void logEvent('donation_message_edit');
                 setEditingId(null);
               }}
               onHide={() => setHideId(item.id)}
@@ -344,7 +349,10 @@ export function DonationScreen() {
         visible={!!hideId}
         onClose={() => setHideId(null)}
         onConfirm={() => {
-          if (hideId) void toggleHidden(hideId, true);
+          if (hideId) {
+            void toggleHidden(hideId, true);
+            void logEvent('donation_hide_toggle', { hidden: true });
+          }
         }}
       />
     </SafeAreaView>

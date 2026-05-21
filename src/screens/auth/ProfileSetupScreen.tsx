@@ -14,6 +14,7 @@ import IconCake from '@assets/icons/cake.svg';
 
 import { useProfile, genProfileId, type Gender, type Stroke } from '@/store/profile';
 import { useAuth } from '@/store/auth';
+import { logEvent } from '@/lib/analytics';
 import {
   isNicknameTaken,
   claimNickname,
@@ -164,6 +165,7 @@ export function ProfileSetupScreen() {
     });
     // 닉네임 선점 (중복 insert는 PK 충돌로 무시).
     await claimNickname(trimmedName);
+    void logEvent('profile_setup_complete', { stroke_count: strokes.size });
     // 프로필 저장 → 이미지 등록 단계 → Welcome.
     navigation.replace('ProfileImage');
   };

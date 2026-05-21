@@ -10,6 +10,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth, type SocialProvider } from '@/store/auth';
 import { useProfile } from '@/store/profile';
 import { getTermsState, isFullyAgreed, clearTerms } from '@/lib/terms';
+import { logEvent } from '@/lib/analytics';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
 import LoginIllust from '@assets/illustrations/login.svg';
@@ -35,6 +36,7 @@ export function LoginScreen() {
   };
 
   const onSocial = async (provider: SocialProvider) => {
+    void logEvent('signup_started', { provider });
     // [TEST MODE] Apple 로그인을 가입 프로세스 강제 진입점으로 사용 — 매번 약관·프로필 리셋 후 처음부터.
     // 원복: Apple 분기 블록 + iOS 플랫폼 체크 복구.
     if (provider === 'apple') {

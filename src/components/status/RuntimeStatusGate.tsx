@@ -21,6 +21,7 @@ import Constants from 'expo-constants';
 import { navigationRef } from '@/navigation/navigationRef';
 import { useAppStatus } from '@/hooks/useAppStatus';
 import { isAppBelow } from '@/lib/version';
+import { logEvent } from '@/lib/analytics';
 
 // 자기 자신 위에 reset 하지 않도록 — 이미 게이트 화면이면 통과.
 const PASSTHROUGH_ROUTES = new Set([
@@ -71,6 +72,10 @@ export function RuntimeStatusGate() {
       status.minAppVersion &&
       isAppBelow(currentVersion, status.minAppVersion)
     ) {
+      void logEvent('update_required_shown', {
+        current_version: currentVersion,
+        min_version: status.minAppVersion,
+      });
       navigationRef.reset({
         index: 0,
         routes: [

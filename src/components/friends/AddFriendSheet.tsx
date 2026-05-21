@@ -38,6 +38,7 @@ import {
   type FriendSearchUser,
 } from '@/lib/friendSearch';
 import { useNicknameSearch, useCodeSearch } from '@/hooks/useFriendSearch';
+import { logEvent } from '@/lib/analytics';
 
 // 시트를 길게 고정 — 검색 트리거/드롭다운이 화면 위쪽에 와서 키보드(아래
 // ~40%)에 안 가리도록(사용자 확정: 시트 전체를 올리지 말고 길게).
@@ -100,8 +101,10 @@ export function AddFriendSheet({
       setSelUser(null);
       setNickOpen(false);
       setCode('');
+    } else {
+      void logEvent('friend_search_executed', { tab });
     }
-  }, [visible]);
+  }, [visible, tab]);
 
   // P2: mock 즉시 결과 + 서버 profiles 검색 합쳐 dedupe. opts(친구/차단) 동일 필터.
   const results = useNicknameSearch(nq, opts);

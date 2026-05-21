@@ -19,6 +19,7 @@
 
 import { Platform } from 'react-native';
 import { supabase } from '@/lib/supabase';
+import { logEvent } from '@/lib/analytics';
 
 const PROJECT_ID = process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
 
@@ -41,6 +42,12 @@ export async function registerForPush(authUid: string | undefined): Promise<void
     if (existing !== 'granted') {
       const req = await Notifications.requestPermissionsAsync();
       status = req.status;
+      // 첫 권한 요청 응답만 이벤트로 — 이미 granted였던 케이스는 제외.
+      void logEvent(
+        status === 'granted'
+          ? 'push_permission_granted'
+          : 'push_permission_denied',
+      );
     }
     if (status !== 'granted') return; // 사용자 거부 — 조용히 통과.
 

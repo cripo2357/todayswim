@@ -440,6 +440,7 @@ export function MapScreen() {
   };
 
   const flyToMyLocation = async () => {
+    void logEvent('pool_search_my_location');
     // 항상 새로 측정 — 사용자가 이동했을 수 있으므로 캐시된 geo.coords 무시.
     // request()는 캐시→fresh 2단계로 최신 좌표 반환. 권한 거부 시 null.
     const fresh = await geo.request();
@@ -673,7 +674,10 @@ export function MapScreen() {
         {filterActive ? (
           <View style={[styles.fab, styles.fabFilterPill]}>
             <Pressable
-              onPress={() => clearAllFilter()}
+              onPress={() => {
+                void logEvent('map_filter_clear');
+                clearAllFilter();
+              }}
               style={({ pressed }) => [
                 styles.fabFilterReset,
                 pressed && { opacity: 0.6 },

@@ -25,6 +25,7 @@ import { useProfile } from '@/store/profile';
 import { usePools } from '@/hooks/usePools';
 import { BUNDLE_AVATARS, isBundleAvatar } from '@/lib/avatars';
 import type { Pool } from '@/types/pool';
+import { logEvent } from '@/lib/analytics';
 
 const AV = 42;
 
@@ -85,7 +86,10 @@ export function MapStartLocationScreen() {
         <View style={styles.group}>
           <Text style={styles.groupLabel}>내 위치</Text>
           <Pressable
-            onPress={() => setMapStartPoolId(null)}
+            onPress={() => {
+              void logEvent('map_start_location_change', { target: 'me' });
+              setMapStartPoolId(null);
+            }}
             style={styles.card}
             accessibilityRole="button"
             accessibilityState={{ selected: meSelected }}
@@ -111,7 +115,13 @@ export function MapStartLocationScreen() {
               return (
                 <Pressable
                   key={p.id}
-                  onPress={() => setMapStartPoolId(p.id)}
+                  onPress={() => {
+                    void logEvent('map_start_location_change', {
+                      target: 'pool',
+                      pool_id: p.id,
+                    });
+                    setMapStartPoolId(p.id);
+                  }}
                   style={styles.card}
                   accessibilityRole="button"
                   accessibilityState={{ selected: sel }}

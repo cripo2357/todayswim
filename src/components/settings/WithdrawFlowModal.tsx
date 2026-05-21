@@ -13,6 +13,7 @@ import React from 'react';
 import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
 import { Check } from 'lucide-react-native';
 import { tokens } from '@/styles/tokens';
+import { logEvent } from '@/lib/analytics';
 // 프로젝트 기존/업로드 아이콘 사용(lucide 대체 X).
 //  life-buoy.svg = baked black 20px (WelcomeScreen·MapScreen 등 상시 사용,
 //    노랑 버튼 검정 라벨에 적합 — Figma 201:8373).
@@ -43,8 +44,15 @@ export function WithdrawFlowModal({
   const [phase, setPhase] = React.useState<Phase>('confirm1');
   // 열릴 때마다 1단계부터.
   React.useEffect(() => {
-    if (visible) setPhase('confirm1');
+    if (visible) {
+      setPhase('confirm1');
+      void logEvent('withdraw_started');
+    }
   }, [visible]);
+  // 'done' 단계 도달 = 탈퇴 진행 완료 (부모가 onDeleted 호출 직전 카드).
+  React.useEffect(() => {
+    if (phase === 'done') void logEvent('withdraw_complete');
+  }, [phase]);
 
   return (
     <Modal

@@ -34,6 +34,7 @@ import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { ConfirmLogoutModal } from '@/components/settings/ConfirmLogoutModal';
 import { WithdrawFlowModal } from '@/components/settings/WithdrawFlowModal';
 import { tokens } from '@/styles/tokens';
+import { logEvent } from '@/lib/analytics';
 import BrandWordmark from '@assets/illustrations/wordmark-poolsday-color.svg';
 import { WordmarkDroplets } from '@/components/ui/WordmarkDroplets';
 import IconProfile from '@assets/icons/settings/profile.svg';
@@ -471,6 +472,7 @@ export function SettingsScreen() {
       <ConfirmLogoutModal
         visible={logoutOpen}
         onConfirm={async () => {
+          void logEvent('logout');
           setLogoutOpen(false);
           await signOut();
           // 로그아웃 처리 후 맵으로 (스택 리셋 — 뒤로가기로 설정 복귀 방지)

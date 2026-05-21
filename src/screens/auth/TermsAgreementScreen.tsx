@@ -21,6 +21,7 @@ import type { TermsKey } from '@/lib/termsContent';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
 import { AppHeader } from '@/components/layout/AppHeader';
+import { logEvent } from '@/lib/analytics';
 import TermsKeyIllust from '@assets/illustrations/terms-key.svg';
 import IconGavel from '@assets/icons/gavel.svg';
 import IconGavelGray from '@assets/icons/gavel-gray.svg';
@@ -101,6 +102,7 @@ export function TermsAgreementScreen() {
 
   const onStart = () => {
     if (!canStart) return;
+    void logEvent('terms_all_agreed', { marketing: agreed.marketing ? 1 : 0 });
     navigation.replace('ProfileSetup');
   };
 

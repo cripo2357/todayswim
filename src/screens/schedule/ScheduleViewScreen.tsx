@@ -17,6 +17,7 @@ import type { RootStackParamList } from '@/navigation/types';
 import { isAnonNickname, type DayOfWeek, type TimeSlot } from '@/types/schedule';
 import { visibleSeasonGroups } from '@/lib/seasonSchedule';
 import { tokens } from '@/styles/tokens';
+import { logEvent } from '@/lib/analytics';
 
 const DAYS: DayOfWeek[] = ['월', '화', '수', '목', '금', '토', '일'];
 
@@ -29,6 +30,10 @@ export function ScheduleViewScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, 'ScheduleView'>>();
   const { poolId } = route.params;
+
+  React.useEffect(() => {
+    void logEvent('pool_schedule_view_open', { pool_id: poolId });
+  }, [poolId]);
 
   const { data: poolsData } = usePools();
   const { data: schedulesData } = useSchedules();
@@ -115,6 +120,10 @@ export function ScheduleViewScreen() {
     const last = lastTapRef.current;
     if (last && last.key === key && now - last.t < 300) {
       lastTapRef.current = null;
+      void logEvent('schedule_slot_double_tap', {
+        pool_id: poolId,
+        day: selectedDay,
+      });
       openRegister(slot);
     } else {
       lastTapRef.current = { key, t: now };

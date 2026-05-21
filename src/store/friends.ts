@@ -81,6 +81,7 @@ export const useFriends = create<FriendsState>((set) => ({
   accept: (id) => {
     const me = myProfileId();
     if (me) void tryAcceptFriendRequest(me, id);
+    void logEvent('friend_request_accepted');
     set((s) => {
       const req = s.requests.find((r) => r.id === id);
       if (!req) return s;
@@ -102,6 +103,7 @@ export const useFriends = create<FriendsState>((set) => ({
   reject: (id) => {
     const me = myProfileId();
     if (me) void tryRejectFriendRequest(id, me);
+    void logEvent('friend_request_rejected');
     set((s) => ({ requests: s.requests.filter((r) => r.id !== id) }));
   },
   sendRequest: (id) => {
