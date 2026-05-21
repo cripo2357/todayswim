@@ -1,7 +1,8 @@
 // 메시지 발송 디스패처 — 단일 진입점.
 //
 // 액션 지점(초대/수락/거절/취소/만료 등)은 전부 dispatchMessage()만 호출한다.
-// 룰(rules.ts) 조회 → 메시지 인스턴스 생성 → Supabase notifications insert.
+// 룰(rules.ts) 조회 → 메시지 인스턴스 생성 → Supabase notifications insert
+// + (P3-A4 통합) 본인 외 수신자에게 OS 푸시 발송.
 //
 // 변수 정책 (v0.6 — 스펙 §변수 갱신 방식)
 //  · pool/시간표/date/time: **사실 기록(fact-snapshot)** — 여기서 발송 시점 값을
@@ -13,8 +14,14 @@
 // Phase 2(2026-05-20~) 진입: 호출자가 `toUserCode`를 알려주면 'self'(액션을
 // 한 본인) + 'other'(상대) 두 행을 동시 적재. RULES[kind].recipients가
 // 'self'면 toUserCode 무시. 'both'/'other'면 toUserCode 필수(없으면 self만).
-// 수신함 fetch는 hooks/useNotifications. 서버 사이드 푸시(FCM/APNS)·크론은
-// 여전히 P3 갭(message_rules_architecture).
+// 수신함 fetch는 hooks/useNotifications.
+//
+// P3 (2026-05-21) — OS 푸시 통합 (B.1):
+//  · notifications insert 후, **본인 외 수신자**에게 send-push Edge Function 호출.
+//  · profile.id(친구코드) → auth_uid 변환해 user_ids 전달.
+//  · 본인 행(self)은 인앱만 — 방금 본인 액션 confirm 푸시는 노이즈.
+//  · best-effort — 실패해도 알림 적재는 살아있음.
+//  · Apple TEST MODE: 상대 profile.auth_uid 가 null/없음이면 push skip.
 //
 // related (Phase 2 navigate/dead-link 가드용)
 //  · poolId        : 풀 dead-link 가드 (deleted_at 체크)
@@ -25,6 +32,41 @@
 import { supabase } from '@/lib/supabase';
 import { useProfile } from '@/store/profile';
 import { RULES, type MessageKind, type MessageParams } from './rules';
+
+// ─────────────────────────────────────────────────────────────────────
+// OS 푸시 발송 helper — 친구코드(profile.id) → auth_uid 변환 → send-push.
+// best-effort, 실패 silent. 호출 측에서 await 안 함(void).
+// ─────────────────────────────────────────────────────────────────────
+async function sendPushToUserCode(
+  toUserCode: string,
+  title: string,
+  bodyLines: string[],
+  data: Record<string, unknown>,
+): Promise<void> {
+  try {
+    // 친구코드 → auth_uid lookup. mock 사용자(auth_uid null) 는 skip.
+    const { data: prof } = await supabase
+      .from('profiles')
+      .select('auth_uid')
+      .eq('id', toUserCode)
+      .maybeSingle();
+    const authUid = (prof as { auth_uid?: string | null } | null)?.auth_uid;
+    if (!authUid) return;
+
+    await supabase.functions.invoke('send-push', {
+      body: {
+        user_ids: [authUid],
+        title,
+        // 인앱 알림 body 는 줄 배열이지만 OS 푸시는 단일 문자열 — join.
+        // 빈 줄(separator) 은 제외.
+        body: bodyLines.filter((l) => l.length > 0).join('\n'),
+        data,
+      },
+    });
+  } catch {
+    /* best-effort — 푸시 실패해도 인앱 알림은 살아있음 */
+  }
+}
 
 /** dispatchMessage 옵션. `toUserCode` 가 주어지면 상대 행도 적재(P2 진입). */
 export interface DispatchOptions {
@@ -84,6 +126,19 @@ export async function dispatchMessage(
   } catch {
     // 오프라인/미인증 등 — 이력 적재 실패는 비차단(베스트 에포트).
   }
+
+  // OS 푸시 발송 — 본인 외 수신자만(본인은 인앱 confirm 으로 충분).
+  // void: await 안 함 — 호출자(액션 핸들러)가 푸시 응답까지 기다릴 필요 없음.
+  for (const row of rows) {
+    if (row.user_code !== userCode) {
+      void sendPushToUserCode(
+        row.user_code as string,
+        content.title,
+        content.body,
+        related,
+      );
+    }
+  }
 }
 
 /**
@@ -122,4 +177,7 @@ export async function dispatchMessageTo(
   } catch {
     /* best-effort */
   }
+
+  // OS 푸시 — dispatchMessageTo 는 정의상 상대(remote)에게만 가니까 항상 발송.
+  void sendPushToUserCode(toUserCode, content.title, content.body, related);
 }
