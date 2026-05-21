@@ -24,8 +24,9 @@
 
 | 항목 | 현재 | 출시 요구 | 상태 |
 |---|---|---|---|
-| 네이티브 스플래시 (JS 로드 전) | **❌ 설정 없음** (`app.config.ts` 에 `splash` 키 없음, expo 기본 흰 화면) | 브랜딩 적용된 스플래시 | ⚠️ 보완 필요 |
+| 네이티브 스플래시 (JS 로드 전) | ✅ `expo-splash-screen` 플러그인 (cyan bg `#63CBE8` + `icon.png` 200px) | 브랜딩 적용된 스플래시 | ✅ (2026-05-21 P3-C.1 완료) |
 | JS 진입 후 스플래시 | `SplashScreen.tsx` (애니메이션 + 진행바 + cyan bg + droplet) | OK — 이건 풍부함 | ✅ |
+| 네이티브 → JS 인계 | App.tsx 에서 `preventAutoHideAsync()` + fontsLoaded 시 `hideAsync()` | 매끄러운 전환 | ✅ |
 
 **필요 조치 (선택)**:
 앱 시동 ~ JS 로드까지 1~2초 빈 흰 화면이 보일 가능성. 두 옵션:

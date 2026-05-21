@@ -157,6 +157,17 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
 
   plugins: [
+    // 네이티브 스플래시 (JS 로드 전) — JS의 SplashScreen 와 색·아이콘 일치시켜
+    // 매끄러운 transition. cyan bg + 워드마크의 단순 fallback 아이콘.
+    // image 가 따로 없어서 일단 icon.png 재사용 — 가운데 정렬, resizeMode contain.
+    [
+      'expo-splash-screen',
+      {
+        backgroundColor: '#63CBE8',
+        image: './assets/icon.png',
+        imageWidth: 200,
+      },
+    ],
     [
       'expo-font',
       {

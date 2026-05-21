@@ -17,6 +17,7 @@ import { OfflineGate } from '@/components/network/OfflineGate';
 import { RuntimeStatusGate } from '@/components/status/RuntimeStatusGate';
 import { initSentry, SentryErrorBoundary } from '@/lib/sentry';
 import { initAnalytics, logScreen } from '@/lib/analytics';
+import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from '@/hooks/useFonts';
 import { usePoolFilter } from '@/store/poolFilter';
 import { useSelection } from '@/store/selection';
@@ -40,6 +41,12 @@ initSentry();
 // google-services.json + @react-native-firebase/* 패키지 모두 갖춰진
 // EAS 빌드에서만 활성화, 그 외(Expo Go·미배치 상태)는 silent no-op.
 initAnalytics();
+
+// 네이티브 스플래시 (JS 로드 전) — 폰트 로드 완료까지 가시 유지. 자동 hide
+// 막아두고 fontsLoaded 시점에 명시적 hideAsync 호출 → JS SplashScreen 인계.
+// 실패는 silent(개발 환경·EAS 빌드 안 된 dev 클라이언트 등에서 native module
+// 부재 시).
+void SplashScreen.preventAutoHideAsync().catch(() => {});
 
 // Deep link 게이트. 매칭되는 경로가 없으면 ErrorNotFound 로 fallback.
 // 현재 매칭 스크린 없음 — poolsday://... 들어오면 무조건 404 라우트로 처리.
@@ -73,6 +80,15 @@ export default function App() {
     // mockData.ts 변경 시 seedMockProfiles의 SEED_KEY versioning으로 재시드.
     void import('@/lib/seedMockProfiles').then((m) => m.seedMockProfilesOnce());
   }, []);
+
+  // 폰트 로드 완료(또는 에러) 시점에 네이티브 스플래시 hide → JS SplashScreen 인계.
+  // 두 효과가 매끄럽게 연결되도록 동기·idempotent 호출(SplashScreen.hideAsync 는
+  // 이미 hide 된 상태에서도 무해).
+  React.useEffect(() => {
+    if (fontsLoaded || fontError) {
+      void SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [fontsLoaded, fontError]);
 
   if (!fontsLoaded && !fontError) {
     return (
