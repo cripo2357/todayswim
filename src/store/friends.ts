@@ -19,6 +19,11 @@ import {
   tryAcceptFriendRequest,
   tryDeleteFriendship,
   tryInsertBlock,
+  tryFetchFriendIds,
+  tryFetchIncomingRequestFromIds,
+  tryFetchOutgoingRequestToIds,
+  tryFetchBlockedIds,
+  tryFetchAccountsByIds,
 } from '@/lib/friendsSync';
 import { logEvent } from '@/lib/analytics';
 
@@ -59,6 +64,13 @@ interface FriendsState {
   requests: FriendRequest[]; // 내가 받은 요청(incoming)
   sent: string[]; // 내가 보낸 요청 대상 id(outgoing)
   blocked: string[]; // 영구 차단 id(해제 없음)
+  /** 서버 fetch → 메모리 교체. P3-A.1 (2026-05-22) 다기기/재설치 복구.
+   *  profile.id 생기는 시점에 App.tsx useEffect 가 호출.
+   *  · 미인증(Apple mock / 비로그인) → skip, MOCK_FRIENDS 시드 유지
+   *  · 인증된 사용자 → 4종(friendships/incoming/outgoing/blocks) 병렬
+   *    fetch + profiles 일괄 lookup → MockAccount 변환 → 전체 교체.
+   *  · server 0건 = 신규 가입자(실 친구 없음) — 빈 상태 정상 반영. */
+  serverSync: () => Promise<void>;
   /** 친구로 등록 — 받은 요청을 친구 목록으로 이동 */
   accept: (id: string) => void;
   /** 받은 친구 요청 거절 — 요청 제거 */
@@ -78,6 +90,52 @@ export const useFriends = create<FriendsState>((set) => ({
   requests: SEED_REQUESTS,
   sent: [],
   blocked: [],
+
+  serverSync: async () => {
+    const me = myProfileId();
+    if (!me) return; // Apple mock / 비로그인 — MOCK_FRIENDS 시드 유지
+
+    // 4종 병렬 fetch — friendships / incoming / outgoing / blocks.
+    const [friendIds, incomingIds, outgoingIds, blockedIds] =
+      await Promise.all([
+        tryFetchFriendIds(me),
+        tryFetchIncomingRequestFromIds(me),
+        tryFetchOutgoingRequestToIds(me),
+        tryFetchBlockedIds(me),
+      ]);
+
+    // 표시(닉네임/아바타) 필요한 ids 만 union — blocked·outgoing 은 id 만으로 OK.
+    const visibleIds = Array.from(new Set([...friendIds, ...incomingIds]));
+    const accounts = await tryFetchAccountsByIds(visibleIds);
+    const accountMap = new Map(accounts.map((a) => [a.id, a]));
+
+    const friends: MockAccount[] = friendIds
+      .map((id) => accountMap.get(id))
+      .filter((x): x is MockAccount => !!x);
+
+    const requests: FriendRequest[] = incomingIds
+      .map((id) => {
+        const a = accountMap.get(id);
+        if (!a) return null;
+        return {
+          id: a.id,
+          avatar: a.avatar,
+          nickname: a.nickname,
+          status: a.status,
+          // 표시 시각 — server 측 created_at 가져오는 풍부 fetch 는 후속 (v1 = 빈 값).
+          time: '',
+        } satisfies FriendRequest;
+      })
+      .filter((x): x is FriendRequest => !!x);
+
+    set({
+      friends,
+      requests,
+      sent: outgoingIds,
+      blocked: blockedIds,
+    });
+  },
+
   accept: (id) => {
     const me = myProfileId();
     if (me) void tryAcceptFriendRequest(me, id);

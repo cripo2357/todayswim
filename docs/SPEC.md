@@ -69,7 +69,7 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 [로그인 필요 — 개인 영역]
 ├─ MyInfo ✅           [인증]  내 정보 허브 3탭: 스케줄(달력)/사람들(친구)/메시지(알림)
 │  ├─ (탭) CalendarTab ✅      내 수영 일정 달력
-│  ├─ (탭) FriendsTab 🟡       친구 목록·요청·새 친구 추가 (목업)
+│  ├─ (탭) FriendsTab ✅       친구 목록·요청·새 친구 추가 (서버 + 메모리 캐시)
 │  └─ (탭) NotificationsTab ✅ 알림 목록 (실 notifications fetch, 0건 시 mock 갤러리 폴백). 탭 진입 시 read=true 일괄 UPDATE
 ├─ Profile ✅          [인증]  프로필 보기·수정(닉네임/소개/성별/생일/경력/레슨/영법/자격증/IM100 + 항목별 공개범위)
 ├─ SwimClassRegister ✅[인증]  레슨 받는 수영장 + 주간 시간 슬롯 등록(로컬 프로필)
@@ -111,11 +111,17 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 4. "수영 일정 추가" → 로컬(AsyncStorage) 즉시 반영 + 서버 `user_schedules` best-effort sync (`tryInsertSchedule`). 다기기 동기 = profile.id 생기는 시점에 `serverSync()` 가 `user_schedules` fetch → 로컬 교체 (App.tsx useEffect, P3-A.2 2026-05-22). 완료 카드.
 5. (친구 1명+) "이 일정에 친구 초대하기" → `InviteFriends`(친구 다중선택, 이미 참여/이미 초대 제외) → 전송 시 `dispatchMessage('invite_sent')`(작성자 본인 이력 1행만 Supabase insert) → `InviteDone`. **수신자에게 실제 전달 없음(Phase 2).**
 
-### 3.4 친구 · 차단 🟡(메모리 목업, 재시작 시 초기화)
-- 친구 그래프(`useFriends`)는 메모리 목업(`MOCK_FRIENDS` 등) — 서버·영속 없음.
-- 새 친구 추가: 닉네임 검색 / ID(6자) 검색 → 초대장 보내기(목업).
-- 받은 친구신청: 등록(수락) / 거절(`friend_request_rejected` dispatch, 본인 이력만).
-- 차단/삭제: 타 프로필에서 확인 모달 → 차단=영구·전면 접점차단(해제 없음, store 경유 일괄 적용).
+### 3.4 친구 · 차단 ✅(서버 SSOT, 메모리 캐시)
+- 친구 그래프(`useFriends`) = profile.id 생기는 시점에 `serverSync()` 가
+  4종(`friendships` / `friend_requests` 양방향 pending / `blocks`) 병렬 fetch +
+  profiles 일괄 lookup → 메모리 교체. App.tsx useEffect 가 트리거 (P3-A.1
+  2026-05-22). Apple TEST MODE / 비로그인 → MOCK_FRIENDS 시드 유지.
+- 새 친구 추가: 닉네임 검색 / ID(6자) 검색 → 초대장 보내기(friendsSync
+  `tryInsertFriendRequest` 서버 mirror).
+- 받은 친구신청: 등록(수락) → `friendships` 양방향 두 행 insert + `friend_request_received` dispatch.
+- 차단/삭제: 타 프로필에서 확인 모달 → 차단=영구·전면 접점차단(해제 없음).
+  `enforce_block_cleanup` DB trigger (0048) 가 양쪽 친구관계 + pending 요청
+  자동 정리.
 
 ### 3.5 레슨 등록 🟡(로컬 프로필)
 - Profile/MyInfo의 "레슨 정보 변경" → `SwimClassRegister`.

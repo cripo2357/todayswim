@@ -25,6 +25,7 @@ import { useSelection } from '@/store/selection';
 import { useAuth } from '@/store/auth';
 import { useProfile } from '@/store/profile';
 import { useSwimSchedules } from '@/store/swimSchedule';
+import { useFriends } from '@/store/friends';
 import { usePrefs } from '@/store/prefs';
 import { useFavorites } from '@/store/favorites';
 import { tokens } from '@/styles/tokens';
@@ -72,13 +73,14 @@ export default function App() {
   // NotificationsTab + 미읽음 배지 자동 갱신. (P3 후속 2026-05-22)
   useNotificationsRealtime();
 
-  // user_schedules 서버 sync — profile.id 가 생기는 시점(가입 직후 / 재시동
-  // 로그인 복구)에 서버 fetch 로 로컬 교체. 다기기 동기·재설치 복구.
-  // (A.2 P3 후속, 2026-05-22)
+  // user_schedules + friends 서버 sync — profile.id 가 생기는 시점(가입
+  // 직후 / 재시동 로그인 복구)에 서버 fetch 로 로컬 교체. 다기기 동기·재설치
+  // 복구. (A.2 / A.1 P3 후속, 2026-05-22)
   const profileId = useProfile((s) => s.profile?.id);
   React.useEffect(() => {
     if (profileId) {
       void useSwimSchedules.getState().serverSync();
+      void useFriends.getState().serverSync();
     }
   }, [profileId]);
 

@@ -182,6 +182,43 @@ export async function tryFetchBlockedIds(meId: string): Promise<string[]> {
   }
 }
 
+/** id 목록 → MockAccount 객체 배열. friends store serverSync 가 사용.
+ *  profile 조회 실패한 id 는 결과에서 제외. avatar 폴백 = 'avatar-male-1'.
+ *  ※ avatar 는 strict AvatarId 타입이지만 서버 photo_uri 는 AvatarId 또는
+ *    업로드 URL — UI Avatar 컴포넌트가 isBundleAvatar 로 분기라 cast 안전.
+ *  P3 후속: 친구 코드 변경 cascade / 탈퇴 시 옛 row 처리. */
+import type { MockAccount as _MockAccount } from './mockData';
+
+export async function tryFetchAccountsByIds(
+  ids: string[],
+): Promise<_MockAccount[]> {
+  if (ids.length === 0) return [];
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, nickname, bio, photo_uri')
+      .in('id', ids);
+    if (error || !data) return [];
+    return (
+      data as Array<{
+        id: string;
+        nickname: string;
+        bio: string | null;
+        photo_uri: string | null;
+      }>
+    ).map((p) => ({
+      id: p.id,
+      nickname: p.nickname,
+      status: p.bio ?? '',
+      code: p.id,
+      // 서버 URL avatar 도 AvatarId 로 cast — UI 가 isBundleAvatar 로 처리.
+      avatar: (p.photo_uri ?? 'avatar-male-1') as _MockAccount['avatar'],
+    }));
+  } catch {
+    return [];
+  }
+}
+
 // ─── 친구 검색 (P2 진입 후 — mock 검색과 결합 사용) ───
 //   nickname 부분일치(ILIKE) + photo_uri/nickname 노출용. profiles_nickname_idx
 //   인덱스(0047) 활용. 결과 형식은 FriendSearchUser 와 호환되도록 호출부에서 매핑.
