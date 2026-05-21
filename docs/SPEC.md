@@ -205,6 +205,7 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 | `app_status` ✅ | 운영자 설정 단일 row(점검·강제업데이트·후원 계좌) | 필수: id(=1 single-row), maintenance_mode, min_version · 선택: donation_bank, donation_account, donation_holder(0068) | RLS read all, write service_role 만. 클라가 Splash + Donation 화면에서 조회 |
 | `terms` ✅ | 약관 문서·버전 마스터 (0044 + 0079) | 필수: id(PK), type(service/privacy_consent/privacy_policy/location/marketing), version, effective_date, content(jsonb), is_required, requires_consent, is_active | RLS read all, write service_role 만. 5종 시드 v1.0.0. 운영자가 개정 시 새 row + is_active 교체 |
 | `terms_agreements` ✅ | 약관 동의 이력 — append-only 감사 로그 (0044) | 필수: id(PK), user_id(FK→auth.users CASCADE), terms_type, terms_version(스냅샷), action(agree/withdraw), meta(jsonb), created_at | RLS: 본인 행만 select/insert, UPDATE/DELETE 정책 없음 = 불변. Apple mock 은 auth.users 없어 로컬 폴백 |
+| `push_tokens` ✅ | OS 푸시 토큰 저장 (P3-A4, 0082) | 필수: id(PK), user_id(FK→auth.users CASCADE), expo_token(unique), platform(ios/android/web), created_at, updated_at · 선택: device_label | RLS 본인 행만(select/insert/update/delete = auth.uid()=user_id). 죽은 토큰은 send-push 가 자동 DELETE |
 
 **Storage 버킷:** `avatars` ✅ (public read / **본인 폴더만 write/update/delete**, P3-C3 하드닝 0081 로 0045 개방 폐기 + 0020 원형 복원, 경로 `{auth.uid}/avatar.jpg`+`avatar_thumb.jpg`) · `pool-photos` ✅ (마이그레이션 없음 — 운영자가 대시보드에서 수동 생성, public, 풀 INSERT에 URL 박힘)
 
@@ -274,7 +275,9 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 
 > 📄 **상세 명세:** 26개 알림 트리거의 발송 조건·수신자·본문·액션·우선순위·채널은 [notification-triggers-spec.md](notification-triggers-spec.md)에 정의(v0.1 초안). 본 절은 코드에 실제 선언된 룰 기준 현황만 기록한다.
 
-> **결정적 사실:** **OS 푸시 알림이 코드에 전혀 없다** (expo-notifications/FCM/APNs/푸시토큰 부재). 모든 "알림"은 **인앱**(`notifications` 테이블 insert)이며, NotificationsTab 은 실 테이블에서 fetch (0건 시 mock 갤러리 폴백). 미읽음 배지(MapScreen FAB) = **서버 `count(*) WHERE read=false`** 단일 출처(P3-A5). 알림탭 진입 시 `read=true` 일괄 UPDATE. 설정의 "푸시 알림 받기" 토글은 미연동(로컬 state). → **OS 푸시 인프라는 신규 설계 대상**(P3-A4), 아래는 코드에 선언된 메시지 룰(`lib/messages/rules.ts`) 기준.
+> **현황 (P3-A4 골격 완료):** OS 푸시 인프라가 들어왔다 — `expo-notifications` + `push_tokens` 테이블(0082) + Edge Function `send-push` (Expo Push Service 경유). 로그인 직후 `registerForPush(auth.uid)` 가 권한 요청·토큰 발급·upsert. 단 **네이티브 동작은 다음 EAS 빌드 이후** (현재는 코드만, dev 클라이언트에서는 동적 import 가 silent fail). 발송 측은 운영자가 Dashboard 에서 `send-push` 호출하거나 향후 trigger/RPC 에 연결(P3 후속).
+> NotificationsTab(인앱 알림함) 은 별개로 실 테이블에서 fetch (0건 시 mock 갤러리 폴백). 미읽음 배지 = **서버 `count(*) WHERE read=false`**(P3-A5).
+> 설정의 "푸시 알림 받기" 토글은 인앱 토글이며, OS 권한 자체는 `registerForPush` 의 시스템 다이얼로그가 별도 관리.
 
 | 트리거 이벤트 | 발신 | 수신 대상 조건 | 분류 | 상태 | 전달 |
 |---|---|---|---|---|---|
@@ -310,8 +313,9 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 | @tanstack/react-query, supercluster, async-storage | 비동기 상태 / 클러스터링 / 로컬 영속 | 로컬 | — |
 
 - **Sentry** (`@sentry/react-native`) — P3-A6 크래시·에러 리포팅. DSN 은 `EXPO_PUBLIC_SENTRY_DSN` env (없으면 init no-op). JS 에러는 즉시 보고, 네이티브 크래시는 다음 EAS 빌드 후 활성. `sendDefaultPii=false`, `setUser` 로 auth.uid 만 묶임(닉네임/이메일 PII 미전송).
+- **Expo Push Service** (`expo-notifications`, P3-A4) — OS 푸시 발송. 토큰(`ExponentPushToken[...]`) 은 `push_tokens` 테이블 보관, Edge Function `send-push` 가 `https://exp.host/--/api/v2/push/send` POST. FCM/APNs 키 직접 관리 X — Expo 가 프록시. 다음 EAS 빌드 후 토큰 발급 가능, 출시 시점에 Apple Developer / Google Play 콘솔에서 푸시 capability 등록.
 
-> ⛔ **분석·광고·푸시 SDK 없음** (Firebase Analytics/Amplitude/expo-notifications 등 부재). 푸시는 P3-A4.
+> ⛔ **분석·광고 SDK 없음** (Firebase Analytics/Amplitude 등 부재).
 
 ---
 
@@ -346,7 +350,21 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
   - 90일 후 자동 파기 cron (탈퇴 후 notifications · profile_nicknames 파기)
 - ⚠️ Apple TEST MODE 사용자는 auth.uid 가 없어 0081 하에서 알림 fetch / 아바타 업로드 불가. 출시 시점에 Apple TEST MODE 비활성화 + 정식 Apple 로그인 전환 필요.
 
-### 8.4 크래시·에러 리포팅 (P3-A6 완료, 2026-05-21)
+### 8.4 OS 푸시 인프라 (P3-A4 골격 완료, 2026-05-21 — 발송 통합은 P3 후속)
+- **클라이언트** (`src/lib/pushNotifications.ts`):
+  - `registerForPush(authUid)` — 권한 요청 → `getExpoPushTokenAsync()` → `push_tokens` upsert. `expo-notifications` + `expo-device` 동적 import (dev 클라이언트 호환).
+  - `unregisterCurrentDevice()` — 로그아웃 시 본인 디바이스 토큰 DELETE.
+  - `store/auth` 의 `onAuthStateChange` SIGNED_IN 에서 자동 호출.
+- **서버** (`supabase/functions/send-push`):
+  - service_role 호출 → push_tokens lookup → Expo Push API batch POST (100개 chunk).
+  - DeviceNotRegistered → 자동 DELETE.
+- **활성화 조건**: 다음 EAS 빌드 (네이티브 모듈). dev 클라이언트에서는 silent fail.
+- **후속 작업**:
+  - `dispatchMessage` / `dispatchMessageTo` 가 인앱 알림 적재 후 send-push 자동 호출 — 룰 10개 중 미발송 8개 활성화.
+  - 사용자별 푸시 설정 (`prefs.pushOn` + 5 sub) 을 send-push 가 존중하도록 필터링.
+  - Apple Developer / Google Play 콘솔에서 푸시 capability 등록 (외부 의존성 B).
+
+### 8.5 크래시·에러 리포팅 (P3-A6 완료, 2026-05-21)
 - **Sentry SDK** (`@sentry/react-native`) 통합 — `app.config.ts` plugin `@sentry/react-native/expo` + `App.tsx` 의 `initSentry()` + `<SentryErrorBoundary>` 래퍼.
 - **활성화 조건**: `EXPO_PUBLIC_SENTRY_DSN` env 가 있어야 init 동작 (없으면 no-op). EAS env + 로컬 `.env` 양쪽에 동일 등록 필요.
 - **JS 에러**: init 직후부터 fetch 로 즉시 보고 (네이티브 빌드 안 해도 동작).
@@ -354,7 +372,7 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 - **PII 정책**: `sendDefaultPii=false`. `setSentryUser(auth.uid)` 만 등록(닉네임/이메일 미전송).
 - **활성화 순서**: ① sentry.io 프로젝트 생성 → ② DSN 복사 → ③ `.env` + EAS env 등록(production/preview/development 3환경) → ④ 다음 EAS 빌드.
 
-### 8.5 상태 화면 트리거 (P3-A3 완료)
+### 8.6 상태 화면 트리거 (P3-A3 완료)
 - ✅ **Maintenance / AppUpdateRequired** — Splash 부팅 게이트(`fetchAppStatus` → 분기) + **런타임 게이트** (`RuntimeStatusGate`: 5분 폴링 + AppState 'active' 시 즉시 재조회 → 변화 시 `navigation.reset`). 운영자가 세션 중 점검 ON / min_app_version 상향해도 사용자가 자동으로 게이트로 이동.
 - ✅ **ErrorNoInternet** — `OfflineGate` (App.tsx) 가 expo-network 동적 import 로 isConnected/isInternetReachable 구독 → false 시 reset. 복귀는 사용자 "새로 고침" 수동(자동 복귀 시 화면 상태 손실 회피).
 - ✅ **ErrorNotFound** — `NavigationContainer` linking `getStateFromPath` 가 매칭 안 되는 deep link 를 404 라우트로 fallback.
@@ -362,4 +380,4 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 
 ---
 
-*근거: `src/screens/**`, `src/components/**`, `src/store/**`, `src/lib/**`, `src/types/**`, `src/navigation/**`, `supabase/migrations/0001~0081`, `supabase/functions/**`, `app.config.ts`, `package.json` 전수 확인. 본 문서는 P1·P2·P3 진행 현황 사실 기록이며, 🔵/⛔ 항목은 후속 기획·구현 대상이다. 최근 갱신(2026-05-21): §3.6 회원 탈퇴 서버 영구 삭제(P3-A1), §3.9 FAQ 신설, §4 faqs·app_status·terms·terms_agreements 테이블 추가, §6 미읽음 카운트 서버화(P3-A5), §8.2 약관 동의 서버화(P3-A2), §8.3 RLS·Storage 최종 하드닝(P3-C2/C3), §8.4 Sentry 크래시 리포팅(P3-A6), §8.5 상태 화면 런타임 게이트(P3-A3).*
+*근거: `src/screens/**`, `src/components/**`, `src/store/**`, `src/lib/**`, `src/types/**`, `src/navigation/**`, `supabase/migrations/0001~0082`, `supabase/functions/**`, `app.config.ts`, `package.json` 전수 확인. 본 문서는 P1·P2·P3 진행 현황 사실 기록이며, 🔵/⛔ 항목은 후속 기획·구현 대상이다. 최근 갱신(2026-05-21): §3.6 회원 탈퇴 서버 영구 삭제(P3-A1), §3.9 FAQ 신설, §4 faqs·app_status·terms·terms_agreements·push_tokens 테이블 추가, §6 미읽음 카운트 서버화(P3-A5) + OS 푸시 인프라 골격(P3-A4), §8.2 약관 동의 서버화(P3-A2), §8.3 RLS·Storage 최종 하드닝(P3-C2/C3), §8.4 OS 푸시 인프라(P3-A4), §8.5 Sentry 크래시 리포팅(P3-A6), §8.6 상태 화면 런타임 게이트(P3-A3).*

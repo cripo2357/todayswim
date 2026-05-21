@@ -23,6 +23,10 @@ import { supabase } from '@/lib/supabase';
 import { useProfile } from '@/store/profile';
 import { tryFetchProfileByAuthUid } from '@/lib/profileSync';
 import { setSentryUser } from '@/lib/sentry';
+import {
+  registerForPush,
+  unregisterCurrentDevice,
+} from '@/lib/pushNotifications';
 
 export type SocialProvider = 'google' | 'apple' | 'kakao';
 
@@ -130,13 +134,17 @@ export const useAuth = create<AuthState>((set) => ({
         });
       }
       // 이후 세션 변화(자동 갱신/로그아웃) 추적.
-      supabase.auth.onAuthStateChange((_event, session) => {
+      supabase.auth.onAuthStateChange((event, session) => {
         if (session) {
           set({ user: userFromSession(session) });
           // Sentry 사용자 식별 — auth.uid 만 박아 크래시 보고에 묶임(PII 미전송).
           setSentryUser(session.user.id);
           // SIGNED_IN/TOKEN_REFRESHED 어떤 경우든 binding 복구 시도.
           void syncProfileFromAuth(session);
+          // 푸시 토큰 등록 — SIGNED_IN 이벤트일 때만(TOKEN_REFRESHED 매번 X).
+          if (event === 'SIGNED_IN') {
+            void registerForPush(session.user.id);
+          }
         } else {
           setSentryUser(null);
         }
@@ -229,6 +237,8 @@ export const useAuth = create<AuthState>((set) => ({
   },
 
   signOut: async () => {
+    // 푸시 토큰 정리 먼저(세션 살아있는 동안만 본인 row DELETE 가능).
+    await unregisterCurrentDevice();
     await supabase.auth.signOut();
     await AsyncStorage.removeItem(MOCK_STORAGE_KEY);
     try {
