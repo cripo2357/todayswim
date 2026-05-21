@@ -32,7 +32,7 @@ import { useSelection } from '@/store/selection';
 import { usePoolFilter, isFilterActive, filterPools } from '@/store/poolFilter';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useProfile } from '@/store/profile';
-import { useNotifications } from '@/store/notifications';
+import { useUnreadCount } from '@/hooks/useNotifications';
 import { useSwimSchedules } from '@/store/swimSchedule';
 import { useFriends } from '@/store/friends';
 import { useFavorites } from '@/store/favorites';
@@ -149,8 +149,9 @@ function LocationProfileMarker({ photoUri }: { photoUri: string }) {
 export function MapScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const profile = useProfile((s) => s.profile);
-  // 미열람 메시지 카운터 — 로그인(프로필) 시에만 의미. Figma 90:5963
-  const unread = useNotifications((s) => s.unread);
+  // 미열람 메시지 카운터 — 로그인(프로필) 시에만 의미. Figma 90:5963.
+  // P3-A5: 서버 count(*) 기반 — 재시작/기기변경에도 정확.
+  const unread = useUnreadCount();
   const mapRef = React.useRef<NaverMapViewRef | null>(null);
   const insets = useSafeAreaInsets();
 

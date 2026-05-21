@@ -53,7 +53,10 @@ import { CalendarTab } from '@/components/calendar/CalendarTab';
 import { NotificationsTab } from '@/components/notifications/NotificationsTab';
 import { FriendsTab } from '@/components/friends/FriendsTab';
 import { useSwimSchedules, isSchedulePast } from '@/store/swimSchedule';
-import { useNotifications } from '@/store/notifications';
+import {
+  useUnreadCount,
+  useMarkAllNotificationsAsRead,
+} from '@/hooks/useNotifications';
 import { useFriends } from '@/store/friends';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import IconUser from '@assets/icons/user-profile.svg';
@@ -84,8 +87,9 @@ export function MyInfoScreen() {
   );
   // 친구 수 — store 단일 출처(차단/삭제 반영). MOCK 정적 길이 금지.
   const friendCount = useFriends((s) => s.friends.length);
-  const unread = useNotifications((s) => s.unread);
-  const markAllRead = useNotifications((s) => s.markAllRead);
+  // P3-A5: 서버 count(*) 기반 + 탭 진입 시 DB read=true 일괄 UPDATE.
+  const unread = useUnreadCount();
+  const markAllRead = useMarkAllNotificationsAsRead();
 
   // profile 없으면(비정상 진입) 안전하게 뒤로.
   React.useEffect(() => {
@@ -127,7 +131,8 @@ export function MyInfoScreen() {
                 key={t}
                 onPress={() => {
                   setTab(t);
-                  if (t === '알림') markAllRead(); // 진입 시 모두 읽음
+                  // 진입 시 DB read=true 일괄 UPDATE + 카운트/목록 query 무효화.
+                  if (t === '알림') void markAllRead();
                 }}
                 style={[styles.tabItem, active && styles.tabItemActive]}
               >

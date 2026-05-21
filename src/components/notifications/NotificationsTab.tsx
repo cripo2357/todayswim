@@ -330,8 +330,8 @@ function handleCardTap(navigation: Nav, kind: MessageKind, meta: DeadLinkMeta = 
   // 정보형(앱 업데이트·제보 반려 등) — 탭 대상 미정, no-op
 }
 
-// 샘플 갤러리는 '읽지 않음' 개념 없음 — 빨간 배지 미노출.
-export const UNREAD_SEED = 0;
+// P3-A5: 읽음 처리는 서버 notifications.read 컬럼 + 탭 진입 시 markAllRead
+// (MyInfoScreen) 가 처리. 본 컴포넌트는 표시·액션 디스패치 전용.
 
 const ACTION_ICON = (label: string): React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }> => {
   if (label === '수락' || label === '완료') return Check;
