@@ -121,9 +121,19 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 - Profile/MyInfo의 "레슨 정보 변경" → `SwimClassRegister`.
 - 레슨 받는 수영장 선택 + 요일/시간 슬롯 추가 → "수영 레슨 정보 등록"(로컬 프로필 저장). 공개 시 타 프로필·지도 스택 노출.
 
-### 3.6 회원 탈퇴 ✅(UI) / 🔵(서버 삭제 미구현)
+### 3.6 회원 탈퇴 ✅
 - Settings > 계정 > 회원 탈퇴 → 3단계 모달(떠나시나요? → 정말? → 완료) → MapMain 리셋.
-- `useAuth.deleteAccount` = **P1 로컬 teardown만**(supabase signOut + 소셜 signOut + 로컬 프로필 clear). **서버측 계정/데이터 영구삭제는 미구현(TODO P2, Edge Function 예정).** 효과상 로그아웃과 동일.
+- `useAuth.deleteAccount` = **Edge Function `delete-account` 호출 → 로컬 teardown**.
+- Edge Function 처리(service_role):
+  1) JWT 검증으로 호출자 신원 확인
+  2) Storage `avatars/{uid}/` 파일 일괄 삭제(avatar.jpg + thumb)
+  3) `profiles` row 삭제 → CASCADE 로 `donations` 자동 삭제 (0069 FK)
+  4) `auth.users` row 삭제 (admin API)
+- **즉시 삭제**: auth.users / profiles / donations / Storage avatars
+- **보존 (90일 후 별도 cron — P3 후속)**: notifications · profile_nicknames (재가입 부정이용 방지)
+- **보존 (5년 — 「국세기본법」 회계)**: donation_payments (0070 FK `ON DELETE SET NULL`)
+- 서버 호출 실패 시 로컬 teardown 도 진행 안 함 — 부분 삭제 회피(auth.users 와 profiles 의 불일치 방지).
+- Apple TEST MODE mock 세션은 Supabase 세션이 없어 Edge Function skip → 로컬 teardown 만.
 
 ### 3.7 사용자 제보 ✅(서버 insert)
 - 풀 등록/수정 요청 + 시간표 제보 — pool_submissions / schedule_submissions
@@ -312,7 +322,7 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 - **친구/일정/초대 실연동**: 친구그래프·내 일정·초대가 로컬·목업 → 서버 테이블 + 양방향 전달.
 - **알림 전달·실시간**: 현재 본인 이력만 insert, 수신자 적재·realtime·NotificationsTab 실데이터 미연동. 룰 10개 중 8개 미발송.
 - **OS 푸시 인프라 부재**: 푸시 토큰/발송 서버 전무 → 푸시 정책 실행 전 신규 구축 필요.
-- **회원 탈퇴 서버 삭제**: P1 로컬 teardown만, 서버 계정/데이터 영구삭제 Edge Function 미구현.
+- ~~**회원 탈퇴 서버 삭제**: P1 로컬 teardown만, 서버 계정/데이터 영구삭제 Edge Function 미구현.~~ → **P3 완료** (Edge Function `delete-account`, §3.6 참고). 90일 후 cron 으로 notifications · profile_nicknames 파기는 후속.
 - **약관 본문**: `lib/termsContent.ts` 전부 "임시 더미 — 교체 예정" 표식. 실제 5종(서비스 이용약관 / 개인정보 수집·이용 동의 / 개인정보 처리방침 / 위치기반서비스 이용약관 / 마케팅 정보 수신 동의) 문구 미작성.
 
 ### 8.3 설계됨·미연결 화면

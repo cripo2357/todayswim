@@ -44,11 +44,17 @@ interface AuthState {
   signOut: () => Promise<void>;
   /**
    * 회원 탈퇴 (Figma 201:8341/10281/10428).
-   * P1(목업): 로컬 세션·프로필 전면 teardown = 로그아웃과 동일 효과로
-   * 사용자는 즉시 로그아웃·데이터 비움 상태가 됨.
-   * P2(백엔드 SSOT): 서버측 계정/데이터 영구 삭제는 service-role 권한이
-   * 필요해 클라이언트에서 못 함 — Supabase Edge Function/RPC로 분리 예정
-   * (여기가 그 단일 seam). project_phases 참고.
+   *
+   * P3 구현: Edge Function `delete-account` 호출로 서버측 영구 삭제 후
+   * 로컬 teardown. service_role 권한이 필요한 부분(auth.users / profiles /
+   * Storage 정리) 은 함수 안에서 처리된다.
+   *
+   * 즉시 삭제: auth.users / profiles (CASCADE → donations) / avatars Storage
+   * 보존(90일 후 별도 cron): notifications / profile_nicknames
+   * 회계 보존(5년): donation_payments (FK SET NULL)
+   *
+   * Edge Function 호출 실패 시 로컬 teardown 도 진행 안 함 — 사용자에게
+   * 실패 노출하고 재시도 유도(이미 일부 데이터만 사라지는 부분 실패 회피).
    */
   deleteAccount: () => Promise<void>;
   hydrate: () => Promise<void>;
@@ -231,10 +237,36 @@ export const useAuth = create<AuthState>((set) => ({
   },
 
   deleteAccount: async () => {
-    // TODO(P2): 서버측 계정/데이터 영구 삭제 호출 위치
-    //   await supabase.functions.invoke('delete-account')  // service-role
-    // 위 서버 삭제 성공 후 아래 로컬 teardown 진행하도록 확장.
-    // P1(목업): signOut과 동일한 로컬 teardown — 세션/소셜/프로필 전면 비움.
+    // P3: 서버 영구 삭제 → 로컬 teardown.
+    //
+    // Edge Function 이 service_role 로 (auth.users · profiles CASCADE
+    // donations · Storage avatars/{uid}/) 일괄 삭제. JWT 는 supabase-js 가
+    // 현재 세션의 access_token 을 functions.invoke 호출 시 자동 첨부.
+    //
+    // ※ Apple TEST MODE mock 세션은 Supabase 세션이 없어 함수 호출이
+    //   401 로 실패 — 그 경우엔 로컬 teardown 만 진행(아래 catch 분기).
+    const { data: sess } = await supabase.auth.getSession();
+    if (sess.session) {
+      const { data, error } = await supabase.functions.invoke(
+        'delete-account',
+      );
+      if (error) {
+        // 서버 삭제 실패 — 로컬은 그대로 두고 사용자에게 노출.
+        // 부분 삭제 회피: auth.users 가 살아있는데 profiles 만 사라지는
+        // 식의 불일치 방지.
+        throw new Error(
+          `회원 탈퇴 서버 처리 실패 — ${error.message ?? String(error)}`,
+        );
+      }
+      // 응답 본문에서 deleted=false 면 핵심 단계 실패 — 동일하게 throw.
+      const payload = data as { deleted?: boolean; errors?: unknown[] } | null;
+      if (payload && payload.deleted === false) {
+        throw new Error(
+          `회원 탈퇴 서버 처리 실패 — ${JSON.stringify(payload.errors ?? [])}`,
+        );
+      }
+    }
+    // 로컬 teardown — 세션/소셜/프로필 전면 비움.
     await supabase.auth.signOut();
     await AsyncStorage.removeItem(MOCK_STORAGE_KEY);
     try {
