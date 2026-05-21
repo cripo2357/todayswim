@@ -106,5 +106,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         },
       },
     ],
+    // Sentry 에러·크래시 리포팅 (P3-A6). JS 에러는 init 직후부터 보고,
+    // 네이티브 크래시(NDK/Obj-C)는 다음 EAS 빌드 후 활성화. DSN 은
+    // EXPO_PUBLIC_SENTRY_DSN env (없으면 init 이 no-op 처리).
+    '@sentry/react-native/expo',
   ],
 });

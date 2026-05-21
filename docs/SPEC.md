@@ -309,7 +309,9 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 | expo-clipboard | 본인 친구코드 복사 | 본인 ID 문자열→클립보드 | — |
 | @tanstack/react-query, supercluster, async-storage | 비동기 상태 / 클러스터링 / 로컬 영속 | 로컬 | — |
 
-> ⛔ **분석·크래시리포팅·광고·푸시 SDK 일체 없음** (Sentry/Firebase/Amplitude/expo-notifications 등 부재).
+- **Sentry** (`@sentry/react-native`) — P3-A6 크래시·에러 리포팅. DSN 은 `EXPO_PUBLIC_SENTRY_DSN` env (없으면 init no-op). JS 에러는 즉시 보고, 네이티브 크래시는 다음 EAS 빌드 후 활성. `sendDefaultPii=false`, `setUser` 로 auth.uid 만 묶임(닉네임/이메일 PII 미전송).
+
+> ⛔ **분석·광고·푸시 SDK 없음** (Firebase Analytics/Amplitude/expo-notifications 등 부재). 푸시는 P3-A4.
 
 ---
 
@@ -344,7 +346,15 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
   - 90일 후 자동 파기 cron (탈퇴 후 notifications · profile_nicknames 파기)
 - ⚠️ Apple TEST MODE 사용자는 auth.uid 가 없어 0081 하에서 알림 fetch / 아바타 업로드 불가. 출시 시점에 Apple TEST MODE 비활성화 + 정식 Apple 로그인 전환 필요.
 
-### 8.4 상태 화면 트리거 (P3-A3 완료)
+### 8.4 크래시·에러 리포팅 (P3-A6 완료, 2026-05-21)
+- **Sentry SDK** (`@sentry/react-native`) 통합 — `app.config.ts` plugin `@sentry/react-native/expo` + `App.tsx` 의 `initSentry()` + `<SentryErrorBoundary>` 래퍼.
+- **활성화 조건**: `EXPO_PUBLIC_SENTRY_DSN` env 가 있어야 init 동작 (없으면 no-op). EAS env + 로컬 `.env` 양쪽에 동일 등록 필요.
+- **JS 에러**: init 직후부터 fetch 로 즉시 보고 (네이티브 빌드 안 해도 동작).
+- **네이티브 크래시(NDK/Obj-C)**: 다음 EAS 빌드 후 활성화 — `pending_native_batch` 항목.
+- **PII 정책**: `sendDefaultPii=false`. `setSentryUser(auth.uid)` 만 등록(닉네임/이메일 미전송).
+- **활성화 순서**: ① sentry.io 프로젝트 생성 → ② DSN 복사 → ③ `.env` + EAS env 등록(production/preview/development 3환경) → ④ 다음 EAS 빌드.
+
+### 8.5 상태 화면 트리거 (P3-A3 완료)
 - ✅ **Maintenance / AppUpdateRequired** — Splash 부팅 게이트(`fetchAppStatus` → 분기) + **런타임 게이트** (`RuntimeStatusGate`: 5분 폴링 + AppState 'active' 시 즉시 재조회 → 변화 시 `navigation.reset`). 운영자가 세션 중 점검 ON / min_app_version 상향해도 사용자가 자동으로 게이트로 이동.
 - ✅ **ErrorNoInternet** — `OfflineGate` (App.tsx) 가 expo-network 동적 import 로 isConnected/isInternetReachable 구독 → false 시 reset. 복귀는 사용자 "새로 고침" 수동(자동 복귀 시 화면 상태 손실 회피).
 - ✅ **ErrorNotFound** — `NavigationContainer` linking `getStateFromPath` 가 매칭 안 되는 deep link 를 404 라우트로 fallback.
@@ -352,4 +362,4 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 
 ---
 
-*근거: `src/screens/**`, `src/components/**`, `src/store/**`, `src/lib/**`, `src/types/**`, `src/navigation/**`, `supabase/migrations/0001~0081`, `supabase/functions/**`, `app.config.ts`, `package.json` 전수 확인. 본 문서는 P1·P2·P3 진행 현황 사실 기록이며, 🔵/⛔ 항목은 후속 기획·구현 대상이다. 최근 갱신(2026-05-21): §3.6 회원 탈퇴 서버 영구 삭제(P3-A1), §3.9 FAQ 신설, §4 faqs·app_status·terms·terms_agreements 테이블 추가, §6 미읽음 카운트 서버화(P3-A5), §8.2 약관 동의 서버화(P3-A2), §8.3 RLS·Storage 최종 하드닝(P3-C2/C3), §8.4 상태 화면 런타임 게이트(P3-A3).*
+*근거: `src/screens/**`, `src/components/**`, `src/store/**`, `src/lib/**`, `src/types/**`, `src/navigation/**`, `supabase/migrations/0001~0081`, `supabase/functions/**`, `app.config.ts`, `package.json` 전수 확인. 본 문서는 P1·P2·P3 진행 현황 사실 기록이며, 🔵/⛔ 항목은 후속 기획·구현 대상이다. 최근 갱신(2026-05-21): §3.6 회원 탈퇴 서버 영구 삭제(P3-A1), §3.9 FAQ 신설, §4 faqs·app_status·terms·terms_agreements 테이블 추가, §6 미읽음 카운트 서버화(P3-A5), §8.2 약관 동의 서버화(P3-A2), §8.3 RLS·Storage 최종 하드닝(P3-C2/C3), §8.4 Sentry 크래시 리포팅(P3-A6), §8.5 상태 화면 런타임 게이트(P3-A3).*

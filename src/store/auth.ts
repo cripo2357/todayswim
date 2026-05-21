@@ -22,6 +22,7 @@ import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { useProfile } from '@/store/profile';
 import { tryFetchProfileByAuthUid } from '@/lib/profileSync';
+import { setSentryUser } from '@/lib/sentry';
 
 export type SocialProvider = 'google' | 'apple' | 'kakao';
 
@@ -132,8 +133,12 @@ export const useAuth = create<AuthState>((set) => ({
       supabase.auth.onAuthStateChange((_event, session) => {
         if (session) {
           set({ user: userFromSession(session) });
+          // Sentry 사용자 식별 — auth.uid 만 박아 크래시 보고에 묶임(PII 미전송).
+          setSentryUser(session.user.id);
           // SIGNED_IN/TOKEN_REFRESHED 어떤 경우든 binding 복구 시도.
           void syncProfileFromAuth(session);
+        } else {
+          setSentryUser(null);
         }
       });
     } catch {

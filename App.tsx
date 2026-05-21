@@ -15,6 +15,7 @@ import type { RootStackParamList } from '@/navigation/types';
 import { GlobalAddScheduleSheet } from '@/components/calendar/GlobalAddScheduleSheet';
 import { OfflineGate } from '@/components/network/OfflineGate';
 import { RuntimeStatusGate } from '@/components/status/RuntimeStatusGate';
+import { initSentry, SentryErrorBoundary } from '@/lib/sentry';
 import { useFonts } from '@/hooks/useFonts';
 import { usePoolFilter } from '@/store/poolFilter';
 import { useSelection } from '@/store/selection';
@@ -28,6 +29,11 @@ import { tokens } from '@/styles/tokens';
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 60_000, retry: 1 } },
 });
+
+// Sentry — DSN(EXPO_PUBLIC_SENTRY_DSN) 있을 때만 활성. 없으면 no-op.
+// app.config plugins 에 '@sentry/react-native/expo' 등록됐고, JS 에러는
+// init 직후부터 보고. 네이티브 크래시는 다음 EAS 빌드 후 동작.
+initSentry();
 
 // Deep link 게이트. 매칭되는 경로가 없으면 ErrorNotFound 로 fallback.
 // 현재 매칭 스크린 없음 — poolsday://... 들어오면 무조건 404 라우트로 처리.
@@ -71,21 +77,26 @@ export default function App() {
   }
 
   return (
-    <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
-        <NavigationContainer ref={navigationRef} linking={linking}>
-          <RootNavigator />
-        </NavigationContainer>
-        {/* 시간표 더블탭 → 그 자리에서 바로 일정 등록 시트(화면 이동 없음) */}
-        <GlobalAddScheduleSheet />
-        {/* 오프라인 감지 → ErrorNoInternet 으로 navigation.reset (side-effect only) */}
-        <OfflineGate />
-        {/* 런타임 점검·강제업데이트 게이트 — Splash 부팅 게이트 보완.
-         *  5분 폴링 + AppState 'active' 시 즉시 재조회 → 변화 감지 시 reset. */}
-        <RuntimeStatusGate />
-        <StatusBar style="dark" />
-      </QueryClientProvider>
-    </SafeAreaProvider>
+    // Sentry ErrorBoundary — React 렌더 트리에서 throw 되는 에러를 잡아
+    // captureException 으로 보고 + fallback UI(아무것도 안 보여줌, navigation
+    // 그대로). DSN 없으면 ErrorBoundary 는 그냥 children 만 렌더.
+    <SentryErrorBoundary fallback={<View />}>
+      <SafeAreaProvider>
+        <QueryClientProvider client={queryClient}>
+          <NavigationContainer ref={navigationRef} linking={linking}>
+            <RootNavigator />
+          </NavigationContainer>
+          {/* 시간표 더블탭 → 그 자리에서 바로 일정 등록 시트(화면 이동 없음) */}
+          <GlobalAddScheduleSheet />
+          {/* 오프라인 감지 → ErrorNoInternet 으로 navigation.reset (side-effect only) */}
+          <OfflineGate />
+          {/* 런타임 점검·강제업데이트 게이트 — Splash 부팅 게이트 보완.
+           *  5분 폴링 + AppState 'active' 시 즉시 재조회 → 변화 감지 시 reset. */}
+          <RuntimeStatusGate />
+          <StatusBar style="dark" />
+        </QueryClientProvider>
+      </SafeAreaProvider>
+    </SentryErrorBoundary>
   );
 }
 
