@@ -16,6 +16,7 @@ import { GlobalAddScheduleSheet } from '@/components/calendar/GlobalAddScheduleS
 import { OfflineGate } from '@/components/network/OfflineGate';
 import { RuntimeStatusGate } from '@/components/status/RuntimeStatusGate';
 import { initSentry, SentryErrorBoundary } from '@/lib/sentry';
+import { initAnalytics } from '@/lib/analytics';
 import { useFonts } from '@/hooks/useFonts';
 import { usePoolFilter } from '@/store/poolFilter';
 import { useSelection } from '@/store/selection';
@@ -34,6 +35,11 @@ const queryClient = new QueryClient({
 // app.config plugins 에 '@sentry/react-native/expo' 등록됐고, JS 에러는
 // init 직후부터 보고. 네이티브 크래시는 다음 EAS 빌드 후 동작.
 initSentry();
+
+// Firebase Analytics — 익명 통계. GoogleService-Info.plist /
+// google-services.json + @react-native-firebase/* 패키지 모두 갖춰진
+// EAS 빌드에서만 활성화, 그 외(Expo Go·미배치 상태)는 silent no-op.
+initAnalytics();
 
 // Deep link 게이트. 매칭되는 경로가 없으면 ErrorNotFound 로 fallback.
 // 현재 매칭 스크린 없음 — poolsday://... 들어오면 무조건 404 라우트로 처리.

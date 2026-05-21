@@ -324,8 +324,9 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 
 - **Sentry** (`@sentry/react-native`) — P3-A6 크래시·에러 리포팅. DSN 은 `EXPO_PUBLIC_SENTRY_DSN` env (없으면 init no-op). JS 에러는 즉시 보고, 네이티브 크래시는 다음 EAS 빌드 후 활성. `sendDefaultPii=false`, `setUser` 로 auth.uid 만 묶임(닉네임/이메일 PII 미전송).
 - **Expo Push Service** (`expo-notifications`, P3-A4) — OS 푸시 발송. 토큰(`ExponentPushToken[...]`) 은 `push_tokens` 테이블 보관, Edge Function `send-push` 가 `https://exp.host/--/api/v2/push/send` POST. FCM/APNs 키 직접 관리 X — Expo 가 프록시. 다음 EAS 빌드 후 토큰 발급 가능, 출시 시점에 Apple Developer / Google Play 콘솔에서 푸시 capability 등록.
+- **Firebase Analytics** (`@react-native-firebase/app` + `/analytics`) — P3 익명 사용 통계. iOS `GoogleService-Info.plist` + Android `google-services.json` 을 프로젝트 루트에 배치하면 `app.config.ts` plugin (`@react-native-firebase/app`) 이 EAS 빌드에 자동 통합. `src/lib/analytics.ts` 의 `initAnalytics()` 가 dynamic require 패턴으로 패키지 미로딩(Expo Go·config 파일 부재) 시 silent no-op. **수집 항목**: app_instance_id(익명), 화면 진입, 핵심 액션. **미수집**: 이름·이메일·정확 위치(GPS). setUserId 매칭 미사용(마케팅 동의 도입 시 별도 결정).
 
-> ⛔ **분석·광고 SDK 없음** (Firebase Analytics/Amplitude 등 부재).
+> ⛔ **분석·광고 SDK** = Firebase Analytics 단일 도입(서비스 운영 개선 목적). 광고 SDK·Amplitude·Mixpanel·PostHog 등 부재.
 
 ---
 

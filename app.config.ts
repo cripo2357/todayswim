@@ -28,6 +28,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     bundleIdentifier: 'com.cripo.poolsday',
     supportsTablet: false,
+    // Firebase Analytics iOS config — 크리스가 Firebase 콘솔에서 iOS 앱을
+    // 등록하고 GoogleService-Info.plist 를 받아 프로젝트 루트에 배치하면
+    // @react-native-firebase/app 플러그인이 자동으로 ios 번들에 포함.
+    googleServicesFile:
+      process.env.GOOGLE_SERVICES_PLIST ?? './GoogleService-Info.plist',
     infoPlist: {
       NSLocationWhenInUseUsageDescription:
         '근처 수영장을 거리순으로 보여드리려면 위치 권한이 필요해요.',
@@ -133,6 +138,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   android: {
     package: 'com.cripo.poolsday',
     permissions: ['ACCESS_FINE_LOCATION', 'ACCESS_COARSE_LOCATION'],
+    // Firebase Analytics Android config — Android 앱 등록 후 받은
+    // google-services.json 을 프로젝트 루트에 배치.
+    googleServicesFile:
+      process.env.GOOGLE_SERVICES_JSON ?? './google-services.json',
     adaptiveIcon: {
       foregroundImage: './assets/icon.png',
       // 아이콘 배경 cyan과 매치 (Android 시스템 마스크 모서리 잘림 영역도 같은 색).
@@ -206,5 +215,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // 네이티브 크래시(NDK/Obj-C)는 다음 EAS 빌드 후 활성화. DSN 은
     // EXPO_PUBLIC_SENTRY_DSN env (없으면 init 이 no-op 처리).
     '@sentry/react-native/expo',
+    // Firebase Analytics — 익명 통계(앱 사용 빈도·화면 진입·이벤트).
+    // ios.googleServicesFile / android.googleServicesFile 의 config 파일과
+    // 함께 동작. 파일이 없으면 EAS 빌드 시 실패하므로 크리스가 콘솔 작업
+    // (Firebase 프로젝트 생성 + iOS/Android 앱 등록 → config 파일 다운)을
+    // 완료한 후 다음 빌드에서 활성화. JS 런타임에서는 try-catch 로 패키지
+    // 미로딩 상황도 안전(src/lib/analytics.ts no-op 폴백).
+    '@react-native-firebase/app',
   ],
 });
