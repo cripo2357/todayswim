@@ -199,8 +199,12 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 | `notifications` ✅ | 메시지/알림 이력 | 필수: id(PK), user_code(=프로필 6자 ID, auth.uid 아님), kind, title, body(jsonb), read, created_at · 선택: params/actions/related(jsonb) | **전체 SELECT/INSERT(개방 RLS)**. P1은 작성자 본인 행만 insert |
 | `donations` ✅ | 후원 응원 메시지(공개) | 필수: id(PK), profile_id(FK→profiles cascade), message(1~300자), hidden, created_at, updated_at | RLS: read all, write 본인 검증(auth_uid). hidden=true는 본인만 본인 화면에서 표시. trigger 가 INSERT 시 10개 풀에서 랜덤 디폴트 메시지 박음(0077) |
 | `donation_payments` ✅ | 후원 입금 기록(비공개) | 필수: id(PK), depositor_name, amount(>0), received_at · 선택: profile_id(FK→profiles set null) | **service_role 전용** (정책 없음). INSERT/UPDATE 시 트리거가 자동 'donation_thanks' notifications + donations row 적재 |
+| `donation_totals_v` ✅ | 종합 후원 누적 view (0080) | profile_id, total_amount, payment_count, first_at, last_at | service_role 전용(`security_invoker=on` → base table RLS 상속). 운영자가 큰손 식별·보고용 |
+| `donation_yearly_totals_v` ✅ | 연도별 후원 누적 view, KST 기준 (0080) | profile_id, year, total_amount, payment_count, first_at, last_at | service_role 전용(`security_invoker=on`). `extract(year from received_at at time zone 'Asia/Seoul')` 로 한 해 끊음 |
 | `faqs` ✅ | 자주 묻는 질문 | 필수: id(PK uuid), question, answer, sort_order, category('first'/'info'/'activity'/'settings'), created_at, updated_at | RLS read all, write service_role 만. 운영자가 Dashboard 에서 직접 추가/수정/삭제. 현재 시드 44개(0072_faqs_expand → 0073_faqs_category 분류) |
 | `app_status` ✅ | 운영자 설정 단일 row(점검·강제업데이트·후원 계좌) | 필수: id(=1 single-row), maintenance_mode, min_version · 선택: donation_bank, donation_account, donation_holder(0068) | RLS read all, write service_role 만. 클라가 Splash + Donation 화면에서 조회 |
+| `terms` ✅ | 약관 문서·버전 마스터 (0044 + 0079) | 필수: id(PK), type(service/privacy_consent/privacy_policy/location/marketing), version, effective_date, content(jsonb), is_required, requires_consent, is_active | RLS read all, write service_role 만. 5종 시드 v1.0.0. 운영자가 개정 시 새 row + is_active 교체 |
+| `terms_agreements` ✅ | 약관 동의 이력 — append-only 감사 로그 (0044) | 필수: id(PK), user_id(FK→auth.users CASCADE), terms_type, terms_version(스냅샷), action(agree/withdraw), meta(jsonb), created_at | RLS: 본인 행만 select/insert, UPDATE/DELETE 정책 없음 = 불변. Apple mock 은 auth.users 없어 로컬 폴백 |
 
 **Storage 버킷:** `avatars` ✅ (마이그레이션 생성, public read / 소유자 폴더만 write, 경로 `{auth.uid}/avatar.jpg`+`avatar_thumb.jpg`) · `pool-photos` ✅ (마이그레이션 없음 — 운영자가 대시보드에서 수동 생성, public, 풀 INSERT에 URL 박힘)
 
@@ -212,7 +216,7 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 | `useSwimSchedules` (`poolsday.swimSchedules`) | 내 수영 일정[]: poolId/Name, date, start/end, visibility, completed | 🟡 로컬, 비었으면 50개 목업 시드 |
 | `useFavorites` (`poolsday.favorites`) | 즐겨찾는 poolId[] | 🟡 로컬 |
 | `usePrefs` (`poolsday.prefs.*`) | 공개범위, 일정초대 on/off, 친구신청 범위, 지도 시작위치, 친구스택 표시 | 🟡 로컬(프라이버시 설정이 기기 한정) |
-| `lib/terms` (`poolsday.terms.*`) | 가입 동의 시각 5키 — 필수 age·service·privacyConsent·location + 선택 marketing (ISO) | 🟡 로컬·**기기 단위**(계정 아님), P2=계정 이관 |
+| `lib/terms` (`poolsday.terms.*`) | 가입 동의 시각 캐시 5키 + 마케팅 거부 시각(rejected) | 서버 단일 출처(`terms_agreements`) **+ 로컬 캐시**. 'age' 는 로컬 한정. Apple mock / 오프라인 시 로컬 폴백(P3-A2). |
 | `useAuth` | 소셜 세션(supabase-js가 AsyncStorage 영속) / Apple 목업키 | ✅ 세션 실 / 🟡 Apple 목업 |
 | `useFriends`, `useNotifications`(unread), `useSentInvites`, `useSelection`, `useAddScheduleIntent`, `usePoolFilter` | 친구그래프·미읽음수·보낸초대·선택·필터 | 🟡 메모리 전용(재시작 초기화) |
 
@@ -235,7 +239,7 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 | 영법 | 선택(기본 자유형) | 기기 로컬만 | 프로필 |
 | 친구코드 ID(6자 자동생성) | 자동(재발급 가능) | 기기 로컬 + `notifications.user_code` | 친구추가·알림 수신키 |
 | 프로필 사진 | 선택(기본 번들 아바타) | 실세션이면 Storage `avatars`, 아니면 로컬 URI | 아바타 |
-| 가입 동의 시각 — 필수 4(만14세·서비스 이용약관·개인정보 수집·이용·위치기반서비스 이용약관) + 선택 1(마케팅) | 필수 4 / 선택 1 | 기기 로컬(기기단위) | 동의 게이트 |
+| 가입 동의 시각 — 필수 4(만14세·서비스 이용약관·개인정보 수집·이용·위치기반서비스 이용약관) + 선택 1(마케팅) | 필수 4 / 선택 1 | **계정 단위 서버(`terms_agreements` append-only)** + 로컬 캐시. 'age' 는 약관 문서 아님 = 로컬만 | 동의 게이트 / 법적 증빙 |
 
 ### 5.2 자동 수집 (기기/위치/이용)
 
@@ -318,7 +322,12 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 
 ### 8.2 Phase 2 백엔드 SSOT (코드에 자리/주석 존재, 미구현)
 - **사용자 프로필 서버화**: 현재 PII 전부 기기 로컬(AsyncStorage, 비암호화 JSON). P2 `user_profiles` 테이블 이관 필요(약관·데이터보관 정책 직결).
-- **약관 동의 서버화·버전관리**: 현재 기기단위·필수4(age/service/privacyConsent/location)+marketing(선택). P2 = `terms`(유형/버전/시행일/내용) + `terms_agreements`(누가·언제·어떤 버전·agree/withdraw, append-only 감사로그) 분리, 버전 고정·재동의·철회 이벤트. *(스키마 초안 작성 완료: `supabase/migrations/0044_terms.sql` — Phase 2, 미적용. 활성화 시 lib/terms.ts 를 계정단위 서버 모델로 이관 필요.)*
+- ~~**약관 동의 서버화·버전관리**~~ → **P3-A2 완료** (2026-05-21).
+  - 0044 + **0079_terms_activate** 적용 — `terms` 5종 시드(v1.0.0, 2026-05-28).
+  - `lib/terms.ts` 서버+로컬 하이브리드: Google/Kakao 실 세션 → `terms_agreements` 서버 적재(append-only) + 로컬 캐시. Apple TEST MODE / 오프라인 → AsyncStorage 폴백.
+  - 마케팅 토글(`prefs.setNotifMarketing`) 도 `setConsent('marketing')` 경유 → 서버 동기.
+  - 'age' 는 약관 문서 아님 = 클라이언트 게이트, AsyncStorage 한정 유지.
+  - 약관 본문은 `src/lib/termsContent.ts` 가 단일 출처(앱 배포 단위). 법적 증빙 = `terms_agreements.terms_version` 문자열 스냅샷 + git.
 - **친구/일정/초대 실연동**: 친구그래프·내 일정·초대가 로컬·목업 → 서버 테이블 + 양방향 전달.
 - **알림 전달·실시간**: ~~NotificationsTab 실데이터 미연동~~ → **P3-A5 완료**(서버 fetch + 0건 시 mock 폴백 + 미읽음 카운트 서버 count + 일괄 read UPDATE). 남은 항목: 수신자 적재(상대방에게 가는 트리거 — 룰 10개 중 8개 미발송, 서버 사이드 dispatch 필요), realtime 구독(현재 60s staleTime).
 - **OS 푸시 인프라 부재**: 푸시 토큰/발송 서버 전무 → 푸시 정책 실행 전 신규 구축 필요.
@@ -333,4 +342,4 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 
 ---
 
-*근거: `src/screens/**`, `src/components/**`, `src/store/**`, `src/lib/**`, `src/types/**`, `src/navigation/**`, `supabase/migrations/0001~0077`, `app.config.ts`, `package.json` 전수 확인. 본 문서는 P1·P2 현행 사실 기록이며, 🔵/⛔ 항목은 후속 기획·구현 대상이다. 최근 갱신(2026-05-21): §3.8 후원 random pool/scrollToMine, §3.9 FAQ 신설, §4 faqs·app_status 테이블 추가.*
+*근거: `src/screens/**`, `src/components/**`, `src/store/**`, `src/lib/**`, `src/types/**`, `src/navigation/**`, `supabase/migrations/0001~0079`, `supabase/functions/**`, `app.config.ts`, `package.json` 전수 확인. 본 문서는 P1·P2·P3 진행 현황 사실 기록이며, 🔵/⛔ 항목은 후속 기획·구현 대상이다. 최근 갱신(2026-05-21): §3.6 회원 탈퇴 서버 영구 삭제(P3-A1), §3.9 FAQ 신설, §4 faqs·app_status·terms·terms_agreements 테이블 추가, §6 미읽음 카운트 서버화(P3-A5), §8.2 약관 동의 서버화(P3-A2), §8.3 상태 화면 런타임 게이트(P3-A3).*
