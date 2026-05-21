@@ -17,6 +17,7 @@ import { OfflineGate } from '@/components/network/OfflineGate';
 import { RuntimeStatusGate } from '@/components/status/RuntimeStatusGate';
 import { initSentry, SentryErrorBoundary } from '@/lib/sentry';
 import { initAnalytics, logScreen } from '@/lib/analytics';
+import { useNotificationsRealtime } from '@/hooks/useNotifications';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from '@/hooks/useFonts';
 import { usePoolFilter } from '@/store/poolFilter';
@@ -65,6 +66,11 @@ const linking: LinkingOptions<RootStackParamList> = {
 
 export default function App() {
   const [fontsLoaded, fontError] = useFonts();
+
+  // notifications realtime 구독 — 로그인된 사용자의 user_code 필터로
+  // Postgres changes 채널 1개. INSERT/UPDATE/DELETE 시 query 무효화 →
+  // NotificationsTab + 미읽음 배지 자동 갱신. (P3 후속 2026-05-22)
+  useNotificationsRealtime();
 
   // 앱 (재)시동 시 필터·선택 상태 초기화 + 인증 세션 복원.
   React.useEffect(() => {

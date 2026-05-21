@@ -1,4 +1,4 @@
-// 알림 수신함 + 미열람 카운트 + 일괄 읽음 처리.
+// 알림 수신함 + 미열람 카운트 + 일괄 읽음 처리 + realtime 구독.
 //
 // 정책(useOtherSchedules 패턴과 일관):
 // - user_code = useProfile.id. 없으면 disabled / 0 반환.
@@ -10,8 +10,15 @@
 // 진입 시 markAllNotificationsAsRead 가 DB read=true 일괄 UPDATE.
 // 기존 메모리 zustand store(`src/store/notifications.ts`) 폐기.
 //
-// references: 0042_notifications, message_rules_architecture, dispatch.ts.
+// P3 후속 (2026-05-22): useNotificationsRealtime — Supabase realtime channel
+// 로 본인 user_code 의 INSERT/UPDATE/DELETE 구독 → query 무효화로 즉시 반영.
+// 60s polling fallback 은 그대로 (realtime 연결 실패·재연결 사이 보강).
+// App.tsx 에서 1회 호출 → 로그인된 사용자 세션 동안 항상 활성.
+//
+// references: 0042_notifications, 0085_notifications_realtime,
+//   message_rules_architecture, dispatch.ts.
 
+import React from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useProfile } from '@/store/profile';
@@ -115,4 +122,52 @@ export function useMarkAllNotificationsAsRead(): () => Promise<void> {
     await qc.invalidateQueries({ queryKey: ['notifications-unread', userCode] });
     await qc.invalidateQueries({ queryKey: ['notifications', userCode] });
   };
+}
+
+// ─── Realtime 구독 ──────────────────────────────────────────────
+// Supabase Postgres changes — 본인 user_code 필터로 notifications 변화 구독.
+// 새 INSERT(다른 사용자가 알림 보냄) / UPDATE(read 갱신) / DELETE(탈퇴
+// 데이터 정리) 발생 시 query invalidate → 즉시 refetch.
+//
+// App.tsx 에서 한 번 호출 → 세션 동안 항상 활성. 컴포넌트 단위로 부르면
+// 중복 채널 생성 가능 (Supabase realtime 은 channel name 단위 unique 라 OK
+// 지만, 한 곳 관리가 효율).
+//
+// realtime 미동작 환경(네트워크/요금제) 에서도 useQuery 의 60s polling 이
+// 폴백으로 동작 — 즉시성만 감소.
+export function useNotificationsRealtime(): void {
+  const userCode = useProfile((s) => s.profile?.id);
+  const qc = useQueryClient();
+
+  React.useEffect(() => {
+    if (!userCode) return;
+
+    const channel = supabase
+      .channel(`notifications:${userCode}`)
+      .on(
+        // Supabase v2 realtime: postgres_changes 이벤트.
+        'postgres_changes' as never,
+        {
+          event: '*', // INSERT / UPDATE / DELETE 모두
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_code=eq.${userCode}`,
+        },
+        () => {
+          // 변경 → query 무효화. payload 직접 캐시 머지 대신 refetch 패턴
+          // (단순·일관성 우선).
+          void qc.invalidateQueries({
+            queryKey: ['notifications', userCode],
+          });
+          void qc.invalidateQueries({
+            queryKey: ['notifications-unread', userCode],
+          });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [userCode, qc]);
 }

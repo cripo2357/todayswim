@@ -346,7 +346,7 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
   - 'age' 는 약관 문서 아님 = 클라이언트 게이트, AsyncStorage 한정 유지.
   - 약관 본문은 `src/lib/termsContent.ts` 가 단일 출처(앱 배포 단위). 법적 증빙 = `terms_agreements.terms_version` 문자열 스냅샷 + git.
 - **친구/일정/초대 실연동**: 친구그래프·내 일정·초대가 로컬·목업 → 서버 테이블 + 양방향 전달.
-- **알림 전달·실시간**: ~~NotificationsTab 실데이터 미연동~~ → **P3-A5 완료**(서버 fetch + 0건 시 mock 폴백 + 미읽음 카운트 서버 count + 일괄 read UPDATE). ~~수신자 적재(상대방 트리거 — 룰 10개 중 8개 미발송)~~ → **P3-B.1 완료**(2026-05-21): `dispatch.ts` 가 notifications insert 직후 send-push Edge Function 호출. `profile.id → auth_uid` 변환 후 본인 외 수신자에게 OS 푸시 발송(best-effort, Apple mock auth_uid null = skip). 남은: realtime 구독(60s staleTime), 시스템 cron 트리거(reminder 등).
+- **알림 전달·실시간**: ~~NotificationsTab 실데이터 미연동~~ → **P3-A5 완료**(서버 fetch + 0건 시 mock 폴백 + 미읽음 카운트 서버 count + 일괄 read UPDATE). ~~수신자 적재(상대방 트리거 — 룰 10개 중 8개 미발송)~~ → **P3-B.1 완료**(2026-05-21): `dispatch.ts` 가 notifications insert 직후 send-push Edge Function 호출 (JWT 인증 강화 2026-05-22). ~~realtime 구독~~ → **완료**(2026-05-22, 0085): `useNotificationsRealtime` 가 Postgres changes 채널로 본인 user_code 필터 구독 → query 무효화로 즉시 반영. 60s polling 폴백 유지. 남은: 시스템 cron 트리거(schedule_reminder_prev_day/1h 등 시간 기반 자동 발화).
 - ~~**OS 푸시 인프라 부재**: 푸시 토큰/발송 서버 전무~~ → **P3-A4 + B.1 완료**: `expo-notifications` + `push_tokens` 테이블(0082) + `send-push` Edge Function + dispatch 통합 + JWT 인증 강화 (2026-05-22). 다음 EAS 빌드 후 활성화.
 - ~~**회원 탈퇴 서버 삭제**: P1 로컬 teardown만, 서버 계정/데이터 영구삭제 Edge Function 미구현.~~ → **P3-A1 완료** (Edge Function `delete-account`, §3.6 참고). 90일 cron 파기도 **P3-B.2 완료** (0084 — deleted_users tombstone + cleanup_expired_data + pg_cron).
 - **약관 본문**: `lib/termsContent.ts` 전부 "임시 더미 — 교체 예정" 표식. 실제 5종(서비스 이용약관 / 개인정보 수집·이용 동의 / 개인정보 처리방침 / 위치기반서비스 이용약관 / 마케팅 정보 수신 동의) 문구 미작성.
