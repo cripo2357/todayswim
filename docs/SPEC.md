@@ -130,7 +130,7 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
   3) `profiles` row 삭제 → CASCADE 로 `donations` 자동 삭제 (0069 FK)
   4) `auth.users` row 삭제 (admin API)
 - **즉시 삭제**: auth.users / profiles / donations / Storage avatars
-- **보존 (90일 후 별도 cron — P3 후속)**: notifications · profile_nicknames (재가입 부정이용 방지)
+- **보존 (90일 후 자동 파기 — P3-B.2 0084)**: notifications · profile_nicknames (재가입 부정이용 방지). `deleted_users` tombstone 에 user_code + nicknames + deleted_at 적재 → `cleanup_expired_data()` SQL 함수가 매일 03:00 KST(pg_cron)에 90일 경과분 일괄 DELETE.
 - **보존 (5년 — 「국세기본법」 회계)**: donation_payments (0070 FK `ON DELETE SET NULL`)
 - 서버 호출 실패 시 로컬 teardown 도 진행 안 함 — 부분 삭제 회피(auth.users 와 profiles 의 불일치 방지).
 - Apple TEST MODE mock 세션은 Supabase 세션이 없어 Edge Function skip → 로컬 teardown 만.
@@ -348,7 +348,7 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 - **친구/일정/초대 실연동**: 친구그래프·내 일정·초대가 로컬·목업 → 서버 테이블 + 양방향 전달.
 - **알림 전달·실시간**: ~~NotificationsTab 실데이터 미연동~~ → **P3-A5 완료**(서버 fetch + 0건 시 mock 폴백 + 미읽음 카운트 서버 count + 일괄 read UPDATE). ~~수신자 적재(상대방 트리거 — 룰 10개 중 8개 미발송)~~ → **P3-B.1 완료**(2026-05-21): `dispatch.ts` 가 notifications insert 직후 send-push Edge Function 호출. `profile.id → auth_uid` 변환 후 본인 외 수신자에게 OS 푸시 발송(best-effort, Apple mock auth_uid null = skip). 남은: realtime 구독(60s staleTime), 시스템 cron 트리거(reminder 등).
 - ~~**OS 푸시 인프라 부재**: 푸시 토큰/발송 서버 전무~~ → **P3-A4 + B.1 완료**: `expo-notifications` + `push_tokens` 테이블(0082) + `send-push` Edge Function + dispatch 통합. 다음 EAS 빌드 후 활성화.
-- ~~**회원 탈퇴 서버 삭제**: P1 로컬 teardown만, 서버 계정/데이터 영구삭제 Edge Function 미구현.~~ → **P3 완료** (Edge Function `delete-account`, §3.6 참고). 90일 후 cron 으로 notifications · profile_nicknames 파기는 후속.
+- ~~**회원 탈퇴 서버 삭제**: P1 로컬 teardown만, 서버 계정/데이터 영구삭제 Edge Function 미구현.~~ → **P3-A1 완료** (Edge Function `delete-account`, §3.6 참고). 90일 cron 파기도 **P3-B.2 완료** (0084 — deleted_users tombstone + cleanup_expired_data + pg_cron).
 - **약관 본문**: `lib/termsContent.ts` 전부 "임시 더미 — 교체 예정" 표식. 실제 5종(서비스 이용약관 / 개인정보 수집·이용 동의 / 개인정보 처리방침 / 위치기반서비스 이용약관 / 마케팅 정보 수신 동의) 문구 미작성.
 
 ### 8.3 RLS·Storage 최종 하드닝 (P3-C2/C3 완료, 2026-05-21)

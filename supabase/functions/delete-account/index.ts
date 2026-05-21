@@ -113,8 +113,37 @@ serve(async (req) => {
     errors.push({ step: 'storage', message: String(e) });
   }
 
-  // 3) profiles 삭제 → CASCADE 로 donations 자동 삭제.
-  //    auth_uid 컬럼은 0059 마이그레이션에서 추가됨.
+  // 3a) Tombstone — profile DELETE 전에 user_code + nicknames 보존(P3-B.2).
+  //     90일 후 cleanup_expired_data() 가 이 tombstone 으로 notifications +
+  //     profile_nicknames 일괄 파기. 약관·개인정보처리방침 §3 의 "탈퇴 후 90일"
+  //     정확 적용.
+  try {
+    const { data: prof } = await admin
+      .from('profiles')
+      .select('id, nickname')
+      .eq('auth_uid', uid)
+      .maybeSingle();
+    const profileRow = prof as { id: string; nickname: string | null } | null;
+    if (profileRow?.id) {
+      const { error: tombErr } = await admin
+        .from('deleted_users')
+        .upsert(
+          {
+            user_code: profileRow.id,
+            nicknames: profileRow.nickname ? [profileRow.nickname] : [],
+          },
+          { onConflict: 'user_code' },
+        );
+      if (tombErr) {
+        errors.push({ step: 'tombstone', message: tombErr.message });
+      }
+    }
+  } catch (e) {
+    errors.push({ step: 'tombstone', message: String(e) });
+  }
+
+  // 3b) profiles 삭제 → CASCADE 로 donations 자동 삭제.
+  //     auth_uid 컬럼은 0059 마이그레이션에서 추가됨.
   try {
     const { error: profileErr } = await admin
       .from('profiles')
