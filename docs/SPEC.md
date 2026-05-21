@@ -70,7 +70,7 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 ├─ MyInfo ✅           [인증]  내 정보 허브 3탭: 스케줄(달력)/사람들(친구)/메시지(알림)
 │  ├─ (탭) CalendarTab ✅      내 수영 일정 달력
 │  ├─ (탭) FriendsTab 🟡       친구 목록·요청·새 친구 추가 (목업)
-│  └─ (탭) NotificationsTab 🟡 알림 목록 (정적 샘플 UI)
+│  └─ (탭) NotificationsTab ✅ 알림 목록 (실 notifications fetch, 0건 시 mock 갤러리 폴백). 탭 진입 시 read=true 일괄 UPDATE
 ├─ Profile ✅          [인증]  프로필 보기·수정(닉네임/소개/성별/생일/경력/레슨/영법/자격증/IM100 + 항목별 공개범위)
 ├─ SwimClassRegister ✅[인증]  레슨 받는 수영장 + 주간 시간 슬롯 등록(로컬 프로필)
 ├─ OtherUserProfile 🟡 [인증]  타 사용자 프로필·친구신청/수락·일정참여·차단/삭제
@@ -270,7 +270,7 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 
 > 📄 **상세 명세:** 26개 알림 트리거의 발송 조건·수신자·본문·액션·우선순위·채널은 [notification-triggers-spec.md](notification-triggers-spec.md)에 정의(v0.1 초안). 본 절은 코드에 실제 선언된 룰 기준 현황만 기록한다.
 
-> **결정적 사실:** **OS 푸시 알림이 코드에 전혀 없다** (expo-notifications/FCM/APNs/푸시토큰 부재). 모든 "알림"은 **인앱**(`notifications` 테이블 insert)이며, 표시되는 알림 목록(NotificationsTab)은 **정적 샘플 UI**로 테이블을 읽지도 않는다. 미읽음 배지는 메모리 시드. 설정의 "푸시 알림 받기" 토글은 미연동(로컬 state). → **푸시 정책은 사실상 신규 설계 대상**이며, 아래는 코드에 선언된 메시지 룰(`lib/messages/rules.ts`) 기준.
+> **결정적 사실:** **OS 푸시 알림이 코드에 전혀 없다** (expo-notifications/FCM/APNs/푸시토큰 부재). 모든 "알림"은 **인앱**(`notifications` 테이블 insert)이며, NotificationsTab 은 실 테이블에서 fetch (0건 시 mock 갤러리 폴백). 미읽음 배지(MapScreen FAB) = **서버 `count(*) WHERE read=false`** 단일 출처(P3-A5). 알림탭 진입 시 `read=true` 일괄 UPDATE. 설정의 "푸시 알림 받기" 토글은 미연동(로컬 state). → **OS 푸시 인프라는 신규 설계 대상**(P3-A4), 아래는 코드에 선언된 메시지 룰(`lib/messages/rules.ts`) 기준.
 
 | 트리거 이벤트 | 발신 | 수신 대상 조건 | 분류 | 상태 | 전달 |
 |---|---|---|---|---|---|
@@ -320,7 +320,7 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 - **사용자 프로필 서버화**: 현재 PII 전부 기기 로컬(AsyncStorage, 비암호화 JSON). P2 `user_profiles` 테이블 이관 필요(약관·데이터보관 정책 직결).
 - **약관 동의 서버화·버전관리**: 현재 기기단위·필수4(age/service/privacyConsent/location)+marketing(선택). P2 = `terms`(유형/버전/시행일/내용) + `terms_agreements`(누가·언제·어떤 버전·agree/withdraw, append-only 감사로그) 분리, 버전 고정·재동의·철회 이벤트. *(스키마 초안 작성 완료: `supabase/migrations/0044_terms.sql` — Phase 2, 미적용. 활성화 시 lib/terms.ts 를 계정단위 서버 모델로 이관 필요.)*
 - **친구/일정/초대 실연동**: 친구그래프·내 일정·초대가 로컬·목업 → 서버 테이블 + 양방향 전달.
-- **알림 전달·실시간**: 현재 본인 이력만 insert, 수신자 적재·realtime·NotificationsTab 실데이터 미연동. 룰 10개 중 8개 미발송.
+- **알림 전달·실시간**: ~~NotificationsTab 실데이터 미연동~~ → **P3-A5 완료**(서버 fetch + 0건 시 mock 폴백 + 미읽음 카운트 서버 count + 일괄 read UPDATE). 남은 항목: 수신자 적재(상대방에게 가는 트리거 — 룰 10개 중 8개 미발송, 서버 사이드 dispatch 필요), realtime 구독(현재 60s staleTime).
 - **OS 푸시 인프라 부재**: 푸시 토큰/발송 서버 전무 → 푸시 정책 실행 전 신규 구축 필요.
 - ~~**회원 탈퇴 서버 삭제**: P1 로컬 teardown만, 서버 계정/데이터 영구삭제 Edge Function 미구현.~~ → **P3 완료** (Edge Function `delete-account`, §3.6 참고). 90일 후 cron 으로 notifications · profile_nicknames 파기는 후속.
 - **약관 본문**: `lib/termsContent.ts` 전부 "임시 더미 — 교체 예정" 표식. 실제 5종(서비스 이용약관 / 개인정보 수집·이용 동의 / 개인정보 처리방침 / 위치기반서비스 이용약관 / 마케팅 정보 수신 동의) 문구 미작성.
