@@ -28,6 +28,24 @@ select name, executed_at
 | 0081 | `rls_hardening_p3.sql` | notifications.select 본인만, avatars 본인 폴더만 |
 | 0082 | `push_tokens.sql` | OS 푸시 토큰 보관 + RLS 본인 행만 |
 | 0083 | `usage_cohort_views.sql` | 사용자 코호트 view |
+| 0084 | `user_tombstones_cleanup.sql` | 탈퇴 후 90일 자동 파기 (pg_cron) |
+| 0085 | `notifications_realtime.sql` | notifications realtime 활성 |
+| 0086 | `scheduled_triggers.sql` | 시간 기반 cron 트리거 3종 |
+| 0087 | `notifications_push_trigger.sql` | system 인서트 시 자동 OS 푸시 (pg_net) |
+
+### 0087 추가 설정 — pg_net push 자동화 활성
+
+0087 trigger 가 작동하려면 Supabase Studio SQL Editor 에서 1회:
+
+```sql
+alter database postgres
+  set "app.settings.supabase_url" = 'https://<project>.supabase.co';
+alter database postgres
+  set "app.settings.service_role_key" = '<service_role_key>';
+```
+
+미설정 시 trigger silent skip — system 인서트(cron 등)는 in-app realtime
+으로만 인지 (백그라운드 OS 푸시 X). 설정 후엔 cron 발화 알림도 자동 푸시.
 
 ⚠️ **번호 충돌**: 0081 이 2개 (`ops_stats_views` + `rls_hardening_p3`). 두 파일
 독립적이라 둘 다 적용 OK. Supabase 가 알파벳 순으로 ops → rls 적용.

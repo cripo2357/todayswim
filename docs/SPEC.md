@@ -346,7 +346,12 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
   - 'age' 는 약관 문서 아님 = 클라이언트 게이트, AsyncStorage 한정 유지.
   - 약관 본문은 `src/lib/termsContent.ts` 가 단일 출처(앱 배포 단위). 법적 증빙 = `terms_agreements.terms_version` 문자열 스냅샷 + git.
 - **친구/일정/초대 실연동**: 친구그래프·내 일정·초대가 로컬·목업 → 서버 테이블 + 양방향 전달.
-- **알림 전달·실시간**: ~~NotificationsTab 실데이터 미연동~~ → **P3-A5 완료**(서버 fetch + 0건 시 mock 폴백 + 미읽음 카운트 서버 count + 일괄 read UPDATE). ~~수신자 적재(상대방 트리거 — 룰 10개 중 8개 미발송)~~ → **P3-B.1 완료**(2026-05-21): `dispatch.ts` 가 notifications insert 직후 send-push Edge Function 호출 (JWT 인증 강화 2026-05-22). ~~realtime 구독~~ → **완료**(2026-05-22, 0085): `useNotificationsRealtime` 가 Postgres changes 채널로 본인 user_code 필터 구독 → query 무효화로 즉시 반영. ~~시스템 cron 트리거~~ → **완료**(2026-05-22, 0086): pg_cron + SQL 함수 3종 — `send_schedule_reminder_prev_day` (매일 18:00 KST), `send_schedule_reminder_1h` (매 5분), `expire_pending_invites` (매 시간). 남은: pg_net.http_post 로 send-push 자동 호출 (현재는 in-app realtime 만 — 백그라운드 OS 푸시 미연결).
+- **알림 전달·실시간 — 전체 완료(2026-05-22)**:
+  - **P3-A5**: NotificationsTab 실데이터 + 미읽음 서버 count + 일괄 read.
+  - **P3-B.1**: dispatch.ts → send-push 통합 (JWT 인증 강화).
+  - **realtime 구독 (0085)**: useNotificationsRealtime — Postgres changes 본인 user_code 필터 → 즉시 반영. 60s polling 폴백.
+  - **시스템 cron 트리거 (0086)**: pg_cron + 3종 — schedule_reminder_prev_day (매일 18:00 KST) / schedule_reminder_1h (매 5분) / expire_pending_invites (매 시간).
+  - **백그라운드 OS 푸시 (0087)**: notifications AFTER INSERT trigger 가 auth.uid() IS NULL 인 service_role 인서트(cron / donation_thanks 등)에 대해 pg_net.http_post 로 send-push 자동 호출. 클라이언트 인서트(user JWT) 는 dispatch.ts 가 이미 처리 → trigger skip. config 설정(app.settings.supabase_url + service_role_key) 필요 — `docs/P3-DEPLOY-CHECKLIST.md` 참고.
 - ~~**OS 푸시 인프라 부재**: 푸시 토큰/발송 서버 전무~~ → **P3-A4 + B.1 완료**: `expo-notifications` + `push_tokens` 테이블(0082) + `send-push` Edge Function + dispatch 통합 + JWT 인증 강화 (2026-05-22). 다음 EAS 빌드 후 활성화.
 - ~~**회원 탈퇴 서버 삭제**: P1 로컬 teardown만, 서버 계정/데이터 영구삭제 Edge Function 미구현.~~ → **P3-A1 완료** (Edge Function `delete-account`, §3.6 참고). 90일 cron 파기도 **P3-B.2 완료** (0084 — deleted_users tombstone + cleanup_expired_data + pg_cron).
 - **약관 본문**: `lib/termsContent.ts` 전부 "임시 더미 — 교체 예정" 표식. 실제 5종(서비스 이용약관 / 개인정보 수집·이용 동의 / 개인정보 처리방침 / 위치기반서비스 이용약관 / 마케팅 정보 수신 동의) 문구 미작성.
