@@ -208,6 +208,9 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 | `donation_monthly_v` ✅ | 후원 월별 누적, KST (0081) | year, month, total_amount, payment_count, unique_donors | 0080 연도별을 월 단위로 확대. 추이 그래프 입력 |
 | `donation_new_vs_repeat_v` ✅ | 후원 신규/재후원 분해 월별 (0081) | year, month, donor_type('new'/'repeat'), total_amount, payment_count, unique_donors | window function 으로 각 payment 의 first 여부 라벨링. profile_id NULL 제외 |
 | `pools_coverage_v` ✅ | 풀 카탈로그 헬스, 누락 todo (0081) | id, name, region, district, missing_schedule/photo/lane_count/pool_length/depth/price | service_role 전용(`invoker=on` + anon/auth `revoke`). `where missing_*` 로 운영 todo 추출 |
+| `signups_daily_v` ✅ | 일별 신규 가입자 view, KST (0083) | day, signup_count | service_role 전용(`invoker=on`). profiles.created_at 기반 |
+| `signups_monthly_v` ✅ | 월별 신규 가입자 view, KST (0083) | year, month, signup_count | service_role 전용 |
+| `last_seen_distribution_v` ✅ | 마지막접속 분포 view (0083) | bucket(within_1d/7d/30d/90d/180d/dormant_180d_plus), user_count | service_role 전용(auth.users 접근 권한). 한계: 마지막 1회만 — true DAU 아님. 본격 사용성 분석은 외부 analytics 도구 필요 |
 | `faqs` ✅ | 자주 묻는 질문 | 필수: id(PK uuid), question, answer, sort_order, category('first'/'info'/'activity'/'settings'), created_at, updated_at | RLS read all, write service_role 만. 운영자가 Dashboard 에서 직접 추가/수정/삭제. 현재 시드 44개(0072_faqs_expand → 0073_faqs_category 분류) |
 | `app_status` ✅ | 운영자 설정 단일 row(점검·강제업데이트·후원 계좌) | 필수: id(=1 single-row), maintenance_mode, min_version · 선택: donation_bank, donation_account, donation_holder(0068) | RLS read all, write service_role 만. 클라가 Splash + Donation 화면에서 조회 |
 | `terms` ✅ | 약관 문서·버전 마스터 (0044 + 0079) | 필수: id(PK), type(service/privacy_consent/privacy_policy/location/marketing), version, effective_date, content(jsonb), is_required, requires_consent, is_active | RLS read all, write service_role 만. 5종 시드 v1.0.0. 운영자가 개정 시 새 row + is_active 교체 |
