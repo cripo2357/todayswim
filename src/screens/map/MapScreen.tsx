@@ -441,22 +441,29 @@ export function MapScreen() {
 
   const flyToMyLocation = async () => {
     void logEvent('pool_search_my_location');
-    // 항상 새로 측정 — 사용자가 이동했을 수 있으므로 캐시된 geo.coords 무시.
-    // request()는 캐시→fresh 2단계로 최신 좌표 반환. 권한 거부 시 null.
-    const fresh = await geo.request();
-    // request() 실패해도 직전 상태의 캐시 좌표가 있으면 그걸로라도 이동.
-    // 둘 다 없을 때(권한없음·위치 전무)만 무동작.
-    const target = fresh ?? geo.coords;
-    if (target) {
-      // 내 위치 이동은 다른 기능 사용으로 간주 → deselect
-      select(null);
+
+    const animate = (c: { lat: number; lng: number }) => {
+      select(null); // 내 위치 이동은 다른 기능 사용으로 간주 → deselect
       mapRef.current?.animateCameraTo({
-        latitude: target.lat,
-        longitude: target.lng,
+        latitude: c.lat,
+        longitude: c.lng,
         zoom: 13,
         duration: 400,
       });
+    };
+
+    // 캐시 좌표가 있으면 즉시 이동(버튼 즉각 반응) + 백그라운드 fresh refresh.
+    // 이전 구현은 await geo.request() 가 fresh fix 4초 타임아웃을 끝까지 기다려서
+    // 사용자가 "버튼 누른 뒤 한참 있다 이동"으로 체감 — 그 지연 제거.
+    if (geo.coords) {
+      animate(geo.coords);
+      void geo.request(); // fire-and-forget — 다음 탭 때 최신 좌표 사용
+      return;
     }
+
+    // 캐시 없는 첫 호출(콜드 스타트)만 fresh fix 까지 await.
+    const fresh = await geo.request();
+    if (fresh) animate(fresh);
   };
 
   return (
