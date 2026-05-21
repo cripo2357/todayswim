@@ -4,6 +4,7 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSwimSchedules } from './swimSchedule';
+import { setConsent } from '@/lib/terms';
 
 /** 다른 사람 수영 일정 보기 범위 */
 export type OthersScheduleView = 'friends' | 'public';
@@ -399,22 +400,17 @@ export const usePrefs = create<PrefsState>((set, get) => ({
     }));
   },
   setNotifMarketing: async (v) => {
-    // 마케팅 토글은 lib/terms.ts와 동기화 — 동의↔거부 시점을 별도 키로 보존.
-    // ON: K_TERMS_MARKETING=now, rejected 키 제거.
-    // OFF: K_TERMS_MARKETING 제거, K_TERMS_MARKETING_REJECTED=now.
-    // 두 키는 상호배타(현재 상태 = 어느 키가 존재하느냐)지만 시점은 토글
-    // 시마다 갱신 — 설정 화면에서 동의일시/거부일시로 노출.
+    // 마케팅 토글은 서버 + 로컬 양쪽 갱신 (P3-A2).
+    // - lib/terms.setConsent('marketing', v) → terms_agreements 서버 적재 +
+    //   poolsday.terms.marketing 로컬 캐시 갱신
+    // - 추가: 거부 시점(K_TERMS_MARKETING_REJECTED) 은 UI 가 "거부한 시각"
+    //   표시에 쓰므로 로컬에 별도 키로 유지(서버에는 withdraw 이벤트 created_at).
     const now = new Date().toISOString();
+    await setConsent('marketing', v);
     if (v) {
-      await Promise.all([
-        AsyncStorage.setItem(K_TERMS_MARKETING, now),
-        AsyncStorage.removeItem(K_TERMS_MARKETING_REJECTED),
-      ]);
+      await AsyncStorage.removeItem(K_TERMS_MARKETING_REJECTED);
     } else {
-      await Promise.all([
-        AsyncStorage.removeItem(K_TERMS_MARKETING),
-        AsyncStorage.setItem(K_TERMS_MARKETING_REJECTED, now),
-      ]);
+      await AsyncStorage.setItem(K_TERMS_MARKETING_REJECTED, now);
     }
     set({ notifMarketing: v });
   },
