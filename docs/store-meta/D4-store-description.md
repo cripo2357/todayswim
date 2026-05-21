@@ -201,18 +201,61 @@ See you in the water. 🏊‍♀️ — Pool's day
 
 ---
 
-## 사업자 정보 (사업자 등록 + 도메인 확정 후 채우기)
+## 사업자 정보 (사업자 등록 후 채우기)
+
+**도메인 확정** (2026-05-21 크리스 결정): **`cripo.co.kr`** 구입.
+사업자 등록 명의(CRIPO)와 톤 일치. 한국 사업자 TLD라 약관 사업자 정보에도
+자연스러움. 미래 프로젝트는 `cripo.co.kr/<project-slug>` 경로로 확장.
 
 | 필드 | 현재 | 출시 전 채울 값 |
 |---|---|---|
 | Developer Name (App Store) | placeholder | CRIPO (사업자 등록 명의) |
 | 사업자등록번호 | placeholder | (등록 후 기재) |
-| Privacy Policy URL | placeholder | https://{domain}/privacy |
-| Support URL | placeholder | https://{domain}/support 또는 mailto:support@{domain} |
-| Marketing URL | (선택) | https://{domain} |
-| App Review Contact | cripo2357@gmail.com | 동일 유지 또는 사업자 이메일 |
+| Privacy Policy URL | placeholder | **`https://cripo.co.kr/poolsday/privacy`** |
+| Support URL | placeholder | **`https://cripo.co.kr/poolsday/support`** 또는 `mailto:support@cripo.co.kr` |
+| Marketing URL | (선택) | **`https://cripo.co.kr/poolsday`** (앱 랜딩) — 운영 여유 시 |
+| App Review Contact | cripo2357@gmail.com | `support@cripo.co.kr` (이메일 셋업 후) |
 
-도메인 후보: `poolsday.app` / `poolsday.co.kr` / `poolsday.kr`
+## 도메인·호스팅 셋업 (출시 전 1시간 작업)
+
+### 1) 도메인 + DNS
+- `cripo.co.kr` 구입 (이미 진행 중)
+- DNS 관리는 [Cloudflare](https://www.cloudflare.com) 무료 — `.co.kr` 도 nameserver 위임 가능
+  (한국 등록기관에서 nameserver 변경 → `*.ns.cloudflare.com` 2개 등록)
+
+### 2) Privacy / Support 페이지 호스팅 (무료)
+
+**옵션 A — GitHub Pages + custom domain** (권장)
+1. GitHub repo > Settings > Pages > Source: `Deploy from a branch`, `/docs` 선택
+2. Custom domain 에 `cripo.co.kr` 입력 → CNAME 생성됨
+3. Cloudflare DNS 에 `cripo.co.kr` 의 CNAME `cripo2357.github.io` 추가
+4. HTTPS 강제 체크 (Cloudflare full strict)
+5. `docs/terms/*.md` + `docs/poolsday/privacy.md` 등 publish
+
+**옵션 B — Cloudflare Pages** (대안)
+- GitHub repo 연결 → 자동 빌드·배포
+- 같은 무료, 더 빠른 CDN
+- DNS 도 같은 Cloudflare 에서 관리 → 통합 운영 쉬움
+
+### 3) 이메일 (`support@cripo.co.kr`)
+
+**Cloudflare Email Routing — 무료**
+1. Cloudflare 대시보드 > Email Routing 활성화
+2. MX 레코드 자동 추가
+3. `support@cripo.co.kr` → `cripo2357@gmail.com` 으로 포워딩 규칙
+4. **수신만 가능, 발신은 gmail 그대로**
+5. 추후 Google Workspace 전환 시 도메인 그대로 유지
+
+### 4) 약관 5종 사업자 정보 갱신
+
+사업자 등록 완료 + 도메인 셋업 완료 후:
+- `docs/terms/*.md` 의 `[사업자등록 완료 후 기재]` placeholder 채우기
+- `src/lib/termsContent.ts` 동일 갱신
+- 약관 version 1.0.0 → 1.1.0 (개정) 마이그레이션 (선택 — 출시 전이면 1.0.0 유지하고 시드 한 번 더 손봐도 OK)
+
+### 5) D4 description URL 갱신
+
+본 문서 상단의 placeholder 들이 출시 직전 cripo.co.kr 도메인으로 자동 정렬.
 
 ---
 
