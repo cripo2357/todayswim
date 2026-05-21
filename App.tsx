@@ -16,7 +16,7 @@ import { GlobalAddScheduleSheet } from '@/components/calendar/GlobalAddScheduleS
 import { OfflineGate } from '@/components/network/OfflineGate';
 import { RuntimeStatusGate } from '@/components/status/RuntimeStatusGate';
 import { initSentry, SentryErrorBoundary } from '@/lib/sentry';
-import { initAnalytics } from '@/lib/analytics';
+import { initAnalytics, logScreen } from '@/lib/analytics';
 import { useFonts } from '@/hooks/useFonts';
 import { usePoolFilter } from '@/store/poolFilter';
 import { useSelection } from '@/store/selection';
@@ -89,7 +89,14 @@ export default function App() {
     <SentryErrorBoundary fallback={<View />}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
-          <NavigationContainer ref={navigationRef} linking={linking}>
+          <NavigationContainer
+            ref={navigationRef}
+            linking={linking}
+            onStateChange={() => {
+              const route = navigationRef.current?.getCurrentRoute();
+              if (route?.name) void logScreen(route.name);
+            }}
+          >
             <RootNavigator />
           </NavigationContainer>
           {/* 시간표 더블탭 → 그 자리에서 바로 일정 등록 시트(화면 이동 없음) */}

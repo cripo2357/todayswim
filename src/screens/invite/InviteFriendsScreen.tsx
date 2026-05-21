@@ -30,6 +30,7 @@ import { dispatchMessage, dispatchMessageTo } from '@/lib/messages/dispatch';
 import { useProfile } from '@/store/profile';
 import { tokens } from '@/styles/tokens';
 import { formatDateTime } from '@/lib/dateFormat';
+import { logEvent } from '@/lib/analytics';
 
 const SCREEN_H = Dimensions.get('window').height;
 // 시트 본문 고정 높이 — 멀티선택 열림/닫힘과 무관하게 시트 총높이 일정.
@@ -107,6 +108,7 @@ export function InviteFriendsScreen() {
 
   const send = () => {
     if (selected.length === 0) return;
+    void logEvent('friend_invite_sent', { invitee_count: selected.length });
     // 보낸 초대 기록 → 다음에 같은 슬롯 열면 검색 대상에서 제외.
     markInvited(slotKey, selected.map((f) => f.id));
     // 발송 이력 적재 (Rule: invite_sent — 본인 이력)

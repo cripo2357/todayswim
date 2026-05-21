@@ -33,6 +33,7 @@ import {
 } from '@/store/poolFilter';
 import IconLifeBuoy from '@assets/icons/life-buoy.svg';
 import IconRotate from '@assets/icons/arrow-rotate-right.svg';
+import { logEvent } from '@/lib/analytics';
 // Figma 90:7417 — unselected: #4B5563 (Gray/60), selected: white (chip bg pd-mint)
 import IconKidsGray from '@assets/icons/facility-kids-gray.svg';
 import IconDivingGray from '@assets/icons/facility-diving-gray.svg';
@@ -109,6 +110,12 @@ export function PoolFilterScreen() {
       lane,
       fee,
       facilities: Array.from(facilities),
+    });
+    void logEvent('pool_filter_apply', {
+      day_count: days.size,
+      lane: lane ?? 'any',
+      fee: fee ?? 'any',
+      facility_count: facilities.size,
     });
     // 필터 적용 → 지도가 아닌 수영장 목록 화면으로 이동.
     // replace로 필터 화면을 스택에서 제거 (사용자가 뒤로 가면 직전 화면으로).

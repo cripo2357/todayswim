@@ -24,6 +24,7 @@ import {
 } from '@/store/swimSchedule';
 import { usePrefs } from '@/store/prefs';
 import { useFavorites } from '@/store/favorites';
+import { logEvent } from '@/lib/analytics';
 import type { DayOfWeek, TimeSlot } from '@/types/schedule';
 import type { Pool } from '@/types/pool';
 import {
@@ -307,6 +308,10 @@ export function AddScheduleSheet({
       date: dateKey(date),
       start: slot.start,
       end: slot.end,
+      visibility,
+    });
+    void logEvent('schedule_add_complete', {
+      pool_id: selectedPool.id,
       visibility,
     });
     submittedRef.current = {

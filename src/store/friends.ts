@@ -20,6 +20,7 @@ import {
   tryDeleteFriendship,
   tryInsertBlock,
 } from '@/lib/friendsSync';
+import { logEvent } from '@/lib/analytics';
 
 /** 현재 유저 친구코드 — 없으면 서버 호출 skip. */
 function myProfileId(): string | undefined {
@@ -106,6 +107,7 @@ export const useFriends = create<FriendsState>((set) => ({
   sendRequest: (id) => {
     const me = myProfileId();
     if (me) void tryInsertFriendRequest(me, id);
+    void logEvent('friend_request_sent');
     set((s) => (s.sent.includes(id) ? s : { sent: [...s.sent, id] }));
   },
   cancelRequest: (id) => {

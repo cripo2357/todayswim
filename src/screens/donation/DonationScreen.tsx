@@ -49,6 +49,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { formatDateTime } from '@/lib/dateFormat';
 import { useAppStatus } from '@/hooks/useAppStatus';
 import { useProfile } from '@/store/profile';
+import { logEvent } from '@/lib/analytics';
 import {
   useDonations,
   useUpdateDonationMessage,
@@ -188,6 +189,7 @@ export function DonationScreen() {
     try {
       const Clipboard = await import('expo-clipboard');
       await Clipboard.setStringAsync(account);
+      void logEvent('donation_account_copy');
       Alert.alert('계좌 복사', '계좌번호가 복사됐어요.');
     } catch {
       Alert.alert(

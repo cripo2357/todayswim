@@ -37,6 +37,7 @@ import { useSwimSchedules } from '@/store/swimSchedule';
 import { useFriends } from '@/store/friends';
 import { useFavorites } from '@/store/favorites';
 import { MOCK_OTHER_LESSONS, MOCK_OTHER_SCHEDULES } from '@/lib/mockData';
+import { logEvent } from '@/lib/analytics';
 // MapScreen 한정 — useOtherSchedules 사용 금지 ([[naver_map_oob_mock_only]]).
 // 2026-05-20 회귀: 6배치(f529ecf)에서 useOtherSchedules 도입 시 naver-map
 // 마운트에서 java.lang.IndexOutOfBoundsException(ArrayList.get) 발생.
@@ -367,6 +368,7 @@ export function MapScreen() {
   }, [cluster, zoomInt]);
 
   const onMarkerPress = (poolId: string) => {
+    void logEvent('pool_marker_tap', { pool_id: poolId });
     select(poolId);
     const pool = pools.find((p) => p.id === poolId);
     if (!pool) return;
