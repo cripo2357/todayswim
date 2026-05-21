@@ -19,6 +19,8 @@ import {
   tryUpdateScheduleVisibility,
   tryUpdateScheduleCompleted,
   tryDowngradePublicToFriends,
+  tryFetchMySchedules,
+  rowToSchedule,
 } from '@/lib/userSchedulesSync';
 
 /** 현재 유저 친구코드 — 없으면 서버 호출 skip. */
@@ -46,6 +48,10 @@ interface SwimScheduleState {
   schedules: MySwimSchedule[];
   hydrated: boolean;
   hydrate: () => Promise<void>;
+  /** 서버 fetch → 로컬 교체. P3 2026-05-22 — 다기기 동기 + 재설치 복구.
+   *  profile.id 가 생긴 시점에 App.tsx useEffect 가 호출. session 미인증
+   *  (Apple mock / 비로그인) 시 호출 안 됨 → AsyncStorage 캐시 유지. */
+  serverSync: () => Promise<void>;
   add: (s: Omit<MySwimSchedule, 'id' | 'createdAt'>) => Promise<void>;
   remove: (id: string) => Promise<void>;
   setVisibility: (id: string, visibility: ScheduleVisibility) => Promise<void>;
@@ -82,6 +88,19 @@ export const useSwimSchedules = create<SwimScheduleState>((set, get) => ({
     } catch {
       set({ hydrated: true });
     }
+  },
+
+  serverSync: async () => {
+    const me = myProfileId();
+    if (!me) return; // 미인증 / Apple mock — 로컬 캐시 유지
+    const rows = await tryFetchMySchedules(me);
+    if (!rows) return; // fetch 실패(네트워크 등) — 캐시 유지
+    // 서버 권위 — 빈 배열도 정상 응답으로 처리(신규 가입자 = 빈 일정).
+    // 단, 시드 mock 이 들어있는 가입 전 상태와 구분 불가하니 정책 명확화:
+    // session 있는 = 가입자 = 서버가 진실원본 = 빈 배열도 그대로 반영.
+    const next = rows.map(rowToSchedule);
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    set({ schedules: next });
   },
 
   add: async (s) => {

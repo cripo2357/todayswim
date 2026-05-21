@@ -122,6 +122,42 @@ export async function tryDowngradePublicToFriends(
   }
 }
 
+/** 내 일정 fetch — 다기기 동기/재설치 복구용. swimSchedule store 의 serverSync
+ *  가 호출. session 있는데 server 0건이면 신규 가입자 = 시드 mock 안 쓰고
+ *  빈 배열 반환(서버가 권위). */
+export async function tryFetchMySchedules(
+  meId: string,
+): Promise<UserScheduleRow[] | null> {
+  try {
+    const { data, error } = await supabase
+      .from('user_schedules')
+      .select('*')
+      .eq('profile_id', meId)
+      .order('date', { ascending: true });
+    if (error) return null;
+    return (data ?? []) as UserScheduleRow[];
+  } catch {
+    return null;
+  }
+}
+
+/** row → MySwimSchedule 매핑 (snake_case → camelCase). swimSchedule store
+ *  serverSync 가 사용. */
+export function rowToSchedule(row: UserScheduleRow): MySwimSchedule {
+  return {
+    id: row.id,
+    poolId: row.pool_id ?? '',
+    poolName: row.pool_name,
+    poolPhotoUrl: row.pool_photo_url ?? undefined,
+    date: row.date,
+    start: row.start_time,
+    end: row.end_time,
+    visibility: row.visibility,
+    completed: row.completed,
+    createdAt: row.created_at,
+  };
+}
+
 // ─── 친구 일정 fetch (MOCK_OTHER_SCHEDULES 교체용, 후속 배치에서 호출 부착) ───
 
 /** 친구 일정 — 친구 profile_id 목록으로 일괄 fetch. private 행은 RLS-후

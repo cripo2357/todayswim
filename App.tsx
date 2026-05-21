@@ -72,6 +72,16 @@ export default function App() {
   // NotificationsTab + 미읽음 배지 자동 갱신. (P3 후속 2026-05-22)
   useNotificationsRealtime();
 
+  // user_schedules 서버 sync — profile.id 가 생기는 시점(가입 직후 / 재시동
+  // 로그인 복구)에 서버 fetch 로 로컬 교체. 다기기 동기·재설치 복구.
+  // (A.2 P3 후속, 2026-05-22)
+  const profileId = useProfile((s) => s.profile?.id);
+  React.useEffect(() => {
+    if (profileId) {
+      void useSwimSchedules.getState().serverSync();
+    }
+  }, [profileId]);
+
   // 앱 (재)시동 시 필터·선택 상태 초기화 + 인증 세션 복원.
   React.useEffect(() => {
     usePoolFilter.getState().clearAll();

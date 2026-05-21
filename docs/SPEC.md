@@ -104,11 +104,11 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 3. 대안 경로: FAB 필터 → `PoolFilter`(요일/레인/요금/시설) → `PoolList`(거리·이름 정렬), 또는 MapMain "수영장 목록" → `PoolList`.
 4. `ScheduleView`: 풀별 자유수영 시간표(요일 칩, 시즌별 슬롯그룹, 요일 예외문구). **조회 전용** — 슬롯 더블탭 시 일정 추가 의도만 넘기고 닫힘.
 
-### 3.3 수영 일정 추가 · 친구 초대 🟡(로컬 저장·초대 목업)
+### 3.3 수영 일정 추가 · 친구 초대 ✅(서버 SSOT, 로컬 캐시) / 🟡(초대 mock)
 1. 일정 추가 진입(시간표 더블탭 / 친구 프로필 "나도 참여")이 의도(intent)를 설정 → 전역 시트(AddScheduleSheet)가 프리필로 열림.
 2. 풀 검색 → 날짜(오늘~+90일) → 시간 슬롯 선택. **충돌 정책**: 중복(이미 등록)·시간겹침 슬롯은 선택 불가 + 5초 툴팁.
 3. 공개범위 라디오: 비공개 / 친구에게만 / 전체공개(설정에 따라 숨김 가능).
-4. "수영 일정 추가" → 로컬(AsyncStorage) 저장(`useSwimSchedules`). 완료 카드.
+4. "수영 일정 추가" → 로컬(AsyncStorage) 즉시 반영 + 서버 `user_schedules` best-effort sync (`tryInsertSchedule`). 다기기 동기 = profile.id 생기는 시점에 `serverSync()` 가 `user_schedules` fetch → 로컬 교체 (App.tsx useEffect, P3-A.2 2026-05-22). 완료 카드.
 5. (친구 1명+) "이 일정에 친구 초대하기" → `InviteFriends`(친구 다중선택, 이미 참여/이미 초대 제외) → 전송 시 `dispatchMessage('invite_sent')`(작성자 본인 이력 1행만 Supabase insert) → `InviteDone`. **수신자에게 실제 전달 없음(Phase 2).**
 
 ### 3.4 친구 · 차단 🟡(메모리 목업, 재시작 시 초기화)
