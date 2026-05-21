@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1064019972459",
+    "project_id": "pool-s-day",
+    "storage_bucket": "pool-s-day.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1064019972459:android:902b769f5795fb4b14bc2e",
+        "android_client_info": {
+          "package_name": "com.cripo.poolsday"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCJC9aiU1EKYw-EfTw7RmKAoHBvc2TthME"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
