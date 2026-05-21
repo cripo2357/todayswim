@@ -13,8 +13,8 @@ App Store / Google Play 등록 페이지에 들어갈 텍스트. 각 스토어 �
 | 표시 | 값 | 비고 |
 |---|---|---|
 | App Name (사용자 노출) | **Pool's day** | App Store / Play Store 표시명 |
-| Subtitle (App Store, 30자) | **자유수영, 오늘 어디 갈래?** | 한 줄 강한 서브타이틀 |
-| Short description (Play, 80자) | 동네 자유수영장을 지도에서 찾고 시간표 확인, 친구와 일정도 잡아요. | |
+| Subtitle (App Store, 30자) | **매일매일 수영하는 날, Pool's day** | Splash tagline 과 동일 — brand echo. SEO 는 Keywords 필드가 담당 |
+| Short description (Play, 80자) | 동네 자유수영장을 지도에서 찾고 시간표 확인, 친구와 일정도 잡아요. | Subtitle 보다 길어 기능 설명 위주 |
 
 ---
 
