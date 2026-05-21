@@ -210,10 +210,10 @@ GitHub Pages 무료 host 사용. 비용 0, gmail 이메일 그대로 유지.
 |---|---|---|
 | Developer Name (App Store) | placeholder | CRIPO (사업자 등록 명의) |
 | 사업자등록번호 | placeholder | (등록 후 기재) |
-| Privacy Policy URL | placeholder | **`https://cripo2357.github.io/todayswim/terms/privacy-policy`** (GitHub Pages) |
-| Support URL | placeholder | **`mailto:cripo2357@gmail.com`** — Apple/Google 모두 mailto: 허용 |
+| Privacy Policy URL | ✅ **확정** | **`https://cripo2357.github.io/todayswim/terms/privacy-policy/`** (GitHub Pages 가동 확인 2026-05-21) |
+| Support URL | ✅ **확정** | **`https://cripo2357.github.io/todayswim/support/`** 또는 `mailto:cripo2357@gmail.com` (Apple/Google 둘 다 허용) |
 | Marketing URL | — | 없음 |
-| App Review Contact | cripo2357@gmail.com | 동일 유지 |
+| App Review Contact | ✅ 확정 | `cripo2357@gmail.com` |
 
 ## GitHub Pages publish 가이드 (출시 직전 30분 작업)
 
