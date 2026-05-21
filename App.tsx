@@ -14,6 +14,7 @@ import { navigationRef } from '@/navigation/navigationRef';
 import type { RootStackParamList } from '@/navigation/types';
 import { GlobalAddScheduleSheet } from '@/components/calendar/GlobalAddScheduleSheet';
 import { OfflineGate } from '@/components/network/OfflineGate';
+import { RuntimeStatusGate } from '@/components/status/RuntimeStatusGate';
 import { useFonts } from '@/hooks/useFonts';
 import { usePoolFilter } from '@/store/poolFilter';
 import { useSelection } from '@/store/selection';
@@ -79,6 +80,9 @@ export default function App() {
         <GlobalAddScheduleSheet />
         {/* 오프라인 감지 → ErrorNoInternet 으로 navigation.reset (side-effect only) */}
         <OfflineGate />
+        {/* 런타임 점검·강제업데이트 게이트 — Splash 부팅 게이트 보완.
+         *  5분 폴링 + AppState 'active' 시 즉시 재조회 → 변화 감지 시 reset. */}
+        <RuntimeStatusGate />
         <StatusBar style="dark" />
       </QueryClientProvider>
     </SafeAreaProvider>

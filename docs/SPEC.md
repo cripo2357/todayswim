@@ -325,8 +325,11 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 - ~~**회원 탈퇴 서버 삭제**: P1 로컬 teardown만, 서버 계정/데이터 영구삭제 Edge Function 미구현.~~ → **P3 완료** (Edge Function `delete-account`, §3.6 참고). 90일 후 cron 으로 notifications · profile_nicknames 파기는 후속.
 - **약관 본문**: `lib/termsContent.ts` 전부 "임시 더미 — 교체 예정" 표식. 실제 5종(서비스 이용약관 / 개인정보 수집·이용 동의 / 개인정보 처리방침 / 위치기반서비스 이용약관 / 마케팅 정보 수신 동의) 문구 미작성.
 
-### 8.3 설계됨·미연결 화면
-- `ErrorNotFound` / `ErrorNoInternet` / `Maintenance` / `AppUpdateRequired`: 라우트 등록만, 진입 트리거 코드 없음(`OfflineGate`는 App.tsx에서 주석처리, expo-network 네이티브 빌드 대기). 일러스트는 placeholder.
+### 8.3 상태 화면 트리거 (P3-A3 완료)
+- ✅ **Maintenance / AppUpdateRequired** — Splash 부팅 게이트(`fetchAppStatus` → 분기) + **런타임 게이트** (`RuntimeStatusGate`: 5분 폴링 + AppState 'active' 시 즉시 재조회 → 변화 시 `navigation.reset`). 운영자가 세션 중 점검 ON / min_app_version 상향해도 사용자가 자동으로 게이트로 이동.
+- ✅ **ErrorNoInternet** — `OfflineGate` (App.tsx) 가 expo-network 동적 import 로 isConnected/isInternetReachable 구독 → false 시 reset. 복귀는 사용자 "새로 고침" 수동(자동 복귀 시 화면 상태 손실 회피).
+- ✅ **ErrorNotFound** — `NavigationContainer` linking `getStateFromPath` 가 매칭 안 되는 deep link 를 404 라우트로 fallback.
+- 일러스트: `maintenance.svg` / `app-update.svg` / `error-internet.svg` / `error-404.svg` 모두 정식 export.
 
 ---
 
