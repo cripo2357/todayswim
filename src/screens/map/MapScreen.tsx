@@ -77,7 +77,9 @@ const MARKER_CLUSTER       = require('@assets/markers/cluster.png');
 const INITIAL_CAMERA: Camera = {
   latitude: 37.5165,
   longitude: 127.0731,
-  zoom: 12,
+  // 14 = STACK_MIN_ZOOM. 시작 직후부터 풀 위 아바타 스택이 보이도록.
+  // 보이는 영역은 동네 단위로 좁아지지만 정보 밀도(친구·다른 사용자 일정) 우선.
+  zoom: 14,
 };
 
 // 선택된 풀에서 이 거리(미터)만큼 사용자가 pan하면 자동 deselect.
