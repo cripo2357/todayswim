@@ -65,13 +65,16 @@ const linking: LinkingOptions<RootStackParamList> = {
   },
 };
 
+// notifications realtime 구독 — useQueryClient 의존이라 QueryClientProvider
+// 컨텍스트 안에서 호출돼야 함. App 함수 자체는 Provider 밖이라 별도 자식
+// 컴포넌트로 분리. (P3 후속 2026-05-22)
+function NotificationsRealtimeBridge() {
+  useNotificationsRealtime();
+  return null;
+}
+
 export default function App() {
   const [fontsLoaded, fontError] = useFonts();
-
-  // notifications realtime 구독 — 로그인된 사용자의 user_code 필터로
-  // Postgres changes 채널 1개. INSERT/UPDATE/DELETE 시 query 무효화 →
-  // NotificationsTab + 미읽음 배지 자동 갱신. (P3 후속 2026-05-22)
-  useNotificationsRealtime();
 
   // user_schedules + friends 서버 sync — profile.id 가 생기는 시점(가입
   // 직후 / 재시동 로그인 복구)에 서버 fetch 로 로컬 교체. 다기기 동기·재설치
@@ -123,6 +126,7 @@ export default function App() {
     <SentryErrorBoundary fallback={<View />}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
+          <NotificationsRealtimeBridge />
           <NavigationContainer
             ref={navigationRef}
             linking={linking}
