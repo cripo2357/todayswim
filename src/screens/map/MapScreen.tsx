@@ -5,7 +5,7 @@
 // 클러스터링은 supercluster JS로 처리 (Naver native clustering은 caption 미지원이라 직접 관리).
 
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Platform, Image, ScrollView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Platform, Image, ScrollView, Dimensions, BackHandler } from 'react-native';
 import {
   NaverMapView,
   NaverMapMarkerOverlay,
@@ -13,7 +13,7 @@ import {
   type Camera,
 } from '@mj-studio/react-native-naver-map';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Supercluster from 'supercluster';
 
@@ -58,7 +58,12 @@ import {
   STACK_H,
 } from '@/components/map/MapProfileStack';
 import { BUNDLE_AVATARS, isBundleAvatar } from '@/lib/avatars';
+import { Toast } from '@/components/ui/Toast';
 import { tokens } from '@/styles/tokens';
+
+// 뒤로가기 종료 안내 노출 시간(ms). 이 시간 내 한 번 더 누르면 앱 종료.
+// Figma 277:6852 — "한 번 더 뒤로가기를 하면 앱이 종료됩니다."
+const EXIT_TOAST_MS = 5000;
 
 // 마커 PNG — Naver SDK가 BitmapDescriptor로 직접 변환, 캡처 없음.
 // preview/dim 변종은 폐기 (디자인 정책 변경: 다른 풀 선택 중에도 마커 외형 동일).
@@ -160,6 +165,27 @@ export function MapScreen() {
 
   const selectedPoolId = useSelection((s) => s.selectedPoolId);
   const select = useSelection((s) => s.select);
+
+  // Android 하드웨어 뒤로가기 — MapScreen 은 루트라 기본 동작은 즉시 앱 종료.
+  // 실수 종료 방지를 위해 1차 안내 토스트 노출 + EXIT_TOAST_MS 내 2차 누르면 종료.
+  // (iOS는 하드웨어 백 버튼 없음 — addEventListener 자체가 no-op.)
+  const [exitToastVisible, setExitToastVisible] = React.useState(false);
+  // 토스트 노출 중(=2차 누르면 종료) 여부. 콜백 안정성 위해 ref.
+  const exitArmedRef = React.useRef(false);
+  useFocusEffect(
+    React.useCallback(() => {
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        if (exitArmedRef.current) {
+          BackHandler.exitApp();
+          return true;
+        }
+        exitArmedRef.current = true;
+        setExitToastVisible(true);
+        return true;
+      });
+      return () => sub.remove();
+    }, []),
+  );
 
   const filter = usePoolFilter();
   const filterActive = isFilterActive(filter);
@@ -810,12 +836,38 @@ export function MapScreen() {
           </Pressable>
         )}
       </SafeAreaView>
+
+      {/* 뒤로가기 종료 안내 토스트 — Figma 277:6852. 노출 5초 내 한 번 더
+          뒤로가기 누르면 종료. 5초 경과 시 자동 사라짐 + armed 해제. */}
+      {exitToastVisible ? (
+        <Toast
+          title="뒤로가기"
+          message="한 번 더 뒤로가기를 하면 앱이 종료됩니다."
+          autoDismissMs={EXIT_TOAST_MS}
+          onDismiss={() => {
+            setExitToastVisible(false);
+            exitArmedRef.current = false;
+          }}
+          style={[
+            styles.exitToast,
+            { top: insets.top + 12 },
+          ]}
+        />
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: tokens.color.bgCream },
+  // 뒤로가기 종료 안내 토스트 위치 — 상단 safe-area 아래, 화면 좌우 16px 여백.
+  // top은 insets.top + 12로 호출부에서 주입.
+  exitToast: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    zIndex: 100,
+  },
   controls: {
     position: 'absolute',
     right: tokens.layout.pagePadMobile,
