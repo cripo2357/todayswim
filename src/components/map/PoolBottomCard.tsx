@@ -241,6 +241,7 @@ export function PoolBottomCard({
       <PoolParticipantsSheet
         visible={participantsOpen}
         onClose={() => setParticipantsOpen(false)}
+        poolName={pool.name}
         slots={slots}
         onJoinSlot={onJoinSlot}
       />
