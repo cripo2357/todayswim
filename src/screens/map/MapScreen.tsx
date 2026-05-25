@@ -89,12 +89,11 @@ const INITIAL_CAMERA: Camera = {
 
 // 풀카드 ScrollView 최대 높이 — 화면의 65% 에서 100px 추가 축소.
 // (사용자 요청 — 카드가 너무 크면 지도 영역 부족.)
-// MAP_PADDING_BOTTOM = 풀 선택 시 카메라 시각 중심을 위로 끌어올리는 양.
-// +50 (약함) ↔ *2 (padding>screen → 마커 off-screen). +200 적당선:
-// 900px 화면 기준 visible map ~215px, 마커 중심 ~107 from top, 스택 포함 상단 ~32.
 const SCREEN_H = Dimensions.get('window').height;
 const POOL_CARD_MAX_H = SCREEN_H * 0.65 - 100;
-const MAP_PADDING_BOTTOM = Math.round(POOL_CARD_MAX_H + 120);
+// 마커가 풀카드 상단으로부터 위로 떠야 할 거리(px). 사용자 확정 250.
+// 카드 실제 높이 + margin + safe-area 기준으로 mapPadding.bottom 동적 계산.
+const MARKER_ABOVE_CARD_TOP_PX = 250;
 
 // 선택된 풀에서 이 거리(미터)만큼 사용자가 pan하면 자동 deselect.
 // 500m ≈ 한국 위도 기준 약 0.0045 deg lat — 줌 15에서 화면 절반 정도, 줌 12에서 화면의 ~1/16.
@@ -174,6 +173,22 @@ export function MapScreen() {
 
   const selectedPoolId = useSelection((s) => s.selectedPoolId);
   const select = useSelection((s) => s.select);
+
+  // 풀카드 outer 의 실측 높이 — onLayout 으로 추적.
+  // 카드 콘텐츠(일정카드 개수) 따라 변동 → mapPadding 동적 갱신.
+  const [cardOuterH, setCardOuterH] = React.useState(0);
+
+  // 풀 선택 시 NaverMapView.mapPadding.bottom — 마커가 카드 상단 위 250px 에 오도록.
+  // 수식: visible map 중심 = (SCREEN_H - padding) / 2 from top.
+  //       마커 y = SCREEN_H - (cardH + marginB + safe) - 250.
+  //       → padding = SCREEN_H - 2 * 마커y.
+  const mapPaddingBottom = React.useMemo(() => {
+    if (!selectedPoolId) return undefined;
+    const cardH = cardOuterH || POOL_CARD_MAX_H;
+    const cardTopFromBottom = cardH + tokens.space[4] + insets.bottom;
+    const markerYFromTop = SCREEN_H - cardTopFromBottom - MARKER_ABOVE_CARD_TOP_PX;
+    return Math.max(0, Math.round(SCREEN_H - 2 * markerYFromTop));
+  }, [selectedPoolId, cardOuterH, insets.bottom]);
 
   // Android 하드웨어 뒤로가기 — MapScreen 은 루트라 기본 동작은 즉시 앱 종료.
   // 우선순위:
@@ -520,10 +535,10 @@ export function MapScreen() {
         style={StyleSheet.absoluteFill}
         initialCamera={INITIAL_CAMERA}
         onCameraChanged={onCameraChanged}
-        // 풀 선택 시 카드 영역만큼 mapPadding bottom → 카메라 시각 중심이
-        // 위쪽으로 끌어올려져 선택 마커가 카드에 가리지 않음.
+        // 풀 선택 시 카드 실측 높이 기준 mapPadding.bottom 동적 → 마커가 카드
+        // 상단으로부터 위로 MARKER_ABOVE_CARD_TOP_PX(250) 떨어진 곳에 위치.
         // 해제 시 undefined 로 복귀 → 전체 화면 기준 중심.
-        mapPadding={selectedPoolId ? { bottom: MAP_PADDING_BOTTOM } : undefined}
+        mapPadding={mapPaddingBottom !== undefined ? { bottom: mapPaddingBottom } : undefined}
         // 지도 빈 영역 탭 → 풀 deselect (시트 dismiss-on-outside-tap 패턴).
         // FAB·카드 탭은 자체 Pressable 이 받아 여기 안 옴.
         onTapMap={() => {
@@ -835,7 +850,10 @@ export function MapScreen() {
           // 외부 View 가 시각(bg/radius/shadow/marginH/marginB/overflow hidden) 보유,
           // 내부 ScrollView 는 maxHeight 캡(65%)만 — ScrollView style bg/overflow 조합이
           // 일부 케이스에서 bg 누락되는 회귀 우회 + 스크롤 영역도 둥근 클리핑 유지.
-          <View style={styles.bottomCardOuter}>
+          <View
+            style={styles.bottomCardOuter}
+            onLayout={(e) => setCardOuterH(e.nativeEvent.layout.height)}
+          >
             <ScrollView
               style={styles.bottomScroll}
               contentContainerStyle={styles.bottomScrollContent}
