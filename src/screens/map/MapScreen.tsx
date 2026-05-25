@@ -446,7 +446,9 @@ export function MapScreen() {
       mapRef.current?.animateCameraTo({
         latitude: c.lat,
         longitude: c.lng,
-        zoom: 13,
+        // STACK_MIN_ZOOM(14) 일관 — 이동 직후 stack 즉시 가시화. 13 이었을 때는
+        // 도착 후 사용자가 한 단계 더 줌인 필요했음.
+        zoom: STACK_MIN_ZOOM,
         duration: 400,
       });
     };
