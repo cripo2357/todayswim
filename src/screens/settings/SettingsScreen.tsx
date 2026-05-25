@@ -287,7 +287,19 @@ export function SettingsScreen() {
               value={MAP_PUBLIC_VALUE[mapPublicHorizon]}
               onPress={() => setMapPublicSheet(true)}
             />
-          ) : null}
+          ) : (
+            // 친구공개일 때 — 행 자체는 노출하되 비활성. onPress 없어
+            // 자동 비활성, 우측 값 영역에 활성화 조건 안내문구.
+            <Row
+              icon={<IconPeople width={24} height={24} />}
+              label="사람들 수영 일정"
+              right={
+                <Text style={styles.rowValueHint} numberOfLines={1}>
+                  프로필과 일정 전체 공개시 가능
+                </Text>
+              }
+            />
+          )}
         </Section>
 
         {/* 헬프 센터 */}
@@ -579,6 +591,14 @@ const styles = StyleSheet.create({
     letterSpacing: -0.084,
     fontFamily: tokens.font.sans,
     color: '#4B5563',
+  },
+  // 비활성 행의 안내문구 — rowValue 보다 한 톤 흐리게 (ink400 계열).
+  rowValueHint: {
+    fontSize: 13,
+    lineHeight: 18,
+    letterSpacing: -0.084,
+    fontFamily: tokens.font.sans,
+    color: tokens.color.ink400,
   },
 
   // 구분선 (129:5324) — full-width hairline
