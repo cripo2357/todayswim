@@ -432,18 +432,11 @@ export function MapScreen() {
     select(poolId);
     const pool = pools.find((p) => p.id === poolId);
     if (!pool) return;
-    // 카메라 이동을 다음 frame 으로 defer — 같은 tick 안에서 animateCameraTo 를
-    // 호출하면 SDK 가 진행 중 애니메이션과 onTap 콜백을 같이 쥐고 swallow 하는
-    // 경우가 있음 (증상: "지도에서 이동해야 마커가 다시 선택됨"). onTap handler
-    // return 후 다음 frame 에 animate 트리거하면 SDK 가 깨끗이 받아들임.
-    // duration 도 단축(300→150) 해 stuck window 자체 축소.
-    requestAnimationFrame(() => {
-      mapRef.current?.animateCameraTo({
-        latitude: pool.lat,
-        longitude: pool.lng,
-        zoom: Math.max(cameraRef.current.zoom, 15),
-        duration: 150,
-      });
+    mapRef.current?.animateCameraTo({
+      latitude: pool.lat,
+      longitude: pool.lng,
+      zoom: Math.max(cameraRef.current.zoom, 15),
+      duration: 300,
     });
   };
 
@@ -723,6 +716,11 @@ export function MapScreen() {
                   // + STACK_LIFT 만큼 위로.
                   anchor={{ x: 0, y: 1 - (size / 2 - STACK_LIFT) / STACK_H }}
                   zIndex={isSelected ? 9 : 2}
+                  // stack overlay 가 deselect 상태 마커(zIndex 1) 보다 위
+                  // (zIndex 2) 에 깔려 마커 hit area 를 가림 → 사용자 탭이
+                  // stack 영역에 흡수되어 풀 선택 안 됨. stack 탭을 같은
+                  // 풀의 onMarkerPress 로 라우팅해 풀 선택 보장.
+                  onTap={() => onMarkerPress(p.id)}
                 >
                   <View
                     style={{
