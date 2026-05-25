@@ -53,13 +53,12 @@ import IconMegaphone from '@assets/icons/settings/megaphone.svg';
 import IconQuestion from '@assets/icons/settings/question.svg';
 import IconGavel from '@assets/icons/settings/gavel.svg';
 import IconPerson from '@assets/icons/settings/person.svg';
-import IconUsers from '@assets/icons/settings/users.svg';
+import IconUserDouble from '@assets/icons/settings/user-double.svg';
 import IconHandHeart from '@assets/icons/settings/hand-heart.svg';
 import IconPiggyBank from '@assets/icons/settings/piggy-bank.svg';
 import IconMapPin from '@assets/icons/settings/map-pin.svg';
 // 지도 섹션 행 아이콘 (Figma 179:4763) — 내 일정·레슨 = me(단일), 친구
-// 일정 = users(2명), 사람들 일정 = people(3명). me/people은 신규 export,
-// users는 기존 settings/users.svg 재사용.
+// 일정 = user-double(2명), 사람들 일정 = people(3명).
 import IconPeople from '@assets/icons/settings/people.svg';
 
 const FEEDBACK_EMAIL = 'cripo2357@gmail.com';
@@ -276,7 +275,7 @@ export function SettingsScreen() {
             onPress={() => navigation.navigate('MapStartLocation')}
           />
           <Row
-            icon={<IconUsers width={24} height={24} />}
+            icon={<IconUserDouble width={24} height={24} />}
             label="친구 수영 일정"
             value={MAP_FRIEND_VALUE[mapFriendHorizon]}
             onPress={() => setMapFriendSheet(true)}
