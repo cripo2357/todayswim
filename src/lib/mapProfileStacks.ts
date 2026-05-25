@@ -86,8 +86,9 @@ export interface BuildStacksInput {
   myLessonPoolId?: string | null;
   mySwimClasses?: SwimClass[];
   showMyLessons?: boolean;
-  /** 내 일정·레슨을 내 지도에서 노출할지(prefs.myScheduleVisibility !== 'off').
-   *  기본 true(하위호환). 'off'면 내 마커도 가림. */
+  /** 내 일정·레슨을 내 지도에서 노출할지. 2026-05-22 정책 변경:
+   *  myScheduleVisibility 가 'friends'/'public' 2값 만 — 둘 다 내 지도엔
+   *  항상 표시(MapScreen 에서 항상 true 전달). 옛 'off' 분기는 제거. */
   showMine?: boolean;
   otherLessons?: OtherLesson[];
   /** 기준 시각(ms). 미지정 시 Date.now(). */

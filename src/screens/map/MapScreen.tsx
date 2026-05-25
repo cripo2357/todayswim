@@ -188,11 +188,10 @@ export function MapScreen() {
   // 사람들(비친구 전체공개) horizon은 프로필 공개='public'일 때만 유효
   const effectivePublicHorizon =
     profileVis === 'public' ? mapPublicHorizon : 'off';
-  // 스택을 아예 빈 채로 둘 수 있는 조건 — 내 일정/친구/사람들 셋 다 미표시.
+  // 스택 빈 조건 — 내 일정은 정책상 항상 노출(off/self 폐기, 2026-05-22),
+  // 친구/사람들 둘 다 off 면 스택 자체 미표시.
   const showStack =
-    myScheduleVisibility !== 'off' ||
-    mapFriendHorizon !== 'off' ||
-    effectivePublicHorizon !== 'off';
+    mapFriendHorizon !== 'off' || effectivePublicHorizon !== 'off';
 
   // 스택 셔플 시드 — 앱 세션당 1회(useState lazy init). buildPoolProfileStacks
   // 가 시드를 받아 풀별 9명 표본·순서를 추출(나는 시드 무관 0번 고정). MapMain은
@@ -317,13 +316,13 @@ export function MapScreen() {
             friends,
             blocked,
             otherSchedules,
-            // 내 수영 일정·레슨 — Figma 179:4763. 'off'면 내 일정·레슨 모두
-            // 내 지도에서도 가림. 'self'/'friends'/'public'은 내 지도에선 동일하게
-            // 노출(내가 내 거 보는 것). 친구·전체 가시성 필터링은 서버단 Phase 2.
-            showMine: myScheduleVisibility !== 'off',
+            // 내 수영 일정·레슨 — Figma 179:4763. 2026-05-22 정책: 'off'/'self'
+            // 옵션 폐기, 'friends'/'public' 둘 다 내 지도에서는 항상 표시.
+            // 친구·전체 가시성 필터링은 서버단 Phase 2.
+            showMine: true,
             myLessonPoolId: profile?.lessonPoolId ?? null,
             mySwimClasses: profile?.swimClasses ?? [],
-            showMyLessons: myScheduleVisibility !== 'off',
+            showMyLessons: true,
             otherLessons: MOCK_OTHER_LESSONS,
             friendHorizonMs: MAP_FRIEND_HORIZON_MS[mapFriendHorizon],
             publicHorizonMs: MAP_PUBLIC_HORIZON_MS[effectivePublicHorizon],

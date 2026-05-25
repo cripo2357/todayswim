@@ -104,22 +104,18 @@ const MAP_FRIEND_OPTIONS: Option<MapFriendHorizon>[] = [
 // ==='public'일 때만 노출(친구공개면 미표시).
 const MAP_PUBLIC_VALUE: Record<MapPublicHorizon, string> = MAP_FRIEND_VALUE;
 const MAP_PUBLIC_OPTIONS: Option<MapPublicHorizon>[] = MAP_FRIEND_OPTIONS;
-// 내 수영 일정·레슨 (Figma 179:4763) — prefs.myScheduleVisibility 3~4값.
+// 내 수영 일정·레슨 (Figma 179:4763) — prefs.myScheduleVisibility 2값.
 // 옵션 라벨(시트)과 우측 표시값(행)이 다름:
-//   off    : "표시 안함"          → "미표시"
-//   self   : "나만 보기"          → "내 지도에만 표시"
-//   friends: "친구만 보기"        → "친구 지도에만 표시"
-//   public : "모두 볼 수 있음"    → "전체 공개"
+//   friends: "친구만 보기"        → "친구만 보기"
+//   public : "모두 볼 수 있음"    → "모두에게 공개"
 // 'public' 옵션은 profileVisibility==='public'일 때만 노출(친구공개면 숨김).
+// 정책 (2026-05-22): 'off'/'self' 옵션 폐기 — 내 일정·레슨은 최소한 친구
+// 에게는 항상 노출. 기존 'off'/'self' 저장값은 hydrate 가 'friends'로 자동 마이그.
 const MY_SCHED_VIS_VALUE: Record<MyScheduleVisibility, string> = {
-  off: '미표시',
-  self: '내 지도에만 표시',
-  friends: '친구 지도에만 표시',
-  public: '전체 공개',
+  friends: '친구만 보기',
+  public: '모두에게 공개',
 };
 const MY_SCHED_VIS_OPTION_LABEL: Record<MyScheduleVisibility, string> = {
-  off: '표시 안함',
-  self: '나만 보기',
   friends: '친구만 보기',
   public: '모두 볼 수 있음',
 };
@@ -182,10 +178,9 @@ export function SettingsScreen() {
   // 내 수영 일정·레슨 옵션 — 'public'은 프로필 공개가 'public'일 때만 노출.
   // 'friends'에서 'public' 선택은 모순(친구공개인데 일정은 전체) → 숨김.
   const myScheduleVisOptions = React.useMemo<Option<MyScheduleVisibility>[]>(() => {
+    // profileVis='public' 일 때만 'public' 옵션 노출 — 친구공개에선 모순.
     const base: MyScheduleVisibility[] =
-      profileVis === 'public'
-        ? ['off', 'self', 'friends', 'public']
-        : ['off', 'self', 'friends'];
+      profileVis === 'public' ? ['friends', 'public'] : ['friends'];
     return base.map((v) => ({ value: v, label: MY_SCHED_VIS_OPTION_LABEL[v] }));
   }, [profileVis]);
   const { data: poolsData } = usePools();
