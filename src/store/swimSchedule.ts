@@ -61,13 +61,15 @@ interface SwimScheduleState {
   downgradePublicToFriends: () => Promise<void>;
 }
 
-/** 일정이 지났는지 — 그 일정 date+start(시작시각) 기준 현재시각이 더 크면 지남. */
+/** 일정이 지났는지 — 그 일정 date+end(종료시각) 기준 현재시각이 더 크면 지남.
+ *  진행중 슬롯(start<=now<=end) 은 "지남 X" = 예정에 포함.
+ *  poolScheduleSlots 의 슬롯 노출 기준(end>now)과 동일 — 단일 의미. */
 export function isSchedulePast(s: {
   date: string;
-  start: string;
+  end: string;
 }): boolean {
   const [y, m, d] = s.date.split('-').map(Number);
-  const [hh, mm] = s.start.split(':').map(Number);
+  const [hh, mm] = s.end.split(':').map(Number);
   return new Date() > new Date(y, m - 1, d, hh, mm, 0, 0);
 }
 
