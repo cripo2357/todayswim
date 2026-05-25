@@ -35,6 +35,8 @@ interface BottomSheetProps {
   contentStyle?: StyleProp<ViewStyle>;
   /** 시트 본문 최소 높이(px) — 짧은 콘텐츠에서도 길게 고정. */
   minHeight?: number;
+  /** 시트 본문 고정 높이(px). 지정 시 minHeight 보다 우선. 콘텐츠가 길면 caller 가 내부에 ScrollView 배치. */
+  height?: number;
 }
 
 export function BottomSheet({
@@ -44,6 +46,7 @@ export function BottomSheet({
   children,
   contentStyle,
   minHeight,
+  height,
 }: BottomSheetProps) {
   const slideY = React.useRef(new Animated.Value(SCREEN_H)).current;
   const [render, setRender] = React.useState(visible);
@@ -91,6 +94,7 @@ export function BottomSheet({
                 styles.sheet,
                 contentStyle,
                 minHeight != null ? { minHeight } : null,
+                height != null ? { height } : null,
               ]}
               onStartShouldSetResponder={() => true}
               onResponderRelease={Keyboard.dismiss}

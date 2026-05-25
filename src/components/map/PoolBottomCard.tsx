@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
+import { Users } from 'lucide-react-native';
 import { Button } from '@/components/ui/Button';
 import { FavoriteHeart } from '@/components/ui/FavoriteHeart';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -12,7 +13,17 @@ import IconKids from '@assets/icons/facility-kids.svg';
 import IconDiving from '@assets/icons/facility-diving.svg';
 import IconHotel from '@assets/icons/facility-hotel.svg';
 import { logEvent } from '@/lib/analytics';
-import { PoolScheduleSection } from './PoolScheduleSection';
+import { useSwimSchedules } from '@/store/swimSchedule';
+import { useFriends } from '@/store/friends';
+import { useProfile } from '@/store/profile';
+import { usePrefs } from '@/store/prefs';
+import { useAddScheduleIntent } from '@/store/addScheduleIntent';
+import { MOCK_OTHER_SCHEDULES } from '@/lib/mockData';
+import {
+  buildPoolScheduleSlots,
+  type PoolScheduleSlot,
+} from '@/lib/poolScheduleSlots';
+import { PoolParticipantsSheet } from './PoolParticipantsSheet';
 
 type ChipKey = 'kids' | 'diving' | 'hotel';
 const CHIP_LABEL: Record<ChipKey, string> = {
@@ -67,6 +78,48 @@ export function PoolBottomCard({
   React.useEffect(() => {
     void logEvent('pool_card_open', { pool_id: pool.id, status });
   }, [pool.id, status]);
+
+  // 참여자 시트 — 풀의 모든 슬롯 + 가시 참여자. 일정카드 inline 노출 폐기
+  // (Figma 281:3192). 슬롯 0개면 버튼 자체 미노출.
+  const profile = useProfile((s) => s.profile);
+  const mySchedules = useSwimSchedules((s) => s.schedules);
+  const blockedIds = useFriends((s) => s.blocked);
+  const othersScheduleView = usePrefs((s) => s.othersScheduleView);
+  const setIntent = useAddScheduleIntent((s) => s.setIntent);
+  const slots = React.useMemo(
+    () =>
+      buildPoolScheduleSlots({
+        poolId: pool.id,
+        me: {
+          id: profile?.id,
+          nickname: profile?.name,
+          avatar: profile?.photoUri,
+        },
+        mySchedules,
+        otherSchedules: MOCK_OTHER_SCHEDULES,
+        blockedIds,
+        othersScheduleView,
+      }),
+    [
+      pool.id,
+      profile?.id,
+      profile?.name,
+      profile?.photoUri,
+      mySchedules,
+      blockedIds,
+      othersScheduleView,
+    ],
+  );
+  const [participantsOpen, setParticipantsOpen] = React.useState(false);
+  const onJoinSlot = (slot: PoolScheduleSlot) => {
+    setIntent({
+      poolId: pool.id,
+      date: slot.date,
+      start: slot.start,
+      end: slot.end,
+    });
+    setParticipantsOpen(false);
+  };
 
   return (
     <View style={styles.card}>
@@ -172,10 +225,30 @@ export function PoolBottomCard({
           </View>
         )}
 
-        {/* 일정 카드 (Figma 265:3158) — 풀의 모든 슬롯 + 가시 참여자 ≥ 1.
-         *  내 참여 시 프로필 칩, 미참여 시 [나도 참여] 버튼. 0개면 섹션 자체 null. */}
-        <PoolScheduleSection poolId={pool.id} />
+        {/* "참여자 보기" (Figma 265:3158) — 풀의 모든 슬롯 + 가시 참여자.
+         *  슬롯 0개면 버튼 자체 미노출. 탭 → 70%h 모달 (PoolParticipantsSheet). */}
+        {slots.length > 0 ? (
+          <Pressable
+            onPress={() => setParticipantsOpen(true)}
+            style={({ pressed }) => [
+              styles.participantsBtn,
+              pressed && { opacity: 0.85 },
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="자유수영 참여자 보기"
+          >
+            <Text style={styles.participantsLabel}>참여자 보기</Text>
+            <Users size={20} color={tokens.color.pdBlue} strokeWidth={2} />
+          </Pressable>
+        ) : null}
       </View>
+
+      <PoolParticipantsSheet
+        visible={participantsOpen}
+        onClose={() => setParticipantsOpen(false)}
+        slots={slots}
+        onJoinSlot={onJoinSlot}
+      />
     </View>
   );
 }
@@ -305,5 +378,28 @@ const styles = StyleSheet.create({
     letterSpacing: -0.112,
     fontFamily: tokens.font.sansSemibold,
     color: 'rgba(0, 122, 255, 0.3)',
+  },
+
+  // "참여자 보기" — outline 보조 버튼. pd-blue 보더 + 라벨 + Users 아이콘.
+  // 자유수영 시간표 보기(노란 primary) 와 시각 위계 차별화.
+  participantsBtn: {
+    minHeight: 48,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: tokens.color.pdBlue,
+    backgroundColor: tokens.color.bgPaper,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  participantsLabel: {
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sansSemibold,
+    color: tokens.color.pdBlue,
   },
 });
