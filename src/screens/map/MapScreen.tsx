@@ -5,7 +5,7 @@
 // 클러스터링은 supercluster JS로 처리 (Naver native clustering은 caption 미지원이라 직접 관리).
 
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Platform, Image } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Platform, Image, ScrollView, Dimensions } from 'react-native';
 import {
   NaverMapView,
   NaverMapMarkerOverlay,
@@ -776,20 +776,28 @@ export function MapScreen() {
       {/* 하단 영역 — 풀 선택 시 카드, 선택 X면 "수영장 목록" 버튼 (Figma 101:1943) */}
       <SafeAreaView style={styles.bottomWrap} edges={['bottom']} pointerEvents="box-none">
         {selectedPool ? (
-          <PoolBottomCard
-            pool={selectedPool}
-            // 자유수영 가능 여부 우선 → false면 'impossible'.
-            // 가능하다면 시간표 등록 여부에 따라 'available' / 'no_schedule'.
-            // freeSwimAvailable이 undefined인 경우 (DB 마이그레이션 전) 가능으로 간주.
-            status={
-              selectedPool.freeSwimAvailable === false
-                ? 'impossible'
-                : scheduleByPool.has(selectedPool.id)
-                ? 'available'
-                : 'no_schedule'
-            }
-            onPressScheduleAction={onScheduleAction}
-          />
+          // 풀 카드 — 일정카드 섹션이 길어지면 화면 초과 가능. 내부 스크롤로 처리.
+          // maxHeight 65% 캡 → 지도 영역 일부 유지 + 카드 안에서 스크롤.
+          <ScrollView
+            style={styles.bottomScroll}
+            contentContainerStyle={styles.bottomScrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <PoolBottomCard
+              pool={selectedPool}
+              // 자유수영 가능 여부 우선 → false면 'impossible'.
+              // 가능하다면 시간표 등록 여부에 따라 'available' / 'no_schedule'.
+              // freeSwimAvailable이 undefined인 경우 (DB 마이그레이션 전) 가능으로 간주.
+              status={
+                selectedPool.freeSwimAvailable === false
+                  ? 'impossible'
+                  : scheduleByPool.has(selectedPool.id)
+                  ? 'available'
+                  : 'no_schedule'
+              }
+              onPressScheduleAction={onScheduleAction}
+            />
+          </ScrollView>
         ) : (
           <Pressable
             onPress={() => navigation.navigate('PoolList')}
@@ -933,6 +941,14 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+  },
+  // 풀카드 내부 스크롤 — 화면 65% 캡(지도 일부 유지). 내용이 캡 안이면 콘텐츠
+  // 크기로 줄어들고, 넘치면 카드 안에서 스크롤됨.
+  bottomScroll: {
+    maxHeight: Dimensions.get('window').height * 0.65,
+  },
+  bottomScrollContent: {
+    flexGrow: 0,
   },
   // Figma 101:1943 — pd-byellow bg, radius 14, px 20 py 12, gap 10, content-sized 가운데
   poolListBtn: {

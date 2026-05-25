@@ -1,11 +1,17 @@
-// 풀 카드 하단 일정 카드 섹션 (Figma 265:3158).
+// 풀 카드 하단 일정 카드 섹션 (Figma 265:3822 / 슬롯카드 266:5770).
 //
 // 표시 규칙 (lib/poolScheduleSlots):
 //  · 풀에 있는 모든 슬롯 — 내·친구·사람들 일정 union.
 //  · 슬롯당 가시 참여자 ≥ 1 일 때만 카드 노출 (내 prefs 기반).
-//  · 카드 안 참여자 칩 = 아바타 + 닉네임. me 우선, 관계별 outline 색.
-//  · 내가 미참여 → 카드 상단에 [나도 참여] 버튼 (intent 셋팅 + AddScheduleSheet).
-//  · 내가 참여 → 내 프로필 칩이 첫번째 자리.
+//  · 슬롯카드 = 자체 white bg + shadow lg + radius 16 (풀카드 안 nested).
+//  · 카드 안 구조 (Figma 266:5772):
+//     - dateTime header (12/16 Regular #1F2937)
+//     - 1행: me 칩 (참여중) OR [나도 참여] pd-blue 배지 (미참여)
+//     - hairline divider (lineSubtle)
+//     - 친구 칩 wrap (있을 때만 — divider+wrap 쌍)
+//     - hairline divider (lineSubtle)
+//     - 비친구 칩 wrap (있을 때만 — divider+wrap 쌍)
+//  · 칩 = 아바타 24(border=관계색,1px) + 닉네임 Bold 10/14 #1F2937, w 88 numberOfLines 1.
 
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
@@ -57,8 +63,6 @@ export function PoolScheduleSection({ poolId }: Props) {
   if (slots.length === 0) return null;
 
   const onJoin = (slot: PoolScheduleSlot) => {
-    // 일정 추가 intent — GlobalAddScheduleSheet 가 시트 자동 오픈.
-    // 풀명·사진은 등록 시트가 풀 store 에서 조회.
     setIntent({
       poolId,
       date: slot.date,
@@ -69,14 +73,17 @@ export function PoolScheduleSection({ poolId }: Props) {
 
   return (
     <View style={styles.section}>
-      <View style={styles.divider} />
-      {slots.map((slot) => (
-        <SlotCard
-          key={slot.key}
-          slot={slot}
-          onJoin={!slot.imParticipating ? () => onJoin(slot) : undefined}
-        />
-      ))}
+      {/* 풀카드 본문과의 시각 구분 — 옅은 가로선 (Figma 266:3895) */}
+      <View style={styles.outerDivider} />
+      <View style={styles.cardsList}>
+        {slots.map((slot) => (
+          <SlotCard
+            key={slot.key}
+            slot={slot}
+            onJoin={!slot.imParticipating ? () => onJoin(slot) : undefined}
+          />
+        ))}
+      </View>
     </View>
   );
 }
@@ -89,30 +96,60 @@ function SlotCard({
   onJoin?: () => void;
 }) {
   // datetime 표기 — YY.MM.DD(요일) 오전/오후 H:MM ([[datetime_format_unified]]).
-  // slot.date+start 합쳐 ISO 만들어 dateFormat 에 넘김.
   const isoLike = `${slot.date}T${slot.start}:00`;
   const dateTimeLabel = formatDateTime(isoLike);
 
+  // 관계별 그룹 — me 한 명 + friends wrap + strangers wrap.
+  const me = slot.participants.find((p) => p.relation === 'me');
+  const friends = slot.participants.filter((p) => p.relation === 'friend');
+  const strangers = slot.participants.filter((p) => p.relation === 'stranger');
+
   return (
-    <View style={styles.slot}>
+    <View style={styles.slotCard}>
+      {/* Figma 266:5773 — header (dateTime 만) */}
       <View style={styles.headerRow}>
         <Text style={styles.dateTime}>{dateTimeLabel}</Text>
-        {onJoin ? (
-          <Pressable
-            style={styles.joinBtn}
-            onPress={onJoin}
-            accessibilityRole="button"
-            accessibilityLabel="나도 참여"
-          >
-            <Plus size={14} color="#1F2937" strokeWidth={2} />
-            <Text style={styles.joinLabel}>나도 참여</Text>
-          </Pressable>
-        ) : null}
       </View>
-      <View style={styles.participants}>
-        {slot.participants.map((p) => (
-          <ParticipantChip key={p.id} p={p} />
-        ))}
+
+      {/* Figma 266:5775 — 참여자 블록, gap 7. 첫 행에 me 칩 또는 [나도 참여] 배지. */}
+      <View style={styles.participantsBlock}>
+        <View style={styles.firstRow}>
+          {me ? (
+            <ParticipantChip p={me} />
+          ) : onJoin ? (
+            <Pressable
+              style={styles.joinBtn}
+              onPress={onJoin}
+              accessibilityRole="button"
+              accessibilityLabel="나도 참여"
+            >
+              <Text style={styles.joinLabel}>나도 참여</Text>
+              <Plus size={12} color={tokens.color.pdBlue} strokeWidth={2} />
+            </Pressable>
+          ) : null}
+        </View>
+
+        {friends.length > 0 ? (
+          <>
+            <View style={styles.innerDivider} />
+            <View style={styles.chipWrap}>
+              {friends.map((p) => (
+                <ParticipantChip key={p.id} p={p} />
+              ))}
+            </View>
+          </>
+        ) : null}
+
+        {strangers.length > 0 ? (
+          <>
+            <View style={styles.innerDivider} />
+            <View style={styles.chipWrap}>
+              {strangers.map((p) => (
+                <ParticipantChip key={p.id} p={p} />
+              ))}
+            </View>
+          </>
+        ) : null}
       </View>
     </View>
   );
@@ -127,7 +164,7 @@ function ParticipantChip({ p }: { p: VisibleParticipant }) {
         photoUri={p.avatar as string}
         size={24}
         relation={avatarRel}
-        borderWidth={1.5}
+        borderWidth={1}
       />
       <Text style={styles.chipLabel} numberOfLines={1}>
         {p.nickname}
@@ -137,67 +174,99 @@ function ParticipantChip({ p }: { p: VisibleParticipant }) {
 }
 
 const styles = StyleSheet.create({
-  section: { gap: 12 },
-  // 풀 카드 본문과의 시각 구분 — 옅은 가로선.
-  divider: {
+  section: { gap: 16 },
+  // Figma 266:3895 — 풀카드 본문/CTA 와 일정 카드 사이 옅은 hairline.
+  outerDivider: {
     height: 1,
-    backgroundColor: tokens.color.bgSubtle,
-    marginVertical: 4,
+    backgroundColor: tokens.color.lineSubtle,
   },
-  slot: { gap: 8 },
+  // Figma 266:6369 — 카드 컨테이너, gap 16 between cards.
+  cardsList: { gap: 16 },
+
+  // Figma 266:5770 — 슬롯카드: white bg + p 16 + radius 16 + shadow lg.
+  // 풀카드(white) 안 nested 라 그림자가 카드 분리감 만들어줌.
+  slotCard: {
+    backgroundColor: tokens.color.bgPaper,
+    borderRadius: 16,
+    padding: 16,
+    gap: 8,
+    ...tokens.shadow.lg,
+  },
+
+  // Figma 266:5773 — header: dateTime 한 줄.
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
   },
-  // 날짜·시각 — 12/16 Regular #4B5563 ([[figma_color_token_mismatch]] 톤)
+  // Figma 266:5774 — Plus Jakarta Regular 12/16 -0.06 #1F2937.
   dateTime: {
     flex: 1,
     fontSize: 12,
     lineHeight: 16,
     letterSpacing: -0.06,
     fontFamily: tokens.font.sans,
-    color: '#4B5563',
+    color: '#1F2937',
   },
-  // [나도 참여] — outline 작은 배지. pdByellow 강조 X (시각 노이즈 회피),
-  // 일반 gray outline + plus 아이콘.
+
+  // Figma 266:5775 — 참여자 블록, 그룹 사이 gap 7 (divider 포함).
+  participantsBlock: { gap: 7 },
+
+  // Figma 266:5776 — me 칩 / [나도 참여] 배지 위치 한 줄.
+  firstRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  // Figma 266:6747 — pd-blue outline 배지: px 8 py 4 radius 8 border 1.
+  // 텍스트 먼저 → plus 아이콘 (Figma 266:6749 frame 순서).
   joinBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 4,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: tokens.color.pdBlue,
     backgroundColor: tokens.color.bgPaper,
   },
+  // Figma 266:6751 — Plus Jakarta Medium 12/16 -0.06 #6890CB.
   joinLabel: {
-    fontSize: 12,
-    lineHeight: 16,
-    fontFamily: tokens.font.sansMedium,
-    color: '#1F2937',
-  },
-  // 참여자 — wrap row. 각 칩 = avatar + nickname 가로 정렬.
-  participants: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingRight: 8,
-    // 닉네임 클리핑 방지 — 칩 자체에 maxWidth 없이 wrap 으로 처리.
-  },
-  chipLabel: {
     fontSize: 12,
     lineHeight: 16,
     letterSpacing: -0.06,
     fontFamily: tokens.font.sansMedium,
+    color: tokens.color.pdBlue,
+  },
+
+  // Figma 266:5808/5938/6467/6601 — 그룹 사이 hairline.
+  innerDivider: {
+    height: 1,
+    backgroundColor: tokens.color.lineSubtle,
+  },
+
+  // Figma 266:5809/5939 — content-start flex-wrap gap 7.
+  chipWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 7,
+  },
+
+  // Figma 266:6389/5810 — 칩: 아바타 24 + 닉네임, w 88 gap 4.
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    width: 88,
+  },
+  // Figma 266:6420 — Plus Jakarta Bold 10/14 -0.04 #1F2937. numberOfLines 1.
+  chipLabel: {
+    flex: 1,
+    fontSize: 10,
+    lineHeight: 14,
+    letterSpacing: -0.04,
+    fontFamily: tokens.font.sansBold,
     color: '#1F2937',
-    maxWidth: 96,
   },
 });
