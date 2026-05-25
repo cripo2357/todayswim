@@ -62,6 +62,7 @@ export function PoolParticipantsSheet({
         <Text style={styles.empty}>표시할 참여자가 없습니다.</Text>
       ) : (
         <ScrollView
+          style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
@@ -201,6 +202,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 32,
   },
+  // ScrollView 가 BottomSheet 의 고정 height(70%) 내에서 남는 공간을
+  // 차지하고 내부 스크롤이 동작하려면 flex:1 필수. 없으면 콘텐츠 높이로
+  // 자체 사이징 → 시트 밖으로 빠지거나 스크롤 비활성.
+  scroll: { flex: 1 },
   scrollContent: {
     gap: 16,
     paddingBottom: 24,

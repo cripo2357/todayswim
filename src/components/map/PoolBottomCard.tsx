@@ -214,16 +214,20 @@ export function PoolBottomCard({
         {status === 'available' ? (
           <View style={styles.ctaRow}>
             {slots.length > 0 ? (
-              <Button
-                label="참여자 보기"
+              // ui/Button 콘텐츠폭 모드에서 inner row의 flex:1 때문에 텍스트가
+              // 0px로 줄어드는 버그가 있어 직접 Pressable 로 작성.
+              // Figma 265:3852 — px20 py12, h48, radius14, SemiBold 16/22.
+              <Pressable
                 onPress={() => setParticipantsOpen(true)}
-                size="lg"
-                variant="pdYellow"
-                // Figma 265:3852 — px20 py12. Button size lg 기본 padH=0
-                // 이라 콘텐츠폭 모드에서 텍스트만 노출 (시각상 안 보이는 수준)
-                // → 명시 20px 부여로 콘텐츠+패딩 가시.
-                style={styles.ctaContent}
-              />
+                style={({ pressed }) => [
+                  styles.ctaParticipants,
+                  pressed && { opacity: 0.85 },
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel="자유수영 참여자 보기"
+              >
+                <Text style={styles.ctaParticipantsLabel}>참여자 보기</Text>
+              </Pressable>
             ) : null}
             <Button
               label="자유수영 시간표 보기"
@@ -389,6 +393,23 @@ const styles = StyleSheet.create({
   },
   // Figma 281:4513 — 두 번째 버튼만 flex-[1_0_0] (남는 폭 차지).
   ctaGrow: { flex: 1 },
-  // Figma 265:3852 — 콘텐츠폭 모드 px20. Button size lg 기본 padH=0 보강.
-  ctaContent: { paddingHorizontal: 20 },
+  // Figma 265:3852 — 참여자 보기 버튼 (콘텐츠폭). px20 py12 h48 r14 pdByellow.
+  ctaParticipants: {
+    height: 48,
+    minHeight: 48,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 14,
+    backgroundColor: tokens.color.pdByellow,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Figma 265:3854 — SemiBold 16/22 -0.112 black.
+  ctaParticipantsLabel: {
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sansSemibold,
+    color: tokens.color.black,
+  },
 });
