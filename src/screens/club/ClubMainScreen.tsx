@@ -1,9 +1,10 @@
-// C클럽 — 모임/클럽 메인 화면. MapMain 우상단 FAB('C') 진입(로그인 한정).
+// 수영 클럽 — 모임/클럽 메인 화면. MapMain 우상단 'C' FAB 진입(로그인 한정).
+// 메뉴명·헤더 타이틀은 "수영 클럽". 'C' 는 FAB 아이콘 표기로만 사용.
 //
 // 첫 단계는 헤더만 — 모임 기능 본 스펙·디자인은 별도 트랙. 향후 모임 리스트
 // (내가 만든 모임 / 가입한 모임 / 추천 모임 등) 가 본문에 채워질 자리.
 //
-// 색 규약: FAB·헤더 강조 색은 ink900(#0F172A) bg + pdByellow(#EAFF00) 'C'
+// 색 규약: FAB 색은 ink900(#0F172A) bg + pdByellow(#EAFF00) 'C'
 // (Figma 노드 정합). 본 화면 UI 자체는 디자인 미정이라 표준 ScreenHeader 사용.
 
 import React from 'react';
@@ -17,7 +18,7 @@ export function ClubMainScreen() {
   const navigation = useNavigation();
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
-      <ScreenHeader title="C클럽" onBack={() => navigation.goBack()} />
+      <ScreenHeader title="수영 클럽" onBack={() => navigation.goBack()} />
       <ScrollView
         contentContainerStyle={styles.body}
         showsVerticalScrollIndicator={false}

@@ -731,14 +731,15 @@ export function MapScreen() {
         >
           <IconLocate width={20} height={20} />
         </Pressable>
-        {/* C클럽 FAB — 로그인(프로필 있음) 한정. 프로필 FAB 바로 위.
+        {/* 수영 클럽 FAB — 로그인(프로필 있음) 한정. 프로필 FAB 바로 위.
+         *  표기는 'C' 한 글자, 메뉴명은 "수영 클럽".
          *  bg ink900(#0F172A) + 'C' pdByellow(#EAFF00) — Figma 정합 색 규약. */}
         {profile ? (
           <Pressable
             onPress={() => navigation.navigate('ClubMain')}
             style={[styles.fab, styles.fabRound]}
             accessibilityRole="button"
-            accessibilityLabel="C클럽"
+            accessibilityLabel="수영 클럽"
           >
             <Text style={styles.fabClubLabel}>C</Text>
           </Pressable>
