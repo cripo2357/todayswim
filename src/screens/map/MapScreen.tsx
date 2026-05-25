@@ -87,6 +87,14 @@ const INITIAL_CAMERA: Camera = {
   zoom: 14,
 };
 
+// 풀카드 ScrollView 최대 높이 — 화면의 65% 에서 100px 추가 축소.
+// (사용자 요청 — 카드가 너무 크면 지도 영역 부족.)
+// MAP_PADDING_BOTTOM = 카드 + marginB + safe area 대략값. 풀 선택 시 mapPadding 으로
+// 카메라 시각 중심을 카드 위쪽으로 끌어올려 마커가 카드에 안 가리게 함.
+const SCREEN_H = Dimensions.get('window').height;
+const POOL_CARD_MAX_H = SCREEN_H * 0.65 - 100;
+const MAP_PADDING_BOTTOM = Math.round(POOL_CARD_MAX_H + 50);
+
 // 선택된 풀에서 이 거리(미터)만큼 사용자가 pan하면 자동 deselect.
 // 500m ≈ 한국 위도 기준 약 0.0045 deg lat — 줌 15에서 화면 절반 정도, 줌 12에서 화면의 ~1/16.
 const PAN_DESELECT_M = 500;
@@ -511,6 +519,15 @@ export function MapScreen() {
         style={StyleSheet.absoluteFill}
         initialCamera={INITIAL_CAMERA}
         onCameraChanged={onCameraChanged}
+        // 풀 선택 시 카드 영역만큼 mapPadding bottom → 카메라 시각 중심이
+        // 위쪽으로 끌어올려져 선택 마커가 카드에 가리지 않음.
+        // 해제 시 undefined 로 복귀 → 전체 화면 기준 중심.
+        mapPadding={selectedPoolId ? { bottom: MAP_PADDING_BOTTOM } : undefined}
+        // 지도 빈 영역 탭 → 풀 deselect (시트 dismiss-on-outside-tap 패턴).
+        // FAB·카드 탭은 자체 Pressable 이 받아 여기 안 옴.
+        onTapMap={() => {
+          if (useSelection.getState().selectedPoolId) select(null);
+        }}
         minZoom={7} // 한국 전체 + α — 답답함 줄이고 줌아웃 자유롭게
         maxZoom={15} // 거리 단위 — 풀 위치 주변 도로/블록 식별 가능
         isShowCompass={false}
@@ -1022,9 +1039,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...tokens.shadow.lg,
   },
-  // ScrollView 는 height 캡만 — 65% 화면(지도 영역 일부 유지).
+  // ScrollView 는 height 캡만 — POOL_CARD_MAX_H (65% 화면 - 100px).
   bottomScroll: {
-    maxHeight: Dimensions.get('window').height * 0.65,
+    maxHeight: POOL_CARD_MAX_H,
   },
   bottomScrollContent: {
     flexGrow: 0,

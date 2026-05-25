@@ -118,8 +118,20 @@ export function buildPoolScheduleSlots({
     }
   }
 
+  // 사용자 요청 — 지난 일정은 카드에 표시 X. "현재 진행중(start<=now<=end) OR
+  // 예정(start>now)" 만 노출. timezone 은 device local (KST 가정).
+  const nowMs = Date.now();
+  const slotEndMs = (date: string, end: string): number => {
+    const [y, m, d] = date.split('-').map(Number);
+    const [hh, mm] = end.split(':').map(Number);
+    return new Date(y, (m ?? 1) - 1, d ?? 1, hh ?? 0, mm ?? 0, 0, 0).getTime();
+  };
+
   const slots: PoolScheduleSlot[] = [];
   for (const [key, g] of byKey) {
+    // 종료 시각이 지난 슬롯은 제외 — 지난 일정 카드 안 보임.
+    if (slotEndMs(g.date, g.end) <= nowMs) continue;
+
     const participants: VisibleParticipant[] = [];
 
     // me 우선
