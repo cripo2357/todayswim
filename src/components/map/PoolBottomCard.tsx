@@ -219,6 +219,10 @@ export function PoolBottomCard({
                 onPress={() => setParticipantsOpen(true)}
                 size="lg"
                 variant="pdYellow"
+                // Figma 265:3852 — px20 py12. Button size lg 기본 padH=0
+                // 이라 콘텐츠폭 모드에서 텍스트만 노출 (시각상 안 보이는 수준)
+                // → 명시 20px 부여로 콘텐츠+패딩 가시.
+                style={styles.ctaContent}
               />
             ) : null}
             <Button
@@ -385,4 +389,6 @@ const styles = StyleSheet.create({
   },
   // Figma 281:4513 — 두 번째 버튼만 flex-[1_0_0] (남는 폭 차지).
   ctaGrow: { flex: 1 },
+  // Figma 265:3852 — 콘텐츠폭 모드 px20. Button size lg 기본 padH=0 보강.
+  ctaContent: { paddingHorizontal: 20 },
 });
