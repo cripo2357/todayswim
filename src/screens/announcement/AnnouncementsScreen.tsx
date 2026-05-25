@@ -174,11 +174,7 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.color.white,
     padding: 16,
     borderRadius: 24,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.05,
-    shadowRadius: 16,
-    elevation: 2,
+    ...tokens.shadow.lg,
   },
   // Figma I75:1545;...31071 — bg #F8FAFC, rounded-full, 40x40
   iconContainer: {

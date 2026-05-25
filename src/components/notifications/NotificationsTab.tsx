@@ -564,11 +564,7 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.color.bgPaper,
     borderRadius: 24,
     padding: 16,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    ...tokens.shadow.md,
   },
   // Icon Container — 40 원, bg #F8FAFC (회색 원 안에 명명 아이콘)
   iconCircle: {
