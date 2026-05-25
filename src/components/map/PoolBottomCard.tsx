@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
-import { Users } from 'lucide-react-native';
 import { Button } from '@/components/ui/Button';
 import { FavoriteHeart } from '@/components/ui/FavoriteHeart';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -208,15 +207,28 @@ export function PoolBottomCard({
           ) : null}
         </View>
 
-        {/* CTA */}
+        {/* CTA row (Figma 281:4517) — gap 16. "참여자 보기"(콘텐츠폭) +
+         *  "자유수영 시간표 보기"(flex 1). 둘 다 pdByellow.
+         *  슬롯 0개 → 참여자 보기 미노출, 시간표 보기 단독 full width.
+         *  status≠'available' → disabled CTA 단독(참여자 보기 미노출). */}
         {status === 'available' ? (
-          <Button
-            label="자유수영 시간표 보기"
-            onPress={onPressScheduleAction}
-            size="lg"
-            variant="pdYellow"
-            fullWidth
-          />
+          <View style={styles.ctaRow}>
+            {slots.length > 0 ? (
+              <Button
+                label="참여자 보기"
+                onPress={() => setParticipantsOpen(true)}
+                size="lg"
+                variant="pdYellow"
+              />
+            ) : null}
+            <Button
+              label="자유수영 시간표 보기"
+              onPress={onPressScheduleAction}
+              size="lg"
+              variant="pdYellow"
+              style={styles.ctaGrow}
+            />
+          </View>
         ) : (
           <View style={styles.disabledCta} accessibilityRole="text">
             <Text style={styles.disabledLabel}>
@@ -224,23 +236,6 @@ export function PoolBottomCard({
             </Text>
           </View>
         )}
-
-        {/* "참여자 보기" (Figma 265:3158) — 풀의 모든 슬롯 + 가시 참여자.
-         *  슬롯 0개면 버튼 자체 미노출. 탭 → 70%h 모달 (PoolParticipantsSheet). */}
-        {slots.length > 0 ? (
-          <Pressable
-            onPress={() => setParticipantsOpen(true)}
-            style={({ pressed }) => [
-              styles.participantsBtn,
-              pressed && { opacity: 0.85 },
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel="자유수영 참여자 보기"
-          >
-            <Text style={styles.participantsLabel}>참여자 보기</Text>
-            <Users size={20} color={tokens.color.pdBlue} strokeWidth={2} />
-          </Pressable>
-        ) : null}
       </View>
 
       <PoolParticipantsSheet
@@ -380,26 +375,13 @@ const styles = StyleSheet.create({
     color: 'rgba(0, 122, 255, 0.3)',
   },
 
-  // "참여자 보기" — outline 보조 버튼. pd-blue 보더 + 라벨 + Users 아이콘.
-  // 자유수영 시간표 보기(노란 primary) 와 시각 위계 차별화.
-  participantsBtn: {
-    minHeight: 48,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: tokens.color.pdBlue,
-    backgroundColor: tokens.color.bgPaper,
+  // Figma 281:4517 — CTA 두 버튼 row. gap 16, items-start.
+  // 참여자 보기(콘텐츠폭) + 자유수영 시간표 보기(flex 1).
+  ctaRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
+    alignItems: 'flex-start',
+    gap: 16,
   },
-  participantsLabel: {
-    fontSize: 16,
-    lineHeight: 22,
-    letterSpacing: -0.112,
-    fontFamily: tokens.font.sansSemibold,
-    color: tokens.color.pdBlue,
-  },
+  // Figma 281:4513 — 두 번째 버튼만 flex-[1_0_0] (남는 폭 차지).
+  ctaGrow: { flex: 1 },
 });
