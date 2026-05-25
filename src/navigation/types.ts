@@ -74,6 +74,10 @@ export type RootStackParamList = {
   // 자동 스크롤하라는 신호. 본인 카드가 dedupe 로 1장이라 정확히 그 카드로.
   Donation: { scrollToMine?: boolean } | undefined;
 
+  // C클럽 — 모임/클럽 메인 화면 (MapMain 우상단 FAB 'C' → 진입, 로그인 한정).
+  // FAB 색 규약: 배경 ink900(#0F172A) + 'C' 폰트 pdByellow(#EAFF00).
+  ClubMain: undefined;
+
   // 수영장 검색 필터
   PoolFilter: undefined;
 

@@ -183,15 +183,14 @@ export function MapScreen() {
   const mapStartPoolId = usePrefs((s) => s.mapStartPoolId);
   const mapFriendHorizon = usePrefs((s) => s.mapFriendHorizon);
   const mapPublicHorizon = usePrefs((s) => s.mapPublicHorizon);
-  const myScheduleVisibility = usePrefs((s) => s.myScheduleVisibility);
   const profileVis = usePrefs((s) => s.profileVisibility);
   // 사람들(비친구 전체공개) horizon은 프로필 공개='public'일 때만 유효
   const effectivePublicHorizon =
     profileVis === 'public' ? mapPublicHorizon : 'off';
-  // 스택 빈 조건 — 내 일정은 정책상 항상 노출(off/self 폐기, 2026-05-22),
-  // 친구/사람들 둘 다 off 면 스택 자체 미표시.
-  const showStack =
-    mapFriendHorizon !== 'off' || effectivePublicHorizon !== 'off';
+  // 2026-05-22 정책: 내 일정·친구는 항상 노출(둘 다 off 옵션 폐기).
+  // 사람들(effectivePublicHorizon)만 'off' 가능 — 하지만 친구가 항상 있으니
+  // 스택은 항상 표시. 변수 유지(향후 정책 변경 대비).
+  const showStack = true;
 
   // 스택 셔플 시드 — 앱 세션당 1회(useState lazy init). buildPoolProfileStacks
   // 가 시드를 받아 풀별 9명 표본·순서를 추출(나는 시드 무관 0번 고정). MapMain은
@@ -338,7 +337,6 @@ export function MapScreen() {
       showStack,
       mapFriendHorizon,
       effectivePublicHorizon,
-      myScheduleVisibility,
       otherSchedules,
       shuffleSeed,
     ],
@@ -733,6 +731,18 @@ export function MapScreen() {
         >
           <IconLocate width={20} height={20} />
         </Pressable>
+        {/* C클럽 FAB — 로그인(프로필 있음) 한정. 프로필 FAB 바로 위.
+         *  bg ink900(#0F172A) + 'C' pdByellow(#EAFF00) — Figma 정합 색 규약. */}
+        {profile ? (
+          <Pressable
+            onPress={() => navigation.navigate('ClubMain')}
+            style={[styles.fab, styles.fabRound]}
+            accessibilityRole="button"
+            accessibilityLabel="C클럽"
+          >
+            <Text style={styles.fabClubLabel}>C</Text>
+          </Pressable>
+        ) : null}
         <View style={styles.profileFabWrap}>
           <Pressable
             onPress={() => {
@@ -812,6 +822,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...(Platform.OS === 'ios' ? tokens.shadow.md : { elevation: 4 }),
+  },
+  // C클럽 FAB 'C' 라벨 — Figma 정합. pdByellow(#EAFF00) 형광 노랑 on ink900 검정.
+  // 색 규약 변경 금지(memory club_fab_color).
+  fabClubLabel: {
+    color: tokens.color.pdByellow,
+    fontFamily: 'Pretendard-Bold',
+    fontSize: 24,
+    lineHeight: 28,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   // 프로필 FAB + 미열람 배지 래퍼 (배지가 FAB overflow에 안 잘리게 분리)
   profileFabWrap: { position: 'relative' },

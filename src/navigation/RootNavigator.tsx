@@ -11,6 +11,7 @@ import { AnnouncementsScreen } from '@/screens/announcement/AnnouncementsScreen'
 import { FaqScreen } from '@/screens/faq/FaqScreen';
 import { DonationScreen } from '@/screens/donation/DonationScreen';
 import { PoolFilterScreen } from '@/screens/filter/PoolFilterScreen';
+import { ClubMainScreen } from '@/screens/club/ClubMainScreen';
 import { PoolListScreen } from '@/screens/pool-list/PoolListScreen';
 import { FavoritePoolsScreen } from '@/screens/pool-list/FavoritePoolsScreen';
 import { LoginScreen } from '@/screens/auth/LoginScreen';
@@ -97,6 +98,8 @@ export function RootNavigator() {
       <Stack.Screen name="Donation" component={DonationScreen} />
 
       <Stack.Screen name="PoolFilter" component={PoolFilterScreen} />
+
+      <Stack.Screen name="ClubMain" component={ClubMainScreen} />
 
       <Stack.Screen name="PoolList" component={PoolListScreen} />
       <Stack.Screen name="FavoritePools" component={FavoritePoolsScreen} />

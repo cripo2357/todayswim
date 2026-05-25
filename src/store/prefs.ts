@@ -16,29 +16,35 @@ export type ProfileVisibility = 'friends' | 'public';
 export type FriendRequest = 'off' | 'id' | 'nickname' | 'all';
 /** 지도 친구 수영 일정 스택 노출 시점 — 슬롯 시작 N 전 ~ 종료까지.
  *  'off'=스택 전체 미표시. mapProfileStacks 가 horizonMs 로 환산. */
-export type MapFriendHorizon = 'd1' | 'h12' | 'h6' | 'off';
-/** 사람들(비친구 전체공개) 수영 일정 스택 노출 시점 — friend horizon과 같은 enum.
- *  'off'=미표시. profileVisibility==='public'일 때만 의미(친구공개면 행 자체 없음). */
+/** 친구 수영 일정 스택 노출 시점 (= 슬롯 시작 − horizonMs ~ 슬롯 종료).
+ *  2026-05-22 정책: 'off' 옵션 폐기 — 친구는 어쨌든 친구라 일정 항상 표시,
+ *  사용자는 horizon(얼마 전부터 볼지)만 선택. 레거시 'off' 저장값은 hydrate
+ *  가 'd1' 로 자동 마이그. */
+export type MapFriendHorizon = 'd1' | 'h12' | 'h6';
+/** 사람들(비친구 전체공개) 수영 일정 스택 노출 시점.
+ *  'off'=미표시(친구 horizon 과 달리 폐기 X — 비친구 데이터라 안 보는 선택지
+ *  유효). profileVisibility==='public'일 때만 의미(친구공개면 행 자체 없음). */
 export type MapPublicHorizon = 'd1' | 'h12' | 'h6' | 'off';
-/** 내 수영 일정·레슨의 지도 stack 노출 범위 — Figma 179:4763.
- *  'friends'=나+친구들 지도에 표시 (디폴트, 최소) / 'public'=모두에게 표시.
- *  'public'은 profileVisibility==='public'일 때만 선택 가능(설정 화면 강제).
- *  profileVisibility 'public'→'friends' 변경 시 'public'은 'friends'로 강등.
- *
- *  ⚠️ 정책 변경 (2026-05-22 크리스): 이전의 'off' (표시 안함) / 'self' (나만
- *  보기) 옵션 제거 — 내 일정·레슨은 최소한 친구에게는 항상 노출. hydrate 시
- *  레거시 'off'/'self' 값은 'friends'로 자동 마이그.
- *  (구 LessonVisibility 확장 — 일정·레슨 통합 제어) */
-export type MyScheduleVisibility = 'friends' | 'public';
+// MyScheduleVisibility 폐기 (2026-05-22) — profileVisibility 와 의미 중복.
+// 내 일정·레슨 노출 범위는 profileVisibility 그대로 따라간다:
+//   profileVis='friends' → 친구만 보임
+//   profileVis='public'  → 모두 보임
+// AsyncStorage 의 옛 키(K_MY_SCHED_VIS / K_MY_SCHED_VIS_LEGACY)는 hydrate
+// 가 1회 정리(removeItem).
 
 /** horizon → ms (스택 노출창 = 슬롯 시작 − horizonMs ~ 슬롯 종료). */
 export const MAP_FRIEND_HORIZON_MS: Record<MapFriendHorizon, number> = {
   d1: 24 * 60 * 60 * 1000,
   h12: 12 * 60 * 60 * 1000,
   h6: 6 * 60 * 60 * 1000,
+};
+// 사람들은 'off' 까지 — 친구와 enum 다르므로 별도 매핑.
+export const MAP_PUBLIC_HORIZON_MS: Record<MapPublicHorizon, number> = {
+  d1: 24 * 60 * 60 * 1000,
+  h12: 12 * 60 * 60 * 1000,
+  h6: 6 * 60 * 60 * 1000,
   off: 0,
 };
-export const MAP_PUBLIC_HORIZON_MS: Record<MapPublicHorizon, number> = MAP_FRIEND_HORIZON_MS;
 // 나이 공개여부 설정은 제거됨 — 나이는 항상 비공개(프로필 안내문구만 제공).
 
 interface PrefsState {
@@ -53,8 +59,6 @@ interface PrefsState {
   /** 지도 '사람들'(비친구 전체공개) 수영 일정 스택 노출 시점. profileVisibility
    *  ==='public'일 때만 유효(친구공개면 행 자체 미노출). 기본 'off'. */
   mapPublicHorizon: MapPublicHorizon;
-  /** 내 수영 일정·레슨 stack 노출 범위(off/self/friends/public). */
-  myScheduleVisibility: MyScheduleVisibility;
   /** OS 푸시 알림 마스터(Figma 223:2799 "푸시 알림"). **5개 sub의 OR 집계
    *  (derived)** — 별도 저장 X. 마케팅은 정통망법 §50 별도 동의라 집계에서
    *  제외. 토글 시 5개 sub로 cascade(마케팅 무관). */
@@ -78,7 +82,6 @@ interface PrefsState {
   setMapStartPoolId: (v: string | null) => Promise<void>;
   setMapFriendHorizon: (v: MapFriendHorizon) => Promise<void>;
   setMapPublicHorizon: (v: MapPublicHorizon) => Promise<void>;
-  setMyScheduleVisibility: (v: MyScheduleVisibility) => Promise<void>;
   setPushOn: (v: boolean) => Promise<void>;
   setNotifFriendInvite: (v: boolean) => Promise<void>;
   setNotifScheduleReminder: (v: boolean) => Promise<void>;
@@ -98,13 +101,13 @@ const K_MAP_START = 'poolsday.prefs.mapStartPoolId';
 const K_MAP_FRIENDS = 'poolsday.prefs.mapFriendHorizon';
 const K_MAP_FRIENDS_LEGACY = 'poolsday.prefs.showMapFriendStack';
 const K_MAP_PUBLIC = 'poolsday.prefs.mapPublicHorizon';
-const HORIZON_VALUES: MapFriendHorizon[] = ['d1', 'h12', 'h6', 'off'];
-// 신 키 — 'friends'/'public'. 이전 enum 의 'off'/'self' 는 폐기되어
-// hydrate 시 'friends' 로 자동 마이그(아래 K_MY_SCHED_VIS 처리부). 구
-// K_LESSON_VIS('poolsday.prefs.lessonVisibility')도 동일 매핑.
-const K_MY_SCHED_VIS = 'poolsday.prefs.myScheduleVisibility';
+// 친구 horizon — 2026-05-22 'off' 폐기로 3값만. public 은 별도 (아래).
+const FRIEND_HORIZON_VALUES: MapFriendHorizon[] = ['d1', 'h12', 'h6'];
+const PUBLIC_HORIZON_VALUES: MapPublicHorizon[] = ['d1', 'h12', 'h6', 'off'];
+// myScheduleVisibility 키 폐기 (2026-05-22) — profileVisibility 와 중복.
+// hydrate 가 1회 removeItem 으로 정리. 더 이상 사용 X.
+const K_MY_SCHED_VIS_DEPRECATED = 'poolsday.prefs.myScheduleVisibility';
 const K_MY_SCHED_VIS_LEGACY = 'poolsday.prefs.lessonVisibility';
-const MY_SCHED_VIS_VALUES: MyScheduleVisibility[] = ['friends', 'public'];
 // 푸시 알림 마스터는 5 sub의 OR 집계(derived) — 별도 영속 키 없음.
 // 구 K_PUSH_ON('poolsday.prefs.pushOn') 키는 폐기(2026-05-20).
 const K_NOTIF_FRIEND = 'poolsday.prefs.notifFriendInvite';
@@ -130,7 +133,6 @@ export const usePrefs = create<PrefsState>((set, get) => ({
   mapStartPoolId: null, // 내 위치
   mapFriendHorizon: 'd1', // 1일 전부터 보기 (Figma 기본값)
   mapPublicHorizon: 'off', // 사람들 일정은 기본 OFF (profileVis=public일 때만 유효)
-  myScheduleVisibility: 'friends', // profileVisibility 기본 'friends'와 동조
   pushOn: true, // 푸시 알림 기본 ON
   // 알림 유형 5개 — 가입자 기본 ON. 마케팅은 가입 시 사용자 선택(기본 false).
   notifFriendInvite: true,
@@ -151,8 +153,6 @@ export const usePrefs = create<PrefsState>((set, get) => ({
         mf,
         mfLegacy,
         mp,
-        mv,
-        mvLegacy,
         nFi,
         nSc,
         nSu,
@@ -167,8 +167,6 @@ export const usePrefs = create<PrefsState>((set, get) => ({
         AsyncStorage.getItem(K_MAP_FRIENDS),
         AsyncStorage.getItem(K_MAP_FRIENDS_LEGACY),
         AsyncStorage.getItem(K_MAP_PUBLIC),
-        AsyncStorage.getItem(K_MY_SCHED_VIS),
-        AsyncStorage.getItem(K_MY_SCHED_VIS_LEGACY),
         AsyncStorage.getItem(K_NOTIF_FRIEND),
         AsyncStorage.getItem(K_NOTIF_SCHED),
         AsyncStorage.getItem(K_NOTIF_SUBMIT),
@@ -177,50 +175,32 @@ export const usePrefs = create<PrefsState>((set, get) => ({
         AsyncStorage.getItem(K_TERMS_MARKETING),
       ]);
       const pv: ProfileVisibility = p === 'public' ? 'public' : 'friends';
-      // 신 키 우선. 없으면 옛 boolean 키 → enum 마이그레이션(true→d1, false→off).
-      const mapFriendHorizon: MapFriendHorizon = HORIZON_VALUES.includes(
+      // 신 키 우선. 2026-05-22 'off' 폐기: 저장된 'off' 또는 옛 boolean 'false'
+      // → 'd1' 로 자동 마이그(친구는 어쨌든 친구라 일정 항상 표시).
+      const mapFriendHorizon: MapFriendHorizon = FRIEND_HORIZON_VALUES.includes(
         mf as MapFriendHorizon,
       )
         ? (mf as MapFriendHorizon)
-        : mfLegacy === 'false'
-        ? 'off'
         : 'd1';
-      if (!mf && mfLegacy != null) {
-        // 옛 키 정리 + 신 키로 1회 백필.
+      // 정제값 재저장 — 옛 boolean 키 또는 폐기된 'off' 저장돼 있으면.
+      const friendNeedsMigrate =
+        (mf != null && !FRIEND_HORIZON_VALUES.includes(mf as MapFriendHorizon)) ||
+        (!mf && mfLegacy != null);
+      if (friendNeedsMigrate) {
         AsyncStorage.setItem(K_MAP_FRIENDS, mapFriendHorizon).catch(() => {});
         AsyncStorage.removeItem(K_MAP_FRIENDS_LEGACY).catch(() => {});
       }
       // 사람들(비친구 전체공개) horizon. profileVis='friends'에선 행이 없어
       // 변경 경로가 없지만, 저장값은 보존(다시 public 전환 시 복원).
-      const mapPublicHorizon: MapPublicHorizon = HORIZON_VALUES.includes(
+      const mapPublicHorizon: MapPublicHorizon = PUBLIC_HORIZON_VALUES.includes(
         mp as MapPublicHorizon,
       )
         ? (mp as MapPublicHorizon)
         : 'off';
-      // 내 수영 일정·레슨 가시성 — 신 키 우선, 없으면 구 lessonVisibility 키.
-      // 2026-05-22 정책 변경: 'off'/'self' 옵션 폐기 → 'friends' 로 자동 마이그.
-      // (이전 4값 → 신 2값. AsyncStorage 에 옛 'off'/'self' 가 남아있으면 invalid
-      //  → 'friends' 폴백 + 정제값 다시 저장.)
-      let myScheduleVisibility: MyScheduleVisibility = MY_SCHED_VIS_VALUES.includes(
-        mv as MyScheduleVisibility,
-      )
-        ? (mv as MyScheduleVisibility)
-        : MY_SCHED_VIS_VALUES.includes(mvLegacy as MyScheduleVisibility)
-        ? (mvLegacy as MyScheduleVisibility)
-        : 'friends';
-      // 레거시 값('off'/'self' 등) 이 신·구 키 어디 있어도 폴백을 다시 저장해 정제.
-      const isLegacyValue =
-        (mv != null && !MY_SCHED_VIS_VALUES.includes(mv as MyScheduleVisibility)) ||
-        (!mv && mvLegacy != null);
-      if (isLegacyValue) {
-        AsyncStorage.setItem(K_MY_SCHED_VIS, myScheduleVisibility).catch(() => {});
-        AsyncStorage.removeItem(K_MY_SCHED_VIS_LEGACY).catch(() => {});
-      }
-      // 'public'이지만 profileVis가 'friends'면 'friends'로 강등(stale 방어).
-      if (myScheduleVisibility === 'public' && pv === 'friends') {
-        myScheduleVisibility = 'friends';
-        AsyncStorage.setItem(K_MY_SCHED_VIS, 'friends').catch(() => {});
-      }
+      // myScheduleVisibility 키 폐기 정리 (2026-05-22) — profileVisibility 와
+      // 중복이라 제거. 옛 키 값들은 한 번 removeItem 으로 청소.
+      AsyncStorage.removeItem(K_MY_SCHED_VIS_DEPRECATED).catch(() => {});
+      AsyncStorage.removeItem(K_MY_SCHED_VIS_LEGACY).catch(() => {});
       const friendV = nFi === 'false' ? false : true;
       const schedV = nSc === 'false' ? false : true;
       const submitV = nSu === 'false' ? false : true;
@@ -237,7 +217,6 @@ export const usePrefs = create<PrefsState>((set, get) => ({
         mapStartPoolId: ms || null,
         mapFriendHorizon,
         mapPublicHorizon,
-        myScheduleVisibility,
         notifFriendInvite: friendV,
         notifScheduleReminder: schedV,
         notifSubmissionResult: submitV,
@@ -277,17 +256,8 @@ export const usePrefs = create<PrefsState>((set, get) => ({
     await AsyncStorage.setItem(K_PROFILE_VIS, v);
     await AsyncStorage.setItem(K_VIEW, v);
     if (v === 'friends') {
-      const curMine = get().myScheduleVisibility;
-      if (curMine === 'public') {
-        await AsyncStorage.setItem(K_MY_SCHED_VIS, 'friends');
-        set({
-          profileVisibility: v,
-          othersScheduleView: v,
-          myScheduleVisibility: 'friends',
-        });
-      } else {
-        set({ profileVisibility: v, othersScheduleView: v });
-      }
+      // 'public' → 'friends' 강등 시 내 예정 일정도 public → friends 강등 (cascade).
+      set({ profileVisibility: v, othersScheduleView: v });
       await useSwimSchedules.getState().downgradePublicToFriends();
     } else {
       set({ profileVisibility: v, othersScheduleView: v });
@@ -315,16 +285,6 @@ export const usePrefs = create<PrefsState>((set, get) => ({
     // 보존(친구공개로 잠시 전환됐다 다시 public 시 복원).
     await AsyncStorage.setItem(K_MAP_PUBLIC, v);
     set({ mapPublicHorizon: v });
-  },
-
-  setMyScheduleVisibility: async (v) => {
-    // 'public'은 profileVisibility==='public'일 때만 허용 — UI에서 옵션 제거.
-    // 호출자 우회 방지로 store에서도 강등(profileVis='friends'면 'friends'로).
-    const pv = get().profileVisibility;
-    const next: MyScheduleVisibility =
-      v === 'public' && pv === 'friends' ? 'friends' : v;
-    await AsyncStorage.setItem(K_MY_SCHED_VIS, next);
-    set({ myScheduleVisibility: next });
   },
 
   // 마스터(푸시 알림) 토글 — 5 sub로 cascade. 마케팅은 정통망법 §50 별도
