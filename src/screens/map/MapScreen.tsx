@@ -167,7 +167,10 @@ export function MapScreen() {
   const select = useSelection((s) => s.select);
 
   // Android 하드웨어 뒤로가기 — MapScreen 은 루트라 기본 동작은 즉시 앱 종료.
-  // 실수 종료 방지를 위해 1차 안내 토스트 노출 + EXIT_TOAST_MS 내 2차 누르면 종료.
+  // 우선순위:
+  //   1) 풀 선택 중이면 deselect (카드 닫기)
+  //   2) 종료 안내 토스트 노출 중이면 BackHandler.exitApp()
+  //   3) 아니면 안내 토스트 노출 (EXIT_TOAST_MS 내 2차 누르면 종료)
   // (iOS는 하드웨어 백 버튼 없음 — addEventListener 자체가 no-op.)
   const [exitToastVisible, setExitToastVisible] = React.useState(false);
   // 토스트 노출 중(=2차 누르면 종료) 여부. 콜백 안정성 위해 ref.
@@ -175,6 +178,14 @@ export function MapScreen() {
   useFocusEffect(
     React.useCallback(() => {
       const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        // 풀 선택 중 — 카드 닫고 종료 시퀀스는 reset.
+        // useSelection.getState() 로 항상 최신값 읽음 (closure stale 방지).
+        if (useSelection.getState().selectedPoolId) {
+          useSelection.getState().select(null);
+          exitArmedRef.current = false;
+          setExitToastVisible(false);
+          return true;
+        }
         if (exitArmedRef.current) {
           BackHandler.exitApp();
           return true;
@@ -850,7 +861,7 @@ export function MapScreen() {
           }}
           style={[
             styles.exitToast,
-            { top: insets.top + 12 },
+            { bottom: insets.bottom + 80 },
           ]}
         />
       ) : null}
@@ -860,8 +871,8 @@ export function MapScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: tokens.color.bgCream },
-  // 뒤로가기 종료 안내 토스트 위치 — 상단 safe-area 아래, 화면 좌우 16px 여백.
-  // top은 insets.top + 12로 호출부에서 주입.
+  // 뒤로가기 종료 안내 토스트 위치 — 하단 safe-area + poolListBtn(48+16) 위.
+  // bottom은 insets.bottom + 80으로 호출부에서 주입. 좌우 16px 여백.
   exitToast: {
     position: 'absolute',
     left: 16,
@@ -996,8 +1007,18 @@ const styles = StyleSheet.create({
   },
   // 풀카드 내부 스크롤 — 화면 65% 캡(지도 일부 유지). 내용이 캡 안이면 콘텐츠
   // 크기로 줄어들고, 넘치면 카드 안에서 스크롤됨.
+  // 풀카드 본체 = ScrollView 자체. bg/radius/shadow/marginH/marginB 모두 여기.
+  // overflow:hidden + borderRadius 16 으로 스크롤 시에도 카드 라운드 유지
+  // (Figma 265:3822 — 스크롤 영역도 둥근 카드 모양 클리핑).
+  // maxHeight 65% 캡 → 지도 영역 일부 유지 + 카드 안에서 스크롤.
   bottomScroll: {
+    marginHorizontal: tokens.layout.pagePadMobile,
+    marginBottom: tokens.space[4],
+    backgroundColor: tokens.color.bgPaper,
+    borderRadius: 16,
+    overflow: 'hidden',
     maxHeight: Dimensions.get('window').height * 0.65,
+    ...tokens.shadow.lg,
   },
   bottomScrollContent: {
     flexGrow: 0,

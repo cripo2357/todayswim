@@ -181,14 +181,10 @@ export function PoolBottomCard({
 }
 
 const styles = StyleSheet.create({
-  // Figma 93:10598 — padding 16, radius 16, shadow lg
+  // Figma 93:10598 — padding 16. bg/radius/shadow/marginH/marginB 는 MapScreen
+  // ScrollView wrapper 가 보유(스크롤 시 카드 라운드 클리핑 유지).
   card: {
-    backgroundColor: tokens.color.bgPaper,
-    borderRadius: 16,
     padding: 16,
-    marginHorizontal: tokens.layout.pagePadMobile,
-    marginBottom: tokens.space[4],
-    ...tokens.shadow.lg,
   },
   // Figma 93:10599 — column gap 16 (header → row → CTA)
   innerCol: { gap: 16 },
