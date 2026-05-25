@@ -91,9 +91,9 @@ const INITIAL_CAMERA: Camera = {
 // (사용자 요청 — 카드가 너무 크면 지도 영역 부족.)
 const SCREEN_H = Dimensions.get('window').height;
 const POOL_CARD_MAX_H = SCREEN_H * 0.65 - 100;
-// 마커가 풀카드 상단으로부터 위로 떠야 할 거리(px). 사용자 확정 250.
+// 마커가 풀카드 상단으로부터 위로 떠야 할 거리(px). 사용자 확정 150.
 // 카드 실제 높이 + margin + safe-area 기준으로 mapPadding.bottom 동적 계산.
-const MARKER_ABOVE_CARD_TOP_PX = 250;
+const MARKER_ABOVE_CARD_TOP_PX = 150;
 
 // 선택된 풀에서 이 거리(미터)만큼 사용자가 pan하면 자동 deselect.
 // 500m ≈ 한국 위도 기준 약 0.0045 deg lat — 줌 15에서 화면 절반 정도, 줌 12에서 화면의 ~1/16.
