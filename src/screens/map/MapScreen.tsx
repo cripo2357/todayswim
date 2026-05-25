@@ -814,27 +814,31 @@ export function MapScreen() {
       <SafeAreaView style={styles.bottomWrap} edges={['bottom']} pointerEvents="box-none">
         {selectedPool ? (
           // 풀 카드 — 일정카드 섹션이 길어지면 화면 초과 가능. 내부 스크롤로 처리.
-          // maxHeight 65% 캡 → 지도 영역 일부 유지 + 카드 안에서 스크롤.
-          <ScrollView
-            style={styles.bottomScroll}
-            contentContainerStyle={styles.bottomScrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            <PoolBottomCard
-              pool={selectedPool}
-              // 자유수영 가능 여부 우선 → false면 'impossible'.
-              // 가능하다면 시간표 등록 여부에 따라 'available' / 'no_schedule'.
-              // freeSwimAvailable이 undefined인 경우 (DB 마이그레이션 전) 가능으로 간주.
-              status={
-                selectedPool.freeSwimAvailable === false
-                  ? 'impossible'
-                  : scheduleByPool.has(selectedPool.id)
-                  ? 'available'
-                  : 'no_schedule'
-              }
-              onPressScheduleAction={onScheduleAction}
-            />
-          </ScrollView>
+          // 외부 View 가 시각(bg/radius/shadow/marginH/marginB/overflow hidden) 보유,
+          // 내부 ScrollView 는 maxHeight 캡(65%)만 — ScrollView style bg/overflow 조합이
+          // 일부 케이스에서 bg 누락되는 회귀 우회 + 스크롤 영역도 둥근 클리핑 유지.
+          <View style={styles.bottomCardOuter}>
+            <ScrollView
+              style={styles.bottomScroll}
+              contentContainerStyle={styles.bottomScrollContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <PoolBottomCard
+                pool={selectedPool}
+                // 자유수영 가능 여부 우선 → false면 'impossible'.
+                // 가능하다면 시간표 등록 여부에 따라 'available' / 'no_schedule'.
+                // freeSwimAvailable이 undefined인 경우 (DB 마이그레이션 전) 가능으로 간주.
+                status={
+                  selectedPool.freeSwimAvailable === false
+                    ? 'impossible'
+                    : scheduleByPool.has(selectedPool.id)
+                    ? 'available'
+                    : 'no_schedule'
+                }
+                onPressScheduleAction={onScheduleAction}
+              />
+            </ScrollView>
+          </View>
         ) : (
           <Pressable
             onPress={() => navigation.navigate('PoolList')}
@@ -1007,18 +1011,20 @@ const styles = StyleSheet.create({
   },
   // 풀카드 내부 스크롤 — 화면 65% 캡(지도 일부 유지). 내용이 캡 안이면 콘텐츠
   // 크기로 줄어들고, 넘치면 카드 안에서 스크롤됨.
-  // 풀카드 본체 = ScrollView 자체. bg/radius/shadow/marginH/marginB 모두 여기.
-  // overflow:hidden + borderRadius 16 으로 스크롤 시에도 카드 라운드 유지
-  // (Figma 265:3822 — 스크롤 영역도 둥근 카드 모양 클리핑).
-  // maxHeight 65% 캡 → 지도 영역 일부 유지 + 카드 안에서 스크롤.
-  bottomScroll: {
+  // 풀카드 시각 outer — bg/radius/shadow/marginH/marginB + overflow hidden.
+  // overflow:hidden + borderRadius 16 으로 스크롤 영역도 둥근 카드 모양 클리핑
+  // (Figma 265:3822). 일반 View 라 bg/shadow 가 platform 일관되게 렌더.
+  bottomCardOuter: {
     marginHorizontal: tokens.layout.pagePadMobile,
     marginBottom: tokens.space[4],
     backgroundColor: tokens.color.bgPaper,
     borderRadius: 16,
     overflow: 'hidden',
-    maxHeight: Dimensions.get('window').height * 0.65,
     ...tokens.shadow.lg,
+  },
+  // ScrollView 는 height 캡만 — 65% 화면(지도 영역 일부 유지).
+  bottomScroll: {
+    maxHeight: Dimensions.get('window').height * 0.65,
   },
   bottomScrollContent: {
     flexGrow: 0,
