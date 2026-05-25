@@ -350,18 +350,12 @@ const styles = StyleSheet.create({
     color: 'rgba(27, 31, 38, 0.72)',
     textAlign: 'center',
   },
-  // Figma 5:15641 — 흰 카드 p-16 rounded-16 그림자.
-  // Figma의 옅은 2겹 shadow (.02/.03)는 RN 단일 shadow + cream 페이지 위에서 거의 안 보임.
-  // 영역 시각화를 위해 ink 베이스 0.08 alpha + offset 8/radius 16 + Android elevation 강화.
+  // Figma 5:15641 — 흰 카드 p-16 rounded-16. Shadow/lg (앱 카드 표준).
   dayCard: {
     backgroundColor: tokens.color.bgPaper,
     borderRadius: 16,
     padding: 16,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 6,
+    ...tokens.shadow.lg,
   },
   daysRow: {
     flexDirection: 'row',

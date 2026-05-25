@@ -5,7 +5,7 @@
 // 클러스터링은 supercluster JS로 처리 (Naver native clustering은 caption 미지원이라 직접 관리).
 
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Platform, Image, ScrollView, Dimensions, BackHandler } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image, ScrollView, Dimensions, BackHandler } from 'react-native';
 import {
   NaverMapView,
   NaverMapMarkerOverlay,
@@ -940,7 +940,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    ...(Platform.OS === 'ios' ? tokens.shadow.md : { elevation: 4 }),
+    ...tokens.shadow.md,
   },
   // C클럽 FAB 'C' 라벨 — Figma 정합. pdByellow(#EAFF00) 형광 노랑 on ink900 검정.
   // 색 규약 변경 금지(memory club_fab_color).
@@ -1017,7 +1017,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 9999,
     overflow: 'hidden',
-    ...(Platform.OS === 'ios' ? tokens.shadow.md : { elevation: 4 }),
+    ...tokens.shadow.md,
   },
   // 좌측 X — 클릭 시 필터 초기화 (지도 유지)
   fabFilterReset: {
@@ -1083,7 +1083,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: tokens.color.pdByellow,
     marginBottom: tokens.space[4],
-    ...(Platform.OS === 'ios' ? tokens.shadow.md : { elevation: 4 }),
+    ...tokens.shadow.md,
   },
   poolListLabel: {
     fontSize: 16,

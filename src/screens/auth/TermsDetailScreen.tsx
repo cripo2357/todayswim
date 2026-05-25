@@ -144,6 +144,7 @@ const styles = StyleSheet.create({
     height: WORDMARK_H,
   },
   // 헤더 wrap — absolute, paper bg로 status bar 영역까지 채움. 워드마크 위 stacking.
+  // 스택 순서는 zIndex 만 사용 ([[shadow_boxshadow]] — elevation 금지).
   headerWrap: {
     position: 'absolute',
     top: 0,
@@ -151,7 +152,6 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: tokens.color.bgPaper,
     zIndex: 10,
-    elevation: 10,
   },
   // 물방울 absolute — 헤더보다 위. 워드마크 영역과 동일 박스라 솟구침 좌표 일치.
   dropletLayer: {
@@ -160,7 +160,6 @@ const styles = StyleSheet.create({
     width: WORDMARK_W,
     height: WORDMARK_H,
     zIndex: 20,
-    elevation: 20,
   },
   // Figma 101:3838 — gap 20 (배지 ↔ 제목 그룹)
   headerBlock: { alignItems: 'center', gap: 20 },

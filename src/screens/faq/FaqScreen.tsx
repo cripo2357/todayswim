@@ -262,14 +262,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // 활성 탭: bg white, shadow-md (4/8 0.03 + 8/16 0.02).
+  // 활성 탭: bg white + shadow-sm (탭은 카드 아님, 작은 그림자).
   tabActive: {
     backgroundColor: tokens.color.white,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    ...tokens.shadow.sm,
   },
   // 비활성 라벨: SemiBold 14/20 -0.084 #1F2937
   tabLabel: {

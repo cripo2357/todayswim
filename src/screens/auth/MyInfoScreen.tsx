@@ -7,7 +7,7 @@
 import React from 'react';
 import {
   View, Text, TextInput, ScrollView, StyleSheet, Pressable,
-  Platform, Alert, Image,
+  Alert, Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -927,7 +927,7 @@ const styles = StyleSheet.create({
   },
   tabItemActive: {
     backgroundColor: tokens.color.white,
-    ...(Platform.OS === 'ios' ? tokens.shadow.sm : { elevation: 2 }),
+    ...tokens.shadow.sm,
   },
   tabLabel: {
     fontSize: 14,
