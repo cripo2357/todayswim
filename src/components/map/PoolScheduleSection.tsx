@@ -253,12 +253,14 @@ const styles = StyleSheet.create({
     gap: 7,
   },
 
-  // Figma 266:6389/5810 — 칩: 아바타 24 + 닉네임, w 88 gap 4.
+  // Figma 266:6389/5810 — 칩: 아바타 24 + 닉네임. Figma 88 이지만 풀카드+슬롯
+  // 카드 padding 누적으로 좁은 폰(360dp)에서 3개 안 들어가 80 으로 축소.
+  // 80*3 + 7*2 = 254 → 360dp 폰 슬롯 content 264 안에 들어감.
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    width: 88,
+    width: 80,
   },
   // Figma 266:6420 — Plus Jakarta Bold 10/14 -0.04 #1F2937. numberOfLines 1.
   chipLabel: {
