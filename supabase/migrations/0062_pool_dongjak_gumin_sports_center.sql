@@ -1,4 +1,4 @@
--- Pool's day — Phase 2: 수영장 1곳 추가: 동작구민체육센터 (POOL_SEOUL_0013).
+-- Pool's day — Phase 2: 수영장 1곳 추가: 동작구민체육센터 (POOL_0009).
 --
 -- ## 시간표·가격 출처
 --
@@ -23,7 +23,7 @@
 --   ROAD_ADDR 정확 매치 + "동작구민체육센터" 키워드 POI도 같은 위치(신대방동 460-1).
 -- - 전화 충돌(공식 02-849-0100 vs 첨벙 02-832-2445): 공식 채택.
 --
--- 사진: pool-photos/POOL_SEOUL_0013.jpg 업로드 대기.
+-- 사진: pool-photos/POOL_0009.jpg 업로드 대기.
 
 insert into public.pools (
   id, name, region, district, address, lat, lng, type, ownership,
@@ -33,7 +33,7 @@ insert into public.pools (
   price_per_session, price_weekday, price_weekend, photo_url,
   schedule_source_url
 ) values
-  ('POOL_SEOUL_0013', '동작구민체육센터', '서울', '동작구',
+  ('POOL_0009', '동작구민체육센터', '서울', '동작구',
     '서울특별시 동작구 여의대방로16길 53',
     37.4947197628832, 126.916767722548, 'indoor', 'public',
     '02-849-0100', 'https://sports.idongjak.or.kr/home/42',
@@ -41,14 +41,14 @@ insert into public.pools (
     '{}', true, false, false,
     true, true,
     4400, 4400, 5700,
-    'https://hldfsstyzbnqnrlqhhtc.supabase.co/storage/v1/object/public/pool-photos/POOL_SEOUL_0013.jpg',
+    'https://hldfsstyzbnqnrlqhhtc.supabase.co/storage/v1/object/public/pool-photos/POOL_0009.jpg',
     'https://sports.idongjak.or.kr/home/42')
 on conflict (id) do nothing;
 
 -- 자유수영 시간표.
 -- hours = (종료 - 시작) 분/60. 50분=0.83, 1h50m=1.83, 2h50m=2.83.
 insert into public.schedules (pool_id, author_nickname, by_day, day_notes, updated_at) values
-  ('POOL_SEOUL_0013', '풀스데이', $${
+  ('POOL_0009', '풀스데이', $${
     "월": [{"start":"13:00","end":"13:50","hours":0.83}],
     "화": [{"start":"13:00","end":"13:50","hours":0.83}],
     "수": [{"start":"13:00","end":"13:50","hours":0.83}],
@@ -73,5 +73,5 @@ on conflict (pool_id) do nothing;
 -- has_schedule 동기화 (안전)
 update public.pools
 set has_schedule = true
-where id = 'POOL_SEOUL_0013'
-  and exists (select 1 from public.schedules where pool_id = 'POOL_SEOUL_0013');
+where id = 'POOL_0009'
+  and exists (select 1 from public.schedules where pool_id = 'POOL_0009');

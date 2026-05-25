@@ -12,6 +12,7 @@ import IconKids from '@assets/icons/facility-kids.svg';
 import IconDiving from '@assets/icons/facility-diving.svg';
 import IconHotel from '@assets/icons/facility-hotel.svg';
 import { logEvent } from '@/lib/analytics';
+import { PoolScheduleSection } from './PoolScheduleSection';
 
 type ChipKey = 'kids' | 'diving' | 'hotel';
 const CHIP_LABEL: Record<ChipKey, string> = {
@@ -170,6 +171,10 @@ export function PoolBottomCard({
             </Text>
           </View>
         )}
+
+        {/* 일정 카드 (Figma 265:3158) — 풀의 모든 슬롯 + 가시 참여자 ≥ 1.
+         *  내 참여 시 프로필 칩, 미참여 시 [나도 참여] 버튼. 0개면 섹션 자체 null. */}
+        <PoolScheduleSection poolId={pool.id} />
       </View>
     </View>
   );
