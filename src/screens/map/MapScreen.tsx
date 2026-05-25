@@ -94,7 +94,7 @@ const INITIAL_CAMERA: Camera = {
 // 900px 화면 기준 visible map ~215px, 마커 중심 ~107 from top, 스택 포함 상단 ~32.
 const SCREEN_H = Dimensions.get('window').height;
 const POOL_CARD_MAX_H = SCREEN_H * 0.65 - 100;
-const MAP_PADDING_BOTTOM = Math.round(POOL_CARD_MAX_H + 200);
+const MAP_PADDING_BOTTOM = Math.round(POOL_CARD_MAX_H + 120);
 
 // 선택된 풀에서 이 거리(미터)만큼 사용자가 pan하면 자동 deselect.
 // 500m ≈ 한국 위도 기준 약 0.0045 deg lat — 줌 15에서 화면 절반 정도, 줌 12에서 화면의 ~1/16.
