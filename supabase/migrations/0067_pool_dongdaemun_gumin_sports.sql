@@ -1,4 +1,4 @@
--- Pool's day — Phase 2: 수영장 1곳 추가: 동대문구민체육센터 (POOL_SEOUL_0018).
+-- Pool's day — Phase 2: 수영장 1곳 추가: 동대문구민체육센터 (POOL_0014).
 --
 -- ## 시간표 출처
 --
@@ -28,7 +28,7 @@
 --   (장안동 356, 도로명 장안벚꽃로 67).
 -- - 전화: 02-2247-9772.
 --
--- 사진: pool-photos/POOL_SEOUL_0018.jpg 업로드 대기.
+-- 사진: pool-photos/POOL_0014.jpg 업로드 대기.
 
 insert into public.pools (
   id, name, region, district, address, lat, lng, type, ownership,
@@ -38,7 +38,7 @@ insert into public.pools (
   price_per_session, price_weekday, price_weekend, photo_url,
   schedule_source_url
 ) values
-  ('POOL_SEOUL_0018', '동대문구민체육센터', '서울', '동대문구',
+  ('POOL_0014', '동대문구민체육센터', '서울', '동대문구',
     '서울특별시 동대문구 장안벚꽃로 67',
     37.566538362878, 127.073496614169, 'indoor', 'public',
     '02-2247-9772', 'https://www.dfmc.kr:8443/course/sports/fmcs/283',
@@ -46,14 +46,14 @@ insert into public.pools (
     '{}', true, false, false,
     true, true,
     3700, 3700, 4800,
-    'https://hldfsstyzbnqnrlqhhtc.supabase.co/storage/v1/object/public/pool-photos/POOL_SEOUL_0018.jpg',
+    'https://hldfsstyzbnqnrlqhhtc.supabase.co/storage/v1/object/public/pool-photos/POOL_0014.jpg',
     'https://www.dfmc.kr:8443/course/sports/fmcs/283')
 on conflict (id) do nothing;
 
 -- 자유수영 시간표.
 -- hours = (종료 - 시작) 분/60. 50분=0.83.
 insert into public.schedules (pool_id, author_nickname, by_day, day_notes, updated_at) values
-  ('POOL_SEOUL_0018', '풀스데이', $${
+  ('POOL_0014', '풀스데이', $${
     "월": [
       {"start":"13:00","end":"13:50","hours":0.83},
       {"start":"21:00","end":"21:50","hours":0.83}
@@ -97,5 +97,5 @@ on conflict (pool_id) do nothing;
 -- has_schedule 동기화 (안전)
 update public.pools
 set has_schedule = true
-where id = 'POOL_SEOUL_0018'
-  and exists (select 1 from public.schedules where pool_id = 'POOL_SEOUL_0018');
+where id = 'POOL_0014'
+  and exists (select 1 from public.schedules where pool_id = 'POOL_0014');

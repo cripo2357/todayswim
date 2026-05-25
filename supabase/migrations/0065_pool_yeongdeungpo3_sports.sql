@@ -1,4 +1,4 @@
--- Pool's day — Phase 2: 수영장 1곳 추가: 영등포제3스포츠센터 (POOL_SEOUL_0016).
+-- Pool's day — Phase 2: 수영장 1곳 추가: 영등포제3스포츠센터 (POOL_0012).
 --
 -- ## 시간표 출처
 --
@@ -22,7 +22,7 @@
 -- - 공식 페이지가 주소를 "여의대방로 211"이라 적은 건 영등포구공단 본부 주소를
 --   잘못 일반화한 것 — 실제 위치는 도신로 1 (제1·제2 동일 패턴).
 --
--- 사진: pool-photos/POOL_SEOUL_0016.jpg 업로드 대기.
+-- 사진: pool-photos/POOL_0012.jpg 업로드 대기.
 
 insert into public.pools (
   id, name, region, district, address, lat, lng, type, ownership,
@@ -32,7 +32,7 @@ insert into public.pools (
   price_per_session, price_weekday, price_weekend, photo_url,
   schedule_source_url
 ) values
-  ('POOL_SEOUL_0016', '영등포제3스포츠센터', '서울', '영등포구',
+  ('POOL_0012', '영등포제3스포츠센터', '서울', '영등포구',
     '서울특별시 영등포구 도신로 1',
     37.5045113925927, 126.895091770582, 'indoor', 'public',
     '02-3017-1800', 'https://spc3.y-sisul.or.kr/page/center/center.03.asp',
@@ -40,7 +40,7 @@ insert into public.pools (
     '{}', true, false, false,
     true, true,
     null, null, null,
-    'https://hldfsstyzbnqnrlqhhtc.supabase.co/storage/v1/object/public/pool-photos/POOL_SEOUL_0016.jpg',
+    'https://hldfsstyzbnqnrlqhhtc.supabase.co/storage/v1/object/public/pool-photos/POOL_0012.jpg',
     'https://spc3.y-sisul.or.kr/page/center/center.03.asp')
 on conflict (id) do nothing;
 
@@ -48,7 +48,7 @@ on conflict (id) do nothing;
 -- hours = (종료 - 시작) 분/60. 50분=0.83, 2h=2.0.
 -- 일요일 휴관 → 키 미포함.
 insert into public.schedules (pool_id, author_nickname, by_day, updated_at) values
-  ('POOL_SEOUL_0016', '풀스데이', $${
+  ('POOL_0012', '풀스데이', $${
     "월": [{"start":"12:00","end":"12:50","hours":0.83}],
     "화": [{"start":"12:00","end":"12:50","hours":0.83}],
     "수": [{"start":"12:00","end":"12:50","hours":0.83}],
@@ -66,5 +66,5 @@ on conflict (pool_id) do nothing;
 -- has_schedule 동기화 (안전)
 update public.pools
 set has_schedule = true
-where id = 'POOL_SEOUL_0016'
-  and exists (select 1 from public.schedules where pool_id = 'POOL_SEOUL_0016');
+where id = 'POOL_0012'
+  and exists (select 1 from public.schedules where pool_id = 'POOL_0012');

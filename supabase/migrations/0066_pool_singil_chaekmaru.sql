@@ -1,4 +1,4 @@
--- Pool's day — Phase 2: 수영장 1곳 추가: 신길책마루문화센터 (POOL_SEOUL_0017).
+-- Pool's day — Phase 2: 수영장 1곳 추가: 신길책마루문화센터 (POOL_0013).
 --
 -- ## 시간표 출처
 --
@@ -23,7 +23,7 @@
 -- - 전화: 02-2650-1595 (공식, ~1596 범위 중 대표).
 -- - 입장 안내: 자유수영 입장 시간 40분 전부터 번호표 배부 (사진 하단).
 --
--- 사진: pool-photos/POOL_SEOUL_0017.jpg 업로드 대기.
+-- 사진: pool-photos/POOL_0013.jpg 업로드 대기.
 
 insert into public.pools (
   id, name, region, district, address, lat, lng, type, ownership,
@@ -33,7 +33,7 @@ insert into public.pools (
   price_per_session, price_weekday, price_weekend, photo_url,
   schedule_source_url
 ) values
-  ('POOL_SEOUL_0017', '신길책마루문화센터', '서울', '영등포구',
+  ('POOL_0013', '신길책마루문화센터', '서울', '영등포구',
     '서울특별시 영등포구 신길로 131',
     37.5041117412699, 126.909749542906, 'indoor', 'public',
     '02-2650-1595', 'https://cmr.y-sisul.or.kr/page/center/center.03.asp',
@@ -41,7 +41,7 @@ insert into public.pools (
     '{}', false, false, false,
     true, true,
     null, null, null,
-    'https://hldfsstyzbnqnrlqhhtc.supabase.co/storage/v1/object/public/pool-photos/POOL_SEOUL_0017.jpg',
+    'https://hldfsstyzbnqnrlqhhtc.supabase.co/storage/v1/object/public/pool-photos/POOL_0013.jpg',
     'https://cmr.y-sisul.or.kr/page/center/center.03.asp')
 on conflict (id) do nothing;
 
@@ -49,7 +49,7 @@ on conflict (id) do nothing;
 -- hours = (종료 - 시작) 분/60. 50분=0.83, 1h50m=1.83.
 -- 일요일 휴관 → 키 미포함.
 insert into public.schedules (pool_id, author_nickname, by_day, updated_at) values
-  ('POOL_SEOUL_0017', '풀스데이', $${
+  ('POOL_0013', '풀스데이', $${
     "월": [
       {"start":"12:00","end":"12:50","hours":0.83},
       {"start":"18:00","end":"18:50","hours":0.83}
@@ -82,5 +82,5 @@ on conflict (pool_id) do nothing;
 -- has_schedule 동기화 (안전)
 update public.pools
 set has_schedule = true
-where id = 'POOL_SEOUL_0017'
-  and exists (select 1 from public.schedules where pool_id = 'POOL_SEOUL_0017');
+where id = 'POOL_0013'
+  and exists (select 1 from public.schedules where pool_id = 'POOL_0013');

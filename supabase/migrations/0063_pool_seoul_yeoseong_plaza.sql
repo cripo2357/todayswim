@@ -1,4 +1,4 @@
--- Pool's day — Phase 2: 수영장 1곳 추가: 서울여성플라자 스포츠센터 (POOL_SEOUL_0014).
+-- Pool's day — Phase 2: 수영장 1곳 추가: 서울여성플라자 스포츠센터 (POOL_0010).
 --
 -- ## 시간표·가격 출처
 --
@@ -21,7 +21,7 @@
 -- - 운영주체: 서울특별시 여성가족재단(공공) → ownership=public.
 -- - 전화 02-822-2425(공식), 첨벙 02-822-2426는 1자리 차이 — 공식 채택.
 --
--- 사진: pool-photos/POOL_SEOUL_0014.jpg 업로드 대기.
+-- 사진: pool-photos/POOL_0010.jpg 업로드 대기.
 
 insert into public.pools (
   id, name, region, district, address, lat, lng, type, ownership,
@@ -31,7 +31,7 @@ insert into public.pools (
   price_per_session, price_weekday, price_weekend, photo_url,
   schedule_source_url
 ) values
-  ('POOL_SEOUL_0014', '서울여성플라자 스포츠센터', '서울', '동작구',
+  ('POOL_0010', '서울여성플라자 스포츠센터', '서울', '동작구',
     '서울특별시 동작구 여의대방로54길 18',
     37.5114047648408, 126.927136587647, 'indoor', 'public',
     '02-822-2425', 'https://www.swomansports.co.kr/',
@@ -39,7 +39,7 @@ insert into public.pools (
     '{}', true, false, false,
     true, true,
     4800, 4800, 6200,
-    'https://hldfsstyzbnqnrlqhhtc.supabase.co/storage/v1/object/public/pool-photos/POOL_SEOUL_0014.jpg',
+    'https://hldfsstyzbnqnrlqhhtc.supabase.co/storage/v1/object/public/pool-photos/POOL_0010.jpg',
     'https://www.swomansports.co.kr/program/yoga.asp')
 on conflict (id) do nothing;
 
@@ -47,7 +47,7 @@ on conflict (id) do nothing;
 -- hours = (종료 - 시작) 분/60. 50분=0.83, 1h50m=1.83, 2h50m=2.83.
 -- 월·수·금·일은 자유수영 없음 → 키 미포함.
 insert into public.schedules (pool_id, author_nickname, by_day, updated_at) values
-  ('POOL_SEOUL_0014', '풀스데이', $${
+  ('POOL_0010', '풀스데이', $${
     "화": [
       {"start":"08:00","end":"08:50","hours":0.83},
       {"start":"13:00","end":"13:50","hours":0.83},
@@ -70,5 +70,5 @@ on conflict (pool_id) do nothing;
 -- has_schedule 동기화 (안전)
 update public.pools
 set has_schedule = true
-where id = 'POOL_SEOUL_0014'
-  and exists (select 1 from public.schedules where pool_id = 'POOL_SEOUL_0014');
+where id = 'POOL_0010'
+  and exists (select 1 from public.schedules where pool_id = 'POOL_0010');
