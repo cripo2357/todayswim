@@ -37,6 +37,12 @@ interface BottomSheetProps {
   minHeight?: number;
   /** 시트 본문 고정 높이(px). 지정 시 minHeight 보다 우선. 콘텐츠가 길면 caller 가 내부에 ScrollView 배치. */
   height?: number;
+  /**
+   * 빈 영역 탭 시 키보드 dismiss 책임자 동작 비활성화. 입력 필드 없는 시트
+   * (예: 스크롤 목록 전용) 에선 외곽 View 의 `onStartShouldSetResponder`
+   * claim 이 ScrollView 의 scroll 제스처를 가로채므로 비활성화 필요.
+   */
+  skipKeyboardDismiss?: boolean;
 }
 
 export function BottomSheet({
@@ -47,6 +53,7 @@ export function BottomSheet({
   contentStyle,
   minHeight,
   height,
+  skipKeyboardDismiss,
 }: BottomSheetProps) {
   const slideY = React.useRef(new Animated.Value(SCREEN_H)).current;
   const [render, setRender] = React.useState(visible);
@@ -96,8 +103,10 @@ export function BottomSheet({
                 minHeight != null ? { minHeight } : null,
                 height != null ? { height } : null,
               ]}
-              onStartShouldSetResponder={() => true}
-              onResponderRelease={Keyboard.dismiss}
+              // 입력 없는 시트(스크롤 전용)는 responder claim 끔 — ScrollView
+              // 가 scroll 제스처 정상 동작.
+              onStartShouldSetResponder={skipKeyboardDismiss ? undefined : () => true}
+              onResponderRelease={skipKeyboardDismiss ? undefined : Keyboard.dismiss}
             >
               {title != null ? (
                 <View style={styles.titleRow}>

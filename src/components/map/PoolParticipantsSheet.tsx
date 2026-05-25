@@ -44,6 +44,8 @@ export function PoolParticipantsSheet({
       onClose={onClose}
       height={SHEET_HEIGHT}
       contentStyle={styles.sheetContent}
+      // 입력 없는 시트 — 외곽 responder claim 끄지 않으면 ScrollView 스크롤 안 됨.
+      skipKeyboardDismiss
     >
       {/* Figma 282:5914 — Section Header: 좌 (제목 + 풀명, gap6) / 우 (close X) */}
       <View style={styles.header}>
