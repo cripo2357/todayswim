@@ -432,11 +432,18 @@ export function MapScreen() {
     select(poolId);
     const pool = pools.find((p) => p.id === poolId);
     if (!pool) return;
-    mapRef.current?.animateCameraTo({
-      latitude: pool.lat,
-      longitude: pool.lng,
-      zoom: Math.max(cameraRef.current.zoom, 15),
-      duration: 300,
+    // 카메라 이동을 다음 frame 으로 defer — 같은 tick 안에서 animateCameraTo 를
+    // 호출하면 SDK 가 진행 중 애니메이션과 onTap 콜백을 같이 쥐고 swallow 하는
+    // 경우가 있음 (증상: "지도에서 이동해야 마커가 다시 선택됨"). onTap handler
+    // return 후 다음 frame 에 animate 트리거하면 SDK 가 깨끗이 받아들임.
+    // duration 도 단축(300→150) 해 stuck window 자체 축소.
+    requestAnimationFrame(() => {
+      mapRef.current?.animateCameraTo({
+        latitude: pool.lat,
+        longitude: pool.lng,
+        zoom: Math.max(cameraRef.current.zoom, 15),
+        duration: 150,
+      });
     });
   };
 
