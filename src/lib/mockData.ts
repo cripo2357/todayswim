@@ -313,7 +313,7 @@ const SADANG_0518: OtherSchedule[] = SADANG_TEST_FRIENDS.map((u) => ({
   nickname: u.nickname,
   avatar: u.avatar,
   isFriend: true,
-  poolId: 'POOL_SEOUL_0006',
+  poolId: 'POOL_0002',
   poolName: '사당문화회관',
   date: '2026-05-18',
   start: '13:00',
@@ -332,7 +332,7 @@ export const MOCK_OTHER_SCHEDULES: OtherSchedule[] = [
 // 주간 반복 레슨(요일+시간). 레슨 받는 수영장 1곳. 공개(visibility
 // 'public')일 때만 지도 stack 노출 — showSwimClasses 토글에 대응.
 // 서버 친구 레슨 적재는 Phase-2 갭. 노출/차단은 useFriends 경유
-// (mapProfileStacks). 관악구민(POOL_SEOUL_0005)에 요일 분산 배치 —
+// (mapProfileStacks). 관악구민(POOL_0001)에 요일 분산 배치 —
 // 테스트 요일 무관 일부가 24h 창에 들어오게.
 export interface OtherLesson {
   id: string;

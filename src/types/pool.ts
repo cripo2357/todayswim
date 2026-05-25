@@ -11,7 +11,7 @@ export type PoolType = 'indoor' | 'outdoor' | 'both';
 export type PoolOwnership = 'public' | 'private';
 
 export interface Pool {
-  id: string;                   // "POOL_SEOUL_0001"
+  id: string;                   // "POOL_0001" (opaque sequence, region 무관)
   name: string;                 // "ABC 수영장"
   region: Region;
   district: string;             // "송파구", "관악구 행운동" 등
