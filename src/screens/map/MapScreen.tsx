@@ -59,6 +59,7 @@ import {
 } from '@/components/map/MapProfileStack';
 import { BUNDLE_AVATARS, isBundleAvatar } from '@/lib/avatars';
 import { Toast } from '@/components/ui/Toast';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { tokens } from '@/styles/tokens';
 
 // 뒤로가기 종료 안내 노출 시간(ms). 이 시간 내 한 번 더 누르면 앱 종료.
@@ -177,6 +178,22 @@ export function MapScreen() {
   // 풀카드 outer 의 실측 높이 — onLayout 으로 추적.
   // 카드 콘텐츠(일정카드 개수) 따라 변동 → mapPadding 동적 갱신.
   const [cardOuterH, setCardOuterH] = React.useState(0);
+
+  // 수영 클럽 FAB — 출시 시점에 클럽 기능 미포함. 탭 시 "준비중" 툴팁만
+  // 5초 노출 (PoolBottomCard chip 패턴과 동일).
+  const [clubTipVisible, setClubTipVisible] = React.useState(false);
+  const clubTipTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showClubTip = React.useCallback(() => {
+    setClubTipVisible(true);
+    if (clubTipTimerRef.current) clearTimeout(clubTipTimerRef.current);
+    clubTipTimerRef.current = setTimeout(() => setClubTipVisible(false), 5000);
+  }, []);
+  React.useEffect(
+    () => () => {
+      if (clubTipTimerRef.current) clearTimeout(clubTipTimerRef.current);
+    },
+    [],
+  );
 
   // 풀 선택 시 NaverMapView.mapPadding.bottom — 마커가 카드 상단 위 250px 에 오도록.
   // 수식: visible map 중심 = (SCREEN_H - padding) / 2 from top.
@@ -810,16 +827,22 @@ export function MapScreen() {
         </Pressable>
         {/* 수영 클럽 FAB — 로그인(프로필 있음) 한정. 프로필 FAB 바로 위.
          *  표기는 'C' 한 글자, 메뉴명은 "수영 클럽".
-         *  bg ink900(#0F172A) + 'C' pdByellow(#EAFF00) — Figma 정합 색 규약. */}
+         *  bg ink900(#0F172A) + 'C' pdByellow(#EAFF00) — Figma 정합 색 규약.
+         *  현재 출시 버전: 클럽 기능 미포함 → 탭 시 "준비중" 툴팁만 노출. */}
         {profile ? (
-          <Pressable
-            onPress={() => navigation.navigate('ClubMain')}
-            style={[styles.fab, styles.fabRound]}
-            accessibilityRole="button"
-            accessibilityLabel="수영 클럽"
-          >
-            <Text style={styles.fabClubLabel}>C</Text>
-          </Pressable>
+          <View style={styles.clubFabWrap}>
+            {clubTipVisible ? (
+              <Tooltip label="클럽 기능 준비중" style={styles.clubTip} />
+            ) : null}
+            <Pressable
+              onPress={showClubTip}
+              style={[styles.fab, styles.fabRound]}
+              accessibilityRole="button"
+              accessibilityLabel="수영 클럽"
+            >
+              <Text style={styles.fabClubLabel}>C</Text>
+            </Pressable>
+          </View>
         ) : null}
         <View style={styles.profileFabWrap}>
           <Pressable
@@ -951,6 +974,18 @@ const styles = StyleSheet.create({
     lineHeight: 28,
     includeFontPadding: false,
     textAlignVertical: 'center',
+  },
+  // 클럽 FAB 래퍼 — relative 로 툴팁 absolute 기준점 제공.
+  clubFabWrap: { position: 'relative' },
+  // "클럽 기능 준비중" 툴팁 — FAB(44w) 위 가운데 정렬.
+  // 폭 140, 음수 left -48 = (140-44)/2 로 가운데. marginBottom 4 띄움.
+  clubTip: {
+    position: 'absolute',
+    bottom: '100%',
+    marginBottom: 4,
+    left: -48,
+    width: 140,
+    zIndex: 50,
   },
   // 프로필 FAB + 미열람 배지 래퍼 (배지가 FAB overflow에 안 잘리게 분리)
   profileFabWrap: { position: 'relative' },
