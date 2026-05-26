@@ -90,18 +90,27 @@ npx supabase --project-ref <prod-ref> storage cp --recursive ./pool-photos-backu
 
 EAS Dashboard > **Project Settings → Environment variables**.
 
+### 필수 (4개)
+
 | 변수 | development | production |
 |---|---|---|
 | `EXPO_PUBLIC_SUPABASE_URL` | dev URL | **prod URL** |
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | dev anon | **prod anon** |
-| `EXPO_PUBLIC_NAVER_MAP_CLIENT_ID` | 동일 | 동일 |
-| `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | dev OAuth client | **prod OAuth client** |
-| `EXPO_PUBLIC_SENTRY_DSN` | dev project DSN | **prod project DSN** (분리 권장) |
-| `EXPO_PUBLIC_EAS_PROJECT_ID` | 동일 | 동일 |
-| `GOOGLE_IOS_URL_SCHEME` | dev iOS client reversed | **prod iOS client reversed** |
-| `KAKAO_REST_KEY` | dev Kakao | **prod Kakao** (server only) |
-| `GOOGLE_SERVICES_JSON` | dev Firebase Android | **prod Firebase Android** (file path) |
-| `GOOGLE_SERVICES_PLIST` | dev Firebase iOS | **prod Firebase iOS** (file path) |
+| `EXPO_PUBLIC_NAVER_MAP_CLIENT_ID` | 동일 (bundle ID 로 제한) | 동일 |
+| `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | dev OAuth client | dev 와 동일 (옵션 B: 공유) 또는 prod 분리 |
+
+### 조건부 (필요 시)
+
+| 변수 | 언제 등록 |
+|---|---|
+| `EXPO_PUBLIC_SENTRY_DSN` | Sentry 프로젝트 만든 후. 미등록 시 init 자체 no-op (안전) |
+| `GOOGLE_IOS_URL_SCHEME` | iOS 빌드 시 (Apple Dev 등록 후) |
+
+### 등록 불필요 (다른 위치에 박혀 있음)
+
+- `EXPO_PUBLIC_EAS_PROJECT_ID` — app.config.ts `extra.eas.projectId` 하드코딩
+- `KAKAO_REST_KEY` — 클라이언트 코드 미사용 (Supabase Auth Provider 가 서버 측 호출)
+- `GOOGLE_SERVICES_JSON` / `GOOGLE_SERVICES_PLIST` — EAS 빌드 시 프로젝트 루트의 실제 파일을 자동 인식 (env var 대신 file upload)
 
 → EAS 빌드 시 환경(`--profile production` / `--profile development`)에 맞는 값이 자동 주입.
 
