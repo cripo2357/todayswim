@@ -6,7 +6,7 @@
 // 슬롯 데이터는 풀카드와 동일하게 buildPoolScheduleSlots — 가시 규칙 단일 출처.
 
 import React from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Pressable, ScrollView, Image, StyleSheet, Dimensions } from 'react-native';
 import { Plus } from 'lucide-react-native';
 
 import { BottomSheet } from '@/components/ui/BottomSheet';
@@ -14,6 +14,7 @@ import { SheetCloseButton } from '@/components/ui/SheetCloseButton';
 import { Avatar } from '@/components/ui/Avatar';
 import { formatDateTime } from '@/lib/dateFormat';
 import { tokens } from '@/styles/tokens';
+import type { Pool } from '@/types/pool';
 import {
   type PoolScheduleSlot,
   type VisibleParticipant,
@@ -26,6 +27,8 @@ interface Props {
   onClose: () => void;
   /** 헤더 subtitle 로 표시할 풀 이름 (Figma 282:5921). */
   poolName: string;
+  /** 헤더 좌측 풀 섬네일 (Figma 288:3492). 없으면 회색 박스. */
+  poolPhotoUrl?: Pool['photoUrl'];
   slots: PoolScheduleSlot[];
   /** 미참여 슬롯에서 "나도 참여" 탭 시 호출 — caller 가 닫고 등록 시트 오픈. */
   onJoinSlot?: (slot: PoolScheduleSlot) => void;
@@ -35,6 +38,7 @@ export function PoolParticipantsSheet({
   visible,
   onClose,
   poolName,
+  poolPhotoUrl,
   slots,
   onJoinSlot,
 }: Props) {
@@ -47,15 +51,25 @@ export function PoolParticipantsSheet({
       // 입력 없는 시트 — 외곽 responder claim 끄지 않으면 ScrollView 스크롤 안 됨.
       skipKeyboardDismiss
     >
-      {/* Figma 282:5914 — Section Header: 좌 (제목 + 풀명, gap6) / 우 (close X) */}
+      {/* Figma 282:5914 — Section Header.
+          좌 group (gap10, items-center, self-stretch): 풀 섬네일(28:28 r6) +
+          텍스트 column(gap6, 제목 Bold18/24 + 풀명 Regular12/16).
+          우: close X 24×24. */}
       <View style={styles.header}>
-        <View style={styles.headerText}>
-          <Text style={styles.title} numberOfLines={1}>
-            자유수영 참여자
-          </Text>
-          <Text style={styles.subtitle} numberOfLines={1}>
-            {poolName}
-          </Text>
+        <View style={styles.headerLeft}>
+          {poolPhotoUrl ? (
+            <Image source={poolPhotoUrl} style={styles.headerThumb} />
+          ) : (
+            <View style={styles.headerThumb} />
+          )}
+          <View style={styles.headerText}>
+            <Text style={styles.title} numberOfLines={1}>
+              자유수영 참여자
+            </Text>
+            <Text style={styles.subtitle} numberOfLines={1}>
+              {poolName}
+            </Text>
+          </View>
         </View>
         <SheetCloseButton onPress={onClose} />
       </View>
@@ -174,14 +188,32 @@ const styles = StyleSheet.create({
   // BottomSheet 기본 gap24 유지 → 헤더와 스크롤 사이 24.
   sheetContent: { paddingHorizontal: 0, paddingBottom: 0 },
 
-  // Figma 282:5914 — Section Header. row, gap16, items-start, padH16.
+  // Figma 282:5914 — Section Header. row, justify-between, items-start, padH16.
+  // (gap 은 우측 close X 가 absolute-right 처럼 동작 — flex-1 좌측 그룹이 채우고
+  //  close X 만 우측. headerLeft 와 close X 사이 gap 은 자연 발생.)
   header: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 16,
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
   },
-  // Figma 282:5915 — flex-1 좌측, gap 6 (제목 ↔ 부제).
+  // Figma 288:3494 — 좌 group: row, gap 10, items-center, self-stretch, flex 1.
+  headerLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    alignSelf: 'stretch',
+  },
+  // Figma 288:3492 — 풀 섬네일 28:28 → 텍스트 블록 높이(24+6+16=46) 만큼
+  // 정사각형. radius 6. 사진 없으면 회색 박스.
+  headerThumb: {
+    width: 46,
+    height: 46,
+    borderRadius: 6,
+    backgroundColor: tokens.color.bgSubtle,
+  },
+  // Figma 282:5915 — flex-1 텍스트 column, gap 6 (제목 ↔ 부제).
   headerText: { flex: 1, gap: 6 },
   // Figma 282:5917 — Bold 18/24 -0.144 #1F2937.
   title: {

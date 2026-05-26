@@ -250,6 +250,7 @@ export function PoolBottomCard({
         visible={participantsOpen}
         onClose={() => setParticipantsOpen(false)}
         poolName={pool.name}
+        poolPhotoUrl={pool.photoUrl}
         slots={slots}
         onJoinSlot={onJoinSlot}
       />
