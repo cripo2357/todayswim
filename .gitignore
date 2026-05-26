@@ -58,5 +58,8 @@ design-refs/
 .fp*.txt
 data/raw/
 
+# Supabase CLI 로컬 캐시 (link 상태 / 버전 정보)
+supabase/.temp/
+
 # 일러스트 라이브러리 썸네일(생성물)
 assets/library/.catalog/
