@@ -168,14 +168,18 @@ function ParticipantChip({ p }: { p: VisibleParticipant }) {
 
 const styles = StyleSheet.create({
   // 70% 뷰포트 고정 — caller 내부 ScrollView 가 넘침 처리.
-  // BottomSheet 기본 gap24 유지하면 헤더와 스크롤 사이 24 보장.
-  sheetContent: { paddingBottom: 0 },
+  // BottomSheet 기본 padH16 → 0 (좌우 패딩은 header/scrollContent 가 직접 보유,
+  // ScrollView 가 sheet 가장자리까지 확장돼야 카드 그림자가 시트 안에서
+  // 자연스럽게 렌더 — 페이지 가장자리에 닿아 잘리지 않음).
+  // BottomSheet 기본 gap24 유지 → 헤더와 스크롤 사이 24.
+  sheetContent: { paddingHorizontal: 0, paddingBottom: 0 },
 
-  // Figma 282:5914 — Section Header. row, gap16, items-start.
+  // Figma 282:5914 — Section Header. row, gap16, items-start, padH16.
   header: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 16,
+    paddingHorizontal: 16,
   },
   // Figma 282:5915 — flex-1 좌측, gap 6 (제목 ↔ 부제).
   headerText: { flex: 1, gap: 6 },
@@ -208,8 +212,14 @@ const styles = StyleSheet.create({
   // 차지하고 내부 스크롤이 동작하려면 flex:1 필수. 없으면 콘텐츠 높이로
   // 자체 사이징 → 시트 밖으로 빠지거나 스크롤 비활성.
   scroll: { flex: 1 },
+  // ScrollView 는 sheet 가장자리까지 풀폭(좌우 padding 0) — 카드는 padH16
+  // 으로 16px 좌우 여백 확보. 카드 shadow.lg 가 그 16px 안에서 렌더되어
+  // ScrollView 가장자리에서 잘리지 않음 (Figma 287:9519 x=16 w=343 패턴).
+  // 첫 카드 위·마지막 카드 아래 그림자 잘림 방지로 vertical padding 도 부여.
   scrollContent: {
     gap: 16,
+    paddingHorizontal: 16,
+    paddingTop: 8,
     paddingBottom: 24,
   },
 
