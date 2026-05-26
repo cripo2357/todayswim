@@ -74,6 +74,7 @@ export function PoolFilterScreen() {
       facilities: Array.from(facilities),
       apply: () => {},
       reset: () => {},
+      clearAll: () => {},
     }).length;
   }, [pools, schedules, days, lane, fee, facilities]);
 

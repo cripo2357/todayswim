@@ -62,14 +62,14 @@ export function useGeolocation(opts: { auto?: boolean } = {}): GeoState {
       setCoords(fresh);
       setStatus('granted');
       return fresh;
-    } catch (e: any) {
+    } catch (e: unknown) {
       // fresh fix 실패(타임아웃·신호없음)라도 캐시 좌표가 있으면 그걸로 이동.
       if (best) {
         setStatus('granted');
         return best;
       }
       setStatus('error');
-      setError(e?.message ?? 'unknown error');
+      setError(e instanceof Error ? e.message : 'unknown error');
       return null;
     }
   }, []);

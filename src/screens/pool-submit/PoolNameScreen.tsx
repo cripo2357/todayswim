@@ -8,6 +8,7 @@ import React from 'react';
 import {
   View, Text, TextInput, ScrollView, StyleSheet, Pressable,
   KeyboardAvoidingView, Platform, Keyboard, Alert,
+  type StyleProp, type ViewStyle,
 } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -415,7 +416,7 @@ function Field({
 }: {
   label: string;
   children: React.ReactNode;
-  style?: any;
+  style?: StyleProp<ViewStyle>;
 }) {
   return (
     <View style={[styles.field, style]}>

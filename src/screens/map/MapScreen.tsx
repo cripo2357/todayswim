@@ -289,7 +289,7 @@ export function MapScreen() {
   // (2) zoomInt: supercluster용 정수 zoom. 정수 변할 때만 setState → 리렌더.
   // 효과: 마커 탭/애니메이션 중 매 프레임 리렌더 60회+ → 정수 zoom 변화 시점만 (보통 2~3회).
   const cameraRef = React.useRef<Camera>(INITIAL_CAMERA);
-  const [zoomInt, setZoomInt] = React.useState(Math.round(INITIAL_CAMERA.zoom));
+  const [zoomInt, setZoomInt] = React.useState(Math.round(INITIAL_CAMERA.zoom ?? 14));
 
   // (2026-05-21) 카메라 idle 게이팅 시도 → 깜빡임으로 거부. 비트맵 캡처
   // cascade는 이론적 우려였고 실제 frame drop이 측정되기 전까지 도입 X.
@@ -356,7 +356,7 @@ export function MapScreen() {
       mapRef.current?.animateCameraTo({
         latitude: target.lat,
         longitude: target.lng,
-        zoom: Math.max(cameraRef.current.zoom, 15),
+        zoom: Math.max(cameraRef.current.zoom ?? 14, 15),
         duration: 400,
       });
       clearPendingFocus();
@@ -452,7 +452,7 @@ export function MapScreen() {
     mapRef.current?.animateCameraTo({
       latitude: pool.lat,
       longitude: pool.lng,
-      zoom: Math.max(cameraRef.current.zoom, 15),
+      zoom: Math.max(cameraRef.current.zoom ?? 14, 15),
       duration: 300,
     });
   };
@@ -467,16 +467,14 @@ export function MapScreen() {
     });
   };
 
-  const onCameraChanged = (cam: {
-    latitude: number;
-    longitude: number;
-    zoom: number;
-    reason: 'Developer' | 'Gesture' | 'Control' | 'Location';
-  }) => {
+  // SDK 타입: Camera & { reason: CameraChangeReason; region: Region }.
+  // zoom 은 SDK 에서 optional 이라 ?? 14 폴백 (한국 전체 보이는 안전한 값).
+  const onCameraChanged: React.ComponentProps<typeof NaverMapView>['onCameraChanged'] = (cam) => {
+    const zoom = cam.zoom ?? 14;
     // ref만 즉시 갱신 — 리렌더 안 일어남
-    cameraRef.current = { latitude: cam.latitude, longitude: cam.longitude, zoom: cam.zoom };
+    cameraRef.current = { latitude: cam.latitude, longitude: cam.longitude, zoom };
     // 정수 zoom 바뀔 때만 state 업데이트 → visibleClusters 재계산.
-    const newZoomInt = Math.round(cam.zoom);
+    const newZoomInt = Math.round(zoom);
     if (newZoomInt !== zoomInt) {
       setZoomInt(newZoomInt);
     }
@@ -484,14 +482,14 @@ export function MapScreen() {
     // 비-Gesture 이벤트(animateCameraTo 등)는 baseline만 갱신하고 deselect 평가 안함.
     // → 마커 탭으로 카메라가 zoom 15로 이동해도 카드 유지, 그 이후 사용자 핀치만 평가.
     if (cam.reason !== 'Gesture') {
-      baselineZoomRef.current = cam.zoom;
+      baselineZoomRef.current = zoom;
       return;
     }
 
     if (!selectedPool) return; // 선택 없으면 평가 불필요
 
     // (a) 핀치 zoom 변화: baseline 기준 ZOOM_DESELECT_LEVELS 이상 변하면 deselect
-    if (Math.abs(cam.zoom - baselineZoomRef.current) >= ZOOM_DESELECT_LEVELS) {
+    if (Math.abs(zoom - (baselineZoomRef.current ?? zoom)) >= ZOOM_DESELECT_LEVELS) {
       select(null);
       return;
     }

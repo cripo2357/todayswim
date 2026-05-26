@@ -21,6 +21,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   userInterfaceStyle: 'light', // DESIGN.md §1-4 다크모드는 Phase 2
   // @mj-studio/react-native-naver-map 2.x는 New Architecture 필수.
   // 비활성화 상태면 NaverMapView ViewManager가 등록 안 돼서 com.facebook.react.uimanager 에러 발생.
+  // ExpoConfig 타입에 아직 없는 root-level 필드 — 런타임은 정상 인식.
+  // @ts-expect-error newArchEnabled is a valid Expo SDK 55 runtime field
   newArchEnabled: true,
 
   icon: './assets/icon.png',
