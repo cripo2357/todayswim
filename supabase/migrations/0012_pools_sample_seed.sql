@@ -4,6 +4,14 @@
 -- 좌표는 공개된 시설 인근 근사값. 사진은 photo_url NULL (Storage 업로드 후 별도 UPDATE).
 -- has_kids_pool/has_diving_pool/is_hotel_pool — 0013 마이그레이션 이후 의미 있음.
 -- ON CONFLICT — 같은 ID 재실행해도 안전.
+--
+-- prod fresh DB 호환: 0013 컬럼을 idempotent 하게 미리 add (dev 에는 이미
+-- 적용돼서 영향 X, prod fresh 에서는 INSERT 전 컬럼 존재 보장).
+
+alter table public.pools
+  add column if not exists has_kids_pool boolean not null default false,
+  add column if not exists has_diving_pool boolean not null default false,
+  add column if not exists is_hotel_pool boolean not null default false;
 
 insert into public.pools (
   id, name, region, district, address, lat, lng, type, ownership,
