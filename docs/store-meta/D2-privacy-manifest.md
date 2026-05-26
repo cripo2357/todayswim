@@ -28,8 +28,9 @@ SPEC §5 의 수집 데이터 + 사용 SDK 점검 결과:
 | **Customer Support** (운영 문의) | Yes | No | `CustomerSupport` | FAQ 메일 CTA (mailto) — 사용자가 직접 보내는 메일 |
 | **Other User Content** (응원 메시지·일정) | Yes | No | `AppFunctionality` | 후원 응원글 / 수영 일정 (공개 범위 따라) |
 | **Coarse Location** | No | No | `AppFunctionality` | 지도 중심 / 거리 정렬. 메모리만, 서버 미전송 — Linked=No |
-| **Crash Data** | Yes | No | `Analytics` | Sentry. setUser(auth.uid) 만 묶음 |
-| **Performance Data** | Yes | No | `Analytics` | Sentry (tracesSampleRate=0 이라 사실상 수집 X) |
+| **Product Interaction** | No | No | `Analytics` | Firebase Analytics (Google LLC, 미국). 화면 진입·핵심 액션 이벤트, 앱 버전, OS 종류. 닉네임/이메일/사용자 ID/GPS 미전송 — Linked=No |
+| **Crash Data** | Yes | No | `Analytics` | Sentry (Functional Software Inc., 미국). 스택 트레이스 + 친구 코드 (로그인 시) |
+| **Performance Data** | No | No | `Analytics` | Sentry (tracesSampleRate=0 이라 사실상 수집 X). 또는 Firebase Analytics 의 앱 버전·OS — Linked=No |
 
 ⚠️ **수집 안 함**:
 - 정확한 위치 (precise location) — coarse 만
