@@ -37,7 +37,7 @@
 | 핵심 가치 (BM 입력용) | ① **수영장 탐색**(지도/목록/필터, 위치 기반) ② **자유수영 시간표 열람**(풀별, 요일·시즌별) ③ **개인 수영 일정 관리**(공개범위·충돌검사) ④ **소셜 동행**(친구·일정 초대·프로필) ⑤ **사용자 기여**(수영장 등록·정보 수정 제보) |
 | 타깃 사용자 | 정기적으로 자유수영을 하는 일반 이용자(수영러). 부가로 레슨 수강자(레슨 풀·시간 등록), 정보 제보 기여자 |
 | 운영 모델 | 풀·시간표·공지는 **운영자(service_role)가 등록/승인**, 사용자는 read + 제보(insert)만. 좌표 등 민감 작업은 운영자 백엔드 책임 |
-| 현행 단계 | **P1 (목업 UX 완성)** — 다수 기능이 기기 로컬/목업. 서버 단일출처(SSOT)·실데이터 동기화는 P2 |
+| 현행 단계 | **P3 (prod 하드닝 + 출시 준비)** — P1 완료(tag `phase1-complete`, 2026-05-20), P2 완료(tag `phase2-complete`, 2026-05-20). P3 진행 중: 다기기 sync, OS 푸시·realtime, RLS strict, 회원 탈퇴 영구파기, Sentry, 약관 동의 서버화, 후원 기능, 마이그/인덱스 최종 보강. 남은 작업: env 분기 → prod Supabase 분리 → OAuth prod 콘솔 → EAS prod 빌드 → 스토어 제출 |
 
 ---
 
@@ -90,7 +90,7 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 
 ## 3. 사용자 흐름 (주요 시나리오)
 
-### 3.1 가입 · 온보딩 ✅(인증부) / 🟡(프로필 저장 로컬)
+### 3.1 가입 · 온보딩 ✅(인증·약관 동의 서버화 P3-A2 완료)
 1. 비로그인 상태에서 지도(MapMain)의 프로필 FAB 탭 → `Login`.
 2. 소셜 로그인: **Google**(idToken→Supabase) / **Kakao**(OAuth PKCE→Supabase) = 실제 인증. **Apple**=목업 테스트 경로(`signInMock`, 약관·프로필 초기화).
 3. 약관 상태 확인 → 미동의면 `TermsAgreement`. **가입 필수 동의 4개**(① 만 14세 이상 ② 서비스 이용약관 ③ 개인정보 수집·이용 동의 ④ 위치기반서비스 이용약관) 체크 → 진행. **마케팅 정보 수신 동의는 선택**(게이트 아님). 개인정보 처리방침은 '고지' 문서로 동의 대상 아님(설정에서 열람만).
@@ -104,7 +104,7 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 3. 대안 경로: FAB 필터 → `PoolFilter`(요일/레인/요금/시설) → `PoolList`(거리·이름 정렬), 또는 MapMain "수영장 목록" → `PoolList`.
 4. `ScheduleView`: 풀별 자유수영 시간표(요일 칩, 시즌별 슬롯그룹, 요일 예외문구). **조회 전용** — 슬롯 더블탭 시 일정 추가 의도만 넘기고 닫힘.
 
-### 3.3 수영 일정 추가 · 친구 초대 ✅(서버 SSOT, 로컬 캐시) / 🟡(초대 mock)
+### 3.3 수영 일정 추가 · 친구 초대 ✅(서버 SSOT, 로컬 캐시, 초대 서버 적재)
 1. 일정 추가 진입(시간표 더블탭 / 친구 프로필 "나도 참여")이 의도(intent)를 설정 → 전역 시트(AddScheduleSheet)가 프리필로 열림.
 2. 풀 검색 → 날짜(오늘~+90일) → 시간 슬롯 선택. **충돌 정책**: 중복(이미 등록)·시간겹침 슬롯은 선택 불가 + 5초 툴팁.
 3. 공개범위 라디오: 비공개 / 친구에게만 / 전체공개(설정에 따라 숨김 가능).
@@ -402,4 +402,8 @@ Splash ✅ (게이트, 토큰 hydration 후 MapMain로)
 
 ---
 
-*근거: `src/screens/**`, `src/components/**`, `src/store/**`, `src/lib/**`, `src/types/**`, `src/navigation/**`, `supabase/migrations/0001~0082`, `supabase/functions/**`, `app.config.ts`, `package.json` 전수 확인. 본 문서는 P1·P2·P3 진행 현황 사실 기록이며, 🔵/⛔ 항목은 후속 기획·구현 대상이다. 최근 갱신(2026-05-21): §3.6 회원 탈퇴 서버 영구 삭제(P3-A1), §3.9 FAQ 신설, §4 faqs·app_status·terms·terms_agreements·push_tokens 테이블 추가, §6 미읽음 카운트 서버화(P3-A5) + OS 푸시 인프라 골격(P3-A4), §8.2 약관 동의 서버화(P3-A2), §8.3 RLS·Storage 최종 하드닝(P3-C2/C3), §8.4 OS 푸시 인프라(P3-A4), §8.5 Sentry 크래시 리포팅(P3-A6), §8.6 상태 화면 런타임 게이트(P3-A3).*
+*근거: `src/screens/**`, `src/components/**`, `src/store/**`, `src/lib/**`, `src/types/**`, `src/navigation/**`, `supabase/migrations/0001~0092`, `supabase/functions/**`, `app.config.ts`, `package.json` 전수 확인. 본 문서는 P1·P2·P3 진행 현황 사실 기록이며, 🔵/⛔ 항목은 후속 기획·구현 대상이다.*
+
+*최근 갱신(2026-05-26): P3 마무리 위생 작업 — TS strict 0 errors, ESLint 0 warnings, expo-doctor 19/19, mock 폴백 제거(useOtherSchedules/swimSchedule), 미사용 asset 17개 + dep 정정, console.* Sentry 라우팅, 사업자정보 placeholder 매핑(docs/BIZ-INFO-FILL-CHECKLIST.md), 마이그 순서·중복 분석(P3-DEPLOY-CHECKLIST.md), 0092 인덱스 보강(notifications unread + friend_requests pending). 남은 P3 작업: env 분기 → prod Supabase 분리 → OAuth prod 콘솔 → EAS prod 빌드 → 스토어 제출.*
+
+*이전 갱신(2026-05-21): §3.6 회원 탈퇴 서버 영구 삭제(P3-A1), §3.9 FAQ 신설, §4 faqs·app_status·terms·terms_agreements·push_tokens 테이블 추가, §6 미읽음 카운트 서버화(P3-A5) + OS 푸시 인프라 골격(P3-A4), §8.2 약관 동의 서버화(P3-A2), §8.3 RLS·Storage 최종 하드닝(P3-C2/C3), §8.4 OS 푸시 인프라(P3-A4), §8.5 Sentry 크래시 리포팅(P3-A6), §8.6 상태 화면 런타임 게이트(P3-A3).*
