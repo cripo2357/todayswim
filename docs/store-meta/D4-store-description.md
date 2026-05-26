@@ -3,8 +3,7 @@
 App Store / Google Play 등록 페이지에 들어갈 텍스트. 각 스토어 글자수 한도
 및 카테고리 구조에 맞춰 작성.
 
-사업자 정보 / Privacy URL / Support URL 같은 메타 필드는 사업자 등록 + 도메인
-확정 후 채울 자리 placeholder 로 표시.
+✅ **사업자 정보 / Privacy URL / Support URL 모두 확정** (2026-05-26 사업자등록 완료).
 
 ---
 
@@ -201,19 +200,21 @@ See you in the water. 🏊‍♀️ — Pool's day
 
 ---
 
-## 사업자 정보 (사업자 등록 후 채우기)
+## 사업자 정보 (사업자등록 완료 — 2026-05-26)
 
 **도메인 없음 정책 확정** (2026-05-21 크리스 결정): 별도 도메인 안 사고
 GitHub Pages 무료 host 사용. 비용 0, gmail 이메일 그대로 유지.
 
-| 필드 | 현재 | 출시 전 채울 값 |
-|---|---|---|
-| Developer Name (App Store) | placeholder | CRIPO (사업자 등록 명의) |
-| 사업자등록번호 | placeholder | (등록 후 기재) |
-| Privacy Policy URL | ✅ **확정** | **`https://cripo2357.github.io/todayswim/terms/privacy-policy/`** (GitHub Pages 가동 확인 2026-05-21) |
-| Support URL | ✅ **확정** | **`https://cripo2357.github.io/todayswim/support/`** 또는 `mailto:cripo2357@gmail.com` (Apple/Google 둘 다 허용) |
-| Marketing URL | — | 없음 |
-| App Review Contact | ✅ 확정 | `cripo2357@gmail.com` |
+| 필드 | 확정값 |
+|---|---|
+| Developer Name (App Store / Play Store) | **CRIPO** |
+| 대표자 | **김은호** |
+| 사업자등록번호 | **379-13-02772** |
+| 사업장 주소 | **경기도 화성시 병점구 효행로 1068, 604호** |
+| Privacy Policy URL | **`https://cripo2357.github.io/todayswim/terms/privacy-policy/`** |
+| Support URL | **`https://cripo2357.github.io/todayswim/support/`** 또는 `mailto:cripo2357@gmail.com` (Apple/Google 둘 다 허용) |
+| Marketing URL | — (없음) |
+| App Review Contact | **`cripo2357@gmail.com`** |
 
 ## GitHub Pages publish 가이드 (출시 직전 30분 작업)
 
@@ -245,10 +246,11 @@ Apple/Google 모두 `mailto:` URL 허용하므로 별도 Support 페이지는 �
 
 ## 출시 전 체크리스트
 
-- [ ] 한국어 description 4,000자 이내 (현재 약 1,300자 — 여유)
-- [ ] English description 작성 (App Store 필수)
-- [ ] Keywords 100자 이내 (현재 약 60자 — 여유)
-- [ ] 사업자 등록 완료 후 Developer Name 확정
-- [ ] 도메인 확보 + Privacy/Support URL 확정
+- [x] 한국어 description 4,000자 이내 (현재 약 1,300자 — 여유)
+- [x] English description 작성 (App Store 필수)
+- [x] Keywords 100자 이내 (현재 약 60자 — 여유)
+- [x] **사업자 등록 완료 (2026-05-26) — Developer Name: CRIPO, 등록번호 379-13-02772**
+- [x] **Privacy/Support URL 확정 (GitHub Pages 가동)** — 도메인 미보유 결정
 - [ ] Release Notes 최종본 (출시 전 마지막에 한 번 더 다듬기)
 - [ ] App Privacy 질문지 (App Store Connect) — D2 표 그대로 입력
+- [ ] GitHub Pages publish 확인 (repo public + Settings > Pages > /docs branch main)
