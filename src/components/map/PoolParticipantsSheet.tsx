@@ -247,11 +247,12 @@ const styles = StyleSheet.create({
   // ScrollView 는 sheet 가장자리까지 풀폭(좌우 padding 0) — 카드는 padH16
   // 으로 16px 좌우 여백 확보. 카드 shadow.lg 가 그 16px 안에서 렌더되어
   // ScrollView 가장자리에서 잘리지 않음 (Figma 287:9519 x=16 w=343 패턴).
-  // 첫 카드 위·마지막 카드 아래 그림자 잘림 방지로 vertical padding 도 부여.
+  // 위 여백: BottomSheet 의 gap24 (헤더 ↔ ScrollView) 가 첫 카드 위 공간
+  // 담당 — scrollContent paddingTop=0 (Figma 287:9518 첫 카드 y=0 매치).
+  // 아래 여백: 24 = 마지막 카드 아래 shadow 영역 + 스크롤 안전 마진.
   scrollContent: {
     gap: 16,
     paddingHorizontal: 16,
-    paddingTop: 8,
     paddingBottom: 24,
   },
 
