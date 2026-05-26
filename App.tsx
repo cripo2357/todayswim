@@ -53,10 +53,20 @@ void SplashScreen.preventAutoHideAsync().catch(() => {});
 // Deep link 게이트. 매칭되는 경로가 없으면 ErrorNotFound 로 fallback.
 // 현재 매칭 스크린 없음 — poolsday://... 들어오면 무조건 404 라우트로 처리.
 // 신규 deep link 추가 시 config.screens 에 매칭 규칙 등록.
+//
+// 예외: `auth/callback` (OAuth deep link) — signInWithKakao 의
+// openAuthSessionAsync 가 in-app browser close detection 으로 직접 처리.
+// 하지만 OS 가 race condition 으로 같은 deep link 를 NavigationContainer
+// 에도 보낼 수 있어 (Android Chrome Custom Tab + ASWebAuthenticationSession).
+// 그 경우 ErrorNotFound 깜빡임 → undefined 반환으로 navigation 자체를
+// 무시(현재 화면 유지) → OAuth 흐름은 코드 레벨에서 계속 진행.
 const linking: LinkingOptions<RootStackParamList> = {
   prefixes: ['poolsday://'],
   config: { screens: {} },
   getStateFromPath: (path, options) => {
+    if (path.startsWith('auth/callback')) {
+      return undefined; // OAuth callback — navigation 무시, 현재 state 유지
+    }
     const state = getStateFromPath(path, options);
     if (!state || state.routes.length === 0) {
       return { routes: [{ name: 'ErrorNotFound' }] };
