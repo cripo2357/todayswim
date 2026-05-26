@@ -237,9 +237,13 @@ export const useAuth = create<AuthState>((set) => ({
   },
 
   signOut: async () => {
-    // 푸시 토큰 정리 먼저(세션 살아있는 동안만 본인 row DELETE 가능).
-    await unregisterCurrentDevice();
-    await supabase.auth.signOut();
+    // 푸시 토큰 정리는 fire-and-forget — getExpoPushTokenAsync 가 Expo
+    // 서버 round-trip 이라 await 시 로그아웃 체감이 수초 멈춤. 함수 자체가
+    // try/catch best-effort 라 실패해도 stale row 만 남고 다음 등록 때 갱신.
+    void unregisterCurrentDevice();
+    // scope:'local' — 디바이스 세션만 즉시 무효화(서버 round-trip 없음).
+    // 다른 디바이스 세션은 살려둠 — 본인 로그아웃 UX 최우선.
+    await supabase.auth.signOut({ scope: 'local' });
     await AsyncStorage.removeItem(MOCK_STORAGE_KEY);
     try {
       await GoogleSignin.signOut();
