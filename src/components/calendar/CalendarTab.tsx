@@ -102,9 +102,29 @@ export function CalendarTab() {
     [schedules],
   );
   const selKey = dateKey(date);
-  const dayList = schedules
-    .filter((s) => s.date === selKey)
-    .sort((a, b) => a.start.localeCompare(b.start));
+  // 선택일 일정 + 참여자 + 지난 여부를 한 번에 사전 계산 — 카드 map 안 IIFE
+  // 에서 resolveParticipants() 매 렌더 호출하던 비효율 제거 (perf #1+#3).
+  // viewPref/blockedIds/otherSchedules 가 안 바뀌면 같은 dayItems 재사용.
+  const dayItems = React.useMemo(() => {
+    const list = schedules
+      .filter((s) => s.date === selKey)
+      .sort((a, b) => a.start.localeCompare(b.start));
+    return list.map((s) => ({
+      schedule: s,
+      participants: resolveParticipants(s, viewPref, blockedIds, otherSchedules),
+      past: isSchedulePast(s),
+    }));
+  }, [schedules, selKey, viewPref, blockedIds, otherSchedules]);
+
+  // 다른 사용자 프로필 진입 — 셀마다 새 화살표 함수 만들지 말고 userId 인자
+  // 받는 안정 콜백 1회 생성. 셀이 React.memo 못 받아도 navigation 의존성
+  // 만 바뀌면 동일 참조 유지.
+  const handleOpenProfile = React.useCallback(
+    (userId: string) => {
+      navigation.navigate('OtherUserProfile', { userId });
+    },
+    [navigation],
+  );
 
   const myName = profile?.name?.trim() || '내 닉네임';
 
@@ -145,14 +165,14 @@ export function CalendarTab() {
           />
         </View>
 
-        {dayList.length === 0 ? (
+        {dayItems.length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyText}>
               이 날짜에 등록된 수영 일정이 없어요.
             </Text>
           </View>
         ) : (
-          dayList.map((s) => (
+          dayItems.map(({ schedule: s, participants: pg, past }) => (
             <Pressable
               key={s.id}
               onLongPress={() => onCancel(s.id)}
@@ -167,41 +187,35 @@ export function CalendarTab() {
                   <Text style={styles.when} numberOfLines={1}>
                     {formatScheduleLine(s.date, s.start)}
                   </Text>
-                  {(() => {
-                    const past = isSchedulePast(s);
-                    // 지난 일정 — "수영 완료" 배지(Figma 133:3874). 탭하면
-                    // 일정 관리 시트(수영 완료 / 일정 삭제).
-                    if (past) {
-                      return (
-                        <Pressable
-                          onPress={() => setPastEditId(s.id)}
-                          style={styles.doneChip}
-                          accessibilityRole="button"
-                          accessibilityLabel="지난 일정 관리"
-                        >
-                          <Text style={styles.doneChipLabel}>수영 완료</Text>
-                          <IconSwim width={12} height={12} />
-                        </Pressable>
-                      );
-                    }
-                    return (
-                      <Pressable
-                        onPress={() => setVisEditId(s.id)}
-                        style={styles.visChip}
-                        accessibilityRole="button"
-                        accessibilityLabel="일정 공개여부 변경"
-                      >
-                        <Text style={styles.visChipLabel}>
-                          {VIS_LABEL[s.visibility]}
-                        </Text>
-                        <ChevronDown
-                          size={12}
-                          color={tokens.color.pdBlue}
-                          strokeWidth={2}
-                        />
-                      </Pressable>
-                    );
-                  })()}
+                  {/* past 는 dayItems 에서 사전 계산. 지난 일정 = "수영 완료"
+                      배지(Figma 133:3874) / 예정 일정 = 공개여부 변경 chip. */}
+                  {past ? (
+                    <Pressable
+                      onPress={() => setPastEditId(s.id)}
+                      style={styles.doneChip}
+                      accessibilityRole="button"
+                      accessibilityLabel="지난 일정 관리"
+                    >
+                      <Text style={styles.doneChipLabel}>수영 완료</Text>
+                      <IconSwim width={12} height={12} />
+                    </Pressable>
+                  ) : (
+                    <Pressable
+                      onPress={() => setVisEditId(s.id)}
+                      style={styles.visChip}
+                      accessibilityRole="button"
+                      accessibilityLabel="일정 공개여부 변경"
+                    >
+                      <Text style={styles.visChipLabel}>
+                        {VIS_LABEL[s.visibility]}
+                      </Text>
+                      <ChevronDown
+                        size={12}
+                        color={tokens.color.pdBlue}
+                        strokeWidth={2}
+                      />
+                    </Pressable>
+                  )}
                 </View>
                 {/* 사진 없으면 회색 박스 없이 깨끗하게 미노출 */}
                 {s.poolPhotoUrl ? (
@@ -212,12 +226,9 @@ export function CalendarTab() {
               {/* 참여자 — Figma 133:3885: "내" 위에는 구분선 없음.
                   Figma 120:3156. 같은 슬롯 참여자를 공개여부·관계·
                   내 설정으로 필터. 비공개=나만 / 친구공개=나+친구+초대 /
-                  전체공개=+다른사람(설정 '다른 사람 일정 보기' 시) */}
-              {(() => {
-                const pg = resolveParticipants(s, viewPref, blockedIds, otherSchedules);
-                const past = isSchedulePast(s); // 지난 일정엔 친구초대 미노출
-                return (
-                  <View style={styles.participants}>
+                  전체공개=+다른사람(설정 '다른 사람 일정 보기' 시).
+                  pg/past 는 dayItems 에서 사전 계산됨. */}
+              <View style={styles.participants}>
                     {/* 나 */}
                     <View style={styles.ptCell}>
                       <View style={[styles.ptAvatar, styles.ptAvatarMine]}>
@@ -254,11 +265,7 @@ export function CalendarTab() {
                             <Pressable
                               key={o.id}
                               style={styles.ptCell}
-                              onPress={() =>
-                                navigation.navigate('OtherUserProfile', {
-                                  userId: o.userId,
-                                })
-                              }
+                              onPress={() => handleOpenProfile(o.userId)}
                               accessibilityRole="button"
                               accessibilityLabel={`${o.nickname} 프로필 보기`}
                             >
@@ -323,11 +330,7 @@ export function CalendarTab() {
                             <Pressable
                               key={o.id}
                               style={styles.ptCell}
-                              onPress={() =>
-                                navigation.navigate('OtherUserProfile', {
-                                  userId: o.userId,
-                                })
-                              }
+                              onPress={() => handleOpenProfile(o.userId)}
                               accessibilityRole="button"
                               accessibilityLabel={`${o.nickname} 프로필 보기`}
                             >
@@ -350,9 +353,7 @@ export function CalendarTab() {
                         </View>
                       </>
                     ) : null}
-                  </View>
-                );
-              })()}
+              </View>
             </Pressable>
           ))
         )}

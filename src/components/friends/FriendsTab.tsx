@@ -31,6 +31,7 @@ import { useFriends, type FriendRequest } from '@/store/friends';
 import { useSwimSchedules, dateKey } from '@/store/swimSchedule';
 import { useAddScheduleIntent } from '@/store/addScheduleIntent';
 import { usePools } from '@/hooks/usePools';
+import type { Pool } from '@/types/pool';
 import { tokens } from '@/styles/tokens';
 import { formatDateTime } from '@/lib/dateFormat';
 
@@ -67,8 +68,30 @@ export function FriendsTab() {
   const mySchedules = useSwimSchedules((s) => s.schedules);
   const setIntent = useAddScheduleIntent((s) => s.setIntent);
   const { data: pools } = usePools();
-  const poolPhoto = (id: string) =>
-    pools?.find((p) => p.id === id)?.photoUrl;
+  // 풀 사진 lookup — 매 카드 렌더마다 pools.find() 선형 탐색하던 비효율
+  // 제거 (perf #2). pools 가 안 바뀌면 같은 Map 재사용.
+  const poolPhotoMap = React.useMemo(() => {
+    const m = new Map<string, Pool['photoUrl']>();
+    for (const p of pools ?? []) m.set(p.id, p.photoUrl);
+    return m;
+  }, [pools]);
+
+  // 다른 사용자 프로필 진입 — 셀마다 새 화살표 함수 만들지 말고 userId
+  // 인자 받는 안정 콜백 1회 생성 (perf #2 셀 memo 친화).
+  const handleOpenProfile = React.useCallback(
+    (userId: string) => {
+      navigation.navigate('OtherUserProfile', { userId });
+    },
+    [navigation],
+  );
+
+  // 친구 일정 "나도 참여" — slot 데이터 받아 intent 설정 (perf #2).
+  const handleJoinSlot = React.useCallback(
+    (poolId: string, date: string, start: string, end: string) => {
+      setIntent({ poolId, date, start, end });
+    },
+    [setIntent],
+  );
 
   const [rejectTarget, setRejectTarget] = React.useState<FriendRequest | null>(
     null,
@@ -232,11 +255,7 @@ export function FriendsTab() {
               {requests.map((req) => (
                 <View key={req.id} style={styles.card}>
                   <Pressable
-                    onPress={() =>
-                      navigation.navigate('OtherUserProfile', {
-                        userId: req.id,
-                      })
-                    }
+                    onPress={() => handleOpenProfile(req.id)}
                     accessibilityRole="button"
                     accessibilityLabel={`${req.nickname} 프로필 보기`}
                   >
@@ -328,7 +347,8 @@ export function FriendsTab() {
           <View style={styles.list}>
             {daySlots.length > 0 ? (
               daySlots.map((s) => {
-                const photo = poolPhoto(s.poolId);
+                // Map lookup — 옛 pools.find() 선형 탐색 제거 (perf #2).
+                const photo = poolPhotoMap.get(s.poolId);
                 return (
                 <View key={s.key} style={styles.schedCard}>
                   <View style={styles.schedTop}>
@@ -343,14 +363,7 @@ export function FriendsTab() {
                       </View>
                       <Pressable
                         style={styles.joinChip}
-                        onPress={() =>
-                          setIntent({
-                            poolId: s.poolId,
-                            date: s.date,
-                            start: s.start,
-                            end: s.end,
-                          })
-                        }
+                        onPress={() => handleJoinSlot(s.poolId, s.date, s.start, s.end)}
                         accessibilityRole="button"
                         accessibilityLabel={`${s.poolName} ${formatWhen(s.date, s.start)} 나도 참여`}
                       >
@@ -370,11 +383,7 @@ export function FriendsTab() {
                       <Pressable
                         key={i}
                         style={styles.miniRow}
-                        onPress={() =>
-                          navigation.navigate('OtherUserProfile', {
-                            userId: p.userId,
-                          })
-                        }
+                        onPress={() => handleOpenProfile(p.userId)}
                         accessibilityRole="button"
                         accessibilityLabel={`${p.nickname} 프로필 보기`}
                       >
