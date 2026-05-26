@@ -31,18 +31,20 @@ export interface TermsMeta {
   sections: TermsSection[];
 }
 
-const VERSION = 'v1.0.1';
+const VERSION = 'v1.0.2';
 const EFFECTIVE = '2026년 5월 28일';
+// v1.0.2 (2026-05-26): 사업자등록 완료 — 사업자등록번호·사업장 주소 placeholder
+//   채움. 4개 약관(service/privacyConsent/privacyPolicy/location) 동시.
 // v1.0.1 (2026-05-26): 운영 인프라(Firebase Analytics 익명 통계 +
 //   Sentry 크래시·에러 리포팅) 도입 사실을 처리방침에 반영. 수집 항목·
 //   처리위탁·자동수집장치·국외이전 4개 조항 갱신.
 
-// 사업자 정보(4개 약관 공통 말미). 사업자등록번호/주소는 정식 출시 전 기재.
+// 사업자 정보(4개 약관 공통 말미). 사업자등록 완료(2026-05-26).
 const BIZ_INFO =
   `· 상호: CRIPO\n` +
   `· 대표자: 김은호\n` +
-  `· 사업자등록번호: [사업자등록 완료 후 기재 — 정식 출시(앱스토어 배포) 전 기재 예정]\n` +
-  `· 사업장 주소: [사업자등록 시 확정 — 정식 출시 전 기재 예정]\n` +
+  `· 사업자등록번호: 379-13-02772\n` +
+  `· 사업장 주소: 경기도 화성시 병점구 효행로 1068, 604호\n` +
   `· 이메일: cripo2357@gmail.com`;
 
 export const TERMS_META: Record<TermsKey, TermsMeta> = {

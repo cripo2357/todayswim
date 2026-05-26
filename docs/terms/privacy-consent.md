@@ -1,11 +1,12 @@
 ---
-version: 1.0.1
+version: 1.0.2
 effectiveDate: 2026-05-28
 lastModified: 2026-05-26
 documentType: required-consent
 title: Pool's day 개인정보 수집·이용 동의서
 ---
 
+<!-- v1.0.2 (2026-05-26): 사업자등록 완료 — 4종 약관 v1.0.2 동기 bump. 본 동의서 본문 변경 없음. -->
 <!-- v1.0.1 (2026-05-26): 운영 인프라(Firebase Analytics 익명 통계 + Sentry 크래시·에러 리포팅) 도입 사실을 §2 수집 항목 + §5 처리위탁 양쪽에 반영. -->
 
 
