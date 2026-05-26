@@ -44,7 +44,6 @@ const LANE_COUNTS = Array.from({ length: 50 }, (_, i) => i + 1);
 const DEPTHS = Array.from({ length: 100 }, (_, i) => +(0.1 + i * 0.1).toFixed(1));
 
 export function PoolNameScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, 'PoolName'>>();
   const isEdit = route.params?.mode === 'edit';
 

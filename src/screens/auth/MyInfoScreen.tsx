@@ -308,7 +308,7 @@ export function ProfileTab({
       visPatch.showIm100 = false;
     }
     if (Object.keys(visPatch).length > 0) patch(visPatch);
-  }, [strokesComplete, certs, im100, profile.showCerts, profile.showIm100]);
+  }, [strokesComplete, certs, im100, profile.showCerts, profile.showIm100, patch]);
 
   // 닉네임 인라인 변경 (Figma 120:3030 / 129:6307 / 129:6296)
   const nickInputRef = React.useRef<TextInput>(null);

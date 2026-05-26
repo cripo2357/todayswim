@@ -14,6 +14,7 @@
 // message_rules_architecture.
 
 import { supabase } from './supabase';
+import type { MockAccount as _MockAccount } from './mockData';
 
 /** 친구 요청 보내기 — friend_requests insert (status='pending'). */
 export async function tryInsertFriendRequest(
@@ -187,8 +188,6 @@ export async function tryFetchBlockedIds(meId: string): Promise<string[]> {
  *  ※ avatar 는 strict AvatarId 타입이지만 서버 photo_uri 는 AvatarId 또는
  *    업로드 URL — UI Avatar 컴포넌트가 isBundleAvatar 로 분기라 cast 안전.
  *  P3 후속: 친구 코드 변경 cascade / 탈퇴 시 옛 row 처리. */
-import type { MockAccount as _MockAccount } from './mockData';
-
 export async function tryFetchAccountsByIds(
   ids: string[],
 ): Promise<_MockAccount[]> {
@@ -200,12 +199,12 @@ export async function tryFetchAccountsByIds(
       .in('id', ids);
     if (error || !data) return [];
     return (
-      data as Array<{
+      data as {
         id: string;
         nickname: string;
         bio: string | null;
         photo_uri: string | null;
-      }>
+      }[]
     ).map((p) => ({
       id: p.id,
       nickname: p.nickname,

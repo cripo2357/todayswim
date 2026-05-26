@@ -119,7 +119,6 @@ export function ProfileSetupScreen() {
     prefilledRef.current = true;
     onChangeName(candidate);
     // onChangeName은 동일 컴포넌트 클로저 — deps에서 제외(매 렌더 재실행 방지).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authUser]);
 
   // 필수 — 닉네임(중복 아님) + 성별 + 생년월일.

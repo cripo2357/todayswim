@@ -4,7 +4,7 @@
 // Phase 2: native OAuth SDK + supabase.auth.signInWithIdToken로 교체.
 
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth, type SocialProvider } from '@/store/auth';

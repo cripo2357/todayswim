@@ -27,7 +27,7 @@ export interface MockAccount {
 // ── 친구 10명 (기본) ──────────────────────────────────────────
 // id = accountCode(seed) — deterministic 6자리 친구코드. code 컬럼은 표시용
 // 흔적이지만 사용처 없음(friendSearch.toUser에서 code = a.id로 통일).
-const BASE_FRIENDS_RAW: Array<Omit<MockAccount, 'id' | 'code'> & { _seed: string }> = [
+const BASE_FRIENDS_RAW: (Omit<MockAccount, 'id' | 'code'> & { _seed: string })[] = [
   { _seed: 'fr1', nickname: '물개왕', status: '오늘도 1km 완영', avatar: 'avatar-male-1' },
   { _seed: 'fr2', nickname: '자유형장인', status: '접영 연습 중', avatar: 'avatar-female-1' },
   { _seed: 'fr3', nickname: 'josh', status: '수영 더 열심히', avatar: 'avatar-male-2' },
@@ -74,7 +74,7 @@ export const MOCK_FRIENDS: MockAccount[] = [
 // ── 친구 아닌 계정 ──────────────────────────────────────────
 // id = accountCode(seed). 'nf-id-7000234' seed의 accountCode 결과 그대로
 // ID 검색용(이전 주석의 "ABCD2E" 값 — 결정적이라 변경 없음).
-const NON_FRIENDS_RAW: Array<Omit<MockAccount, 'id' | 'code'> & { _seed: string }> = [
+const NON_FRIENDS_RAW: (Omit<MockAccount, 'id' | 'code'> & { _seed: string })[] = [
   { _seed: 'nf1', nickname: 'bobby', status: '수영 잘하고 싶다', avatar: 'avatar-male-2' },
   { _seed: 'nf2', nickname: '초보수영', status: '발차기 연습 중', avatar: 'avatar-male-5' },
   { _seed: 'nf3', nickname: 'clara', status: '물 무서워요', avatar: 'avatar-female-5' },

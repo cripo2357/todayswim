@@ -68,8 +68,10 @@ export function PoolListScreen() {
   const geo = useGeolocation({ auto: true });
   const hasLocation = geo.status === 'granted' && !!geo.coords;
 
-  const pools = poolsData ?? [];
-  const schedules = schedulesData ?? [];
+  // ?? [] 인라인은 매 렌더 새 array reference → 의존 hook 재계산.
+  // useMemo 로 안정 reference.
+  const pools = React.useMemo(() => poolsData ?? [], [poolsData]);
+  const schedules = React.useMemo(() => schedulesData ?? [], [schedulesData]);
 
   // 필터 적용 — MapScreen과 동일 로직 (필터 미적용이면 pools 그대로)
   const filteredPools = React.useMemo(

@@ -63,8 +63,10 @@ export function PoolFilterScreen() {
 
   const { data: poolsData } = usePools();
   const { data: schedulesData } = useSchedules();
-  const pools = poolsData ?? [];
-  const schedules = schedulesData ?? [];
+  // ?? [] 인라인은 매 렌더 새 array reference → 의존 hook 무한 재계산.
+  // useMemo 로 안정 reference 유지.
+  const pools = React.useMemo(() => poolsData ?? [], [poolsData]);
+  const schedules = React.useMemo(() => schedulesData ?? [], [schedulesData]);
 
   const resultCount = React.useMemo(() => {
     return filterPools(pools, schedules, {

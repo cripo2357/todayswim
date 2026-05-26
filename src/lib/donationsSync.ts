@@ -75,8 +75,7 @@ export async function tryFetchDonations(): Promise<DonationRow[]> {
  */
 export function dedupeDonationsForDisplay<T extends DonationRow>(
   rows: readonly T[],
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  myProfileId: string | null,
+  _myProfileId: string | null,
 ): T[] {
   const seen = new Set<string>();
   const out: T[] = [];

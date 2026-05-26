@@ -6,7 +6,7 @@
 // - profiles join 으로 닉네임/아바타 함께 조회 — DonationScreen 카드 표시용.
 
 import React from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import {
   tryUpdateDonationMessage,
@@ -78,7 +78,8 @@ export function useDonations(): {
     },
   });
 
-  const rows = data ?? [];
+  // ?? [] 인라인은 매 렌더 새 array reference → deduped useMemo 무한 재계산.
+  const rows = React.useMemo(() => data ?? [], [data]);
   // 사용자별 최신 1건 dedup + hidden(본인 제외) 필터.
   const deduped = React.useMemo(
     () => dedupeDonationsForDisplay(rows, myProfileId),

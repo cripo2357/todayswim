@@ -12,7 +12,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Check } from 'lucide-react-native';
 import {
   getTermsState,
-  isFullyAgreed,
   setConsent,
   MANDATORY_CONSENTS,
   type ConsentKey,

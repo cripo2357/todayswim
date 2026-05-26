@@ -13,6 +13,7 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { DayOfWeek } from '@/types/schedule';
+import { genProfileId } from '@/lib/friendCode';
 import {
   tryFetchProfileById,
   tryUpsertProfile,
@@ -60,8 +61,7 @@ export const ALL_IM100_RECORDS: IM100Record[] = [
  * 별도 발급. 계정 생성 시 자동 발급, 사용자가 변경 가능.
  * 혼동 문자(0/O/1/I/L) 제외 6자리. 단일 출처 = lib/friendCode.
  */
-export { genProfileId } from '@/lib/friendCode';
-import { genProfileId } from '@/lib/friendCode';
+export { genProfileId };
 
 /**
  * 수영 수업 시간 — 친구가 프로필을 보고 초대 시 참고용(정보 전용).

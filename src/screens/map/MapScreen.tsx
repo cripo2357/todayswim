@@ -245,8 +245,10 @@ export function MapScreen() {
   // Supabase에서 풀/시간표 fetch — react-query 캐시. 로딩 중에는 빈 배열로 fallback.
   const { data: poolsData } = usePools();
   const { data: schedulesData } = useSchedules();
-  const pools = poolsData ?? [];
-  const schedules = schedulesData ?? [];
+  // ?? [] 인라인은 매 렌더 새 array reference → 의존 hook 8개 무한 재계산.
+  // useMemo 로 안정 reference.
+  const pools = React.useMemo(() => poolsData ?? [], [poolsData]);
+  const schedules = React.useMemo(() => schedulesData ?? [], [schedulesData]);
   const filteredPools = React.useMemo(
     () => filterPools(pools, schedules, filter),
     [pools, schedules, filter],

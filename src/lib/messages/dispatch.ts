@@ -100,7 +100,7 @@ export async function dispatchMessage(
   // - 'self': 본인 행만
   // - 'other': 상대 행만 (toUserCode 있을 때)
   // - 'both': 본인 + 상대 (toUserCode 있을 때만 상대 추가)
-  const rows: Array<Record<string, unknown>> = [];
+  const rows: Record<string, unknown>[] = [];
   const base = {
     kind,
     title: content.title,
