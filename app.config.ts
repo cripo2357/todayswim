@@ -227,7 +227,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // Sentry 에러·크래시 리포팅 (P3-A6). JS 에러는 init 직후부터 보고,
     // 네이티브 크래시(NDK/Obj-C)는 다음 EAS 빌드 후 활성화. DSN 은
     // EXPO_PUBLIC_SENTRY_DSN env (없으면 init 이 no-op 처리).
-    '@sentry/react-native/expo',
+    // disableAutoUpload: Sentry 프로젝트 생성 전까지 source maps 업로드 skip
+    // (org/project env 미설정 상태에서 빌드 자동 실패 회피). 프로젝트 생성
+    // 후 옵션 제거 + SENTRY_ORG/PROJECT/AUTH_TOKEN 등록하면 자동 활성.
+    [
+      '@sentry/react-native/expo',
+      { disableAutoUpload: true },
+    ],
     // Firebase Analytics — 익명 통계(앱 사용 빈도·화면 진입·이벤트).
     // ios.googleServicesFile / android.googleServicesFile 의 config 파일과
     // 함께 동작. 파일이 없으면 EAS 빌드 시 실패하므로 크리스가 콘솔 작업
