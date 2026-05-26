@@ -34,8 +34,9 @@
 -- ## 메타데이터 출처
 --
 -- - 시설(성인풀 6레인, 유아풀, 958㎡, 지하 2층): 공식 sub05_030102.
--- - 풀 길이/수심: 공식 미명시 → null (운영자 결정).
--- - 가격: 공식 자유수영 요금 미명시 → null. 추후 보강.
+-- - 수심 1.2m: 운영자(크리스) 확인.
+-- - 풀 길이: 공식 미명시·운영자 미확인 → null (추후 보강).
+-- - 가격(자유수영 1회 4,200원): 운영자(크리스) 확인. 평일/주말 구분 없음 가정.
 -- - 좌표 [신뢰도 높음]: 카카오 POI "금천구민문화체육센터 수영장" 정확 매치
 --   (금천구 독산동 371-2, 도로명 독산로54길 188).
 -- - 전화: 02-861-1313 (공식 sub05_030101).
@@ -54,10 +55,10 @@ insert into public.pools (
     '서울특별시 금천구 독산로54길 188',
     37.470186148348, 126.90748875715, 'indoor', 'public',
     '02-861-1313', 'https://www.gfmc.kr/page/business/sub05_030101.php',
-    6, null, null, null,
+    6, null, 1.2, 1.2,
     '{}', true, false, false,
     true, true,
-    null, null, null,
+    4200, 4200, 4200,
     'https://hldfsstyzbnqnrlqhhtc.supabase.co/storage/v1/object/public/pool-photos/POOL_0017.jpg',
     'https://www.gfmc.kr/page/business/sub05_030101.php')
 on conflict (id) do nothing;
