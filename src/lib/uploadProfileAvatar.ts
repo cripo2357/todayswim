@@ -11,6 +11,7 @@
 
 import { decode } from 'base64-arraybuffer';
 import { supabase } from './supabase';
+import { captureError } from './sentry';
 
 export type UploadProfileAvatarResult =
   | { status: 'ok'; url: string; thumbUrl?: string }
@@ -30,7 +31,7 @@ export async function uploadProfileAvatar(
   } = await supabase.auth.getSession();
   const uid = session?.user?.id;
   if (!uid) {
-    console.warn('[avatar] skipped — 실 Supabase 세션 없음(uid 없음)');
+    if (__DEV__) console.warn('[avatar] skipped — 실 Supabase 세션 없음(uid 없음)');
     return { status: 'skipped' };
   }
 
@@ -42,42 +43,43 @@ export async function uploadProfileAvatar(
       upsert: true,
     });
   if (error) {
-    // 진단: Storage 거부 실제 사유(RLS 위반 / permission denied / 버킷 등).
-    console.warn(
-      '[avatar] upload error:',
-      (error as { message?: string }).message ?? error,
-      '| path =',
-      path,
-    );
-    // 진단: user 세션 토큰 클레임(시크릿 아님 — payload는 누구나 디코드 가능).
-    // alg=HS256 이면 레거시 서명 / RS256·ES256 이면 신규 signing key.
-    // role!=authenticated 또는 sub!=uid 또는 exp 만료면 그게 원인.
-    try {
-      const tok = session?.access_token ?? '';
-      const [h, p] = tok.split('.');
-      const b64 = (s: string) =>
-        decodeURIComponent(
-          escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))),
-        );
-      const hdr = JSON.parse(b64(h));
-      const cl = JSON.parse(b64(p));
+    // 진단 로그는 dev 환경만 — prod 는 Sentry captureError 로 라우팅.
+    // (jwt 페이로드는 시크릿 아님이지만 그래도 콘솔 노출은 dev 한정.)
+    if (__DEV__) {
       console.warn(
-        '[avatar] jwt diag — alg:',
-        hdr.alg,
-        '| role:',
-        cl.role,
-        '| sub==uid:',
-        cl.sub === uid,
-        '| aud:',
-        cl.aud,
-        '| iss:',
-        cl.iss,
-        '| expired:',
-        typeof cl.exp === 'number' && cl.exp * 1000 < Date.now(),
+        '[avatar] upload error:',
+        (error as { message?: string }).message ?? error,
+        '| path =',
+        path,
       );
-    } catch (e) {
-      console.warn('[avatar] jwt diag 실패:', String(e));
+      try {
+        const tok = session?.access_token ?? '';
+        const [h, p] = tok.split('.');
+        const b64 = (s: string) =>
+          decodeURIComponent(
+            escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))),
+          );
+        const hdr = JSON.parse(b64(h));
+        const cl = JSON.parse(b64(p));
+        console.warn(
+          '[avatar] jwt diag — alg:',
+          hdr.alg,
+          '| role:',
+          cl.role,
+          '| sub==uid:',
+          cl.sub === uid,
+          '| aud:',
+          cl.aud,
+          '| iss:',
+          cl.iss,
+          '| expired:',
+          typeof cl.exp === 'number' && cl.exp * 1000 < Date.now(),
+        );
+      } catch (e) {
+        console.warn('[avatar] jwt diag 실패:', String(e));
+      }
     }
+    captureError(error, { area: 'avatar-upload', path });
     return { status: 'error' };
   }
 

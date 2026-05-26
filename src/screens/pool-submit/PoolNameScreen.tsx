@@ -20,6 +20,7 @@ import { AppHeader } from '@/components/layout/AppHeader';
 import { useSubmitPool } from '@/hooks/useSubmitPool';
 import type { RootStackParamList } from '@/navigation/types';
 import { logEvent } from '@/lib/analytics';
+import { captureError } from '@/lib/sentry';
 import { tokens } from '@/styles/tokens';
 // Figma 90:7386 — 폼 내 unselected 아이콘 색상 = #4B5563 (Gray/60)
 import IconLifeBuoy from '@assets/icons/life-buoy-gray.svg';
@@ -88,7 +89,7 @@ function CreateForm() {
       void logEvent('pool_submit_complete', { mode: 'create' });
       navigation.navigate('PoolDone', { mode: 'create' });
     } catch (e) {
-      console.error('[PoolSubmit] 에러:', e);
+      captureError(e, { screen: 'PoolSubmit' });
       const msg = e instanceof Error ? e.message : String(e);
       Alert.alert('요청 전송에 실패했어요', msg);
     }
@@ -296,7 +297,7 @@ function EditForm({ poolId }: { poolId?: string }) {
       void logEvent('pool_submit_complete', { mode: 'edit' });
       navigation.navigate('PoolDone', { mode: 'edit' });
     } catch (e) {
-      console.error('[PoolSubmit] 에러:', e);
+      captureError(e, { screen: 'PoolSubmit' });
       const msg = e instanceof Error ? e.message : String(e);
       Alert.alert('요청 전송에 실패했어요', msg);
     }
