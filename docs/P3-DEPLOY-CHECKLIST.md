@@ -47,8 +47,23 @@ alter database postgres
 미설정 시 trigger silent skip — system 인서트(cron 등)는 in-app realtime
 으로만 인지 (백그라운드 OS 푸시 X). 설정 후엔 cron 발화 알림도 자동 푸시.
 
-⚠️ **번호 충돌**: 0081 이 2개 (`ops_stats_views` + `rls_hardening_p3`). 두 파일
-독립적이라 둘 다 적용 OK. Supabase 가 알파벳 순으로 ops → rls 적용.
+⚠️ **번호 충돌 정리** (2026-05-26 점검):
+
+같은 prefix 를 가진 마이그 파일 3쌍 — 모두 독립 SQL 이고 Supabase 가 full
+filename 기준 추적·알파벳 순 적용이라 functional 문제 없음. 다만 prefix
+중복은 컨벤션 깨짐 — 신규 마이그는 유일 prefix 사용.
+
+| Prefix | 파일들 | 적용 순서(알파벳) |
+|---|---|---|
+| 0072 | `donation_flow_correction` / `faqs_expand` | donation → faqs |
+| 0073 | `donation_auto_match` / `faqs_category` | donation → faqs |
+| 0081 | `ops_stats_views` / `rls_hardening_p3` | ops → rls |
+
+⚠️ **번호 갭** (0009, 0010, 0061): git 이력에도 없음. 의도적 skip — 작업 중
+폐기됐거나 reserve. functional 영향 X (Supabase 는 연속 번호 요구 X).
+
+prod 분리 시: 위 모든 파일을 알파벳 순으로 그대로 적용 — 결과 동일.
+**기존 dev 마이그를 rename 하지 말 것** — 이미 적용 완료, rename 시 재적용 시도.
 
 ### 적용 안 됐을 때
 
