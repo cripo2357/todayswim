@@ -35,6 +35,9 @@ exclude:
   - pools-day-terms-input.md
   - terms-revision-push-infra.md
   - terms-revision-request.md
+  - BIZ-INFO-FILL-CHECKLIST.md
+  - P3-DEPLOY-CHECKLIST.md
+  - P3-ENV-PROD-SETUP.md
   - store-meta/
   - "*.bak"
   - Gemfile
