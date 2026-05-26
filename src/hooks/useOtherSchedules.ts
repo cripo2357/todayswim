@@ -18,7 +18,6 @@ import {
 } from '@/lib/userSchedulesSync';
 import { useFriends } from '@/store/friends';
 import {
-  MOCK_OTHER_SCHEDULES,
   type OtherSchedule,
 } from '@/lib/mockData';
 import type { AvatarId } from '@/lib/avatars';
@@ -56,8 +55,8 @@ function rowToOtherSchedule(
  * 친구 = useFriends.friends 의 profile_id. P2 진입 후 mock id = 친구코드라
  * 그대로 profiles PK. 비친구 public 일정은 P2 후속 배치(슬롯-단위 fetch).
  *
- * 폴백: 서버 결과 0건이면 MOCK_OTHER_SCHEDULES 반환 — 검증 매끄러움.
- *   실 사용자만 가입한 prod 환경에선 P3에서 mock 시드 미실행 + 폴백 제거.
+ * (P3 prod 준비, 2026-05-26): mock 폴백 제거 — 서버가 단일 권위. 친구 0명/
+ *   서버 0건 모두 빈 배열. mock 시드는 dev/preview env 진입 시점에 분리.
  */
 export function useOtherSchedules(): OtherSchedule[] {
   // zustand selector는 reference-stable 값만 반환해야 함 — `.map()` 직접
@@ -80,6 +79,6 @@ export function useOtherSchedules(): OtherSchedule[] {
     enabled: friendIds.length > 0,
   });
 
-  // 서버 0건 → mock 폴백. 친구 0명이면 query disabled → data undefined → mock.
-  return data && data.length > 0 ? data : MOCK_OTHER_SCHEDULES;
+  // P3 prod 준비: 서버가 단일 권위 — mock 폴백 제거. 친구 0건/서버 0건 모두 빈 배열.
+  return data ?? [];
 }

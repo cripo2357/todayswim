@@ -158,27 +158,7 @@ export function rowToSchedule(row: UserScheduleRow): MySwimSchedule {
   };
 }
 
-// ─── 친구 일정 fetch (MOCK_OTHER_SCHEDULES 교체용, 후속 배치에서 호출 부착) ───
-
-/** 친구 일정 — 친구 profile_id 목록으로 일괄 fetch. private 행은 RLS-후
- *  단계에서 자연 제외 예정(P1 톤이라 지금은 클라가 visibility 필터 책임).
- *  현 단계 호출처 없음 — MOCK_OTHER_SCHEDULES 교체 시 사용. */
-export async function tryFetchSchedulesByProfileIds(
-  profileIds: string[],
-): Promise<UserScheduleRow[]> {
-  if (profileIds.length === 0) return [];
-  try {
-    const { data, error } = await supabase
-      .from('user_schedules')
-      .select('*')
-      .in('profile_id', profileIds)
-      .neq('visibility', 'private'); // private은 절대 노출 X
-    if (error || !data) return [];
-    return data as UserScheduleRow[];
-  } catch {
-    return [];
-  }
-}
+// ─── 친구 일정 fetch (MOCK_OTHER_SCHEDULES 교체용) ───
 
 /** 친구 일정 + owner(profiles.nickname/photo_uri) join — MOCK_OTHER_SCHEDULES
  *  교체용. mapProfileStacks/scheduleParticipants 가 nickname·avatar 필요.
@@ -203,22 +183,3 @@ export async function tryFetchSchedulesWithOwner(
   }
 }
 
-/** 특정 풀+날짜 슬롯의 참여자 일정 fetch — 슬롯 참여자 더보기/스택용.
- *  현 단계 호출처 없음. */
-export async function tryFetchSchedulesByPoolDate(
-  poolId: string,
-  date: string,
-): Promise<UserScheduleRow[]> {
-  try {
-    const { data, error } = await supabase
-      .from('user_schedules')
-      .select('*')
-      .eq('pool_id', poolId)
-      .eq('date', date)
-      .neq('visibility', 'private');
-    if (error || !data) return [];
-    return data as UserScheduleRow[];
-  } catch {
-    return [];
-  }
-}

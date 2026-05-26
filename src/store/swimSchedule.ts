@@ -11,7 +11,6 @@
  */
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { MOCK_SCHEDULES } from '@/lib/mockData';
 import { useProfile } from '@/store/profile';
 import {
   tryInsertSchedule,
@@ -76,15 +75,16 @@ export function isSchedulePast(s: {
 const STORAGE_KEY = 'poolsday.swimSchedules';
 
 export const useSwimSchedules = create<SwimScheduleState>((set, get) => ({
-  // Phase 1: 저장소 비어있으면 더미 50개로 시드 (mockData).
-  schedules: MOCK_SCHEDULES,
+  // P3 prod 준비: MOCK_SCHEDULES 50개 더미 시드 제거 — 신규 사용자는 빈 일정.
+  // dev demo 데이터는 dev/preview env 분기 단계에서 별도 시드 메커니즘으로 처리.
+  schedules: [],
   hydrated: false,
 
   hydrate: async () => {
     try {
       const raw = await AsyncStorage.getItem(STORAGE_KEY);
       set({
-        schedules: raw ? (JSON.parse(raw) as MySwimSchedule[]) : MOCK_SCHEDULES,
+        schedules: raw ? (JSON.parse(raw) as MySwimSchedule[]) : [],
         hydrated: true,
       });
     } catch {
