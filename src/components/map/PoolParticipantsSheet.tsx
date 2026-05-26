@@ -300,17 +300,23 @@ const styles = StyleSheet.create({
   },
   // Figma 282:5101 — hairline divider Gray/30 #CBD5E1.
   innerDivider: { height: 1, backgroundColor: '#CBD5E1' },
-  // Figma 282:5102/5232 — wrap, gap 7. 3열 고정 (88×3 + 7×2 = 278 ≤ 311 콘텐츠폭).
-  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
-  // Figma 282:5069 등 — chip width 88, gap 4. (풀카드 안 nested 가 아니라 모달이라 88 유지)
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 4, width: 88 },
-  // Figma 282:5100 — Bold 10/14 -0.04 #1F2937.
+  // 1행 3개 고정 — CalendarTab 일정카드 참여자 UI 와 통일 (크리스 결정).
+  // paddingRight 로 열 간격 확보(33.333% 폭과 gap 호환 안정).
+  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 8 },
+  chip: {
+    width: '33.333%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingRight: 8,
+  },
+  // CalendarTab ptName 과 동일 — Medium 12/16 -0.06 #1F2937.
   chipLabel: {
     flex: 1,
-    fontSize: 10,
-    lineHeight: 14,
-    letterSpacing: -0.04,
-    fontFamily: tokens.font.sansBold,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: -0.06,
+    fontFamily: tokens.font.sansMedium,
     color: '#1F2937',
   },
 });
