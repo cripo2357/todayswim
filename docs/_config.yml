@@ -38,6 +38,7 @@ exclude:
   - BIZ-INFO-FILL-CHECKLIST.md
   - P3-DEPLOY-CHECKLIST.md
   - P3-ENV-PROD-SETUP.md
+  - P3-KAKAO-BIZ-SETUP.md
   - store-meta/
   - "*.bak"
   - Gemfile
