@@ -63,16 +63,26 @@ export function ProfileImageScreen() {
   const saveProfile = useProfile((s) => s.save);
   const authUser = useAuth((s) => s.user);
 
+  // 소셜 이미지가 없거나 로드 실패할 때 떨어질 번들 아바타 — 성별 기준 1회 픽
+  // (onError 폴백과 초기값이 같은 아바타를 쓰도록 고정).
+  const fallbackAvatar = React.useMemo(
+    () => defaultAvatarForGender(profile?.gender ?? 'male'),
+    [profile?.gender],
+  );
   // 기본값 — 이미 등록된 사진(내 정보 수정) > 소셜 사진 > 성별 기반 번들 아바타.
   const initialPhoto = React.useMemo<string>(
-    () =>
-      profile?.photoUri ??
-      authUser?.photoUrl ??
-      defaultAvatarForGender(profile?.gender ?? 'male'),
-    [profile?.photoUri, authUser?.photoUrl, profile?.gender],
+    () => profile?.photoUri ?? authUser?.photoUrl ?? fallbackAvatar,
+    [profile?.photoUri, authUser?.photoUrl, fallbackAvatar],
   );
   // 현재 선택된 사진 — 번들 AvatarId / 소셜 URL / 업로드 URI.
   const [photo, setPhoto] = React.useState<string>(initialPhoto);
+
+  // 소셜/원격 이미지 로드 실패(예: 카카오 기본 이미지·차단된 URL) → 번들 아바타
+  // 폴백. URL 이 truthy 라 ?? 폴백이 안 걸리던 케이스를 런타임에서 보정.
+  const onPhotoError = React.useCallback(() => {
+    setPhoto((cur) => (isBundleAvatar(cur) ? cur : fallbackAvatar));
+    setPhotoThumb(undefined);
+  }, [fallbackAvatar]);
   const [photoThumb, setPhotoThumb] = React.useState<string | undefined>(
     profile?.photoThumbUri,
   );
@@ -131,6 +141,7 @@ export function ProfileImageScreen() {
             since={formatSince(profile?.createdAt)}
             onUpload={pickImage}
             onComplete={onComplete}
+            onPhotoError={onPhotoError}
           />
         )}
         {state === 'uploading' && <UploadingView photo={photo} />}
@@ -145,7 +156,16 @@ export function ProfileImageScreen() {
 /** 선택된 사진을 원형으로 — byellow 2px ring(외곽) + 안쪽 사진.
  *  RN border 함정 회피 위해 byellow 배경 원 + 안쪽 작은 원 구조
  *  (130:3640 byellow 외곽선, MyInfo와 통일). */
-function AvatarCircle({ photo, size }: { photo: string; size: number }) {
+function AvatarCircle({
+  photo,
+  size,
+  onError,
+}: {
+  photo: string;
+  size: number;
+  /** 원격 이미지 로드 실패 시 — 호출자가 번들 아바타로 폴백. */
+  onError?: () => void;
+}) {
   const inner = size - 4; // 2px ring 양쪽
   return (
     <View
@@ -169,6 +189,7 @@ function AvatarCircle({ photo, size }: { photo: string; size: number }) {
           <Image
             source={{ uri: photo }}
             style={{ width: inner, height: inner }}
+            onError={onError}
           />
         )}
       </View>
@@ -177,13 +198,14 @@ function AvatarCircle({ photo, size }: { photo: string; size: number }) {
 }
 
 function IdleView({
-  photo, name, since, onUpload, onComplete,
+  photo, name, since, onUpload, onComplete, onPhotoError,
 }: {
   photo: string;
   name: string;
   since: string;
   onUpload: () => void;
   onComplete: () => void;
+  onPhotoError?: () => void;
 }) {
   return (
     <View style={styles.idleWrap}>
@@ -192,7 +214,7 @@ function IdleView({
       {/* 아바타 블록 (Figma 110:3316 / 130:3599 — 아바타80 + 닉네임 + 가입일) */}
       <View style={styles.avatarBlock}>
         <View style={styles.avatarWrap}>
-          <AvatarCircle photo={photo} size={IDLE_AVATAR} />
+          <AvatarCircle photo={photo} size={IDLE_AVATAR} onError={onPhotoError} />
           <Pressable
             onPress={onUpload}
             style={({ pressed }) => [

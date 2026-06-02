@@ -79,6 +79,13 @@ function ensureGoogleConfigured() {
   googleConfigured = true;
 }
 
+/** 소셜 프로필 이미지 URL 정규화 — 평문 http → https 승격(Android cleartext
+ *  차단 회피). 카카오 기본 이미지(http://k.kakaocdn.net/...) 대응. 빈 값은 undefined. */
+function normalizePhotoUrl(url: unknown): string | undefined {
+  if (typeof url !== 'string' || !url) return undefined;
+  return url.startsWith('http://') ? 'https://' + url.slice('http://'.length) : url;
+}
+
 function userFromSession(session: Session | null): AuthUser | null {
   if (!session?.user) return null;
   const u = session.user;
@@ -89,7 +96,9 @@ function userFromSession(session: Session | null): AuthUser | null {
     provider,
     nickname: meta.name ?? meta.full_name ?? meta.nickname ?? '',
     email: u.email ?? undefined,
-    photoUrl: meta.avatar_url ?? meta.picture ?? undefined,
+    // 카카오 프로필 이미지는 http://k.kakaocdn.net/... (평문)로 오는데 Android는
+    // cleartext 차단이라 로드 실패 → https 로 승격(k.kakaocdn은 https 지원).
+    photoUrl: normalizePhotoUrl(meta.avatar_url ?? meta.picture),
   };
 }
 
