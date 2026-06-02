@@ -9,7 +9,7 @@
 //     privacyConsent ↔ 'privacy_consent'
 //     location       ↔ 'location'
 //     marketing      ↔ 'marketing'
-//   'age' 는 약관 문서 아님 — 클라이언트 게이트(AsyncStorage 한정).
+//     age            ↔ 'age'   (문서 없는 연령확인이지만 계정 동의 기록으로 서버 보관 — 0108)
 //
 // 법적 증빙: terms_agreements.terms_version 은 동의 시점 버전 문자열 스냅샷.
 // 본 모듈은 CURRENT_TERMS_VERSION 을 기본 인자로 가지며, 약관 개정 시 함께 bump.
@@ -22,17 +22,19 @@ import type { ConsentKey } from './terms';
 export const CURRENT_TERMS_VERSION = '1.0.0';
 
 // ConsentKey(클라) ↔ terms_type(DB) 양방향 매핑.
-const TO_DB_TYPE: Record<Exclude<ConsentKey, 'age'>, string> = {
+const TO_DB_TYPE: Record<ConsentKey, string> = {
   service: 'service',
   privacyConsent: 'privacy_consent',
   location: 'location',
   marketing: 'marketing',
+  age: 'age',
 };
 const FROM_DB_TYPE: Record<string, ConsentKey> = {
   service: 'service',
   privacy_consent: 'privacyConsent',
   location: 'location',
   marketing: 'marketing',
+  age: 'age',
 };
 
 interface CurrentAgreementRow {
@@ -61,7 +63,7 @@ export async function fetchServerTermsState(
       result[key] = row.action === 'agree' ? row.created_at : null;
     }
     // 누락 키는 null 로 명시 — 호출자 코드의 분기 단순화.
-    for (const k of ['service', 'privacyConsent', 'location', 'marketing'] as ConsentKey[]) {
+    for (const k of ['age', 'service', 'privacyConsent', 'location', 'marketing'] as ConsentKey[]) {
       if (!(k in result)) result[k] = null;
     }
     return result;
@@ -74,7 +76,7 @@ export async function fetchServerTermsState(
  *  버전으로 다시 agree 이벤트가 쌓이는 구조(과거 이력 보존). */
 export async function recordAgreementServer(
   userId: string,
-  key: Exclude<ConsentKey, 'age'>,
+  key: ConsentKey,
   action: 'agree' | 'withdraw',
   version: string = CURRENT_TERMS_VERSION,
 ): Promise<void> {

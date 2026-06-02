@@ -13,7 +13,8 @@
  *   - marketing      마케팅 정보 수신 동의 (선택)
  *
  * 개인정보 처리방침(privacyPolicy)은 '고지' 문서 — 동의 대상 아님(설정에서 열람만).
- * 'age' 는 약관 문서 아님 — 항상 AsyncStorage(서버 enum 미포함).
+ * 'age'(만14세)는 약관 문서는 없지만 가입 필수 동의 — 0108부터 서버 보관
+ * (terms_agreements, uid 기준)이라 재로그인/기기변경에도 복원됨.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/lib/supabase';
@@ -64,13 +65,14 @@ export async function getTermsState(): Promise<TermsState> {
     const server = await fetchServerTermsState(uid);
     if (!server) return local; // 서버 실패 — 로컬 폴백
 
-    // 서버 4개 + 로컬 age 합성.
+    // 서버가 계정 권위 — age 포함 5개 모두 서버 우선, 미동기분만 로컬 폴백
+    // (가입 직후 서버 write 가 아직 안 끝난 in-session 케이스 보정).
     return {
-      age: local.age,
-      service: server.service ?? null,
-      privacyConsent: server.privacyConsent ?? null,
-      location: server.location ?? null,
-      marketing: server.marketing ?? null,
+      age: server.age ?? local.age,
+      service: server.service ?? local.service,
+      privacyConsent: server.privacyConsent ?? local.privacyConsent,
+      location: server.location ?? local.location,
+      marketing: server.marketing ?? local.marketing,
     };
   } catch {
     return local;
@@ -86,10 +88,7 @@ export async function setConsent(
   if (agreed) await AsyncStorage.setItem(KEY(key), new Date().toISOString());
   else await AsyncStorage.removeItem(KEY(key));
 
-  // 'age' 는 서버 enum 미포함 — 로컬만.
-  if (key === 'age') return;
-
-  // 서버 — 세션 있을 때만, best-effort.
+  // 서버 — 세션 있을 때만, best-effort. (age 포함 5개 모두 계정 보관 — 0108)
   try {
     const { data: sess } = await supabase.auth.getSession();
     const uid = sess.session?.user?.id;
