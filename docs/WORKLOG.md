@@ -1,7 +1,7 @@
 # Pool's day 작업일지
 
 > git 커밋 기록(실제 author date) 기반 날짜별 정리. 추측 없이 커밋 사실만.
-> 기간: 2026-05-06(레포 초기화) ~ 2026-05-21(현재).
+> 기간: 2026-05-06(레포 초기화) ~ 2026-06-03(현재).
 > 단계: **P1 ✅ tag `phase1-complete` (2026-05-20) → P2 ✅ tag `phase2-complete` (2026-05-20) → P3(하드닝·prod 분리·출시, 진행 중)**.
 
 ---
@@ -121,6 +121,37 @@
   - 풀 사진 prod Storage 재업로드
   - mock 데이터 prod 가드 (seedMockProfilesOnce + useOther* fallback)
 - Apple Sign-In 코드 구현 보류 → Apple Developer 가입 통과 후
+
+## 2026-06-03 — Google Play Console 출시 셋업 (스크린샷 가이드 세션)
+
+Play Console 화면을 단계별로 짚으며 앱 콘텐츠 선언·스토어 등록정보를 입력. 입력값 출처는 `docs/store-meta/D1~D6` 답변지.
+
+- **앱 콘텐츠 선언 완료**:
+  - Android 개발자 인증(`com.cripo.poolsday` 등록), 개발자 계정 정보(CRIPO) 확인
+  - 개인정보처리방침 URL = `https://cripo2357.github.io/todayswim/terms/privacy-policy/`
+  - 앱 액세스: "일부 제한됨" + 데모 Google 계정 안내(이메일+비번, "추가정보 필요없음" 체크). 비번은 채팅 미노출
+  - 광고: 없음 / 콘텐츠 등급: 전체이용가(IARC, ESRB E·PEGI 3) / **타겟층 18세 이상 단독**(미성년자 미서비스) / 정부·금융·건강 앱: 아니요
+  - 데이터 보안: 수집=예·암호화=예·삭제가능=예, 데이터유형 8개, **전 항목 수집됨=O / 공유됨=X**(위탁처리, 정확한위치=X)
+  - **광고 ID = 예 / 목적 애널리틱스만**(`@react-native-firebase/analytics`가 AAID 사용)
+  - 앱 카테고리: 스포츠 / 연락처 이메일 cripo2357@gmail.com
+- **스토어 등록정보(텍스트)**: 앱 이름 `Pool's day`, 간단한 설명, 자세한 설명 입력
+  - 카피 검수 3건 지적: ① "전날 저녁·1시간 전 알림"은 **코드 미구현 기능**(로컬 `scheduleNotificationAsync` 없음)이라 심사 리스크 → 문구 삭제 ② "전국" 과장 표현 완화 ③ 브랜드 표기 `Pool's day`(소문자 d) 통일. 크리스가 수정 반영
+- **스토어 자산**:
+  - `assets/store/play-icon-512.png` 생성 — `assets/icon.png`(1024) → 512×512 고품질 리사이즈(Play 앱 아이콘은 정확히 512 요구). 업로드 완료
+  - 기능 그래픽(1024×500) + 휴대전화 스크린샷 등록 완료(크리스 직접)
+  - 출시용 자산은 `assets/store/`에 버전 관리 컨벤션 확정
+- **데이터 보안 정확성 보강**:
+  - Firebase Console → 프로젝트 설정 → 데이터 개인정보 보호 → "Firebase 외 Google 서비스 개선용 데이터 공유" **OFF** → 데이터 보안 "공유=아니요" 정합 유지
+  - GA4 자체 데이터 공유 설정은 선택적 강화 항목으로 남김(Analytics Admin)
+- **가격**: 무료 앱 + 인앱결제 없음 → 판매자(머천트) 계정 **불필요**(설정 안 함이 곧 무료)
+- **앞선 자산**: `docs/account-deletion.md`(데이터 보안 "계정 삭제 URL"용, 처리방침 보존기간 일치) — commit ac39e0b
+
+**남은 출시 critical path** (AAB 빌드 진행 중):
+1. 빌드 완료 → **내부 테스트 트랙**에 AAB 업로드(검토 없이 즉시)
+2. 업로드 후 생기는 **Play 앱 서명 키 SHA-1**을 Google Cloud Android OAuth 클라이언트에 등록(미등록 시 store 빌드 Google 로그인 `DEVELOPER_ERROR`)
+3. 데모 계정으로 내부 테스트 빌드 로그인 검증(친구·일정·프로필 진입)
+4. google-services.json 빌드 포함 확인
+5. 출시 국가 = 대한민국
 
 ---
 
