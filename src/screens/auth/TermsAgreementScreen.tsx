@@ -13,6 +13,7 @@ import { Check } from 'lucide-react-native';
 import {
   getTermsState,
   setConsent,
+  clearTerms,
   MANDATORY_CONSENTS,
   type ConsentKey,
 } from '@/lib/terms';
@@ -73,11 +74,22 @@ export function TermsAgreementScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [agreed, setAgreed] = React.useState<Agreed>(EMPTY);
+  // 가입 게이트 진입 1회 식별 — 첫 focus엔 잔여 동의 초기화(미체크 시작),
+  // 이후 focus(약관 상세 왕복)엔 이번 세션의 체크만 복원.
+  const firstFocus = React.useRef(true);
 
-  // 상세 화면 다녀온 후 동의 상태 재동기화.
   useFocusEffect(
     React.useCallback(() => {
       (async () => {
+        // 법정 동의 = opt-in. 가입 진입 시 직전 세션/테스트 잔여 동의로 사전
+        // 체크되지 않도록 캐시를 비우고 모두 미체크에서 시작한다.
+        if (firstFocus.current) {
+          firstFocus.current = false;
+          await clearTerms();
+          setAgreed(EMPTY);
+          return;
+        }
+        // 약관 상세 화면을 다녀온 뒤엔 그 사이 체크/해제분을 재동기화.
         const s = await getTermsState();
         setAgreed({
           age: !!s.age,
