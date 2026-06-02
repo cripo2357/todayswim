@@ -10,7 +10,7 @@
 // - 다중 기기 동기화/재설치 복구는 실 auth 진입 후 — 현 단계 hydrate fetch 없음.
 
 import { create } from 'zustand';
-import { MOCK_FRIENDS, MOCK_NON_FRIENDS, type MockAccount } from '@/lib/mockData';
+import type { MockAccount } from '@/lib/mockData';
 import { useProfile } from '@/store/profile';
 import {
   tryInsertFriendRequest,
@@ -47,17 +47,8 @@ export type FriendRelation =
   | 'friend' // 친구
   | 'blocked'; // 영구 차단
 
-// 받은 친구 요청 시드 — 친구 아닌 계정 일부가 요청한 상태(목).
-const SEED_REQUESTS: FriendRequest[] = MOCK_NON_FRIENDS.slice(0, 2).map(
-  (a, i) => ({
-    id: a.id,
-    avatar: a.avatar,
-    nickname: a.nickname,
-    status: a.status,
-    // 앱 통일 포맷 YY.MM.DD(요일) 오전/오후 H:MM — @/lib/dateFormat 기준.
-    time: i === 0 ? '26.05.11(월) 오전 3:23' : '26.05.10(일) 오후 9:12',
-  }),
-);
+// P3 prod: 받은 요청 시드 제거 — 신규 사용자는 빈 상태에서 시작.
+// serverSync 후 실 incoming 요청만 적재.
 
 interface FriendsState {
   friends: MockAccount[];
@@ -66,7 +57,7 @@ interface FriendsState {
   blocked: string[]; // 영구 차단 id(해제 없음)
   /** 서버 fetch → 메모리 교체. P3-A.1 (2026-05-22) 다기기/재설치 복구.
    *  profile.id 생기는 시점에 App.tsx useEffect 가 호출.
-   *  · 미인증(Apple mock / 비로그인) → skip, MOCK_FRIENDS 시드 유지
+   *  · 미인증(Apple mock / 비로그인) → skip (초기값=빈 배열 유지)
    *  · 인증된 사용자 → 4종(friendships/incoming/outgoing/blocks) 병렬
    *    fetch + profiles 일괄 lookup → MockAccount 변환 → 전체 교체.
    *  · server 0건 = 신규 가입자(실 친구 없음) — 빈 상태 정상 반영. */
@@ -86,14 +77,15 @@ interface FriendsState {
 }
 
 export const useFriends = create<FriendsState>((set) => ({
-  friends: MOCK_FRIENDS,
-  requests: SEED_REQUESTS,
+  // P3 prod: 초기값 빈 배열. 로그인 후 serverSync가 실 데이터로 채움.
+  friends: [],
+  requests: [],
   sent: [],
   blocked: [],
 
   serverSync: async () => {
     const me = myProfileId();
-    if (!me) return; // Apple mock / 비로그인 — MOCK_FRIENDS 시드 유지
+    if (!me) return; // Apple mock / 비로그인 — 빈 상태 유지
 
     // 4종 병렬 fetch — friendships / incoming / outgoing / blocks.
     const [friendIds, incomingIds, outgoingIds, blockedIds] =
@@ -143,15 +135,14 @@ export const useFriends = create<FriendsState>((set) => ({
     set((s) => {
       const req = s.requests.find((r) => r.id === id);
       if (!req) return s;
-      const acc = MOCK_NON_FRIENDS.find((a) => a.id === id);
-      const friend: MockAccount =
-        acc ?? {
-          id: req.id,
-          nickname: req.nickname,
-          status: req.status,
-          code: '',
-          avatar: req.avatar,
-        };
+      // friendCode = profile.id 동일성 (profiles_schema PK).
+      const friend: MockAccount = {
+        id: req.id,
+        nickname: req.nickname,
+        status: req.status,
+        code: req.id,
+        avatar: req.avatar,
+      };
       const friends = s.friends.some((f) => f.id === id)
         ? s.friends
         : [friend, ...s.friends];

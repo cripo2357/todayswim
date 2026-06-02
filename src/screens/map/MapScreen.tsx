@@ -37,13 +37,13 @@ import { useUnreadCount } from '@/hooks/useNotifications';
 import { useSwimSchedules } from '@/store/swimSchedule';
 import { useFriends } from '@/store/friends';
 import { useFavorites } from '@/store/favorites';
-import { MOCK_OTHER_LESSONS, MOCK_OTHER_SCHEDULES } from '@/lib/mockData';
+import type { OtherSchedule, OtherLesson } from '@/lib/mockData';
 import { logEvent } from '@/lib/analytics';
 // MapScreen 한정 — useOtherSchedules 사용 금지 ([[naver_map_oob_mock_only]]).
 // 2026-05-20 회귀: 6배치(f529ecf)에서 useOtherSchedules 도입 시 naver-map
 // 마운트에서 java.lang.IndexOutOfBoundsException(ArrayList.get) 발생.
-// CalendarTab은 무영향 — 같은 훅 사용 OK. MapScreen만 mock 직접 사용.
-// React Query 캐시 효과는 CalendarTab의 useOtherSchedules 호출로 살아있음.
+// (P3 prod, 2026-06-02): 친구 일정/레슨 mock 소스 제거 — 빈 배열. 서버 친구
+// 일정 노출은 naver-map SDK race 해결 후 별도 경로로 재진입.
 import {
   buildPoolProfileStacks,
   type PoolStack,
@@ -62,6 +62,10 @@ import { BUNDLE_AVATARS, isBundleAvatar } from '@/lib/avatars';
 import { Toast } from '@/components/ui/Toast';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { tokens } from '@/styles/tokens';
+
+// 친구 일정/레슨 소스 — P3 prod 더미 제거로 빈 배열(reference-stable).
+const MAP_OTHER_SCHEDULES: OtherSchedule[] = [];
+const MAP_OTHER_LESSONS: OtherLesson[] = [];
 
 // 뒤로가기 종료 안내 노출 시간(ms). 이 시간 내 한 번 더 누르면 앱 종료.
 // Figma 277:6852 — "한 번 더 뒤로가기를 하면 앱이 종료됩니다."
@@ -385,7 +389,7 @@ export function MapScreen() {
   const friends = useFriends((s) => s.friends);
   const blocked = useFriends((s) => s.blocked);
   const favoriteIds = useFavorites((s) => s.ids);
-  const otherSchedules = MOCK_OTHER_SCHEDULES;
+  const otherSchedules = MAP_OTHER_SCHEDULES;
   const poolStacks = React.useMemo<Map<string, PoolStack>>(
     () =>
       showStack
@@ -403,7 +407,7 @@ export function MapScreen() {
             myLessonPoolId: profile?.lessonPoolId ?? null,
             mySwimClasses: profile?.swimClasses ?? [],
             showMyLessons: true,
-            otherLessons: MOCK_OTHER_LESSONS,
+            otherLessons: MAP_OTHER_LESSONS,
             friendHorizonMs: MAP_FRIEND_HORIZON_MS[mapFriendHorizon],
             publicHorizonMs: MAP_PUBLIC_HORIZON_MS[effectivePublicHorizon],
             shuffleSeed,

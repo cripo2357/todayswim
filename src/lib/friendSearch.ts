@@ -1,12 +1,10 @@
-// 새 친구 검색 — Phase-1(목업). Figma 168:7488 / 168:9354.
+// 새 친구 검색 — Figma 168:7488 / 168:9354.
 //
-// 후보 = MOCK_FRIENDS ∪ MOCK_NON_FRIENDS, 기존 친구·차단 제외(useFriends 경유,
-// block_policy_enforcement). "기존 친구와 비공개 사용자는 검색되지 않습니다" —
-// 기존 친구/차단은 여기서 제외. "비공개 사용자"(상대 friendRequest 설정)는
-// Phase-2: 유저 프로필이 로컬이라 타인 설정을 알 수 없음 → 갭 명시.
-// 서버 profiles 조회도 Phase-2(현재 profiles 테이블 없음 — 사용자 확정).
+// (P3 prod, 2026-06-02): mock 후보 제거 — 서버 profiles 닉네임/코드 검색 백엔드는
+// 미구현이라 현재 후보 풀은 비어 있음(검색 0건). 기존 친구/차단 제외 로직과
+// 정렬·랭킹 구조는 서버 연동 시 재사용할 수 있도록 유지한다.
 
-import { MOCK_FRIENDS, MOCK_NON_FRIENDS, type MockAccount } from '@/lib/mockData';
+import type { MockAccount } from '@/lib/mockData';
 import type { AvatarId } from '@/lib/avatars';
 
 // 친구코드 유틸 단일 출처는 lib/friendCode. 외부 호환성 위해 re-export.
@@ -21,7 +19,8 @@ export interface FriendSearchUser {
   code: string;
 }
 
-const ALL: MockAccount[] = [...MOCK_FRIENDS, ...MOCK_NON_FRIENDS];
+// 서버 검색 백엔드 연동 전까지 후보 풀은 비어 있음(P3 prod 더미 제거).
+const ALL: MockAccount[] = [];
 
 export interface FriendSearchOpts {
   /** 현재 친구 id (제외) */

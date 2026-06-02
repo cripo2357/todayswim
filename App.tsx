@@ -107,9 +107,7 @@ export default function App() {
     useSwimSchedules.getState().hydrate();
     usePrefs.getState().hydrate();
     useFavorites.getState().hydrate();
-    // P2: mock 친구 61명을 서버 profiles에 한 번만 시드(best-effort, silent).
-    // mockData.ts 변경 시 seedMockProfiles의 SEED_KEY versioning으로 재시드.
-    void import('@/lib/seedMockProfiles').then((m) => m.seedMockProfilesOnce());
+    // (P3 prod, 2026-06-02): mock 친구 서버 시드 제거 — 실 사용자 데이터만 적재.
   }, []);
 
   // 폰트 로드 완료(또는 에러) 시점에 네이티브 스플래시 hide → JS SplashScreen 인계.

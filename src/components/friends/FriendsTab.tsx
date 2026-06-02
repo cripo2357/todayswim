@@ -17,7 +17,8 @@ import IconChevronDown from '@assets/icons/chevron-down.svg';
 import IconUserDouble from '@assets/icons/user-double.svg';
 import IconChatSmile from '@assets/icons/chat-bubble-smile.svg';
 import IconIdBadgeWhite from '@assets/icons/id-badge-white.svg';
-import { MOCK_OTHER_SCHEDULES, type MockAccount } from '@/lib/mockData';
+import { type MockAccount } from '@/lib/mockData';
+import { useOtherSchedules } from '@/hooks/useOtherSchedules';
 import { bundleAvatarPng, type AvatarId } from '@/lib/avatars';
 import { Avatar as UiAvatar } from '@/components/ui/Avatar';
 import { useFriendList } from '@/hooks/useFriendList';
@@ -72,6 +73,7 @@ export function FriendsTab() {
   const [sentName, setSentName] = React.useState<string | null>(null);
   const mySchedules = useSwimSchedules((s) => s.schedules);
   const setIntent = useAddScheduleIntent((s) => s.setIntent);
+  const otherSchedules = useOtherSchedules();
   const { data: pools } = usePools();
   // 풀 사진 lookup — 매 카드 렌더마다 pools.find() 선형 탐색하던 비효율
   // 제거 (perf #2). pools 가 안 바뀌면 같은 Map 재사용.
@@ -122,7 +124,7 @@ export function FriendsTab() {
     const minD = dateKey(t0);
     const maxD = dateKey(t29);
     const m = new Map<string, FriendSlot>();
-    for (const o of MOCK_OTHER_SCHEDULES) {
+    for (const o of otherSchedules) {
       if (!o.isFriend || o.visibility === 'private') continue;
       if (blocked.has(o.userId)) continue; // 차단 = 일정에서도 제외
       if (o.date < minD || o.date > maxD) continue; // 오늘~+29일만
@@ -152,7 +154,7 @@ export function FriendsTab() {
     return [...m.values()].sort(
       (a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start),
     );
-  }, [mySlots, blockedIds]);
+  }, [mySlots, blockedIds, otherSchedules]);
 
   // 기본 선택일 = 가장 이른 친구 일정 날짜(없으면 오늘)
   const [selectedDate, setSelectedDate] = React.useState<Date>(() => {

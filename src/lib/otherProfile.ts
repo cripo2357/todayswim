@@ -1,16 +1,13 @@
-// 다른 사용자 프로필 데이터 (Phase 1 목업, 결정적 생성).
-// 백엔드 연동 전까지 id 해시로 안정적인 더미 프로필을 만든다.
-// (실서비스 시 이 함수만 API 호출로 교체.)
+// 다른 사용자 프로필 데이터.
+//
+// (P3 prod, 2026-06-02): mock 계정/일정 소스 제거 — 타인 프로필 상세를 채울
+// 서버 백엔드(자격증·IM100·주평균 등)는 미구현이라 후보 풀은 비어 있다.
+// getOtherProfile 은 항상 null, upcomingSchedulesFor 는 [] 를 반환한다.
+// 결정적 생성 로직은 서버 prefs/records 연동 시 교체할 수 있도록 유지.
 
-import {
-  MOCK_FRIENDS,
-  MOCK_NON_FRIENDS,
-  MOCK_OTHER_SCHEDULES,
-  type MockAccount,
-  type OtherSchedule,
-} from '@/lib/mockData';
+import type { MockAccount, OtherSchedule } from '@/lib/mockData';
 
-const ALL_ACCOUNTS: MockAccount[] = [...MOCK_FRIENDS, ...MOCK_NON_FRIENDS];
+const ALL_ACCOUNTS: MockAccount[] = [];
 
 /** id → 안정적 정수 해시 */
 function hash(id: string): number {
@@ -144,7 +141,8 @@ export function upcomingSchedulesFor(
 ): OtherSchedule[] {
   const today = todayYmd();
   const seen = new Set<string>();
-  return MOCK_OTHER_SCHEDULES.filter((o) => {
+  const source: OtherSchedule[] = []; // P3 prod: 서버 일정 소스 미연동 — 빈 배열.
+  return source.filter((o) => {
     if (o.userId !== userId) return false;
     if (o.visibility === 'private') return false;
     if (o.visibility === 'friends' && !isFriend) return false;
