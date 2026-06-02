@@ -5,13 +5,12 @@
  *            supabase.auth.signInWithIdToken({ provider: 'google' }) 교환.
  *  - Kakao : supabase.auth.signInWithOAuth({ provider: 'kakao' }) +
  *            expo-web-browser 인앱 브라우저 + PKCE code 교환.
- *  - Apple : 아직 mock (LoginScreen [TEST MODE] 가입 프로세스 진입점 전용).
+ *  - Apple : 미지원(향후 iOS 도입 예정). 약관에도 "현재 미운영"으로 명시.
  *
  * 세션은 supabase-js가 AsyncStorage에 영속(persistSession) — 앱 재시작 복원/자동 갱신.
  * user 상태는 supabase 세션에서 파생하며 onAuthStateChange로 추적한다.
  */
 import { create } from 'zustand';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   GoogleSignin,
   statusCodes,
@@ -45,8 +44,6 @@ interface AuthState {
   hydrated: boolean;
   signInWithGoogle: () => Promise<void>;
   signInWithKakao: () => Promise<void>;
-  /** Apple — [TEST MODE] 가입 프로세스 진입점 전용 mock */
-  signInMock: (provider: SocialProvider) => Promise<void>;
   signOut: () => Promise<void>;
   /**
    * 회원 탈퇴 (Figma 201:8341/10281/10428).
@@ -65,8 +62,6 @@ interface AuthState {
   deleteAccount: () => Promise<void>;
   hydrate: () => Promise<void>;
 }
-
-const MOCK_STORAGE_KEY = 'poolsday.auth.mockUser';
 
 // Google idToken 발급용 — Google Cloud "웹 애플리케이션" OAuth 클라이언트 ID.
 // (Android/iOS 클라이언트가 아니라 웹 클라이언트 ID여야 supabase가 검증 가능.)
@@ -136,12 +131,8 @@ export const useAuth = create<AuthState>((set) => ({
         // 0059 binding — 세션이 있으면 본인 profile 자동 복구(있을 때만).
         await syncProfileFromAuth(data.session);
       } else {
-        // Supabase 세션 없으면 Apple TEST MODE mock 세션 복원 시도.
-        const raw = await AsyncStorage.getItem(MOCK_STORAGE_KEY);
-        set({
-          user: raw ? (JSON.parse(raw) as AuthUser) : null,
-          hydrated: true,
-        });
+        // Supabase 세션 없음 — 비로그인(게스트).
+        set({ user: null, hydrated: true });
       }
       // 이후 세션 변화(자동 갱신/로그아웃) 추적.
       supabase.auth.onAuthStateChange((event, session) => {
@@ -233,19 +224,6 @@ export const useAuth = create<AuthState>((set) => ({
     await syncProfileFromAuth(sess.session); // 0059 binding
   },
 
-  signInMock: async (provider) => {
-    const mockUser: AuthUser = {
-      id: `mock-${provider}-${Date.now()}`,
-      provider,
-      nickname:
-        provider === 'google' ? '구글유저'
-        : provider === 'apple' ? '애플유저'
-        : '카카오유저',
-    };
-    await AsyncStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(mockUser));
-    set({ user: mockUser });
-  },
-
   signOut: async () => {
     // 푸시 토큰 정리는 fire-and-forget — getExpoPushTokenAsync 가 Expo
     // 서버 round-trip 이라 await 시 로그아웃 체감이 수초 멈춤. 함수 자체가
@@ -254,7 +232,6 @@ export const useAuth = create<AuthState>((set) => ({
     // scope:'local' — 디바이스 세션만 즉시 무효화(서버 round-trip 없음).
     // 다른 디바이스 세션은 살려둠 — 본인 로그아웃 UX 최우선.
     await supabase.auth.signOut({ scope: 'local' });
-    await AsyncStorage.removeItem(MOCK_STORAGE_KEY);
     try {
       await GoogleSignin.signOut();
     } catch {
@@ -272,9 +249,7 @@ export const useAuth = create<AuthState>((set) => ({
     // Edge Function 이 service_role 로 (auth.users · profiles CASCADE
     // donations · Storage avatars/{uid}/) 일괄 삭제. JWT 는 supabase-js 가
     // 현재 세션의 access_token 을 functions.invoke 호출 시 자동 첨부.
-    //
-    // ※ Apple TEST MODE mock 세션은 Supabase 세션이 없어 함수 호출이
-    //   401 로 실패 — 그 경우엔 로컬 teardown 만 진행(아래 catch 분기).
+    // 세션이 없으면(이미 만료 등) 서버 호출 없이 로컬 teardown 만 진행.
     const { data: sess } = await supabase.auth.getSession();
     if (sess.session) {
       const { data, error } = await supabase.functions.invoke(
@@ -298,7 +273,6 @@ export const useAuth = create<AuthState>((set) => ({
     }
     // 로컬 teardown — 세션/소셜/프로필 전면 비움.
     await supabase.auth.signOut();
-    await AsyncStorage.removeItem(MOCK_STORAGE_KEY);
     try {
       await GoogleSignin.signOut();
     } catch {

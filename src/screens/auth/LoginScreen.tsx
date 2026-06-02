@@ -1,26 +1,26 @@
-// Figma 101:2369 — 로그인 (Google / 카카오 / Apple 소셜 로그인)
+// Figma 101:2369 — 로그인 (Google / 카카오 소셜 로그인)
 //
-// Phase 1: useAuth.signInMock(provider) 호출 — 로컬 가짜 세션.
-// Phase 2: native OAuth SDK + supabase.auth.signInWithIdToken로 교체.
+// Supabase Auth 기반 — Google: native SDK idToken 교환 / Kakao: OAuth+PKCE.
+// Apple 로그인은 향후 iOS 도입 예정(현재 미운영 — 약관에도 명시).
 
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useAuth, type SocialProvider } from '@/store/auth';
+import { useAuth } from '@/store/auth';
 import { useProfile } from '@/store/profile';
-import { getTermsState, isFullyAgreed, clearTerms } from '@/lib/terms';
+import { getTermsState, isFullyAgreed } from '@/lib/terms';
 import { logEvent } from '@/lib/analytics';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
 import LoginIllust from '@assets/illustrations/login.svg';
 import IconGoogle from '@assets/icons/social-google.svg';
 import IconKakao from '@assets/icons/social-kakao.svg';
-import IconApple from '@assets/icons/social-apple.svg';
+
+type LoginProvider = 'google' | 'kakao';
 
 export function LoginScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const signInMock = useAuth((s) => s.signInMock);
   const signInWithGoogle = useAuth((s) => s.signInWithGoogle);
   const signInWithKakao = useAuth((s) => s.signInWithKakao);
 
@@ -35,30 +35,15 @@ export function LoginScreen() {
     navigation.replace(profile ? 'MapMain' : 'ProfileSetup');
   };
 
-  const onSocial = async (provider: SocialProvider) => {
+  const onSocial = async (provider: LoginProvider) => {
     void logEvent('signup_started', { provider });
-    // [TEST MODE] Apple 로그인을 가입 프로세스 강제 진입점으로 사용 — 매번 약관·프로필 리셋 후 처음부터.
-    // 원복: Apple 분기 블록 + iOS 플랫폼 체크 복구.
-    if (provider === 'apple') {
-      try {
-        await signInMock(provider);
-        await clearTerms();
-        await useProfile.getState().clear();
-        navigation.replace('TermsAgreement');
-      } catch (e) {
-        Alert.alert('로그인 실패', String(e));
-      }
-      return;
-    }
-
     try {
       if (provider === 'google') {
         await signInWithGoogle();
-        if (!useAuth.getState().user) return; // 사용자가 취소
       } else {
         await signInWithKakao();
-        if (!useAuth.getState().user) return; // 사용자가 취소
       }
+      if (!useAuth.getState().user) return; // 사용자가 취소
       await goAfterLogin();
     } catch (e) {
       Alert.alert('로그인 실패', String(e));
@@ -105,16 +90,6 @@ export function LoginScreen() {
           >
             <IconKakao width={20} height={20} />
             <Text style={[styles.btnLabel, styles.btnLabelKakao]}>카카오 로그인</Text>
-          </Pressable>
-
-          <Pressable
-            onPress={() => onSocial('apple')}
-            style={({ pressed }) => [styles.btn, styles.btnApple, pressed && { opacity: 0.85 }]}
-            accessibilityRole="button"
-            accessibilityLabel="Apple 로그인"
-          >
-            <IconApple width={20} height={20} />
-            <Text style={[styles.btnLabel, styles.btnLabelApple]}>Apple 로그인</Text>
           </Pressable>
         </View>
 
@@ -164,7 +139,6 @@ const styles = StyleSheet.create({
   },
   btnGoogle: { backgroundColor: '#000000', borderRadius: 16 },
   btnKakao: { backgroundColor: '#FEE500', borderRadius: 12 },
-  btnApple: { backgroundColor: '#F1F5F9', borderRadius: 16 },
   // Figma — Regular(400) 16/22 -0.112
   btnLabel: {
     fontSize: 16,
@@ -174,7 +148,6 @@ const styles = StyleSheet.create({
   },
   btnLabelGoogle: { color: tokens.color.white },
   btnLabelKakao: { color: 'rgba(0,0,0,0.85)' },
-  btnLabelApple: { color: tokens.color.ink900 },
   // Figma — 14/20 -0.084, #4B5563
   copyright: {
     fontSize: 14,
