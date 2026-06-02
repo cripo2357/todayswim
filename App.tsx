@@ -28,6 +28,7 @@ import { useSwimSchedules } from '@/store/swimSchedule';
 import { useFriends } from '@/store/friends';
 import { usePrefs } from '@/store/prefs';
 import { useFavorites } from '@/store/favorites';
+import { resetUserScopedState } from '@/lib/resetUserState';
 import { tokens } from '@/styles/tokens';
 
 const queryClient = new QueryClient({
@@ -101,12 +102,21 @@ export default function App() {
   React.useEffect(() => {
     usePoolFilter.getState().clearAll();
     useSelection.getState().select(null);
-    // AsyncStorage에 저장된 mock 세션 복원 — Splash에서 분기 처리.
-    useAuth.getState().hydrate();
-    useProfile.getState().hydrate();
-    useSwimSchedules.getState().hydrate();
-    usePrefs.getState().hydrate();
-    useFavorites.getState().hydrate();
+    (async () => {
+      // 인증 세션 복원 먼저 — 로그인 여부로 "사용자 스코프" hydrate 를 분기.
+      await useAuth.getState().hydrate();
+      if (useAuth.getState().user) {
+        // 로그인(실세션/Apple mock) — 계정 데이터·설정 로컬 복원.
+        void useProfile.getState().hydrate();
+        void useSwimSchedules.getState().hydrate();
+        void usePrefs.getState().hydrate();
+        void useFavorites.getState().hydrate();
+      } else {
+        // 게스트(비로그인/세션 만료) — 이전 사용자 잔존 데이터·설정 전면 제거.
+        // 명시적 로그아웃 없이 세션이 만료된 경우의 누수까지 차단.
+        await resetUserScopedState();
+      }
+    })();
     // (P3 prod, 2026-06-02): mock 친구 서버 시드 제거 — 실 사용자 데이터만 적재.
   }, []);
 

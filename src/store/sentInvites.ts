@@ -18,6 +18,8 @@ interface SentInvitesState {
   /** slotKey → 초대장 보낸 친구 id 목록 */
   bySlot: Record<string, string[]>;
   markInvited: (slotKey: string, friendIds: string[]) => void;
+  /** 로그아웃/탈퇴 시 — 메모리 비움(계정 스코프). */
+  reset: () => void;
 }
 
 export const useSentInvites = create<SentInvitesState>((set) => ({
@@ -28,4 +30,5 @@ export const useSentInvites = create<SentInvitesState>((set) => ({
       const merged = Array.from(new Set([...prev, ...friendIds]));
       return { bySlot: { ...s.bySlot, [slotKey]: merged } };
     }),
+  reset: () => set({ bySlot: {} }),
 }));

@@ -58,6 +58,8 @@ interface SwimScheduleState {
   setCompleted: (id: string, completed: boolean) => Promise<void>;
   /** 다른 사람 일정 보기 '친구 일정만' 전환 시 — 예정 일정 중 public → friends 강등 */
   downgradePublicToFriends: () => Promise<void>;
+  /** 로그아웃/탈퇴 시 — 메모리·영속 모두 비움(계정 스코프). */
+  reset: () => Promise<void>;
 }
 
 /** 일정이 지났는지 — 그 일정 date+end(종료시각) 기준 현재시각이 더 크면 지남.
@@ -157,6 +159,15 @@ export const useSwimSchedules = create<SwimScheduleState>((set, get) => ({
     set({ schedules: next });
     const me = myProfileId();
     if (me) void tryDowngradePublicToFriends(me, dateKey(new Date()));
+  },
+
+  reset: async () => {
+    set({ schedules: [] });
+    try {
+      await AsyncStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // 영속 삭제 실패해도 메모리는 비워짐.
+    }
   },
 }));
 

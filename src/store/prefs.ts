@@ -89,6 +89,8 @@ interface PrefsState {
   setNotifServiceAnnounce: (v: boolean) => Promise<void>;
   setNotifMonthlyReport: (v: boolean) => Promise<void>;
   setNotifMarketing: (v: boolean) => Promise<void>;
+  /** 로그아웃/탈퇴 시 — 모든 설정을 가입 기본값으로(계정 스코프) + 영속 키 제거. */
+  reset: () => Promise<void>;
 }
 
 const K_VIEW = 'poolsday.prefs.othersScheduleView';
@@ -383,5 +385,48 @@ export const usePrefs = create<PrefsState>((set, get) => ({
       await AsyncStorage.setItem(K_TERMS_MARKETING_REJECTED, now);
     }
     set({ notifMarketing: v });
+  },
+
+  reset: async () => {
+    // 모든 설정을 가입 기본값으로 되돌리고 영속 키 일괄 제거(계정 스코프).
+    // 마케팅 동의(K_TERMS_MARKETING)는 lib/terms.clearTerms 가 함께 처리하나
+    // 거부일 키는 prefs 전용이라 여기서 제거.
+    set({
+      othersScheduleView: 'friends',
+      scheduleInvite: 'on',
+      profileVisibility: 'friends',
+      friendRequest: 'nickname',
+      mapStartPoolId: null,
+      mapFriendHorizon: 'd1',
+      mapPublicHorizon: 'off',
+      pushOn: true,
+      notifFriendInvite: true,
+      notifScheduleReminder: true,
+      notifSubmissionResult: true,
+      notifServiceAnnounce: true,
+      notifMonthlyReport: true,
+      notifMarketing: false,
+    });
+    try {
+      await AsyncStorage.multiRemove([
+        K_VIEW,
+        K_INVITE,
+        K_PROFILE_VIS,
+        K_FRIEND_REQ,
+        K_MAP_START,
+        K_MAP_FRIENDS,
+        K_MAP_FRIENDS_LEGACY,
+        K_MAP_PUBLIC,
+        K_NOTIF_FRIEND,
+        K_NOTIF_SCHED,
+        K_NOTIF_SUBMIT,
+        K_NOTIF_SVC,
+        K_NOTIF_REPORT,
+        K_TERMS_MARKETING,
+        K_TERMS_MARKETING_REJECTED,
+      ]);
+    } catch {
+      // 영속 삭제 실패해도 메모리는 기본값으로 리셋됨.
+    }
   },
 }));

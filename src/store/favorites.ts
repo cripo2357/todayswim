@@ -16,6 +16,8 @@ interface FavoritesState {
   isFavorite: (poolId: string) => boolean;
   /** 토글 후 즐겨찾기 상태(true=등록됨) 반환 */
   toggle: (poolId: string) => Promise<boolean>;
+  /** 로그아웃/탈퇴 시 — 메모리·영속 모두 비움(계정 스코프). */
+  reset: () => Promise<void>;
 }
 
 export const useFavorites = create<FavoritesState>((set, get) => ({
@@ -53,5 +55,14 @@ export const useFavorites = create<FavoritesState>((set, get) => ({
       void usePrefs.getState().setMapStartPoolId(null);
     }
     return !has;
+  },
+
+  reset: async () => {
+    set({ ids: [] });
+    try {
+      await AsyncStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // 영속 삭제 실패해도 메모리는 비워짐.
+    }
   },
 }));

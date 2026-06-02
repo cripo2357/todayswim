@@ -21,6 +21,7 @@ import * as Linking from 'expo-linking';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { useProfile } from '@/store/profile';
+import { resetUserScopedState } from '@/lib/resetUserState';
 import { tryFetchProfileByAuthUid } from '@/lib/profileSync';
 import { setSentryUser } from '@/lib/sentry';
 import {
@@ -251,8 +252,9 @@ export const useAuth = create<AuthState>((set) => ({
       // Google 미로그인 상태면 무시
     }
     set({ user: null });
-    // 프로필도 비움 — 로그아웃 후 맵 프로필 FAB이 '로그인'으로 동작.
-    await useProfile.getState().clear();
+    // 계정 스코프 로컬 상태 전면 초기화 — 프로필·즐겨찾기·내 일정·친구·설정·
+    // 동의까지(다음 사용자/게스트에게 잔존 방지). 맵 프로필 FAB도 '로그인'으로.
+    await resetUserScopedState();
   },
 
   deleteAccount: async () => {
@@ -294,6 +296,6 @@ export const useAuth = create<AuthState>((set) => ({
       // Google 미로그인 상태면 무시
     }
     set({ user: null });
-    await useProfile.getState().clear();
+    await resetUserScopedState();
   },
 }));

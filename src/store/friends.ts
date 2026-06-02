@@ -74,6 +74,8 @@ interface FriendsState {
   removeFriend: (id: string) => void;
   /** 영구 차단 — 친구/요청/보낸요청에서 제거 + blocked 추가(해제 불가) */
   block: (id: string) => void;
+  /** 로그아웃/탈퇴 시 — 메모리 비움(계정 스코프). */
+  reset: () => void;
 }
 
 export const useFriends = create<FriendsState>((set) => ({
@@ -186,6 +188,7 @@ export const useFriends = create<FriendsState>((set) => ({
           },
     );
   },
+  reset: () => set({ friends: [], requests: [], sent: [], blocked: [] }),
 }));
 
 /** 특정 사용자와의 관계 — blocked 최우선, 그다음 friend/incoming/outgoing/none */
