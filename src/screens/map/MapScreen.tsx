@@ -858,7 +858,7 @@ export function MapScreen() {
             accessibilityRole="button"
             accessibilityLabel="공지사항"
           >
-            <IconAnnouncementFab width={24} height={24} />
+            <IconAnnouncementFab width={20} height={20} />
           </Pressable>
         )}
         <View style={styles.profileFabWrap}>
