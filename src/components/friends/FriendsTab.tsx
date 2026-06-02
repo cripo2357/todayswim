@@ -62,6 +62,11 @@ export function FriendsTab() {
   const reject = useFriends((s) => s.reject);
   const friends = useFriends((s) => s.friends);
   const blockedIds = useFriends((s) => s.blocked);
+  // 차단 제외 가시 친구 수 — 0이면 친구 일정/목록 영역 모두 hide.
+  const visibleFriendCount = React.useMemo(() => {
+    const blocked = new Set(blockedIds);
+    return friends.filter((f) => !blocked.has(f.id)).length;
+  }, [friends, blockedIds]);
   // 새 친구 추가 시트 + 요청완료 모달(169:5727 재사용) 상태
   const [addOpen, setAddOpen] = React.useState(false);
   const [sentName, setSentName] = React.useState<string | null>(null);
@@ -330,7 +335,8 @@ export function FriendsTab() {
           </Pressable>
         </View>
 
-        {/* ── 친구들의 수영 일정 ── */}
+        {/* ── 친구들의 수영 일정 ── 친구 0명이면 영역 자체 숨김 */}
+        {visibleFriendCount > 0 ? (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
             친구들의 수영 일정 ({allFriendSlots.length})
@@ -411,8 +417,10 @@ export function FriendsTab() {
             )}
           </View>
         </View>
+        ) : null}
 
-        {/* ── 친구 목록 ── */}
+        {/* ── 친구 목록 ── 친구 0명이면 영역 자체 숨김 */}
+        {visibleFriendCount > 0 ? (
         <View
           style={styles.section}
           onLayout={(e) => setSectionY(e.nativeEvent.layout.y)}
@@ -443,12 +451,11 @@ export function FriendsTab() {
               <FriendRow key={f.id} friend={f} onOpen={onOpenProfile} />
             ))}
             {pagedFriends.length === 0 ? (
-              <Text style={styles.empty}>
-                {query ? '검색 결과가 없어요.' : '아직 추가된 친구가 없습니다.'}
-              </Text>
+              <Text style={styles.empty}>검색 결과가 없어요.</Text>
             ) : null}
           </View>
         </View>
+        ) : null}
 
         {/* 검색 중에만: 마지막 섹션을 화면 상단까지 끌어올리기 위한 스페이서 */}
         {searchOpen ? <View style={{ height: SCREEN_H }} /> : null}

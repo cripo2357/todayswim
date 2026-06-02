@@ -38,7 +38,7 @@ import {
 } from '@/lib/scheduleConflict';
 import { tokens } from '@/styles/tokens';
 import { navigationRef } from '@/navigation/navigationRef';
-import { MOCK_FRIENDS } from '@/lib/mockData';
+import { useFriends } from '@/store/friends';
 import ScheduleCompleteIllust from '@assets/illustrations/schedule-complete.svg';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { SheetCloseButton } from '@/components/ui/SheetCloseButton';
@@ -243,7 +243,13 @@ export function AddScheduleSheet({
   };
 
   // 친구가 0명이면 "이 일정에 친구 초대하기" 미노출 (Figma 125:3342).
-  const hasFriends = MOCK_FRIENDS.length > 0;
+  // useFriends store + 차단 제외 가시 친구 기준 — block_policy_enforcement.
+  const allFriends = useFriends((s) => s.friends);
+  const blockedIds = useFriends((s) => s.blocked);
+  const hasFriends = React.useMemo(() => {
+    const blocked = new Set(blockedIds);
+    return allFriends.some((f) => !blocked.has(f.id));
+  }, [allFriends, blockedIds]);
   // 방금 등록한 일정 스냅샷(초대 화면에 넘길 확정 일정 정보).
   const submittedRef = React.useRef<{
     poolId: string;
