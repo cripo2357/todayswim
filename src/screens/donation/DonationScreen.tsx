@@ -186,15 +186,18 @@ export function DonationScreen() {
     return () => clearTimeout(t);
   }, [kbHeight, editingId]);
 
-  // 계좌 클립보드 복사 — expo-clipboard 동적 import.
+  // 계좌 클립보드 복사 — 은행+계좌 한 줄 (예: "카카오뱅크 3333-12-3456789").
+  // 송금 앱 paste 흐름 일치. expo-clipboard 동적 import.
   const onCopyAccount = async () => {
     const account = appStatus?.donationAccount;
+    const bank = appStatus?.donationBank;
     if (!account) return;
+    const payload = bank ? `${bank} ${account}` : account;
     try {
       const Clipboard = await import('expo-clipboard');
-      await Clipboard.setStringAsync(account);
+      await Clipboard.setStringAsync(payload);
       void logEvent('donation_account_copy');
-      Alert.alert('계좌 복사', '계좌번호가 복사됐어요.');
+      Alert.alert('계좌 복사', '은행과 계좌번호가 복사됐어요.');
     } catch {
       Alert.alert(
         '계좌 복사 실패',
