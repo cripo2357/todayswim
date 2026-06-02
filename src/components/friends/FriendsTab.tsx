@@ -443,7 +443,9 @@ export function FriendsTab() {
               <FriendRow key={f.id} friend={f} onOpen={onOpenProfile} />
             ))}
             {pagedFriends.length === 0 ? (
-              <Text style={styles.empty}>검색 결과가 없어요.</Text>
+              <Text style={styles.empty}>
+                {query ? '검색 결과가 없어요.' : '아직 추가된 친구가 없습니다.'}
+              </Text>
             ) : null}
           </View>
         </View>
