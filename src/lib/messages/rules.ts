@@ -27,6 +27,7 @@
 
 export type MessageKind =
   | 'friend_request_received' // 나에게 친구 신청이 옴
+  | 'friend_request_sent' // 내가 친구 신청을 보냄 (본인 이력) — invite_sent 패턴과 일관
   | 'friend_request_rejected' // 내가 친구 신청을 거절함 (본인 이력)
   | 'friend_request_accepted' // 친구 신청 수락됨 (양측)
   | 'invite_sent' // 내가 수영 일정 초대를 보냄 (본인 이력)
@@ -165,6 +166,14 @@ export const RULES: Record<MessageKind, Rule> = {
       title: '친구 신청',
       body: [`${nick(p)}님이 친구를 신청했어요.`],
       actions: ['거절', '수락'],
+    }),
+  },
+  // 발송자 본인 이력 — invite_sent 와 일관. actions 없음(취소는 별도 경로).
+  friend_request_sent: {
+    recipients: 'self',
+    build: (p) => ({
+      title: '친구 신청',
+      body: [`${nick(p)}님에게 친구 신청을 보냈어요.`],
     }),
   },
   friend_request_accepted: {

@@ -32,7 +32,7 @@ import { BottomSheet, SheetCtaButton } from '@/components/ui/BottomSheet';
 import { Avatar } from '@/components/ui/Avatar';
 import { useFriends } from '@/store/friends';
 import { useProfile } from '@/store/profile';
-import { dispatchMessageTo } from '@/lib/messages/dispatch';
+import { dispatchMessage, dispatchMessageTo } from '@/lib/messages/dispatch';
 import {
   sanitizeCode,
   type FriendSearchUser,
@@ -127,8 +127,8 @@ export function AddFriendSheet({
   const onCta = () => {
     if (!picked) return;
     sendRequest(picked.id);
-    // P2: 상대 알림함에 friend_request_received 적재. name = 발신자(나) 닉네임.
-    // 발송자 본인 알림은 정책상 없음(친구신청 발송은 self 이력 미적재).
+    // 상대 알림함에 friend_request_received 적재 — name = 발신자(나) 닉네임.
+    // 본인 알림함에도 friend_request_sent 적재 (invite_sent 와 일관, 발송 이력 가시화).
     const my = useProfile.getState().profile;
     if (my?.name) {
       void dispatchMessageTo(
@@ -138,6 +138,11 @@ export function AddFriendSheet({
         { senderUserId: my.id },
       );
     }
+    void dispatchMessage(
+      'friend_request_sent',
+      { name: picked.nickname },
+      { targetUserId: picked.id },
+    );
     onSent(picked.nickname);
   };
 

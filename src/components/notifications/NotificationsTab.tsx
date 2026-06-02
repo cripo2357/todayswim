@@ -99,6 +99,7 @@ const avatar = (id: AvatarId): Slot => ({ type: 'avatar', id });
 // 트리거가 곧 관계를 함축 — 시간 지나도 그 시점 관계 보존.
 const REL_BY_KIND: Partial<Record<MessageKind, AvatarRel>> = {
   friend_request_received: 'stranger', // 신청자 = 아직 친구 아님
+  friend_request_sent: 'stranger', // 내가 보낸 시점: 상대는 아직 친구 아님
   // friend_request_accepted: 'friend' (기본) — 방금 친구 됨
   // invite_received: 'friend' (기본) — 이미 친구라 초대받음
   // friend_schedule_overlap: 'friend' (기본) — 친구 일정 겹침
@@ -139,6 +140,8 @@ const GROUPS: { title: string; items: SampleSpec[] }[] = [
       // ── 유형 1. 사람 발신 ──
       // 상대 행동 → 프로필 사진 (테두리 색은 relFor(kind) 자동 결정)
       { id: 's1', kind: 'friend_request_received', slot: avatar('avatar-male-1'), params: { name: NM } },
+      // 본인 발송 이력 — 상대(아직 친구 아님) 아바타 + stranger 테두리
+      { id: 's1b', kind: 'friend_request_sent', slot: avatar('avatar-female-3'), params: { name: NM } },
       { id: 's2', kind: 'friend_request_accepted', slot: avatar('avatar-female-2'), params: { name: NM } },
       // 부정 성격(거절·취소·만료) → [반려] 아이콘으로 통일 (정책)
       { id: 's3', kind: 'friend_request_rejected', slot: SLOT_REJECT, params: { name: NM } },
