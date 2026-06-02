@@ -22,6 +22,7 @@ import IconCloseCircle from '@assets/icons/close-circle.svg';
 import IconLocate from '@assets/icons/locate.svg';
 import IconProfile from '@assets/icons/profile.svg';
 import IconLifeBuoy from '@assets/icons/life-buoy.svg';
+import IconAnnouncementFab from '@assets/icons/announcement/megaphone-white.svg';
 
 import type { RootStackParamList } from '@/navigation/types';
 import type { Pool } from '@/types/pool';
@@ -843,7 +844,19 @@ export function MapScreen() {
               <Text style={styles.fabClubLabel}>C</Text>
             </Pressable>
           </View>
-        ) : null}
+        ) : (
+          /* 공지사항 FAB — 비로그인 한정. 로그인 게이트 전에 공지를 열람할 수
+           *  있도록 프로필 FAB 위에 배치 (Figma 335:5614). 클럽 FAB 슬롯과
+           *  동일 위치 — 로그인 상태에 따라 둘 중 하나만 노출. */
+          <Pressable
+            onPress={() => navigation.navigate('Announcements')}
+            style={[styles.fab, styles.fabRound]}
+            accessibilityRole="button"
+            accessibilityLabel="공지사항"
+          >
+            <IconAnnouncementFab width={24} height={24} />
+          </Pressable>
+        )}
         <View style={styles.profileFabWrap}>
           <Pressable
             onPress={() => {
