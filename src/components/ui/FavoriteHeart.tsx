@@ -5,6 +5,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import { useFavorites } from '@/store/favorites';
+import { useProfile } from '@/store/profile';
 import HeartFilled from '@assets/icons/heart-filled.svg';
 import HeartOutline from '@assets/icons/heart-outline.svg';
 
@@ -19,6 +20,10 @@ export function FavoriteHeart({
 }) {
   const isFav = useFavorites((s) => s.ids.includes(poolId));
   const toggle = useFavorites((s) => s.toggle);
+  // 즐겨찾기는 계정 기능(로그아웃 시 초기화) — 비회원에겐 하트 자체를 미노출.
+  // 로그인(profile 존재) 사용자에게만 표시.
+  const isGuest = useProfile((s) => s.profile == null);
+  if (isGuest) return null;
 
   return (
     <Pressable
