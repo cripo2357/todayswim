@@ -93,6 +93,9 @@ export function AddFriendSheet({
   const [nickOpen, setNickOpen] = React.useState(false);
   const [triggerY, setTriggerY] = React.useState(0);
   const [code, setCode] = React.useState('');
+  // BottomSheet 컨테이너가 onResponderRelease 로 Keyboard.dismiss 발사하면
+  // TextInput 이 responder 못 잡고 focus 실패 — 박스 탭에서 ref.focus() 명시 호출.
+  const idInputRef = React.useRef<TextInput>(null);
 
   React.useEffect(() => {
     if (!visible) {
@@ -295,9 +298,15 @@ export function AddFriendSheet({
           </>
         ) : (
           <>
-            <View style={styles.inputBox}>
+            <Pressable
+              onPress={() => idInputRef.current?.focus()}
+              style={styles.inputBox}
+              accessibilityRole="search"
+              accessibilityLabel="친구 ID 입력"
+            >
               <View style={styles.searchInputWrap}>
                 <TextInput
+                  ref={idInputRef}
                   value={code}
                   onChangeText={(v) => setCode(sanitizeCode(v))}
                   style={styles.input}
@@ -313,7 +322,7 @@ export function AddFriendSheet({
                 ) : null}
               </View>
               <IconChevronDown width={20} height={20} />
-            </View>
+            </Pressable>
             {idFound ? (
               <SelectedUserRow user={idFound} />
             ) : idMiss ? (
