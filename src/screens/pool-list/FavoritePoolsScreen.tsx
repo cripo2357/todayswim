@@ -55,7 +55,7 @@ export function FavoritePoolsScreen() {
   return (
     <ScreenContainer withHorizontalPadding={false} background={tokens.color.bgPaper}>
       <AppHeader
-        title={`즐겨찾는 수영장 (${favoritePools.length})`}
+        title={`자주 가는 수영장 (${favoritePools.length})`}
         background={tokens.color.bgPaper}
       />
 
@@ -68,7 +68,7 @@ export function FavoritePoolsScreen() {
               onPress={() => setSearchOpen(true)}
               style={styles.poolTrigger}
               accessibilityRole="button"
-              accessibilityLabel="수영장 이름으로 즐겨찾기 검색"
+              accessibilityLabel="수영장 이름으로 검색"
             >
               <Text style={[styles.poolTriggerText, styles.poolTriggerPlaceholder]}>
                 수영장 이름
@@ -101,7 +101,7 @@ export function FavoritePoolsScreen() {
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
             <Text style={styles.empty}>
-              즐겨찾는 수영장이 없어요.{'\n'}수영장을 검색해 하트를 눌러보세요.
+              자주 가는 수영장이 없어요.{'\n'}수영장을 검색해 하트를 눌러보세요.
             </Text>
           }
           showsVerticalScrollIndicator={false}

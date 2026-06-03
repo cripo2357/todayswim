@@ -109,7 +109,7 @@ export function MapStartLocationScreen() {
         {/* 즐겨찾는 수영장 — 없으면 섹션 자체 미표시 */}
         {favoritePools.length > 0 ? (
           <View style={styles.group}>
-            <Text style={styles.groupLabel}>즐겨찾는 수영장</Text>
+            <Text style={styles.groupLabel}>자주 가는 수영장</Text>
             {favoritePools.map((p) => {
               const sel = mapStartPoolId === p.id;
               return (
