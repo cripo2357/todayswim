@@ -13,6 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import IconCake from '@assets/icons/cake.svg';
+import IconCalendarForm from '@assets/icons/calendar-form.svg';
 import IconArrowUpload from '@assets/icons/arrow-upload.svg';
 import IconEdit from '@assets/icons/edit.svg';
 import IconChevronDown from '@assets/icons/chevron-down.svg';
@@ -563,9 +564,10 @@ export function ProfileTab({
           <IconCake width={20} height={20} />
           <Text style={styles.inputText}>
             {profile.birthDate
-              ? profile.birthDate.replace(/-/g, '.') + '.'
-              : '1900.01.01.'}
+              ? profile.birthDate.replace(/-/g, '.')
+              : '1900.01.01'}
           </Text>
+          <IconCalendarForm width={20} height={20} />
         </Pressable>
         <Text style={styles.fieldNote}>
           나이는 비공개이며, 모임 참여시 연령대 확인에만 사용합니다.
