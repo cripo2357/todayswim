@@ -244,6 +244,20 @@ export function MapScreen() {
     }, []),
   );
 
+  // 종료 안내 노출 중 사용자가 다른 동작(예: 수영장 선택)을 하면 = 종료 의사
+  // 없이 실수로 뒤로가기를 누른 것으로 해석 → 안내 닫고 종료 시퀀스 해제.
+  const disarmExit = React.useCallback(() => {
+    if (exitArmedRef.current) {
+      exitArmedRef.current = false;
+      setExitToastVisible(false);
+    }
+  }, []);
+
+  // 수영장 선택 시 종료 안내 해제.
+  React.useEffect(() => {
+    if (selectedPoolId) disarmExit();
+  }, [selectedPoolId, disarmExit]);
+
   const filter = usePoolFilter();
   const filterActive = isFilterActive(filter);
   const clearAllFilter = usePoolFilter((s) => s.clearAll);
