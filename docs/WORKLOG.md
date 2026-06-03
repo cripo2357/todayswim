@@ -2,7 +2,7 @@
 
 > git 커밋 기록(실제 author date) 기반 날짜별 정리. 추측 없이 커밋 사실만.
 > 기간: 2026-05-06(레포 초기화) ~ 2026-06-03(현재).
-> 단계: **P1 ✅ tag `phase1-complete` (2026-05-20) → P2 ✅ tag `phase2-complete` (2026-05-20) → P3(하드닝·prod 분리·출시, 진행 중)**.
+> 단계: **P1 ✅ `phase1-complete` (2026-05-20) → P2 ✅ `phase2-complete` (2026-05-20) → P3(출시) — Android 프로덕션 심사 제출 완료 (2026-06-03), 승인 대기. iOS 트랙 별도 진행 예정.**
 
 ---
 
@@ -155,10 +155,30 @@ Play Console 화면을 단계별로 짚으며 앱 콘텐츠 선언·스토어 �
 
 ---
 
+## 2026-06-03 (이어서) — 출시 critical path 완수 + **프로덕션 심사 제출** ★
+
+위 critical path를 같은 날 전부 완료하고 Google Play 프로덕션에 심사 제출. 상세 타임라인은 [`docs/LAUNCH-LOG.md`](LAUNCH-LOG.md).
+
+- **UI 정합/버그 배치** (commits 9da6c1e~5d48209):
+  - `calendar-form.svg` 잘못된 share 아이콘 → 정상 달력(110:3761) / 생년월일 필드 동시 수정
+  - 설정 아이콘 3종 viewBox 정규화(시각 크기 통일) / ClubMain 패딩 20→16 → **전 화면 가로패딩 16 표준 통일**
+  - **휠 흰색 텍스트 버그** — 조건부 style array의 Android color 잔류, 전 휠(수업시간·수심·연월) 단일객체+key 토글로 수정
+  - 수심 입력 시트 세로 스택(101:5025) + chart-bubble 아이콘 / 프로필 가입·설정 화면 성별·생년월일·여백 통일
+- **prod DB 정리(출시 위생)**: prod(rwxefc) 테스트 사용자 데이터 전체 삭제(FK 안전순서 DO 블록) — profiles/nicknames/auth.users 등 비움(닉네임 "은호" 복구). pools(31)/schedules(31)/blocklist/faqs/terms 시드 보존. dev↔prod pools ID 완전일치로 마이그 동기 확인(deleted_users는 0110 의도적 DROP).
+- **EAS 빌드**: production AAB vc10→11→**12**(`db0c1460`, 19:54 완료) — 앞 critical path #1 ✅
+- **SHA-1 등록(critical path #2 ✅)**: Play 앱 서명 키 SHA-1/256을 **Firebase(pool-s-day) Android**에 등록 → Android OAuth 클라이언트 자동생성. (이전 `google-services.json` oauth_client 0개 = 로그인 깨짐 원인 확정). 재빌드 불필요(webClientId 서버검증).
+- **내부 테스트 검증(critical path #3 ✅)**: vc12 내부트랙 배포(19:58) → 실기기 구글 로그인·prod 데이터·가입·"은호"·UI 수정분 전부 통과.
+- **프로덕션 승격 → 심사 제출 ★**: vc12 + 출시노트(v1.0.0) + 국가 대한민국 + 앱액세스. **검토 전송 완료** — 프로덕션/국가/스토어등록정보/콘텐츠등급/타겟(18+) 일괄 심사 중. **관리형 게시 OFF → 승인 즉시 자동 공개.** 결과 메일 cripo2357@gmail.com.
+
+**다음(출시 후)**: 심사 결과 대기 → 승인 시 대한민국 자동공개 / 거부 시 사유 확인·재제출. iOS 준비는 별도 트랙(★ Sign in with Apple 4.8 필수 미구현, iOS Google OAuth/`GOOGLE_IOS_URL_SCHEME` 미설정, Apple Developer 가입 전제).
+
+---
+
 ## 단계 요약 (현 위치)
 
 - **P1 (목업·UX) — ✅ 완료** (2026-05-20, tag `phase1-complete`). 제품 정의·정책·디자인·약관·기본 데이터 결판.
 - **P2 (백엔드 SSOT) — ✅ 완료** (2026-05-20, tag `phase2-complete`). 13배치 + 마이그 0047/0048/0049/0059/0060 + 회귀 정정 2건. profiles/friends/blocks/user_schedules/notifications/auth_uid binding/RLS 보수적 하드닝.
-- **P3 (하드닝·출시) — 진행 중** (2026-05-21~). prod Supabase 분리 + RLS strict + Apple Sign-In + 사업자등록·Kakao 비즈앱 전환 + EAS production + 스토어 심사. 외부 시간(사업자/심사) 1-2개월 예상, 코드는 1주 안.
+- **P3 (하드닝·출시) — Android 심사 제출 완료** (2026-05-21~2026-06-03). prod Supabase 분리 + RLS strict + 사업자등록 + EAS production + prod DB 정리 + SHA-1 등록(구글 로그인) + 내부테스트 검증 → **Google Play 프로덕션 심사 제출(vc12, 대한민국, 관리형게시 OFF). 승인 대기 중.**
+  - **남은 것**: ① Android 심사 승인(자동 공개) ② **iOS 출시 트랙**(Apple Developer 가입 / **Sign in with Apple 구현(4.8 필수)** / iOS Google OAuth·URL scheme / 스크린샷 / App Store Connect) ③ Kakao 비즈앱 정식 전환(이메일 scope).
 
 *무게중심: 코드 비중 P3 < P2 < P1. P3는 외부 의존(사업자 등록·스토어 심사)이 critical path.*
