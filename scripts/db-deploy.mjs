@@ -47,9 +47,13 @@ function push(label, url) {
     return false;
   }
   console.log(`\n▶ ${label} 에 db push${dryRun ? ' (dry-run)' : ''} …`);
+  // supabase db push 는 prepared statement 를 사용 → transaction pooler(6543)와
+  // 충돌(SQLSTATE 42P05 "prepared statement already exists"). 같은 호스트의
+  // session pooler(5432)로 전환해 적용한다(포트만 다름, URL 값은 보지 않고 치환).
+  const pushUrl = url.replace(/:6543\b/, ':5432');
   // shell:true 로 실행하되 URL 은 따옴표로 감싼다(특수문자 &,? 가 cmd 파싱을
   // 깨뜨려 ENOENT 나는 것 방지). URL 자체는 콘솔에 안 찍음(라벨만).
-  const cmd = `npx supabase db push --db-url "${url}" --yes${dryRun ? ' --dry-run' : ''}`;
+  const cmd = `npx supabase db push --db-url "${pushUrl}" --yes${dryRun ? ' --dry-run' : ''}`;
   const r = spawnSync(cmd, { stdio: 'inherit', shell: true });
   if (r.status !== 0) {
     console.error(`✗ ${label} 적용 실패 (exit ${r.status}). 이후 단계 중단.`);
