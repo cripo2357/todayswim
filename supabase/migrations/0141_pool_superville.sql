@@ -32,7 +32,8 @@ insert into public.pools (
     5, 23, 1.3, 1.3,
     ARRAY['해수풀'], false, false, false,
     true, true,
-    20000, 20000, 20000, null)
+    20000, 20000, 20000,
+    'https://hldfsstyzbnqnrlqhhtc.supabase.co/storage/v1/object/public/pool-photos/POOL_0045.jpg')
 on conflict (id) do nothing;
 
 -- 자유수영 시간표(운영시간 기준). hours: 06:00~22:00=16, 06:00~18:00=12.
