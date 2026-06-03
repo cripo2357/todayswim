@@ -28,6 +28,9 @@ interface OptionSheetProps<T extends string | number> {
   ctaLabel?: string;
   /** 확정 버튼 우측 아이콘 (기본 Check) */
   ctaIcon?: React.ReactNode;
+  /** true면 확인 버튼을 안 눌러도 시트가 닫힐 때(딤 탭/스와이프 포함)
+   *  현재 선택을 확정한다. (성별 시트 등 — 닫기=선택 적용) */
+  commitOnClose?: boolean;
 }
 
 export function OptionSheet<T extends string | number>({
@@ -39,6 +42,7 @@ export function OptionSheet<T extends string | number>({
   onConfirm,
   ctaLabel = '선택',
   ctaIcon,
+  commitOnClose = false,
 }: OptionSheetProps<T>) {
   const [draft, setDraft] = React.useState<T | null>(value);
 
@@ -53,10 +57,18 @@ export function OptionSheet<T extends string | number>({
     onClose();
   };
 
+  // 닫기 경로(딤 탭/스와이프/뒤로) — commitOnClose면 변경된 선택을 확정.
+  const handleClose = () => {
+    if (commitOnClose && draft != null && draft !== value) {
+      onConfirm(draft);
+    }
+    onClose();
+  };
+
   return (
     <BottomSheet
       visible={visible}
-      onClose={onClose}
+      onClose={handleClose}
       title={title}
       contentStyle={styles.sheet}
     >

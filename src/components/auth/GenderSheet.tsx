@@ -27,6 +27,7 @@ export function GenderSheet({ visible, value, onConfirm, onClose }: Props) {
       options={GENDER_OPTIONS}
       value={value}
       onConfirm={onConfirm}
+      commitOnClose
     />
   );
 }
