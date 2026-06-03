@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { tokens } from '@/styles/tokens';
 import { SheetCloseButton } from '@/components/ui/SheetCloseButton';
 import IconChevronDownCircle from '@assets/icons/chevron-down-circle.svg';
+import IconChartBubble from '@assets/icons/chart-bubble.svg';
 
 const ROW_HEIGHT = 52;
 const VISIBLE_ROWS = 3;
@@ -165,24 +166,33 @@ export function DualWheelSheet({
                 <SheetCloseButton onPress={close} style={styles.closeBtn} />
               </View>
 
-              <View style={styles.dualWheelRow}>
-                <View style={styles.dualWheelCol}>
-                  <Text style={styles.dualLabel}>{leftLabel}</Text>
-                  <WheelColumn
-                    data={options}
-                    format={format}
-                    selectedIndex={leftIdx}
-                    onIndexChange={setLeftIdx}
-                  />
+              {/* Figma 101:5025 — 세로 스택: 얕은 수심 / 구분선 / 깊은 수심.
+                  각 행 = 좌측 2줄 라벨 + 가로 휠 (gap 32). */}
+              <View style={styles.dualGroup}>
+                <View style={styles.depthRow}>
+                  <Text style={styles.rowLabel}>{leftLabel.split(' ').join('\n')}</Text>
+                  <View style={styles.depthWheelWrap}>
+                    <WheelColumn
+                      data={options}
+                      format={format}
+                      selectedIndex={leftIdx}
+                      onIndexChange={setLeftIdx}
+                    />
+                  </View>
                 </View>
-                <View style={styles.dualWheelCol}>
-                  <Text style={styles.dualLabel}>{rightLabel}</Text>
-                  <WheelColumn
-                    data={options}
-                    format={format}
-                    selectedIndex={rightIdx}
-                    onIndexChange={setRightIdx}
-                  />
+
+                <View style={styles.depthDivider} />
+
+                <View style={styles.depthRow}>
+                  <Text style={styles.rowLabel}>{rightLabel.split(' ').join('\n')}</Text>
+                  <View style={styles.depthWheelWrap}>
+                    <WheelColumn
+                      data={options}
+                      format={format}
+                      selectedIndex={rightIdx}
+                      onIndexChange={setRightIdx}
+                    />
+                  </View>
                 </View>
               </View>
 
@@ -191,7 +201,7 @@ export function DualWheelSheet({
                 style={({ pressed }) => [styles.cta, pressed && { opacity: 0.85 }]}
               >
                 <Text style={styles.ctaLabel}>{ctaLabel}</Text>
-                <IconChevronDownCircle width={20} height={20} />
+                <IconChartBubble width={20} height={20} />
               </Pressable>
             </View>
           </SafeAreaView>
@@ -299,18 +309,22 @@ const styles = StyleSheet.create({
   },
   closeBtn: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center' },
   singleWheelRow: { alignItems: 'center' },
-  dualWheelRow: {
-    flexDirection: 'row',
-    gap: 16,
+  // Figma 101:5031 — 두 행(얕은/깊은) + 구분선, 섹션 gap 32
+  dualGroup: { gap: 32 },
+  // Figma 101:5032/5043 — 좌측 라벨 + 가로 휠, gap 32
+  depthRow: { flexDirection: 'row', alignItems: 'center', gap: 32 },
+  depthWheelWrap: { flex: 1 },
+  // Figma 101:5033/5044 — Regular 24/32 -0.288 black, 2줄(얕은\n수심)
+  rowLabel: {
+    fontSize: 24,
+    lineHeight: 32,
+    letterSpacing: -0.288,
+    fontFamily: tokens.font.sans,
+    color: tokens.color.black,
+    textAlign: 'center',
   },
-  dualWheelCol: { flex: 1, alignItems: 'center', gap: 8 },
-  dualLabel: {
-    fontSize: 16,
-    lineHeight: 22,
-    letterSpacing: -0.112,
-    fontFamily: tokens.font.sansSemibold,
-    color: tokens.color.ink900,
-  },
+  // Figma 101:5042 — 구분선 #E2E8F0
+  depthDivider: { height: 1, backgroundColor: '#E2E8F0' },
   wheelCol: {
     width: '100%',
     height: PICKER_HEIGHT,
