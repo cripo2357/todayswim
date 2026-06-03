@@ -181,10 +181,11 @@ export function PoolFilterScreen() {
           </View>
         </Section>
 
-        {/* 옵션 — 어린이풀/다이빙/호텔 */}
+        {/* 옵션 — 어린이풀/다이빙 (호텔은 아직 시기상조라 임시 숨김 —
+            복원 시 아래 filter 제거하면 됨. 타입/스토어/데이터는 유지) */}
         <Section label="옵션">
           <View style={styles.chipRow}>
-            {ALL_FACILITIES.map((f) => {
+            {ALL_FACILITIES.filter((f) => f !== '호텔').map((f) => {
               const checked = facilities.has(f);
               // 선택 시: 글자색(white)과 동일한 white 아이콘으로 swap.
               const icon =
