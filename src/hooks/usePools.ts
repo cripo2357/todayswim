@@ -36,6 +36,14 @@ interface PoolRow {
   photo_url: string | null;
 }
 
+// photo_url 환경 정규화: 저장값(과거 full URL / 신규 파일명)에서 파일명만 추출해
+// 현재 Supabase Storage(EXPO_PUBLIC_SUPABASE_URL) public URL로 조합 → dev/prod host
+// 의존 제거. dev 저장소를 정리해도 prod 사진이 안 깨짐. (pool_photo_url_dev_baked 근본해결)
+function resolvePoolPhotoUrl(stored: string): string {
+  const filename = stored.split('/').pop() || stored;
+  return supabase.storage.from('pool-photos').getPublicUrl(filename).data.publicUrl;
+}
+
 function rowToPool(row: PoolRow): Pool {
   return {
     id: row.id,
@@ -63,7 +71,7 @@ function rowToPool(row: PoolRow): Pool {
     // 평일가: price_weekday 우선, 없으면 레거시 price_per_session 폴백.
     priceWeekday: row.price_weekday ?? row.price_per_session ?? undefined,
     priceWeekend: row.price_weekend ?? undefined,
-    photoUrl: row.photo_url ? { uri: row.photo_url } : undefined,
+    photoUrl: row.photo_url ? { uri: resolvePoolPhotoUrl(row.photo_url) } : undefined,
   };
 }
 
