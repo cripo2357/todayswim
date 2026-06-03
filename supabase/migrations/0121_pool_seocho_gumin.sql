@@ -37,7 +37,8 @@ insert into public.pools (
     null, null, null, null,
     '{}', false, false, false,
     true, true,
-    3300, 3300, 6000, null,
+    3300, 3300, 6000,
+    'https://hldfsstyzbnqnrlqhhtc.supabase.co/storage/v1/object/public/pool-photos/POOL_0037.jpg',
     'https://www.seocho.go.kr/sports/fmcs/103')
 on conflict (id) do nothing;
 

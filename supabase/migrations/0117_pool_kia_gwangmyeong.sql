@@ -38,7 +38,8 @@ insert into public.pools (
     null, null, null, null,
     '{}', false, false, false,
     true, true,
-    6000, 6000, 6000, null,
+    6000, 6000, 6000,
+    'https://hldfsstyzbnqnrlqhhtc.supabase.co/storage/v1/object/public/pool-photos/POOL_0033.jpg',
     'https://kiasportscenter.qshop.ai/price')
 on conflict (id) do nothing;
 

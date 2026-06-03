@@ -38,7 +38,8 @@ insert into public.pools (
     null, null, null, null,
     '{}', false, false, false,
     true, true,
-    7000, 7000, 7000, null,
+    7000, 7000, 7000,
+    'https://hldfsstyzbnqnrlqhhtc.supabase.co/storage/v1/object/public/pool-photos/POOL_0034.jpg',
     'https://spolex.snu.ac.kr/program/program02.php')
 on conflict (id) do nothing;
 

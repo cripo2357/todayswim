@@ -43,7 +43,8 @@ insert into public.pools (
     5, 25, null, null,
     ARRAY['해수풀', '드라이기'], true, false, false,
     true, true,
-    7000, 7000, null, null)
+    7000, 7000, null,
+    'https://hldfsstyzbnqnrlqhhtc.supabase.co/storage/v1/object/public/pool-photos/POOL_0032.jpg')
 on conflict (id) do nothing;
 
 -- 자유수영 시간표 (안내문 × 월권표 교차, 운영자 최종 확인).
