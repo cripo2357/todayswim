@@ -279,6 +279,8 @@ export const useAuth = create<AuthState>((set) => ({
       // Google 미로그인 상태면 무시
     }
     set({ user: null });
-    await resetUserScopedState();
+    // 탈퇴는 계정 파괴 — 약관 동의(로컬)까지 비워 재가입 시 완전 신규로
+    // 약관을 다시 받게 한다(서버 동의는 계정과 함께 사라짐).
+    await resetUserScopedState({ clearConsent: true });
   },
 }));

@@ -14,16 +14,20 @@ import { useSwimSchedules } from '@/store/swimSchedule';
 import { useFriends } from '@/store/friends';
 import { useSentInvites } from '@/store/sentInvites';
 import { usePrefs } from '@/store/prefs';
+import { clearTerms } from '@/lib/terms';
 
 /** 계정 데이터·설정을 메모리+영속 모두 비움. best-effort(부분 실패 무시).
  *
- *  ⚠️ 약관 동의(clearTerms)는 **여기서 지우지 않는다.** 동의는 계정 소속
- *  기록(서버 terms_agreements, uid 기준)이고, 'age'(만14세)는 서버 enum이
- *  없어 로컬에만 산다. 로그아웃 때 지우면 같은 계정 재로그인 시 age 가 비어
- *  "약관 미동의"로 판정→약관 화면→ProfileSetup(새 가입처럼)으로 잘못 보냄.
- *  (다른 계정으로 로그인하면 서버 동의가 빈 값이라 어차피 약관 게이트가 뜨고,
- *   TermsAgreementScreen 진입 시 firstFocus 가 로컬 동의를 비워 opt-in 보장.) */
-export async function resetUserScopedState(): Promise<void> {
+ *  @param clearConsent 약관 동의(로컬)까지 비울지.
+ *    - **로그아웃**(계정 유지): false — 동의 유지. 같은 계정 재로그인 시
+ *      서버(uid) 동의 + 로컬 age 폴백으로 약관 게이트를 매끄럽게 건너뜀.
+ *      (다른 계정 로그인은 서버 동의가 비어 어차피 게이트가 뜨고,
+ *       TermsAgreementScreen firstFocus 가 로컬 동의를 비워 opt-in 보장.)
+ *    - **탈퇴**(계정 파괴): true — 로컬 동의도 삭제. 서버 동의는 계정과 함께
+ *      사라지므로, 재가입 시 완전 신규로 약관을 다시 받아야 함(법적 신규 동의). */
+export async function resetUserScopedState(
+  { clearConsent = false }: { clearConsent?: boolean } = {},
+): Promise<void> {
   useFriends.getState().reset();
   useSentInvites.getState().reset();
   await Promise.all([
@@ -31,5 +35,6 @@ export async function resetUserScopedState(): Promise<void> {
     useFavorites.getState().reset(),
     useSwimSchedules.getState().reset(),
     usePrefs.getState().reset(),
+    ...(clearConsent ? [clearTerms()] : []),
   ]);
 }
