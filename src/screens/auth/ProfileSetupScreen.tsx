@@ -11,6 +11,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ArrowRight, HelpCircle } from 'lucide-react-native';
 import IconChevronDown from '@assets/icons/chevron-down.svg';
 import IconCake from '@assets/icons/cake.svg';
+import IconCalendarForm from '@assets/icons/calendar-form.svg';
 
 import { useProfile, genProfileId, type Gender, type Stroke } from '@/store/profile';
 import { useAuth } from '@/store/auth';
@@ -231,6 +232,9 @@ export function ProfileSetupScreen() {
               </Text>
               <IconChevronDown width={18} height={18} />
             </Pressable>
+            <Text style={styles.fieldHint}>
+              성별은 비공개이며, 모임 참여시 성별 확인에만 사용합니다.
+            </Text>
           </Field>
 
           <Field label="생년월일">
@@ -248,11 +252,13 @@ export function ProfileSetupScreen() {
                   !birthDate && { color: tokens.color.ink400 },
                 ]}
               >
-                {birthDate
-                  ? birthDate.replace(/-/g, '.') + '.'
-                  : '1990.01.01.'}
+                {birthDate ? birthDate.replace(/-/g, '.') : '1900.01.01'}
               </Text>
+              <IconCalendarForm width={20} height={20} />
             </Pressable>
+            <Text style={styles.fieldHint}>
+              나이는 비공개이며, 모임 참여시 연령대 확인에만 사용합니다.
+            </Text>
           </Field>
 
           <View style={styles.divider} />
@@ -473,6 +479,16 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     fontFamily: tokens.font.sansSemibold,
     color: tokens.color.ink900,
+  },
+  // Figma 342:5963 / 342:5972 — 성별·생년월일 비공개 안내문구.
+  // Gray/60 #4B5563은 ink500(#64748B)과 불일치 → 충실도 위해 리터럴 hex.
+  fieldHint: {
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: -0.084,
+    fontFamily: tokens.font.sans,
+    color: '#4B5563',
+    marginTop: 2, // Field gap 6 + 2 = 8px (Figma input→hint 간격)
   },
   subLabel: {
     fontSize: 14,
