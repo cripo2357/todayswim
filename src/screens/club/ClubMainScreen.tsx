@@ -36,7 +36,7 @@ const styles = StyleSheet.create({
   },
   body: {
     flexGrow: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16, // 화면 표준 16 통일 (구 20)
     paddingTop: 16,
   },
   placeholder: {
