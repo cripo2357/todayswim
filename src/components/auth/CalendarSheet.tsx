@@ -391,9 +391,20 @@ function WheelColumn({
       >
         {data.map((v, i) => {
           const isSel = i === selectedIndex;
+          // 단일 객체 계산 + key 토글 — 조건부 style array의 Android color
+          // 잔류 버그 회피(getCellTextStyle와 동일 해법).
           return (
             <View key={i} style={styles.wheelRow}>
-              <Text style={[styles.wheelText, isSel && styles.wheelTextSelected]}>
+              <Text
+                key={isSel ? 'sel' : 'unsel'}
+                style={{
+                  fontSize: 22,
+                  lineHeight: 30,
+                  fontFamily: tokens.font.sans,
+                  color: isSel ? tokens.color.white : 'rgba(104, 144, 203, 0.4)',
+                  textAlign: 'center',
+                }}
+              >
                 {format(v)}
               </Text>
             </View>
@@ -494,14 +505,7 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.color.pdMint,
   },
   wheelRow: { height: ROW_HEIGHT, alignItems: 'center', justifyContent: 'center' },
-  wheelText: {
-    fontSize: 22,
-    lineHeight: 30,
-    fontFamily: tokens.font.sans,
-    color: 'rgba(104, 144, 203, 0.4)',
-    textAlign: 'center',
-  },
-  wheelTextSelected: { color: tokens.color.white },
+  // 휠 텍스트 색은 WheelColumn에서 단일 객체로 계산 — Android color 잔류 버그 회피.
 
   cta: {
     minHeight: 48,

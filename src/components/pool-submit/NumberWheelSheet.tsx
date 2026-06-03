@@ -16,6 +16,22 @@ const VISIBLE_ROWS = 3;
 const PICKER_HEIGHT = ROW_HEIGHT * VISIBLE_ROWS;
 const PICKER_PAD = ROW_HEIGHT * Math.floor(VISIBLE_ROWS / 2);
 
+// 휠 행 텍스트 스타일을 매 렌더 단일 객체로 계산.
+// 조건부 style array(`[rowText, isSel && rowTextSelected]`)는 Android에서
+// ScrollView 행 재사용 시 color 갱신이 누락돼 "선택인데 흰색이 안 되는"
+// 버그가 간헐 발생 → 단일 객체 직접 계산 + key 토글 remount로 차단.
+// (CalendarSheet.getCellTextStyle와 동일 해법)
+function getWheelTextStyle(isSel: boolean) {
+  return {
+    fontSize: 24,
+    lineHeight: 32,
+    letterSpacing: -0.288,
+    fontFamily: tokens.font.sans,
+    color: isSel ? tokens.color.white : 'rgba(104, 144, 203, 0.4)',
+    textAlign: 'center' as const,
+  };
+}
+
 interface SingleProps {
   visible: boolean;
   title: string;
@@ -237,7 +253,7 @@ function WheelColumn({
           const isSelected = i === selectedIndex;
           return (
             <View key={i} style={styles.row}>
-              <Text style={[styles.rowText, isSelected && styles.rowTextSelected]}>
+              <Text key={isSelected ? 'sel' : 'unsel'} style={getWheelTextStyle(isSelected)}>
                 {format(v)}
               </Text>
             </View>
@@ -311,15 +327,8 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.color.pdMint,
   },
   row: { height: ROW_HEIGHT, alignItems: 'center', justifyContent: 'center' },
-  rowText: {
-    fontSize: 24,
-    lineHeight: 32,
-    letterSpacing: -0.288,
-    fontFamily: tokens.font.sans,
-    color: 'rgba(104, 144, 203, 0.4)',
-    textAlign: 'center',
-  },
-  rowTextSelected: { color: tokens.color.white },
+  // 휠 행 텍스트는 getWheelTextStyle에서 단일 객체로 계산
+  // — Android color 잔류 버그 회피(위 함수 주석 참고).
   cta: {
     minHeight: 48,
     paddingHorizontal: 20,

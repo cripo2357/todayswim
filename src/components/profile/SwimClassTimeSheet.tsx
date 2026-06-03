@@ -29,6 +29,22 @@ function hourLabel(h: number): string {
 const minuteLabel = (m: number) => `${String(m).padStart(2, '0')}분`;
 const pad2 = (n: number) => String(n).padStart(2, '0');
 
+// 휠 행 텍스트 스타일을 매 렌더 단일 객체로 계산.
+// 조건부 style array(`[rowText, isSel && rowTextSelected]`)는 Android에서
+// ScrollView 행 재사용 시 color 갱신이 누락돼 "선택인데 흰색이 안 되는"
+// 버그가 간헐 발생 → 단일 객체 직접 계산 + key 토글 remount로 차단.
+// (CalendarSheet.getCellTextStyle와 동일 해법)
+function getWheelTextStyle(isSel: boolean) {
+  return {
+    fontSize: 24,
+    lineHeight: 32,
+    letterSpacing: -0.288,
+    fontFamily: tokens.font.sans,
+    color: isSel ? tokens.color.white : '#94A3B8',
+    textAlign: 'center' as const,
+  };
+}
+
 export function SwimClassTimeSheet({
   visible,
   day,
@@ -193,18 +209,16 @@ function Wheel({
         nestedScrollEnabled
         onMomentumScrollEnd={onEnd}
       >
-        {data.map((v, i) => (
-          <View key={i} style={styles.row}>
-            <Text
-              style={[
-                styles.rowText,
-                i === selectedIndex && styles.rowTextSelected,
-              ]}
-            >
-              {format(v)}
-            </Text>
-          </View>
-        ))}
+        {data.map((v, i) => {
+          const isSel = i === selectedIndex;
+          return (
+            <View key={i} style={styles.row}>
+              <Text key={isSel ? 'sel' : 'unsel'} style={getWheelTextStyle(isSel)}>
+                {format(v)}
+              </Text>
+            </View>
+          );
+        })}
       </ScrollView>
     </View>
   );
@@ -266,16 +280,8 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.color.pdMint,
   },
   row: { height: ROW_HEIGHT, alignItems: 'center', justifyContent: 'center' },
-  // Figma — 미선택 #94A3B8 / 선택 white, Regular 24/32 -0.288
-  rowText: {
-    fontSize: 24,
-    lineHeight: 32,
-    letterSpacing: -0.288,
-    fontFamily: tokens.font.sans,
-    color: '#94A3B8',
-    textAlign: 'center',
-  },
-  rowTextSelected: { color: tokens.color.white },
+  // 휠 행 텍스트(미선택 #94A3B8 / 선택 white)는 getWheelTextStyle에서 단일
+  // 객체로 계산 — Android color 잔류 버그 회피(위 함수 주석 참고).
   // Figma 90:7364 — pd-byellow r14 minH48 px20 py12 gap10
   cta: {
     minHeight: 48,
