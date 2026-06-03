@@ -9,7 +9,10 @@
     "ios": "expo start --ios --dev-client",
     "web": "expo start --web",
     "prebuild": "expo prebuild",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "db:deploy": "node scripts/db-deploy.mjs --prod",
+    "db:deploy:dev": "node scripts/db-deploy.mjs",
+    "db:deploy:dry": "node scripts/db-deploy.mjs --dry-run"
   },
   "dependencies": {
     "@expo-google-fonts/rubik-spray-paint": "^0.4.0",
