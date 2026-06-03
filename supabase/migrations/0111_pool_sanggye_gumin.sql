@@ -31,14 +31,15 @@
 --   depth_min/max = 1.2 단일값.
 -- - 좌표 [신뢰도 높음]: 카카오 POI "상계구민체육센터"(상계동 95-356)와
 --   도로명 주소(덕릉로 748)가 ~4m 이내 일치.
--- - 사진 없음 → photo_url 미설정(pool_photo_workflow로 추후 추가).
+-- - 사진: 운영자 제공 외관 사진 400px 리사이즈 → POOL_0029.jpg.
+--   기존 컨벤션대로 dev host URL 박음. Supabase pool-photos 버킷(dev) 업로드는 운영자.
 
 insert into public.pools (
   id, name, region, district, address, lat, lng, type, ownership,
   phone, website, lane_count, pool_length, depth_min, depth_max,
   facilities, has_kids_pool, has_diving_pool, is_hotel_pool,
   has_schedule, free_swim_available,
-  price_per_session, price_weekday, price_weekend,
+  price_per_session, price_weekday, price_weekend, photo_url,
   schedule_source_url
 ) values
   ('POOL_0029', '상계구민체육센터', '서울', '노원구',
@@ -49,6 +50,7 @@ insert into public.pools (
     '{}', true, false, false,
     true, true,
     4800, 4800, 6240,
+    'https://hldfsstyzbnqnrlqhhtc.supabase.co/storage/v1/object/public/pool-photos/POOL_0029.jpg',
     'https://www.nowonsc.kr/fmcs/379')
 on conflict (id) do nothing;
 
