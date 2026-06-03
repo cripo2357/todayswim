@@ -28,6 +28,7 @@ interface PoolRow {
   has_diving_pool: boolean | null;
   is_hotel_pool: boolean | null;
   has_schedule: boolean | null;
+  is_active: boolean | null;
   free_swim_available: boolean | null;
   price_per_session: number | null;
   price_weekday: number | null;
@@ -70,7 +71,8 @@ export function usePools() {
   return useQuery({
     queryKey: ['pools'],
     queryFn: async (): Promise<Pool[]> => {
-      const { data, error } = await supabase.from('pools').select('*');
+      // is_active=false(예: 호텔 풀)는 서비스에서 제외 — 0105_pools_is_active.
+      const { data, error } = await supabase.from('pools').select('*').eq('is_active', true);
       if (error) throw error;
       return (data as PoolRow[]).map(rowToPool);
     },
