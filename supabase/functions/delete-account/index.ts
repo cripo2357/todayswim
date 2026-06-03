@@ -11,18 +11,16 @@
 // 처리 순서 (실패해도 후속은 계속 — best-effort 정리):
 //   1) JWT 검증으로 호출자 신원(uid) 확인
 //   2) Storage `avatars/{uid}/` 파일 모두 삭제 (avatar.jpg, avatar_thumb.jpg)
-//   3) profiles row 삭제 (auth_uid = uid)
+//   3a) notifications(user_code=profile.id) + profile_nicknames 즉시 삭제
+//   3b) profiles row 삭제 (auth_uid = uid)
 //      → CASCADE 로 donations 자동 삭제 (0069 FK)
 //      → donation_payments.profile_id 는 ON DELETE SET NULL 로 보존 (0070, 회계 5년)
 //   4) auth.users row 삭제 (admin API)
 //
-// 보존(즉시 삭제 X):
-//   - notifications (탈퇴 후 90일 보존 — 약관 §3, 재가입 부정이용 방지)
-//   - profile_nicknames (탈퇴 후 90일 보존 — 닉네임 squat 방지)
-//   - donation_payments (회계·세무 5년 — 국세기본법)
+// 정책(2026-06-03): 탈퇴 시 **지체 없이 전체 파기** (구 90일 tombstone 폐기).
+//   유일한 예외:
+//   - donation_payments (회계·세무 5년 — 국세기본법, profile_id SET NULL)
 //   - pool_submissions / schedule_submissions (익명화 후 공익적 보존)
-//
-// ※ 90일 후 자동 파기는 별도 cron/예약 함수가 필요(P3 후속).
 
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -113,10 +111,10 @@ serve(async (req) => {
     errors.push({ step: 'storage', message: String(e) });
   }
 
-  // 3a) Tombstone — profile DELETE 전에 user_code + nicknames 보존(P3-B.2).
-  //     90일 후 cleanup_expired_data() 가 이 tombstone 으로 notifications +
-  //     profile_nicknames 일괄 파기. 약관·개인정보처리방침 §3 의 "탈퇴 후 90일"
-  //     정확 적용.
+  // 3a) 즉시 파기 — notifications(user_code = profile.id) + profile_nicknames.
+  //     (정책 변경 2026-06-03: 구 90일 tombstone 보존 폐기 → 탈퇴 시 지체 없이
+  //      전체 파기. PIPA "지체 없는 파기" 원칙에 더 부합. 후원 거래기록만 5년
+  //      별도 보존[회계].) profile DELETE 전에 id/nickname 으로 먼저 지운다.
   try {
     const { data: prof } = await admin
       .from('profiles')
@@ -125,21 +123,25 @@ serve(async (req) => {
       .maybeSingle();
     const profileRow = prof as { id: string; nickname: string | null } | null;
     if (profileRow?.id) {
-      const { error: tombErr } = await admin
-        .from('deleted_users')
-        .upsert(
-          {
-            user_code: profileRow.id,
-            nicknames: profileRow.nickname ? [profileRow.nickname] : [],
-          },
-          { onConflict: 'user_code' },
-        );
-      if (tombErr) {
-        errors.push({ step: 'tombstone', message: tombErr.message });
+      const { error: notifErr } = await admin
+        .from('notifications')
+        .delete()
+        .eq('user_code', profileRow.id);
+      if (notifErr) {
+        errors.push({ step: 'notifications.delete', message: notifErr.message });
+      }
+    }
+    if (profileRow?.nickname) {
+      const { error: nickErr } = await admin
+        .from('profile_nicknames')
+        .delete()
+        .eq('nickname', profileRow.nickname);
+      if (nickErr) {
+        errors.push({ step: 'profile_nicknames.delete', message: nickErr.message });
       }
     }
   } catch (e) {
-    errors.push({ step: 'tombstone', message: String(e) });
+    errors.push({ step: 'immediate_purge', message: String(e) });
   }
 
   // 3b) profiles 삭제 → CASCADE 로 donations 자동 삭제.
