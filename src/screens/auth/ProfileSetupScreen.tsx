@@ -443,8 +443,10 @@ function formatExp(value: number, max: number): string {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: tokens.color.bgPaper },
   flex: { flex: 1 },
+  // 좌우 패딩 16 — Figma 101:4369(콘텐츠 343/375) + MyInfo 프로필 화면과 통일.
+  // (구 24는 콘텐츠 327로 8px 좁아 안내문구 줄바꿈이 달랐음)
   scrollContent: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     paddingTop: 0,
     paddingBottom: 48,
   },
@@ -452,7 +454,7 @@ const styles = StyleSheet.create({
   // 그것을 그대로 가져와 시각 위치 동등. 첫 sectionHeader의 marginTop 16이
   // 원래 갭을 유지하므로 픽셀 변화 없음.
   headerWrap: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     paddingTop: 56,
     backgroundColor: tokens.color.bgPaper,
   },
@@ -473,7 +475,8 @@ const styles = StyleSheet.create({
     color: tokens.color.ink900,
   },
 
-  field: { gap: 6, marginBottom: 16 },
+  // Figma — 라벨·입력·안내 모두 gap 8 (MyInfo 프로필 화면과 통일)
+  field: { gap: 8, marginBottom: 16 },
   fieldLabel: {
     fontSize: 14,
     lineHeight: 20,
@@ -482,13 +485,13 @@ const styles = StyleSheet.create({
   },
   // Figma 342:5963 / 342:5972 — 성별·생년월일 비공개 안내문구.
   // Gray/60 #4B5563은 ink500(#64748B)과 불일치 → 충실도 위해 리터럴 hex.
+  // 입력→안내 8px 간격은 field gap:8로 충족(별도 marginTop 불필요).
   fieldHint: {
     fontSize: 14,
     lineHeight: 20,
     letterSpacing: -0.084,
     fontFamily: tokens.font.sans,
     color: '#4B5563',
-    marginTop: 2, // Field gap 6 + 2 = 8px (Figma input→hint 간격)
   },
   subLabel: {
     fontSize: 14,
