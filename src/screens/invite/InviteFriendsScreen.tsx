@@ -100,6 +100,8 @@ export function InviteFriendsScreen() {
     // 보낸 초대 기록 → 다음에 같은 슬롯 열면 검색 대상에서 제외.
     markInvited(slotKey, selected.map((f) => f.id));
     // 발송 이력 적재 (Rule: invite_sent — 본인 이력)
+    // inviteeIds: 초대받은 친구 친구코드 — 나중에 알림 탭에서 '초대 취소' 누르면
+    // 이들에게 invite_canceled 발송하기 위해 related에 보존.
     void dispatchMessage(
       'invite_sent',
       {
@@ -108,7 +110,7 @@ export function InviteFriendsScreen() {
         pool: poolName,
         when: formatScheduleLine(date, start),
       },
-      { poolId, date, start, end },
+      { poolId, date, start, end, inviteeIds: selected.map((f) => f.id) },
     );
     // P2(2026-05-20): 초대받은 각 친구에게 invite_received 적재. dispatchMessageTo
     // 는 rule.recipients 무시하고 toUserCode 알림함에 강제 적재 — 'invite_received'

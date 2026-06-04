@@ -28,6 +28,7 @@ import { formatDateTime } from '@/lib/dateFormat';
 import { logEvent } from '@/lib/analytics';
 import { useFriends } from '@/store/friends';
 import { useProfile } from '@/store/profile';
+import { useSwimSchedules } from '@/store/swimSchedule';
 import { dispatchMessage, dispatchMessageTo } from '@/lib/messages/dispatch';
 
 // 프로젝트 SVG 아이콘 — 전부 announcement/ 회색톤(#1F2937)으로 통일.
@@ -74,8 +75,20 @@ interface Notif {
   actions?: string[];
   /** 확인 모달(거절/취소)에서 상대 표시명으로 사용 — params.name 그대로 전달. */
   name?: string;
-  /** related.senderUserId — 친구 신청 수락/거절 시 신청자 친구코드(=profiles.id). */
+  /** related.senderUserId — 친구 신청·초대 보낸 사람 친구코드(=profiles.id). */
   senderUserId?: string;
+  /** invite_received 슬롯 — 수락 시 내 일정 추가에 사용(related + params.pool). */
+  inviteSlot?: {
+    poolId: string;
+    poolName: string;
+    date: string; // YYYY-MM-DD
+    start: string; // HH:MM
+    end: string; // HH:MM
+  };
+  /** invite_sent 수신자 친구코드 목록 — 초대 취소 시 각자에게 invite_canceled. */
+  inviteeIds?: string[];
+  /** 표시용 날짜 문구(params.date) — invite_accepted/rejected 본문에 사용. */
+  dateLabel?: string;
   /** 미읽음 여부 — true 면 시간 옆에 노란 dot 표시. */
   read?: boolean;
 }
@@ -194,20 +207,9 @@ function handleAction(
 ) {
   void logEvent('notification_tap', { kind, label });
   // === 응답형(C 2버튼) — 상태 변경 ===
-  // friend_request_received(수락/거절)은 NotifCard.onActionPress에서 신청자
-  // id(related.senderUserId)를 쥐고 실제 친구 그래프 갱신 + 양측 알림으로 처리.
-  if (kind === 'invite_received') {
-    // 일정 자체가 삭제됐을 수 있음 — meta.scheduleAlive 가드.
-    if (meta.scheduleAlive === false) {
-      return Alert.alert('삭제된 일정입니다', '카드는 자동 정리됩니다.');
-    }
-    if (label === '수락') {
-      void logEvent('invite_accepted');
-      return Alert.alert('초대 수락', '실 운영 시 일정 참여 + 발신자에게 알림.');
-    }
-    // '거절'은 RejectScheduleInviteModal에서 처리(NotifCard.onActionPress 분기).
-  }
-  // '초대 취소'는 CancelScheduleInviteModal에서 처리(NotifCard.onActionPress 분기).
+  // friend_request_received(수락/거절) / invite_received(수락) / invite_sent(취소)
+  // 는 NotifCard.onActionPress·모달에서 related(senderUserId/inviteSlot/inviteeIds)
+  // 를 쥐고 실제 그래프·일정 갱신 + 알림으로 처리. (handleAction은 이동 액션 전담)
   // === 이동 액션 (B 1버튼 — 이동 강조) ===
   if (label === '약관 보기') {
     if (meta.termsKeyValid === false) {
@@ -289,8 +291,34 @@ function rowToNotif(row: NotificationRow): Notif {
       typeof row.related?.senderUserId === 'string'
         ? row.related.senderUserId
         : undefined,
+    inviteSlot: inviteSlotFromRow(row),
+    inviteeIds: Array.isArray(row.related?.inviteeIds)
+      ? (row.related.inviteeIds as unknown[]).filter(
+          (x): x is string => typeof x === 'string',
+        )
+      : undefined,
+    dateLabel:
+      typeof row.params?.date === 'string'
+        ? row.params.date
+        : typeof row.related?.date === 'string'
+          ? (row.related.date as string)
+          : undefined,
     read: row.read,
   };
+}
+
+/** invite_received row → 일정 추가용 슬롯. related(poolId/date/start/end) +
+ *  params.pool(발송 시점 풀명 스냅샷)이 모두 있어야 유효. 하나라도 없으면 undefined. */
+function inviteSlotFromRow(row: NotificationRow): Notif['inviteSlot'] {
+  if (row.kind !== 'invite_received') return undefined;
+  const r = row.related ?? {};
+  const poolId = typeof r.poolId === 'string' ? r.poolId : undefined;
+  const date = typeof r.date === 'string' ? r.date : undefined;
+  const start = typeof r.start === 'string' ? r.start : undefined;
+  const end = typeof r.end === 'string' ? r.end : undefined;
+  const poolName = row.params?.pool?.trim();
+  if (!poolId || !date || !start || !end || !poolName) return undefined;
+  return { poolId, poolName, date, start, end };
 }
 
 export function NotificationsTab() {
@@ -407,6 +435,64 @@ function NotifCard({ notif }: { notif: Notif }) {
       }
       return;
     }
+    // 일정 초대 수락 — 그 슬롯에 내 일정 추가(참여) + 양측 invite_accepted.
+    if (notif.kind === 'invite_received' && label === '수락') {
+      void logEvent('notification_tap', { kind: notif.kind, label });
+      void logEvent('invite_accepted');
+      const slot = notif.inviteSlot;
+      if (!slot) {
+        // 슬롯 정보 없는 구 알림 — 캘린더에서 직접 추가하도록 안내.
+        Alert.alert(
+          '일정을 불러올 수 없어요',
+          '초대 정보가 없어 캘린더에서 직접 추가해주세요.',
+        );
+        return;
+      }
+      // 같은 슬롯(풀+날짜+시작/끝) 이미 있으면 중복 추가 방지.
+      const dup = useSwimSchedules
+        .getState()
+        .schedules.some(
+          (s) =>
+            s.poolId === slot.poolId &&
+            s.date === slot.date &&
+            s.start === slot.start &&
+            s.end === slot.end,
+        );
+      if (!dup) {
+        // 초대 수락 = 초대자(친구)에게 보이도록 기본 '친구 공개'로 참여.
+        void useSwimSchedules.getState().add({
+          poolId: slot.poolId,
+          poolName: slot.poolName,
+          date: slot.date,
+          start: slot.start,
+          end: slot.end,
+          visibility: 'friends',
+        });
+      }
+      const my = useProfile.getState().profile;
+      // 본인 이력: "{초대한 사람}님과 … 함께해요"
+      void dispatchMessage('invite_accepted', {
+        name: notif.name ?? '',
+        date: notif.dateLabel,
+      });
+      // 초대한 사람에게: "{내 닉}님과 … 함께해요" + OS 푸시
+      if (notif.senderUserId && my?.name) {
+        void dispatchMessageTo(
+          notif.senderUserId,
+          'invite_accepted',
+          { name: my.name, date: notif.dateLabel },
+          {
+            senderUserId: my.id,
+            poolId: slot.poolId,
+            date: slot.date,
+            start: slot.start,
+            end: slot.end,
+          },
+        );
+      }
+      setHandledMsg('일정에 참여했어요');
+      return;
+    }
     handleAction(navigation, notif.kind, label);
   };
 
@@ -464,17 +550,31 @@ function NotifCard({ notif }: { notif: Notif }) {
         onReject={() => {
           void logEvent('invite_rejected');
           setRejectVisible(false);
-          // 샘플 갤러리 — 실 운영 시 거절 기록 + 발신자에게 알림.
-          Alert.alert('초대 거절', '실 운영 시 거절 기록 + 발신자에게 알림.');
+          // 본인 이력만 기록(정책: 발신자 무알림 — friend reject와 일관).
+          void dispatchMessage('invite_rejected', {
+            name: notif.name ?? '',
+            date: notif.dateLabel,
+          });
+          setHandledMsg('초대를 거절했어요');
         }}
         onLater={() => setRejectVisible(false)}
       />
       <CancelScheduleInviteModal
         visible={cancelVisible}
         onCancel={() => {
+          void logEvent('invite_canceled');
           setCancelVisible(false);
-          // 샘플 갤러리 — 실 운영 시 받은 사람에게 알림.
-          Alert.alert('초대 취소됨', '실 운영 시 받은 사람에게 알림.');
+          // 초대받은 친구들에게 invite_canceled 발송(각자 알림함 + 푸시).
+          const my = useProfile.getState().profile;
+          if (my?.name && notif.inviteeIds?.length) {
+            for (const toId of notif.inviteeIds) {
+              void dispatchMessageTo(toId, 'invite_canceled', {
+                name: my.name,
+                date: notif.dateLabel,
+              });
+            }
+          }
+          setHandledMsg('초대를 취소했어요');
         }}
         onLater={() => setCancelVisible(false)}
       />
