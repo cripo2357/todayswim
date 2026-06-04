@@ -32,6 +32,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
 
   ios: {
     bundleIdentifier: 'com.cripo.poolsday',
+    // iOS는 아이콘을 full-bleed로 그대로 렌더 → icon.png의 안전영역 여백이 그대로 노출돼
+    // Android(adaptive icon이 중앙을 ~1.5x 확대)보다 로고가 작게 보임.
+    // Android가 보여주는 중앙 영역(~66.6%)만큼 미리 크롭한 전용 아이콘으로 두 플랫폼을 일치시킴.
+    icon: './assets/icon-ios.png',
     supportsTablet: false,
     // Sign in with Apple — App Store 심사 4.8(소셜 로그인 제공 시 필수) 대응.
     // 네이티브 capability 추가(entitlement). expo-apple-authentication 플러그인과 함께.
