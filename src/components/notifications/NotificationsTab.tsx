@@ -26,6 +26,9 @@ import { CancelScheduleInviteModal } from '@/components/schedule/CancelScheduleI
 import { useNotifications, type NotificationRow } from '@/hooks/useNotifications';
 import { formatDateTime } from '@/lib/dateFormat';
 import { logEvent } from '@/lib/analytics';
+import { useFriends } from '@/store/friends';
+import { useProfile } from '@/store/profile';
+import { dispatchMessage, dispatchMessageTo } from '@/lib/messages/dispatch';
 
 // 프로젝트 SVG 아이콘 — 전부 announcement/ 회색톤(#1F2937)으로 통일.
 // 알림 전용 사본(설정 메뉴 등 원본은 자기 색 유지 — sed로 fill만 치환한 복제).
@@ -71,6 +74,8 @@ interface Notif {
   actions?: string[];
   /** 확인 모달(거절/취소)에서 상대 표시명으로 사용 — params.name 그대로 전달. */
   name?: string;
+  /** related.senderUserId — 친구 신청 수락/거절 시 신청자 친구코드(=profiles.id). */
+  senderUserId?: string;
   /** 미읽음 여부 — true 면 시간 옆에 노란 dot 표시. */
   read?: boolean;
 }
@@ -188,17 +193,9 @@ function handleAction(
   meta: DeadLinkMeta = {},
 ) {
   void logEvent('notification_tap', { kind, label });
-  // === 응답형(C 2버튼) — 상태 변경. 샘플: Alert 피드백 ===
-  if (kind === 'friend_request_received') {
-    // 신청자가 탈퇴했을 수 있음 — meta.senderAlive 가드 (스펙 §6, P2).
-    if (meta.senderAlive === false) {
-      return Alert.alert('[탈퇴 회원]의 신청은 만료됐어요', '카드는 자동 정리됩니다.');
-    }
-    if (label === '수락')
-      return Alert.alert('친구 추가됨', '실 운영 시 친구 추가 + 양측 알림 발송.');
-    if (label === '거절')
-      return Alert.alert('친구 신청 거절', '실 운영 시 본인 이력만 기록. 상대 무알림.');
-  }
+  // === 응답형(C 2버튼) — 상태 변경 ===
+  // friend_request_received(수락/거절)은 NotifCard.onActionPress에서 신청자
+  // id(related.senderUserId)를 쥐고 실제 친구 그래프 갱신 + 양측 알림으로 처리.
   if (kind === 'invite_received') {
     // 일정 자체가 삭제됐을 수 있음 — meta.scheduleAlive 가드.
     if (meta.scheduleAlive === false) {
@@ -288,6 +285,10 @@ function rowToNotif(row: NotificationRow): Notif {
     lines: (row.body ?? []).filter((l) => l.length > 0),
     actions: row.actions && row.actions.length > 0 ? row.actions : undefined,
     name: row.params?.name,
+    senderUserId:
+      typeof row.related?.senderUserId === 'string'
+        ? row.related.senderUserId
+        : undefined,
     read: row.read,
   };
 }
@@ -356,6 +357,8 @@ function NotifCard({ notif }: { notif: Notif }) {
   // Alert.alert 대신 디자인된 모달(Figma 228:3787 / 230:4481)로 처리.
   const [rejectVisible, setRejectVisible] = React.useState(false);
   const [cancelVisible, setCancelVisible] = React.useState(false);
+  // 친구 신청 수락/거절 처리 후 — 액션 버튼 숨기고 상태 문구 노출(중복 탭 방지).
+  const [handledMsg, setHandledMsg] = React.useState<string | null>(null);
 
   const onActionPress = (label: string) => {
     if (notif.kind === 'invite_received' && label === '거절') {
@@ -364,6 +367,44 @@ function NotifCard({ notif }: { notif: Notif }) {
     }
     if (notif.kind === 'invite_sent' && label === '초대 취소') {
       setCancelVisible(true);
+      return;
+    }
+    // 친구 신청 수락/거절 — 실제 친구 그래프 갱신 + 양측 알림(FriendsTab 패턴).
+    if (
+      notif.kind === 'friend_request_received' &&
+      (label === '수락' || label === '거절')
+    ) {
+      void logEvent('notification_tap', { kind: notif.kind, label });
+      const requesterId = notif.senderUserId;
+      if (!requesterId) {
+        // 신청자 식별 불가(senderUserId 없는 구 알림) — 친구 탭에서 처리하도록 안내.
+        Alert.alert(
+          '친구 탭에서 확인해주세요',
+          '이 신청은 친구 탭에서 수락하거나 거절할 수 있어요.',
+        );
+        return;
+      }
+      const my = useProfile.getState().profile;
+      if (label === '수락') {
+        useFriends.getState().accept(requesterId);
+        // 본인 이력(내 카드: "{신청자}와 친구가 됐어요")
+        void dispatchMessage('friend_request_accepted', { name: notif.name ?? '' });
+        // 신청자 알림(상대 카드: "{내 닉}과 친구가 됐어요") + OS 푸시
+        if (my?.name) {
+          void dispatchMessageTo(
+            requesterId,
+            'friend_request_accepted',
+            { name: my.name },
+            { senderUserId: my.id },
+          );
+        }
+        setHandledMsg('친구가 됐어요');
+      } else {
+        // 거절 — 본인 이력만 기록(정책: 상대 무알림).
+        useFriends.getState().reject(requesterId);
+        void dispatchMessage('friend_request_rejected', { name: notif.name ?? '' });
+        setHandledMsg('신청을 거절했어요');
+      }
       return;
     }
     handleAction(navigation, notif.kind, label);
@@ -391,7 +432,7 @@ function NotifCard({ notif }: { notif: Notif }) {
             </Text>
           ))}
         </View>
-        {notif.actions ? (
+        {notif.actions && !handledMsg ? (
           <View style={styles.actions}>
             {notif.actions.map((a) => {
               const AIcon = ACTION_ICON(a);
@@ -407,6 +448,9 @@ function NotifCard({ notif }: { notif: Notif }) {
               );
             })}
           </View>
+        ) : null}
+        {handledMsg ? (
+          <Text style={styles.handledNote}>{handledMsg}</Text>
         ) : null}
       </View>
     </View>
@@ -564,5 +608,12 @@ const styles = StyleSheet.create({
     letterSpacing: -0.084,
     fontFamily: tokens.font.sansMedium,
     color: '#4B5563',
+  },
+  // 친구 신청 처리 후 상태 문구 — 액션 버튼 자리 대체.
+  handledNote: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: tokens.font.sansMedium,
+    color: tokens.color.ink500,
   },
 });
