@@ -1,4 +1,7 @@
-import { ExpoConfig, ConfigContext } from 'expo/config';
+// 타입 전용 import — 런타임에 'expo/config'(exports 맵 없는 디렉터리)를 로드하지
+// 않게 함. Node 22+/24의 strict ESM은 디렉터리 import를 거부하므로 일반 import면
+// 로컬 config 평가가 죽음(Directory import not supported). 타입만 쓰니 import type.
+import type { ExpoConfig, ConfigContext } from 'expo/config';
 
 // Naver Cloud Platform Maps Client ID. 모바일 SDK 인증 키.
 // 번들 ID(com.cripo.poolsday)로 Naver 콘솔에서 제한돼 있어 코드 공개돼도 타 앱에서 사용 불가.
