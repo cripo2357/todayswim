@@ -30,6 +30,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     bundleIdentifier: 'com.cripo.poolsday',
     supportsTablet: false,
+    // Sign in with Apple — App Store 심사 4.8(소셜 로그인 제공 시 필수) 대응.
+    // 네이티브 capability 추가(entitlement). expo-apple-authentication 플러그인과 함께.
+    usesAppleSignIn: true,
     // Firebase Analytics iOS config — 크리스가 Firebase 콘솔에서 iOS 앱을
     // 등록하고 GoogleService-Info.plist 를 받아 프로젝트 루트에 배치하면
     // @react-native-firebase/app 플러그인이 자동으로 ios 번들에 포함.
@@ -159,6 +162,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
 
   plugins: [
+    // Sign in with Apple (iOS) — 네이티브 모듈 + entitlement 자동 구성.
+    'expo-apple-authentication',
     // 네이티브 스플래시 (JS 로드 전) — JS의 SplashScreen 와 색·아이콘 일치시켜
     // 매끄러운 transition. cyan bg + 워드마크의 단순 fallback 아이콘.
     // image 가 따로 없어서 일단 icon.png 재사용 — 가운데 정렬, resizeMode contain.

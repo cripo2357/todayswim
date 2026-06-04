@@ -17,6 +17,8 @@ import {
 } from '@react-native-google-signin/google-signin';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Crypto from 'expo-crypto';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { useProfile } from '@/store/profile';
@@ -44,6 +46,8 @@ interface AuthState {
   hydrated: boolean;
   signInWithGoogle: () => Promise<void>;
   signInWithKakao: () => Promise<void>;
+  /** Apple (iOS 전용) — App Store 심사 4.8 필수. */
+  signInWithApple: () => Promise<void>;
   signOut: () => Promise<void>;
   /**
    * 회원 탈퇴 (Figma 201:8341/10281/10428).
@@ -222,6 +226,51 @@ export const useAuth = create<AuthState>((set) => ({
     if (exErr) throw exErr;
     set({ user: userFromSession(sess.session) });
     await syncProfileFromAuth(sess.session); // 0059 binding
+  },
+
+  // Apple (iOS 전용) — expo-apple-authentication 네이티브 자격증명 →
+  // supabase.auth.signInWithIdToken({ provider:'apple' }). 리플레이 방지 nonce:
+  // 원본을 SHA256 해시해 Apple에 전달, 원본은 Supabase에 전달(서버가 해시 비교).
+  // Apple은 이름/이메일을 최초 1회만 credential로 내려줌 — 이름이 있으면 닉네임
+  // 자동채움용으로 user에 보완(이메일은 Supabase 세션이 처리).
+  signInWithApple: async () => {
+    try {
+      const rawNonce = Crypto.randomUUID();
+      const hashedNonce = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        rawNonce,
+      );
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+        nonce: hashedNonce,
+      });
+      const idToken = credential.identityToken;
+      if (!idToken) throw new Error('Apple identityToken 없음');
+
+      const { data, error } = await supabase.auth.signInWithIdToken({
+        provider: 'apple',
+        token: idToken,
+        nonce: rawNonce,
+      });
+      if (error) throw error;
+
+      let user = userFromSession(data.session);
+      if (user && !user.nickname && credential.fullName) {
+        const { givenName, familyName } = credential.fullName;
+        // 공백 포함돼도 ProfileSetup sanitizeNickname이 제거 — 자동채움 힌트용.
+        const name = [familyName, givenName].filter(Boolean).join(' ').trim();
+        if (name) user = { ...user, nickname: name };
+      }
+      set({ user });
+      await syncProfileFromAuth(data.session); // 0059 binding
+    } catch (e) {
+      // 사용자가 시트 닫음/취소 — 조용히 무시.
+      if ((e as { code?: string }).code === 'ERR_REQUEST_CANCELED') return;
+      throw e;
+    }
   },
 
   signOut: async () => {

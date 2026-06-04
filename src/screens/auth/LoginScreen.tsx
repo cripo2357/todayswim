@@ -1,10 +1,10 @@
-// Figma 101:2369 — 로그인 (Google / 카카오 소셜 로그인)
+// Figma 101:2369 — 로그인 (Apple[iOS] / Google / 카카오 소셜 로그인)
 //
-// Supabase Auth 기반 — Google: native SDK idToken 교환 / Kakao: OAuth+PKCE.
-// Apple 로그인은 향후 iOS 도입 예정(현재 미운영 — 약관에도 명시).
+// Supabase Auth 기반 — Google: native SDK idToken 교환 / Kakao: OAuth+PKCE /
+// Apple: expo-apple-authentication idToken 교환(iOS 전용, App Store 심사 4.8 필수).
 
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Alert, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '@/store/auth';
@@ -16,13 +16,15 @@ import { tokens } from '@/styles/tokens';
 import LoginIllust from '@assets/illustrations/login.svg';
 import IconGoogle from '@assets/icons/social-google.svg';
 import IconKakao from '@assets/icons/social-kakao.svg';
+import IconApple from '@assets/icons/social-apple-white.svg';
 
-type LoginProvider = 'google' | 'kakao';
+type LoginProvider = 'google' | 'kakao' | 'apple';
 
 export function LoginScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const signInWithGoogle = useAuth((s) => s.signInWithGoogle);
   const signInWithKakao = useAuth((s) => s.signInWithKakao);
+  const signInWithApple = useAuth((s) => s.signInWithApple);
 
   // 로그인 성공 후 공통 게이트 — 약관 → 프로필 → 지도.
   const goAfterLogin = async () => {
@@ -40,6 +42,8 @@ export function LoginScreen() {
     try {
       if (provider === 'google') {
         await signInWithGoogle();
+      } else if (provider === 'apple') {
+        await signInWithApple();
       } else {
         await signInWithKakao();
       }
@@ -72,6 +76,20 @@ export function LoginScreen() {
         <Text style={styles.title}>로그인</Text>
 
         <View style={styles.buttons}>
+          {/* Apple로 로그인 — iOS 전용(App Store 4.8). Apple HIG: 검정 버튼 +
+              흰색 로고/텍스트. 다른 버튼과 동일 prominence(크기·위치). */}
+          {Platform.OS === 'ios' ? (
+            <Pressable
+              onPress={() => onSocial('apple')}
+              style={({ pressed }) => [styles.btn, styles.btnApple, pressed && { opacity: 0.85 }]}
+              accessibilityRole="button"
+              accessibilityLabel="Apple로 로그인"
+            >
+              <IconApple width={18} height={20} />
+              <Text style={[styles.btnLabel, styles.btnLabelApple]}>Apple로 로그인</Text>
+            </Pressable>
+          ) : null}
+
           <Pressable
             onPress={() => onSocial('google')}
             style={({ pressed }) => [styles.btn, styles.btnGoogle, pressed && { opacity: 0.85 }]}
@@ -137,6 +155,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
+  // Apple HIG — 검정 버튼, 흰색 로고/텍스트 (Google과 동일 톤·radius)
+  btnApple: { backgroundColor: '#000000', borderRadius: 16 },
   btnGoogle: { backgroundColor: '#000000', borderRadius: 16 },
   btnKakao: { backgroundColor: '#FEE500', borderRadius: 12 },
   // Figma — Regular(400) 16/22 -0.112
@@ -146,6 +166,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.112,
     fontFamily: tokens.font.sans,
   },
+  btnLabelApple: { color: tokens.color.white },
   btnLabelGoogle: { color: tokens.color.white },
   btnLabelKakao: { color: 'rgba(0,0,0,0.85)' },
   // Figma — 14/20 -0.084, #4B5563
