@@ -44,6 +44,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     infoPlist: {
       NSLocationWhenInUseUsageDescription:
         '근처 수영장을 거리순으로 보여드리려면 위치 권한이 필요해요.',
+      // 표준/면제 암호화만 사용 — App Store 암호화 수출규정 자동 컴플라이언스
+      // (이 값이 있으면 빌드 시 ITSAppUsesNonExemptEncryption 프롬프트 안 뜸).
+      ITSAppUsesNonExemptEncryption: false,
     },
     // iOS 17+ Privacy Manifest (D2). 상세 근거: docs/store-meta/D2-privacy-manifest.md
     privacyManifests: {
@@ -229,6 +232,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         android: {
           extraMavenRepos: ['https://repository.map.naver.com/archive/maven'],
+        },
+        ios: {
+          // RNFirebase(FirebaseCoreInternal Swift)가 GoogleUtilities(non-modular)에
+          // 의존 → 정적 라이브러리에선 모듈 맵 부재로 pod install 실패
+          // ("does not define modules"). 정적 프레임워크로 전환해 모듈 맵 자동
+          // 생성 — RNFirebase Expo 공식 권장 해법.
+          useFrameworks: 'static',
         },
       },
     ],
