@@ -89,6 +89,8 @@ interface Notif {
   inviteeIds?: string[];
   /** 표시용 날짜 문구(params.date) — invite_accepted/rejected 본문에 사용. */
   dateLabel?: string;
+  /** 적재 시각(ms) — invite_received 72h 자동 만료 판정. */
+  createdAtMs?: number;
   /** 미읽음 여부 — true 면 시간 옆에 노란 dot 표시. */
   read?: boolean;
 }
@@ -303,9 +305,13 @@ function rowToNotif(row: NotificationRow): Notif {
         : typeof row.related?.date === 'string'
           ? (row.related.date as string)
           : undefined,
+    createdAtMs: row.created_at ? Date.parse(row.created_at) : undefined,
     read: row.read,
   };
 }
+
+// 받은 초대 자동 만료 — 72h 무응답이면 수락/거절 불가(스펙 invite_auto_expired).
+const INVITE_TTL_MS = 72 * 60 * 60 * 1000;
 
 /** invite_received row → 일정 추가용 슬롯. related(poolId/date/start/end) +
  *  params.pool(발송 시점 풀명 스냅샷)이 모두 있어야 유효. 하나라도 없으면 undefined. */
@@ -387,6 +393,12 @@ function NotifCard({ notif }: { notif: Notif }) {
   const [cancelVisible, setCancelVisible] = React.useState(false);
   // 친구 신청 수락/거절 처리 후 — 액션 버튼 숨기고 상태 문구 노출(중복 탭 방지).
   const [handledMsg, setHandledMsg] = React.useState<string | null>(null);
+  // 받은 초대 72h 무응답 → 자동 만료(수락/거절 버튼 숨기고 안내). 서버 cron 없이
+  // 표시 시점 계산 — 만료된 초대는 어차피 의미 없으므로 버튼만 비활성.
+  const inviteExpired =
+    notif.kind === 'invite_received' &&
+    !!notif.createdAtMs &&
+    Date.now() - notif.createdAtMs > INVITE_TTL_MS;
 
   const onActionPress = (label: string) => {
     if (notif.kind === 'invite_received' && label === '거절') {
@@ -518,7 +530,7 @@ function NotifCard({ notif }: { notif: Notif }) {
             </Text>
           ))}
         </View>
-        {notif.actions && !handledMsg ? (
+        {notif.actions && !handledMsg && !inviteExpired ? (
           <View style={styles.actions}>
             {notif.actions.map((a) => {
               const AIcon = ACTION_ICON(a);
@@ -537,6 +549,8 @@ function NotifCard({ notif }: { notif: Notif }) {
         ) : null}
         {handledMsg ? (
           <Text style={styles.handledNote}>{handledMsg}</Text>
+        ) : inviteExpired ? (
+          <Text style={styles.handledNote}>초대가 만료됐어요</Text>
         ) : null}
       </View>
     </View>
