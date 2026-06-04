@@ -17,7 +17,6 @@ import { OfflineGate } from '@/components/network/OfflineGate';
 import { RuntimeStatusGate } from '@/components/status/RuntimeStatusGate';
 import { initSentry, SentryErrorBoundary } from '@/lib/sentry';
 import { initAnalytics, logScreen } from '@/lib/analytics';
-import { initLocalNotifications } from '@/lib/scheduleReminders';
 import { maybeSendMonthlySummary } from '@/lib/monthlySummary';
 import { useNotificationsRealtime } from '@/hooks/useNotifications';
 import * as SplashScreen from 'expo-splash-screen';
@@ -46,10 +45,6 @@ initSentry();
 // google-services.json + @react-native-firebase/* 패키지 모두 갖춰진
 // EAS 빌드에서만 활성화, 그 외(Expo Go·미배치 상태)는 silent no-op.
 initAnalytics();
-
-// 로컬 알림 핸들러 — 포그라운드 배너 표시 설정(1회). 일정 리마인더 예약은
-// useSwimSchedules 변경 시 reconcileSwimReminders 가 처리.
-void initLocalNotifications();
 
 // 네이티브 스플래시 (JS 로드 전) — 폰트 로드 완료까지 가시 유지. 자동 hide
 // 막아두고 fontsLoaded 시점에 명시적 hideAsync 호출 → JS SplashScreen 인계.

@@ -21,7 +21,6 @@ import {
   tryFetchMySchedules,
   rowToSchedule,
 } from '@/lib/userSchedulesSync';
-import { reconcileSwimReminders } from '@/lib/scheduleReminders';
 import { checkFriendOverlap } from '@/lib/friendOverlap';
 
 /** 현재 유저 친구코드 — 없으면 서버 호출 skip. */
@@ -89,8 +88,6 @@ export const useSwimSchedules = create<SwimScheduleState>((set, get) => ({
       const raw = await AsyncStorage.getItem(STORAGE_KEY);
       const schedules = raw ? (JSON.parse(raw) as MySwimSchedule[]) : [];
       set({ schedules, hydrated: true });
-      // 부팅 시 로컬 알림 재조정 — 재설치로 OS가 예약을 잃어버린 경우 복구.
-      void reconcileSwimReminders(schedules);
     } catch {
       set({ hydrated: true });
     }
@@ -107,7 +104,6 @@ export const useSwimSchedules = create<SwimScheduleState>((set, get) => ({
     const next = rows.map(rowToSchedule);
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     set({ schedules: next });
-    void reconcileSwimReminders(next);
   },
 
   add: async (s) => {
@@ -119,7 +115,6 @@ export const useSwimSchedules = create<SwimScheduleState>((set, get) => ({
     const next = [...get().schedules, item];
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     set({ schedules: next });
-    void reconcileSwimReminders(next);
     const me = myProfileId();
     if (me) {
       void tryInsertSchedule(me, item);
@@ -132,7 +127,6 @@ export const useSwimSchedules = create<SwimScheduleState>((set, get) => ({
     const next = get().schedules.filter((x) => x.id !== id);
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     set({ schedules: next });
-    void reconcileSwimReminders(next);
     if (myProfileId()) void tryDeleteSchedule(id);
   },
 
@@ -151,8 +145,6 @@ export const useSwimSchedules = create<SwimScheduleState>((set, get) => ({
     );
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     set({ schedules: next });
-    // 완료 표시 → 그 일정의 '완료 확인' 알림 더는 불필요 → 재조정으로 제거.
-    void reconcileSwimReminders(next);
     if (myProfileId()) void tryUpdateScheduleCompleted(id, completed);
   },
 
@@ -174,7 +166,6 @@ export const useSwimSchedules = create<SwimScheduleState>((set, get) => ({
 
   reset: async () => {
     set({ schedules: [] });
-    void reconcileSwimReminders([]); // 로그아웃/탈퇴 — 예약된 로컬 알림도 전부 취소.
     try {
       await AsyncStorage.removeItem(STORAGE_KEY);
     } catch {
