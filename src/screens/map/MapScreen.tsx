@@ -147,23 +147,23 @@ function ProfileFabContent({ photoUri }: { photoUri?: string }) {
   return <Image source={{ uri: photoUri }} style={styles.fabAvatarImg} />;
 }
 
-/** 내 위치 마커(로그인) — marker-me.png(50, 노란 원+halo) 위에 34 프로필.
- *  가장자리 (50-34)/2 = 8px 노란 테두리가 보임 (Figma 130:3622).
- *  로그아웃은 marker-me-guest.png(노란 원+검은 사람 baked)를 image 직접. */
-function LocationProfileMarker({ photoUri }: { photoUri: string }) {
+/** 내 위치 마커의 안쪽 프로필 사진(34px 원형, Figma 130:3622).
+ *  노란 링+halo(marker-me.png)는 별도 `image` 마커로 같은 좌표에 깔고, 이 사진만
+ *  그 위에 겹쳐 그린다.
+ *  이유: iOS는 커스텀 children 마커를 비트맵 캡처할 때 밑에 깔린 링 PNG 레이어를
+ *  떨어뜨리고 남은 사진을 마커 크기로 확대해버린다(=노란 배경 사라지고 크게 보임).
+ *  링을 검증된 image 경로로 분리하면 양 플랫폼 동일하게 렌더된다. */
+function LocationPhotoMarker({ photoUri }: { photoUri: string }) {
   return (
-    <View style={styles.locMarker}>
-      <Image source={MARKER_ME} style={styles.locRing} />
-      <View style={styles.locInner}>
-        {isBundleAvatar(photoUri) ? (
-          React.createElement(BUNDLE_AVATARS[photoUri], {
-            width: 34,
-            height: 34,
-          })
-        ) : (
-          <Image source={{ uri: photoUri }} style={styles.locInnerImg} />
-        )}
-      </View>
+    <View style={styles.locInner}>
+      {isBundleAvatar(photoUri) ? (
+        React.createElement(BUNDLE_AVATARS[photoUri], {
+          width: 34,
+          height: 34,
+        })
+      ) : (
+        <Image source={{ uri: photoUri }} style={styles.locInnerImg} />
+      )}
     </View>
   );
 }
@@ -598,27 +598,41 @@ export function MapScreen() {
             검은 팔벌린 사람 baked). 로그아웃 크기 = 25m 수영장 마커와 동일 47px
             (MARKER_SMALL size 47). 로그인은 50px 유지. */}
         {geo.status === 'granted' && geo.coords ? (
-          <NaverMapMarkerOverlay
-            latitude={geo.coords.lat}
-            longitude={geo.coords.lng}
-            {...(profile?.photoUri ? {} : { image: MARKER_ME_GUEST })}
-            width={profile?.photoUri ? 50 : 47}
-            height={profile?.photoUri ? 50 : 47}
-            anchor={{ x: 0.5, y: 0.5 }}
-            zIndex={5}
-            caption={{
-              text: profile?.name?.trim() || '내 위치',
-              textSize: 14,
-              color: tokens.color.ink900,
-              haloColor: tokens.color.white,
-              minZoom: 10,
-            }}
-            onTap={flyToMyLocation}
-          >
+          <>
+            {/* 노란 링+halo — 검증된 image 경로(양 플랫폼 동일). 로그인=marker-me 50,
+                로그아웃=marker-me-guest 47(25m 풀 마커와 동일). 이름 caption·탭은 여기. */}
+            <NaverMapMarkerOverlay
+              latitude={geo.coords.lat}
+              longitude={geo.coords.lng}
+              image={profile?.photoUri ? MARKER_ME : MARKER_ME_GUEST}
+              width={profile?.photoUri ? 50 : 47}
+              height={profile?.photoUri ? 50 : 47}
+              anchor={{ x: 0.5, y: 0.5 }}
+              zIndex={5}
+              caption={{
+                text: profile?.name?.trim() || '내 위치',
+                textSize: 14,
+                color: tokens.color.ink900,
+                haloColor: tokens.color.white,
+                minZoom: 10,
+              }}
+              onTap={flyToMyLocation}
+            />
+            {/* 로그인 시 — 링 안쪽 프로필 사진만 같은 좌표 위에 겹쳐 그림(34px) */}
             {profile?.photoUri ? (
-              <LocationProfileMarker photoUri={profile.photoUri} />
+              <NaverMapMarkerOverlay
+                latitude={geo.coords.lat}
+                longitude={geo.coords.lng}
+                width={34}
+                height={34}
+                anchor={{ x: 0.5, y: 0.5 }}
+                zIndex={6}
+                onTap={flyToMyLocation}
+              >
+                <LocationPhotoMarker photoUri={profile.photoUri} />
+              </NaverMapMarkerOverlay>
             ) : null}
-          </NaverMapMarkerOverlay>
+          </>
         ) : null}
 
         {visibleClusters.map((c) => {
@@ -1055,16 +1069,8 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
   },
-  // 내 위치 마커 (Figma 130:3622) — marker-me.png 50 + 안쪽 34 프로필
-  locMarker: {
-    width: 50,
-    height: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  locRing: { ...StyleSheet.absoluteFillObject, width: 50, height: 50 },
-  // 34 원형 — 노란 가장자리 (50-34)/2 = 8px 보임.
-  // marker-me.png 시각 중심 보정: 프로필을 좌·상 1px씩 이동.
+  // 내 위치 마커 안쪽 프로필 사진 (Figma 130:3622) — 34px 원형.
+  // 노란 링은 별도 image 마커(zIndex 5)로 같은 좌표에 깔림 → 여기선 사진만.
   locInner: {
     width: 34,
     height: 34,
@@ -1072,7 +1078,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    transform: [{ translateX: -1 }, { translateY: -1 }],
   },
   locInnerImg: { width: 34, height: 34 },
   // 필터 적용중 — 좌측 X(초기화) + 우측 텍스트+아이콘(설정), 하나의 알약처럼 보이는 통합 View
