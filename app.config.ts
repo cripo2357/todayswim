@@ -36,11 +36,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // Sign in with Apple — App Store 심사 4.8(소셜 로그인 제공 시 필수) 대응.
     // 네이티브 capability 추가(entitlement). expo-apple-authentication 플러그인과 함께.
     usesAppleSignIn: true,
-    // Firebase Analytics iOS config — 크리스가 Firebase 콘솔에서 iOS 앱을
-    // 등록하고 GoogleService-Info.plist 를 받아 프로젝트 루트에 배치하면
-    // @react-native-firebase/app 플러그인이 자동으로 ios 번들에 포함.
-    googleServicesFile:
-      process.env.GOOGLE_SERVICES_PLIST ?? './GoogleService-Info.plist',
+    // (Firebase 제거 — RNFirebase + 정적프레임워크 + New Arch iOS 빌드
+    //  비호환으로 v1에서 분리. 분석은 추후 New-Arch 호환 도구로 재추가.)
     infoPlist: {
       NSLocationWhenInUseUsageDescription:
         '근처 수영장을 거리순으로 보여드리려면 위치 권한이 필요해요.',
@@ -149,10 +146,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   android: {
     package: 'com.cripo.poolsday',
     permissions: ['ACCESS_FINE_LOCATION', 'ACCESS_COARSE_LOCATION'],
-    // Firebase Analytics Android config — Android 앱 등록 후 받은
-    // google-services.json 을 프로젝트 루트에 배치.
-    googleServicesFile:
-      process.env.GOOGLE_SERVICES_JSON ?? './google-services.json',
     adaptiveIcon: {
       foregroundImage: './assets/icon.png',
       // 아이콘 배경 cyan과 매치 (Android 시스템 마스크 모서리 잘림 영역도 같은 색).
@@ -233,19 +226,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         android: {
           extraMavenRepos: ['https://repository.map.naver.com/archive/maven'],
         },
-        ios: {
-          // RNFirebase(FirebaseCoreInternal Swift)가 GoogleUtilities(non-modular)에
-          // 의존 → 정적 라이브러리에선 모듈 맵 부재로 pod install 실패
-          // ("does not define modules"). 정적 프레임워크로 전환해 모듈 맵 자동
-          // 생성 — RNFirebase Expo 공식 권장 해법.
-          useFrameworks: 'static',
-        },
       },
     ],
-    // 위 useFrameworks:static + RNFirebase → 프레임워크 모듈이 React-Core
-    // 비모듈러 헤더를 include해 아카이브 실패(-Wnon-modular-include...). post_install
-    // 에서 CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES=YES로 허용.
-    './plugins/withFirebaseStaticFrameworkFix',
     // Sentry plugin 임시 제거 — Sentry 프로젝트(SENTRY_ORG/PROJECT/AUTH_TOKEN)
     // 미생성 상태에서 source maps 자동 업로드가 빌드 자동 실패 유발.
     // disableAutoUpload 옵션이 의도대로 인식 안 됨. 출시 직전 Sentry 프로젝트
@@ -253,12 +235,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     //   '@sentry/react-native/expo',
     // runtime Sentry SDK 는 코드의 동적 import 라 plugin 없어도 init() 시점에
     // no-op 처리 — 다른 기능 영향 X. (src/lib/sentry.ts 검증됨.)
-    // Firebase Analytics — 익명 통계(앱 사용 빈도·화면 진입·이벤트).
-    // ios.googleServicesFile / android.googleServicesFile 의 config 파일과
-    // 함께 동작. 파일이 없으면 EAS 빌드 시 실패하므로 크리스가 콘솔 작업
-    // (Firebase 프로젝트 생성 + iOS/Android 앱 등록 → config 파일 다운)을
-    // 완료한 후 다음 빌드에서 활성화. JS 런타임에서는 try-catch 로 패키지
-    // 미로딩 상황도 안전(src/lib/analytics.ts no-op 폴백).
-    '@react-native-firebase/app',
+    //
+    // Firebase Analytics 제거(2026-06-04) — RNFirebase + 정적프레임워크 +
+    // New Architecture iOS 빌드 비호환(RCTBridgeModule 모듈 import 에러)으로
+    // v1에서 분리. analytics.ts는 동적 require no-op이라 코드 영향 X. 분석은
+    // 추후 New-Arch 호환 도구로 재추가(deps·plugin·googleServicesFile 동시 복원).
   ],
 });
