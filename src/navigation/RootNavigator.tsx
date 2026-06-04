@@ -39,9 +39,15 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 /**
  * Dim 모달 표시 옵션. 뒤 화면이 비치게 transparent presentation + contentStyle bg 투명.
  * ModalCard 컴포넌트는 자체적으로 반투명 dim 백드롭을 그림.
+ *
+ * presentation = 'containedTransparentModal' (NOT 'transparentModal'):
+ * iOS + New Architecture 에서 'transparentModal'(별도 UIWindow)은 모달 콘텐츠가
+ * 사라진 뒤에도 투명 윈도우가 남아 그 아래 탭/버튼 터치를 전부 가로채는 버그가
+ * 있다(가장자리 뒤로가기 제스처로만 회복). 'contained~'는 별도 윈도우 대신 앱
+ * 뷰 계층 내부에 투명하게 그려 dim 효과는 유지하면서 터치막힘을 없앤다.
  */
 const DIM_MODAL_OPTIONS = {
-  presentation: 'transparentModal',
+  presentation: 'containedTransparentModal',
   animation: 'fade',
   contentStyle: { backgroundColor: 'transparent' },
 } as const;
