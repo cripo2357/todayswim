@@ -242,6 +242,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         },
       },
     ],
+    // 위 useFrameworks:static + RNFirebase → 프레임워크 모듈이 React-Core
+    // 비모듈러 헤더를 include해 아카이브 실패(-Wnon-modular-include...). post_install
+    // 에서 CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES=YES로 허용.
+    './plugins/withFirebaseStaticFrameworkFix',
     // Sentry plugin 임시 제거 — Sentry 프로젝트(SENTRY_ORG/PROJECT/AUTH_TOKEN)
     // 미생성 상태에서 source maps 자동 업로드가 빌드 자동 실패 유발.
     // disableAutoUpload 옵션이 의도대로 인식 안 됨. 출시 직전 Sentry 프로젝트
