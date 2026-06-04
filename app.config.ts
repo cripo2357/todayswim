@@ -145,6 +145,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
 
   android: {
     package: 'com.cripo.poolsday',
+    // FCM 푸시(expo-notifications)용 — google-services.json은 푸시 설정 파일이라
+    // @react-native-firebase(분석, iOS 빌드 이슈로 제거)와 별개로 꼭 필요.
+    // 이게 없으면 Android 기기가 FCM 토큰을 못 받아 푸시가 안 옴.
+    googleServicesFile: './google-services.json',
     permissions: ['ACCESS_FINE_LOCATION', 'ACCESS_COARSE_LOCATION'],
     adaptiveIcon: {
       foregroundImage: './assets/icon.png',
