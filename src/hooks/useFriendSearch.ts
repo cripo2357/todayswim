@@ -1,17 +1,15 @@
-// 친구 검색 — P2 진입(2026-05-20) 후 mock + 서버 결합.
+// 친구 검색 — 서버 profiles 단일 출처(2026-06-05 prod 정리).
 //
 // 정책:
-// - mock 검색(searchByNickname/findByCode)은 sync, 즉시 반환 — UX 응답성 보존.
-// - 서버 검색은 React Query 비동기, 결과 합쳐서 dedupe by id.
-// - mock 친구가 이미 서버에 시드돼 둘이 거의 동일한 결과 — 서버가 더 권위지만
-//   네트워크 실패/오프라인 대비 mock fallback 유지(useOtherSchedules 동일 패턴).
+// - **server-only.** profiles 테이블을 nickname ilike / friend-code(id) 로 조회.
+// - mock 검색은 제거. (P3에서 mock 친구 서버 시드가 빠져 mock 결과는 실 계정이
+//   아니므로, 추가해도 friend_requests FK 위반·알림이 어디에도 안 감 = "상대가
+//   메시지를 못 받는" 회귀 원인이었음. 다른 P3 mock 제거와 일관.)
 // - eligibility(기존 친구·차단 제외)는 호출부가 동일 필터 적용.
 
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
-  searchByNickname as mockSearchByNickname,
-  findByCode as mockFindByCode,
   type FriendSearchUser,
   type FriendSearchOpts,
 } from '@/lib/friendSearch';
@@ -53,18 +51,12 @@ function dedupeAndFilter(
   return out;
 }
 
-/** 닉네임 검색 — mock 즉시 결과 + 서버 결과 합쳐 dedupe. 최대 20. */
+/** 닉네임 검색 — 서버 profiles ilike. 최대 20. (mock 제거) */
 export function useNicknameSearch(
   query: string,
   opts: FriendSearchOpts,
 ): FriendSearchUser[] {
   const q = query.trim();
-
-  // mock 결과 — sync, 즉시.
-  const mockResults = React.useMemo(
-    () => mockSearchByNickname(q, opts),
-    [q, opts],
-  );
 
   // 서버 결과 — async, staleTime은 전역 60s.
   const { data: serverResults = [] } = useQuery({
@@ -77,8 +69,8 @@ export function useNicknameSearch(
   });
 
   return React.useMemo(
-    () => dedupeAndFilter([...mockResults, ...serverResults], opts).slice(0, 20),
-    [mockResults, serverResults, opts],
+    () => dedupeAndFilter(serverResults, opts).slice(0, 20),
+    [serverResults, opts],
   );
 }
 
@@ -91,11 +83,6 @@ export function useCodeSearch(
   const c = code.trim().toUpperCase();
   const ready = c.length === 6;
 
-  const mockResult = React.useMemo(
-    () => (ready ? mockFindByCode(c, opts) : null),
-    [c, ready, opts],
-  );
-
   const { data: serverResult } = useQuery({
     queryKey: ['friendSearch.code', c],
     queryFn: async (): Promise<FriendSearchUser | null> => {
@@ -106,8 +93,7 @@ export function useCodeSearch(
   });
 
   if (!ready) return null;
-  // 둘 중 누구든 찾으면 사용. 서버 우선(권위).
-  const found = serverResult ?? mockResult ?? null;
+  const found = serverResult ?? null; // server-only (mock 제거)
   if (!found) return null;
   // eligibility — 친구·차단이면 검색 결과에서 제외.
   if (opts.friendIds.includes(found.id)) return null;
