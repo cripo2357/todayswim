@@ -71,10 +71,22 @@ interface AuthState {
 // (Android/iOS 클라이언트가 아니라 웹 클라이언트 ID여야 supabase가 검증 가능.)
 const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
 
+// iOS 네이티브 Google 로그인용 **iOS OAuth 클라이언트 ID**(공개값). GoogleService-
+// Info.plist를 제거(Firebase 분리)했으므로, GIDSignIn이 초기화되려면 configure에
+// iosClientId를 명시해야 함. 안 주면 iOS에서 로그인 시 에러. URL scheme
+// (com.googleusercontent.apps.<X>)의 역순 = <X>.apps.googleusercontent.com.
+// env 우선, 없으면 공개 식별자 폴백(webClientId/Naver 키와 동일 패턴).
+const GOOGLE_IOS_CLIENT_ID =
+  process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ??
+  '790053857210-fvjcgis91j675ui8tepg00gj0ru6eq1e.apps.googleusercontent.com';
+
 let googleConfigured = false;
 function ensureGoogleConfigured() {
   if (googleConfigured) return;
-  GoogleSignin.configure({ webClientId: GOOGLE_WEB_CLIENT_ID });
+  GoogleSignin.configure({
+    webClientId: GOOGLE_WEB_CLIENT_ID,
+    iosClientId: GOOGLE_IOS_CLIENT_ID, // iOS 전용 — Android는 무시(무해).
+  });
   googleConfigured = true;
 }
 
