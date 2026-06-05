@@ -27,8 +27,10 @@ export function GlobalAddScheduleSheet() {
       start: intent.start,
       end: intent.end,
     });
-    setOpen(true);
     clearIntent();
+    // 시간표 모달(ScheduleView)이 goBack으로 닫히는 중 — 닫힘 후 등록 시트를 띄워
+    // iOS 모달 전환 레이스(멈춤) 회피. 루트 상주 컴포넌트라 cleanup 불필요.
+    setTimeout(() => setOpen(true), 320);
   }, [intent, clearIntent]);
 
   return (

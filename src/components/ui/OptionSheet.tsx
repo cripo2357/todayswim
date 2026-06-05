@@ -53,8 +53,13 @@ export function OptionSheet<T extends string | number>({
 
   const submit = () => {
     if (draft == null) return;
-    onConfirm(draft);
+    const v = draft;
+    // 시트를 먼저 닫고, onConfirm 은 닫힘 애니메이션 후 호출.
+    // iOS는 RN Modal이 닫히는 도중 새 Modal을 띄우면 멈춤(투명 레이어가 터치를
+    // 가로채 뒤로가기로만 회복) — onConfirm이 또 다른 모달(확인 등)을 열 수 있어
+    // 전환을 직렬화한다. (BottomSheet 닫힘 ~220ms → 300ms 여유)
     onClose();
+    setTimeout(() => onConfirm(v), 300);
   };
 
   // 닫기 경로(딤 탭/스와이프/뒤로) — commitOnClose면 변경된 선택을 확정.
