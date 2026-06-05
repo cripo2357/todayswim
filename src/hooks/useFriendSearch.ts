@@ -18,17 +18,15 @@ import {
   tryFindProfileByCode,
   type ProfileSearchRow,
 } from '@/lib/friendsSync';
-import type { AvatarId } from '@/lib/avatars';
 
-/** profiles row → FriendSearchUser. photo_uri 가 번들 AvatarId면 그대로, 아니면 폴백. */
+/** profiles row → FriendSearchUser. photo_uri 는 번들 AvatarId 또는 업로드 사진
+ *  uri — 둘 다 그대로 통과(Avatar 가 uri/번들 모두 렌더). null 만 기본 폴백. */
 function rowToUser(row: ProfileSearchRow): FriendSearchUser {
-  const a = row.photo_uri ?? 'avatar-male-1';
-  const avatar = (a.startsWith('avatar-') ? a : 'avatar-male-1') as AvatarId;
   return {
     id: row.id,
     nickname: row.nickname,
     status: row.bio ?? '',
-    avatar,
+    avatar: row.photo_uri ?? 'avatar-male-1',
     code: row.id, // mock id = 친구코드 통일과 일관.
   };
 }
@@ -43,6 +41,7 @@ function dedupeAndFilter(
   const out: FriendSearchUser[] = [];
   for (const u of list) {
     if (seen.has(u.id)) continue;
+    if (opts.selfId && u.id === opts.selfId) continue; // 자기 자신 제외
     if (friendSet.has(u.id)) continue;
     if (blockedSet.has(u.id)) continue;
     seen.add(u.id);
@@ -95,7 +94,8 @@ export function useCodeSearch(
   if (!ready) return null;
   const found = serverResult ?? null; // server-only (mock 제거)
   if (!found) return null;
-  // eligibility — 친구·차단이면 검색 결과에서 제외.
+  // eligibility — 자기 자신·친구·차단이면 검색 결과에서 제외.
+  if (opts.selfId && found.id === opts.selfId) return null;
   if (opts.friendIds.includes(found.id)) return null;
   if (opts.blockedIds.includes(found.id)) return null;
   return found;

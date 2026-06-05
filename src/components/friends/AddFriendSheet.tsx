@@ -80,10 +80,16 @@ export function AddFriendSheet({
   const friends = useFriends((s) => s.friends);
   const blocked = useFriends((s) => s.blocked);
   const sendRequest = useFriends((s) => s.sendRequest);
+  // 내 친구코드 — 검색 결과에서 자기 자신 제외(나에게 친구 신청 방지).
+  const myId = useProfile((s) => s.profile?.id);
 
   const opts = React.useMemo(
-    () => ({ friendIds: friends.map((f) => f.id), blockedIds: blocked }),
-    [friends, blocked],
+    () => ({
+      friendIds: friends.map((f) => f.id),
+      blockedIds: blocked,
+      selfId: myId,
+    }),
+    [friends, blocked, myId],
   );
 
   const [tab, setTab] = React.useState<Tab>('nickname');
@@ -231,12 +237,9 @@ export function AddFriendSheet({
                         returnKeyType="search"
                       />
                       {nq.length === 0 ? (
-                        <Text
-                          style={styles.searchPlaceholder}
-                          pointerEvents="none"
-                        >
-                          닉네임
-                        </Text>
+                        <View style={styles.phOverlay} pointerEvents="none">
+                          <Text style={styles.searchPlaceholder}>닉네임</Text>
+                        </View>
                       ) : null}
                     </View>
                     {nq.length > 0 ? (
@@ -316,9 +319,9 @@ export function AddFriendSheet({
                   returnKeyType="search"
                 />
                 {code.length === 0 ? (
-                  <Text style={styles.inputPlaceholder} pointerEvents="none">
-                    정확한 ID 6자리
-                  </Text>
+                  <View style={styles.phOverlay} pointerEvents="none">
+                    <Text style={styles.inputPlaceholder}>정확한 ID 6자리</Text>
+                  </View>
                 ) : null}
               </View>
               <IconChevronDown width={20} height={20} />
@@ -428,15 +431,19 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sans,
     color: '#4B5563',
   },
-  // ID TextInput 의 플레이스홀더 — 입력 위 절대배치 오버레이(빈 값일
-  // 때만, 타이핑 시 사라짐). flex 로 두면 입력과 세로로 쌓여 위치 깨짐.
-  inputPlaceholder: {
+  // 플레이스홀더 오버레이 — 입력 위 절대배치(빈 값일 때만), flex 로 세로 중앙.
+  // textAlignVertical 은 Android 전용(iOS no-op)이라 쓰지 말 것 — iOS 에서 상단
+  // 정렬돼 입력 텍스트(중앙)와 어긋남. 반드시 justifyContent:'center' 컨테이너로.
+  phOverlay: {
     position: 'absolute',
     left: 0,
     right: 0,
     top: 0,
     bottom: 0,
-    textAlignVertical: 'center',
+    justifyContent: 'center',
+  },
+  // ID TextInput 플레이스홀더 텍스트(번들 폰트 적용 — native placeholder 회피).
+  inputPlaceholder: {
     fontSize: 16,
     lineHeight: 22,
     letterSpacing: -0.112,
@@ -505,13 +512,8 @@ const styles = StyleSheet.create({
     color: '#4B5563',
     padding: 0,
   },
+  // 닉네임 float 검색칸 플레이스홀더 텍스트 — phOverlay(중앙) 안에 렌더.
   searchPlaceholder: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    textAlignVertical: 'center',
     fontSize: 16,
     lineHeight: 22,
     letterSpacing: -0.112,

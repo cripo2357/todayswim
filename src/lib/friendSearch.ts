@@ -5,7 +5,6 @@
 // 정렬·랭킹 구조는 서버 연동 시 재사용할 수 있도록 유지한다.
 
 import type { MockAccount } from '@/lib/mockData';
-import type { AvatarId } from '@/lib/avatars';
 
 // 친구코드 유틸 단일 출처는 lib/friendCode. 외부 호환성 위해 re-export.
 export { accountCode, sanitizeCode } from '@/lib/friendCode';
@@ -14,7 +13,8 @@ export interface FriendSearchUser {
   id: string;
   nickname: string;
   status: string;
-  avatar: AvatarId;
+  /** 번들 AvatarId 또는 업로드 사진 uri — Avatar 컴포넌트가 둘 다 렌더. */
+  avatar: string;
   /** 6자리 계정 ID. P2 진입(2026-05-20) 후 mock id 자체가 친구코드 — `code = id`. */
   code: string;
 }
@@ -27,9 +27,12 @@ export interface FriendSearchOpts {
   friendIds: readonly string[];
   /** 차단 id (제외) */
   blockedIds: readonly string[];
+  /** 내 친구코드(=profile id) — 자기 자신은 검색 결과에서 제외. */
+  selfId?: string;
 }
 
 function eligible(a: MockAccount, o: FriendSearchOpts): boolean {
+  if (o.selfId && a.id === o.selfId) return false;
   return !o.friendIds.includes(a.id) && !o.blockedIds.includes(a.id);
 }
 
