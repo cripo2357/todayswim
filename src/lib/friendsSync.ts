@@ -266,3 +266,53 @@ export async function tryFindProfileByCode(
     return null;
   }
 }
+
+/** 타인 프로필 상세 row — OtherUserProfile 화면용(profiles 전체 노출 컬럼). */
+export interface OtherProfileRow {
+  id: string;
+  nickname: string;
+  bio: string | null;
+  photo_uri: string | null;
+  certifications: string[] | null;
+  im100_record: string | null;
+  strokes: string[] | null;
+  created_at: string;
+  show_service_years: boolean;
+  show_strokes: boolean;
+  show_certs: boolean;
+  show_im100: boolean;
+}
+
+/** 타인 프로필 상세 조회(profiles by id). RLS select(true). 없으면 null. */
+export async function tryFetchOtherProfile(
+  userId: string,
+): Promise<OtherProfileRow | null> {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select(
+        'id, nickname, bio, photo_uri, certifications, im100_record, strokes, created_at, show_service_years, show_strokes, show_certs, show_im100',
+      )
+      .eq('id', userId)
+      .maybeSingle();
+    if (error || !data) return null;
+    return data as OtherProfileRow;
+  } catch {
+    return null;
+  }
+}
+
+/** 해당 사용자의 친구 수 — security definer RPC(0171). friendships SELECT가
+ *  owner-only(0093)라 타인 건 직접 count 불가 → 행 노출 없이 숫자만 반환.
+ *  RPC 미적용/실패 시 0 폴백(프로필은 그대로 노출). */
+export async function tryCountFriendsOf(userId: string): Promise<number> {
+  try {
+    const { data, error } = await supabase.rpc('friend_count', {
+      p_profile_id: userId,
+    });
+    if (error || typeof data !== 'number') return 0;
+    return data;
+  } catch {
+    return 0;
+  }
+}

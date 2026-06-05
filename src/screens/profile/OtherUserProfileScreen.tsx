@@ -11,6 +11,7 @@ import {
   Pressable,
   ScrollView,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -20,11 +21,11 @@ import IconUserTriple from '@assets/icons/user-triple.svg';
 import type { RootStackParamList } from '@/navigation/types';
 import { useFriends, friendRelation, type FriendRelation } from '@/store/friends';
 import {
-  getOtherProfile,
   profileLabels,
   formatWeeklyAvg,
   upcomingSchedulesFor,
 } from '@/lib/otherProfile';
+import { useOtherProfile } from '@/hooks/useOtherProfile';
 import { useSwimSchedules } from '@/store/swimSchedule';
 import { useProfile } from '@/store/profile';
 import { useAddScheduleIntent } from '@/store/addScheduleIntent';
@@ -81,7 +82,7 @@ export function OtherUserProfileScreen() {
   const fStore = useFriends();
   const rel = friendRelation(fStore, userId);
 
-  const profile = React.useMemo(() => getOtherProfile(userId), [userId]);
+  const { profile, isLoading } = useOtherProfile(userId);
   const isFriend = rel === 'friend';
   const labels = profile ? profileLabels(profile) : [];
   const schedules = React.useMemo(
@@ -108,6 +109,17 @@ export function OtherUserProfileScreen() {
   const [cancelOpen, setCancelOpen] = React.useState(false);
   const close = () => navigation.goBack();
 
+  // 차단은 즉시 안내. 그 외엔 서버 fetch 로딩 중 스피너 → 없으면 에러.
+  if (rel !== 'blocked' && isLoading) {
+    return (
+      <View style={styles.root}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={close} />
+        <View style={styles.card}>
+          <ActivityIndicator color={tokens.color.pool500} />
+        </View>
+      </View>
+    );
+  }
   if (!profile || rel === 'blocked') {
     return (
       <View style={styles.root}>
