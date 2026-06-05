@@ -12,14 +12,14 @@
 // 시점에 RULES.build로 계산해 적재됐으므로 mock과 동일 형식.
 
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Alert, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { SvgProps } from 'react-native-svg';
 import { X, Check, ChevronRight } from 'lucide-react-native';
 import { tokens } from '@/styles/tokens';
 import { type MessageKind } from '@/lib/messages/rules';
-import { BUNDLE_AVATARS, type AvatarId } from '@/lib/avatars';
+import { BUNDLE_AVATARS, isBundleAvatar, type AvatarId } from '@/lib/avatars';
 import type { RootStackParamList } from '@/navigation/types';
 import { RejectScheduleInviteModal } from '@/components/schedule/RejectScheduleInviteModal';
 import { CancelScheduleInviteModal } from '@/components/schedule/CancelScheduleInviteModal';
@@ -58,8 +58,10 @@ type SvgIconCmp = React.FC<SvgProps>;
  *  카드는 그 시점의 관계를 보존(예: friend_request_received는 영구적으로
  *  '비친구' 테두리 — 그때 비친구였음의 기록). v0.6 정책. */
 type AvatarRel = 'me' | 'friend' | 'stranger';
+// avatar.value = 번들 AvatarId('avatar-male-1') 또는 사진 uri(소셜/업로드).
+// isBundleAvatar로 구분해 SVG 또는 Image로 렌더(NotifSlot).
 type Slot =
-  | { type: 'avatar'; id: AvatarId }
+  | { type: 'avatar'; value: string }
   | { type: 'icon'; render: () => React.ReactNode };
 
 interface Notif {
@@ -77,6 +79,9 @@ interface Notif {
   name?: string;
   /** related.senderUserId — 친구 신청·초대 보낸 사람 친구코드(=profiles.id). */
   senderUserId?: string;
+  /** related.senderAvatar — 카드에 보일 상대 아바타(번들 id 또는 사진 uri). 친구
+   *  신청/초대 발송 시점에 저장된 실제 상대 아바타. NotifCard 액션에서 양측 적재에도 사용. */
+  senderAvatar?: string;
   /** invite_received 슬롯 — 수락 시 내 일정 추가에 사용(related + params.pool). */
   inviteSlot?: {
     poolId: string;
@@ -104,7 +109,7 @@ const lucide = (Cmp: React.ComponentType<{ size?: number; color?: string; stroke
   type: 'icon',
   render: () => <Cmp size={20} color="#4B5563" strokeWidth={2} />,
 });
-const avatar = (id: AvatarId): Slot => ({ type: 'avatar', id });
+const avatar = (value: string): Slot => ({ type: 'avatar', value });
 
 // 트리거 유형 → 발송 시점 관계 (테두리 색의 단일 출처). 누락 = 'friend' 기본.
 // 트리거가 곧 관계를 함축 — 시간 지나도 그 시점 관계 보존.
@@ -277,7 +282,16 @@ const ACTION_ICON = (label: string): React.ComponentType<{ size?: number; color?
 };
 
 function rowToNotif(row: NotificationRow): Notif {
-  const slot: Slot = KIND_TO_SLOT[row.kind] ?? lucide(ChevronRight);
+  const baseSlot: Slot = KIND_TO_SLOT[row.kind] ?? lucide(ChevronRight);
+  const senderAvatar =
+    typeof row.related?.senderAvatar === 'string'
+      ? row.related.senderAvatar
+      : undefined;
+  // avatar 카드면 발송 시 저장된 실제 상대 아바타로 교체(없으면 기본 샘플 폴백 — 구 알림).
+  const slot: Slot =
+    baseSlot.type === 'avatar' && senderAvatar
+      ? avatar(senderAvatar)
+      : baseSlot;
   return {
     id: row.id,
     kind: row.kind,
@@ -293,6 +307,7 @@ function rowToNotif(row: NotificationRow): Notif {
       typeof row.related?.senderUserId === 'string'
         ? row.related.senderUserId
         : undefined,
+    senderAvatar,
     inviteSlot: inviteSlotFromRow(row),
     inviteeIds: Array.isArray(row.related?.inviteeIds)
       ? (row.related.inviteeIds as unknown[]).filter(
@@ -372,10 +387,19 @@ const REL_BORDER: Record<AvatarRel, string> = {
 
 function NotifSlot({ slot, rel }: { slot: Slot; rel?: AvatarRel }) {
   if (slot.type === 'avatar') {
-    const Avatar = BUNDLE_AVATARS[slot.id];
+    // value = 번들 AvatarId → SVG / 그 외(사진 uri) → Image.
+    const border = { borderColor: REL_BORDER[rel ?? 'friend'] };
+    if (isBundleAvatar(slot.value)) {
+      const Avatar = BUNDLE_AVATARS[slot.value];
+      return (
+        <View style={[styles.avatarWrap, border]}>
+          <Avatar width={40} height={40} />
+        </View>
+      );
+    }
     return (
-      <View style={[styles.avatarWrap, { borderColor: REL_BORDER[rel ?? 'friend'] }]}>
-        <Avatar width={40} height={40} />
+      <View style={[styles.avatarWrap, border]}>
+        <Image source={{ uri: slot.value }} style={styles.avatarImg} />
       </View>
     );
   }
@@ -427,15 +451,19 @@ function NotifCard({ notif }: { notif: Notif }) {
       const my = useProfile.getState().profile;
       if (label === '수락') {
         useFriends.getState().accept(requesterId);
-        // 본인 이력(내 카드: "{신청자}와 친구가 됐어요")
-        void dispatchMessage('friend_request_accepted', { name: notif.name ?? '' });
-        // 신청자 알림(상대 카드: "{내 닉}과 친구가 됐어요") + OS 푸시
+        // 본인 이력(내 카드: "{신청자}와 친구가 됐어요") — 아바타=신청자(받은 카드에 저장된 값)
+        void dispatchMessage(
+          'friend_request_accepted',
+          { name: notif.name ?? '' },
+          notif.senderAvatar ? { senderAvatar: notif.senderAvatar } : {},
+        );
+        // 신청자 알림(상대 카드: "{내 닉}과 친구가 됐어요") — 아바타=나 + OS 푸시
         if (my?.name) {
           void dispatchMessageTo(
             requesterId,
             'friend_request_accepted',
             { name: my.name },
-            { senderUserId: my.id },
+            { senderUserId: my.id, senderAvatar: my.photoUri },
           );
         }
         setHandledMsg('친구가 됐어요');
@@ -667,6 +695,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 2,
   },
+  // 사진(uri) 아바타 — 원형 테두리 안을 채움(wrap의 overflow:hidden이 라운드 클립).
+  avatarImg: { width: 40, height: 40 },
   cardBody: { flex: 1, gap: 12 },
   cardHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   // 제목 — SemiBold 14/20 -0.084 #1F2937

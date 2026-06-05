@@ -302,13 +302,18 @@ export function FriendsTab() {
                           // P2: friend_request_accepted 양측 적재. 본문의 {name}이
                           // 양측에서 달라(나=상대닉, 상대=내닉) 명시적 두 번 호출.
                           const my = useProfile.getState().profile;
-                          void dispatchMessage('friend_request_accepted', { name: req.nickname });
+                          // 아바타도 양측 다름: 내 카드=신청자 / 신청자 카드=나.
+                          void dispatchMessage(
+                            'friend_request_accepted',
+                            { name: req.nickname },
+                            { senderAvatar: req.avatar },
+                          );
                           if (my?.name) {
                             void dispatchMessageTo(
                               req.id,
                               'friend_request_accepted',
                               { name: my.name },
-                              { senderUserId: my.id },
+                              { senderUserId: my.id, senderAvatar: my.photoUri },
                             );
                           }
                         }}

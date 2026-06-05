@@ -138,13 +138,13 @@ export function AddFriendSheet({
         picked.id,
         'friend_request_received',
         { name: my.name },
-        { senderUserId: my.id },
+        { senderUserId: my.id, senderAvatar: my.photoUri },
       );
     }
     void dispatchMessage(
       'friend_request_sent',
       { name: picked.nickname },
-      { targetUserId: picked.id },
+      { targetUserId: picked.id, senderAvatar: picked.avatar },
     );
     onSent(picked.nickname);
   };

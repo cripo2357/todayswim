@@ -126,7 +126,7 @@ export function InviteFriendsScreen() {
           f.id,
           'invite_received',
           { name: myName, pool: poolName, date, time },
-          { poolId, date, start, end, senderUserId },
+          { poolId, date, start, end, senderUserId, senderAvatar: myProfile?.photoUri },
         );
       }
     }

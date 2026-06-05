@@ -40,7 +40,14 @@ export async function checkFriendOverlap(
         date: s.date,
         time: s.start,
       },
-      { poolId: s.poolId, date: s.date, start: s.start, end: s.end },
+      {
+        poolId: s.poolId,
+        date: s.date,
+        start: s.start,
+        end: s.end,
+        // 카드 아바타 = 겹친 친구. photo_uri는 번들 id 또는 사진 uri.
+        senderAvatar: overlap.profiles?.photo_uri ?? undefined,
+      },
     );
   } catch {
     /* best-effort */

@@ -131,7 +131,7 @@ export function OtherUserProfileScreen() {
           userId,
           'friend_request_received',
           { name: my.name },
-          { senderUserId: my.id },
+          { senderUserId: my.id, senderAvatar: my.photoUri },
         );
       }
       setSentOpen(true);
@@ -139,17 +139,22 @@ export function OtherUserProfileScreen() {
       fStore.accept(userId);
       // P2: friend_request_accepted 양측 적재. recipients='both'지만 본문의
       // {name}이 양측에서 다르므로(나는 상대닉 / 상대는 내닉) 명시적 두 번 호출.
+      // 아바타도 양측 다름: 내 카드=상대 아바타 / 상대 카드=내 아바타.
       const my = useProfile.getState().profile;
       const otherName = profile?.nickname;
       if (otherName) {
-        void dispatchMessage('friend_request_accepted', { name: otherName });
+        void dispatchMessage(
+          'friend_request_accepted',
+          { name: otherName },
+          { senderAvatar: profile?.avatar },
+        );
       }
       if (my?.name) {
         void dispatchMessageTo(
           userId,
           'friend_request_accepted',
           { name: my.name },
-          { senderUserId: my.id },
+          { senderUserId: my.id, senderAvatar: my.photoUri },
         );
       }
     } else if (cta.action === 'cancel') {
