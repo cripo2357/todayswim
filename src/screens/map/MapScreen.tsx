@@ -621,6 +621,10 @@ export function MapScreen() {
             {/* 로그인 시 — 링 안쪽 프로필 사진만 같은 좌표 위에 겹쳐 그림(34px) */}
             {profile?.photoUri ? (
               <NaverMapMarkerOverlay
+                // photoUri가 바뀌면 마커를 리마운트해 네이티브 비트맵을 재캡처.
+                // (네이티브 마커는 children을 한 번 비트맵으로 굳혀 캐시하므로
+                //  prop만 바뀌면 옛 사진이 남는다 — key로 강제 갱신.)
+                key={profile.photoUri}
                 latitude={geo.coords.lat}
                 longitude={geo.coords.lng}
                 width={34}
