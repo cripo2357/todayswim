@@ -23,6 +23,7 @@ import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { useProfile } from '@/store/profile';
 import { resetUserScopedState } from '@/lib/resetUserState';
+import { claimDevice, clearLocalDeviceId } from '@/lib/singleDevice';
 import { tryFetchProfileByAuthUid } from '@/lib/profileSync';
 import { setSentryUser } from '@/lib/sentry';
 import {
@@ -189,6 +190,8 @@ export const useAuth = create<AuthState>((set) => ({
       if (error) throw error;
       set({ user: userFromSession(data.session) });
       await syncProfileFromAuth(data.session); // 0059 binding
+      // 단일 기기 정책 — 이 기기를 활성 기기로 등록(다른 기기는 자동 로그아웃).
+      await claimDevice();
     } catch (e) {
       const code = (e as { code?: string }).code;
       if (
@@ -238,6 +241,8 @@ export const useAuth = create<AuthState>((set) => ({
     if (exErr) throw exErr;
     set({ user: userFromSession(sess.session) });
     await syncProfileFromAuth(sess.session); // 0059 binding
+    // 단일 기기 정책 — 이 기기를 활성 기기로 등록.
+    await claimDevice();
   },
 
   // Apple (iOS 전용) — expo-apple-authentication 네이티브 자격증명 →
@@ -278,6 +283,8 @@ export const useAuth = create<AuthState>((set) => ({
       }
       set({ user });
       await syncProfileFromAuth(data.session); // 0059 binding
+      // 단일 기기 정책 — 이 기기를 활성 기기로 등록(다른 기기는 자동 로그아웃).
+      await claimDevice();
     } catch (e) {
       // 사용자가 시트 닫음/취소 — 조용히 무시.
       if ((e as { code?: string }).code === 'ERR_REQUEST_CANCELED') return;
@@ -290,6 +297,7 @@ export const useAuth = create<AuthState>((set) => ({
     // 서버 round-trip 이라 await 시 로그아웃 체감이 수초 멈춤. 함수 자체가
     // try/catch best-effort 라 실패해도 stale row 만 남고 다음 등록 때 갱신.
     void unregisterCurrentDevice();
+    void clearLocalDeviceId(); // 단일 기기 — 로컬 기기-세션 id 제거.
     // scope:'local' — 디바이스 세션만 즉시 무효화(서버 round-trip 없음).
     // 다른 디바이스 세션은 살려둠 — 본인 로그아웃 UX 최우선.
     await supabase.auth.signOut({ scope: 'local' });

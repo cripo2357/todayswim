@@ -1,0 +1,67 @@
+// Pool's day — 단일 기기 로그인 정책. 한 계정은 한 기기에서만 로그인 유지.
+//
+// 동작:
+//  · 로그인 성공 시 claimDevice() — 새 기기-세션 UUID 생성→로컬 저장→서버
+//    profiles.active_device에 기록(이 기기가 "현재 활성").
+//  · 다른 기기가 로그인하면 server active_device가 그 기기 id로 바뀜.
+//  · 옛 기기는 앱 실행/포그라운드/realtime 시 isSupersededByOtherDevice()로
+//    server≠로컬 감지 → 자동 로그아웃(useSingleDeviceGuard).
+//
+// best-effort: 네트워크/세션 실패는 silent(로그아웃 안 함 — 오탐 방지).
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Crypto from 'expo-crypto';
+import { supabase } from '@/lib/supabase';
+
+const KEY = 'poolsday.deviceSession';
+
+/** 이 기기를 활성 기기로 등록 — 로그인 성공 직후 / 프로필 생성 직후 호출. */
+export async function claimDevice(): Promise<void> {
+  try {
+    const deviceId = Crypto.randomUUID();
+    await AsyncStorage.setItem(KEY, deviceId);
+    const uid = (await supabase.auth.getSession()).data.session?.user?.id;
+    if (!uid) return;
+    // 본인 profiles row(auth_uid 매칭)에 기록. row 없으면(신규, 프로필 전) 0행 —
+    // 프로필 생성 후 다시 claim.
+    await supabase
+      .from('profiles')
+      .update({ active_device: deviceId })
+      .eq('auth_uid', uid);
+  } catch {
+    /* best-effort */
+  }
+}
+
+/** 로그아웃 시 로컬 기기-세션 id 제거. */
+export async function clearLocalDeviceId(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * 다른 기기가 로그인해 내가 밀려났는지.
+ * server active_device가 내 로컬 id와 다르면 true(= 로그아웃 대상).
+ * 로컬 id 없음(아직 claim 전) / server 없음 / 오류 → false(오탐 방지).
+ */
+export async function isSupersededByOtherDevice(): Promise<boolean> {
+  try {
+    const uid = (await supabase.auth.getSession()).data.session?.user?.id;
+    if (!uid) return false;
+    const local = await AsyncStorage.getItem(KEY);
+    if (!local) return false;
+    const { data } = await supabase
+      .from('profiles')
+      .select('active_device')
+      .eq('auth_uid', uid)
+      .maybeSingle();
+    const server = (data as { active_device?: string | null } | null)
+      ?.active_device;
+    return !!server && server !== local;
+  } catch {
+    return false;
+  }
+}

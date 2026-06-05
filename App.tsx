@@ -19,6 +19,7 @@ import { initSentry, SentryErrorBoundary } from '@/lib/sentry';
 import { initAnalytics, logScreen } from '@/lib/analytics';
 import { maybeSendMonthlySummary } from '@/lib/monthlySummary';
 import { useNotificationsRealtime } from '@/hooks/useNotifications';
+import { useSingleDeviceGuard } from '@/hooks/useSingleDeviceGuard';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from '@/hooks/useFonts';
 import { usePoolFilter } from '@/store/poolFilter';
@@ -82,6 +83,12 @@ const linking: LinkingOptions<RootStackParamList> = {
 // 컴포넌트로 분리. (P3 후속 2026-05-22)
 function NotificationsRealtimeBridge() {
   useNotificationsRealtime();
+  return null;
+}
+
+// 단일 기기 정책 — 다른 기기 로그인 시 이 기기 자동 로그아웃. 세션 동안 활성.
+function SingleDeviceGuardBridge() {
+  useSingleDeviceGuard();
   return null;
 }
 
@@ -150,6 +157,7 @@ export default function App() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <NotificationsRealtimeBridge />
+          <SingleDeviceGuardBridge />
           <NavigationContainer
             ref={navigationRef}
             linking={linking}
