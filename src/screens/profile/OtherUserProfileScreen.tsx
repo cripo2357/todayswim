@@ -146,6 +146,15 @@ export function OtherUserProfileScreen() {
           { senderUserId: my.id, senderAvatar: my.photoUri },
         );
       }
+      // 본인 보낸 이력도 적재 — AddFriendSheet 경로와 일관(어디서 신청해도 동일).
+      // 카드 아바타 = 상대(신청 받은 사람) 사진.
+      if (profile?.nickname) {
+        void dispatchMessage(
+          'friend_request_sent',
+          { name: profile.nickname },
+          { targetUserId: userId, senderAvatar: profile.avatar },
+        );
+      }
       setSentOpen(true);
     } else if (cta.action === 'accept') {
       fStore.accept(userId);
