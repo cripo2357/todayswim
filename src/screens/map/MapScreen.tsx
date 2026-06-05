@@ -16,6 +16,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Supercluster from 'supercluster';
+import { captureRef } from 'react-native-view-shot';
 
 import IconFilter from '@assets/icons/filter.svg';
 import IconCloseCircle from '@assets/icons/close-circle.svg';
@@ -183,6 +184,40 @@ export function MapScreen() {
   // 풀카드 outer 의 실측 높이 — onLayout 으로 추적.
   // 카드 콘텐츠(일정카드 개수) 따라 변동 → mapPadding 동적 갱신.
   const [cardOuterH, setCardOuterH] = React.useState(0);
+
+  // 내 위치 마커 — naver-map 커스텀 children 마커가 iOS에서 깨져서(사진 안 뜸),
+  // 링+사진을 숨은 영역에 렌더 → view-shot으로 data-uri 캡처 → 마커 image(httpUri)
+  // 로 넘김. image 경로는 풀 마커처럼 양 플랫폼 동일 렌더(children 한계 회피).
+  const photoUri = profile?.photoUri;
+  const locShotRef = React.useRef<View>(null);
+  const [bakedLocUri, setBakedLocUri] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    if (!photoUri) {
+      setBakedLocUri(null);
+      return;
+    }
+    let cancelled = false;
+    // 아바타(특히 사진 uri)는 비동기 로드라 여유 후 캡처(로드 전 캡처 방지).
+    const t = setTimeout(async () => {
+      if (cancelled || !locShotRef.current) return;
+      try {
+        const uri = await captureRef(locShotRef, {
+          format: 'png',
+          quality: 1,
+          result: 'data-uri',
+          width: 50,
+          height: 50,
+        });
+        if (!cancelled) setBakedLocUri(uri);
+      } catch {
+        /* 캡처 실패 시 링(MARKER_ME) 폴백 유지 */
+      }
+    }, 700);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [photoUri]);
 
   // 수영 클럽 FAB — 출시 시점에 클럽 기능 미포함. 탭 시 "준비중" 툴팁만
   // 5초 노출 (PoolBottomCard chip 패턴과 동일).
@@ -598,45 +633,31 @@ export function MapScreen() {
             검은 팔벌린 사람 baked). 로그아웃 크기 = 25m 수영장 마커와 동일 47px
             (MARKER_SMALL size 47). 로그인은 50px 유지. */}
         {geo.status === 'granted' && geo.coords ? (
-          <>
-            {/* 노란 링+halo — 검증된 image 경로(양 플랫폼 동일). 로그인=marker-me 50,
-                로그아웃=marker-me-guest 47(25m 풀 마커와 동일). 이름 caption·탭은 여기. */}
-            <NaverMapMarkerOverlay
-              latitude={geo.coords.lat}
-              longitude={geo.coords.lng}
-              image={profile?.photoUri ? MARKER_ME : MARKER_ME_GUEST}
-              width={profile?.photoUri ? 50 : 47}
-              height={profile?.photoUri ? 50 : 47}
-              anchor={{ x: 0.5, y: 0.5 }}
-              zIndex={5}
-              caption={{
-                text: profile?.name?.trim() || '내 위치',
-                textSize: 14,
-                color: tokens.color.ink900,
-                haloColor: tokens.color.white,
-                minZoom: 10,
-              }}
-              onTap={flyToMyLocation}
-            />
-            {/* 로그인 시 — 링 안쪽 프로필 사진만 같은 좌표 위에 겹쳐 그림(34px) */}
-            {profile?.photoUri ? (
-              <NaverMapMarkerOverlay
-                // photoUri가 바뀌면 마커를 리마운트해 네이티브 비트맵을 재캡처.
-                // (네이티브 마커는 children을 한 번 비트맵으로 굳혀 캐시하므로
-                //  prop만 바뀌면 옛 사진이 남는다 — key로 강제 갱신.)
-                key={profile.photoUri}
-                latitude={geo.coords.lat}
-                longitude={geo.coords.lng}
-                width={34}
-                height={34}
-                anchor={{ x: 0.5, y: 0.5 }}
-                zIndex={6}
-                onTap={flyToMyLocation}
-              >
-                <LocationPhotoMarker photoUri={profile.photoUri} />
-              </NaverMapMarkerOverlay>
-            ) : null}
-          </>
+          <NaverMapMarkerOverlay
+            latitude={geo.coords.lat}
+            longitude={geo.coords.lng}
+            // 로그인=구운 합성(링+사진) data-uri, 구워지기 전엔 링(MARKER_ME) 폴백.
+            // 로그아웃=marker-me-guest. 모두 image 경로라 iOS·Android 동일 렌더.
+            image={
+              photoUri
+                ? bakedLocUri
+                  ? { httpUri: bakedLocUri }
+                  : MARKER_ME
+                : MARKER_ME_GUEST
+            }
+            width={photoUri ? 50 : 47}
+            height={photoUri ? 50 : 47}
+            anchor={{ x: 0.5, y: 0.5 }}
+            zIndex={5}
+            caption={{
+              text: profile?.name?.trim() || '내 위치',
+              textSize: 14,
+              color: tokens.color.ink900,
+              haloColor: tokens.color.white,
+              minZoom: 10,
+            }}
+            onTap={flyToMyLocation}
+          />
         ) : null}
 
         {visibleClusters.map((c) => {
@@ -801,6 +822,17 @@ export function MapScreen() {
           );
         })}
       </NaverMapView>
+
+      {/* 내 위치 마커 합성용 숨은 영역 — 링+사진을 렌더해 view-shot으로 캡처
+          → bakedLocUri(data-uri). off-screen이라 안 보임. photoUri 있을 때만. */}
+      {photoUri ? (
+        <View ref={locShotRef} collapsable={false} style={styles.hiddenShot}>
+          <View style={styles.locMarker}>
+            <Image source={MARKER_ME} style={styles.locRing} />
+            <LocationPhotoMarker photoUri={photoUri} />
+          </View>
+        </View>
+      ) : null}
 
       {/* Figma 38:1203 — 우측 FAB: 필터 / 내 위치 / 프로필 */}
       <View
@@ -1084,6 +1116,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   locInnerImg: { width: 34, height: 34 },
+  // 합성 마커 — 50px 박스에 링(absoluteFill) + 안쪽 사진(34 중앙). view-shot 캡처용.
+  locMarker: { width: 50, height: 50, alignItems: 'center', justifyContent: 'center' },
+  locRing: { ...StyleSheet.absoluteFillObject, width: 50, height: 50 },
+  // 캡처 전용 숨은 영역 — 화면 밖(off-screen)이라 사용자에게 안 보임.
+  hiddenShot: { position: 'absolute', left: -1000, top: -1000, width: 50, height: 50 },
   // 필터 적용중 — 좌측 X(초기화) + 우측 텍스트+아이콘(설정), 하나의 알약처럼 보이는 통합 View
   fabFilterPill: {
     // 둥근 FAB(44)와 동일 높이 — 필터 적용/미적용 시 컬럼 y 어긋남 방지
