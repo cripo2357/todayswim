@@ -58,11 +58,14 @@ export async function pickProfileImage(): Promise<PickProfileImageResult> {
     );
     // 지도 스택은 20dp×최대29장×마커 비트맵 캡처라 512px 디코드가 느림.
     // 512 결과를 입력으로 64px JPEG q0.6 추가 산출(디코드 ~1/64).
+    // resize 는 width 만 — width+height 둘 다 주면 비율 무시하고 강제로 늘려
+    // (1:1 크롭 안 된 원본이 가로로 찌그러짐, 지도 스택에서 노출됨). 본본(512)과
+    // 동일하게 width 만 줘 비율 유지하고, 표시 측 Avatar 가 cover 로 정사각 크롭.
     let thumbBase64: string | null = null;
     try {
       const thumb = await manipulateAsync(
         resized.uri,
-        [{ resize: { width: 64, height: 64 } }],
+        [{ resize: { width: 64 } }],
         { compress: 0.6, format: SaveFormat.JPEG, base64: true },
       );
       thumbBase64 = thumb.base64 ?? null;

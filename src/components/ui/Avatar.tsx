@@ -94,6 +94,7 @@ function AvatarBase({
         <Image
           source={{ uri: photoSrc }}
           style={{ width: size, height: size }}
+          resizeMode="cover"
           onError={() => {
             // 썸네일 실패(레거시·미존재) → 원본으로 1회 폴백.
             if (thumbUri && !thumbFailed) setThumbFailed(true);
