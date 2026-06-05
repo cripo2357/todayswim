@@ -9,7 +9,7 @@ import {
   View, Text, TextInput, ScrollView, StyleSheet, Pressable,
   Alert, Image,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import IconCake from '@assets/icons/cake.svg';
@@ -91,6 +91,15 @@ export function MyInfoScreen() {
   // P3-A5: 서버 count(*) 기반 + 탭 진입 시 DB read=true 일괄 UPDATE.
   const unread = useUnreadCount();
   const markAllRead = useMarkAllNotificationsAsRead();
+
+  // 화면 재진입(설정에서 뒤로가기 등)마다 — 알림 탭이 활성이면 일괄 읽음.
+  // 탭 '탭(onPress)' 시점에만 markAllRead 하면, 설정 갔다 뒤로 돌아오는 동안
+  // 도착한 메시지의 미읽음 카운터가 안 사라짐(탭을 다시 누르지 않으니까).
+  useFocusEffect(
+    React.useCallback(() => {
+      if (tab === '알림') void markAllRead();
+    }, [tab, markAllRead]),
+  );
 
   // profile 없으면(비정상 진입) 안전하게 뒤로.
   React.useEffect(() => {
