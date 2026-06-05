@@ -9,6 +9,8 @@ import { useNavigation } from '@react-navigation/native';
 import { tokens } from '@/styles/tokens';
 
 export type BadgeVariant = 'destructive' | 'brand';
+/** primary CTA 색 — 기존 상태화면=파랑, 일부(다기기 로그아웃 등)=브랜드 노랑. */
+export type ButtonVariant = 'blue' | 'yellow';
 
 export interface StatusScreenProps {
   /** 280h x 343w 영역에 들어갈 일러스트. 미지정 시 placeholder. */
@@ -21,6 +23,8 @@ export interface StatusScreenProps {
   buttonIcon?: React.ReactNode;
   buttonLabel: string;
   onButtonPress: () => void;
+  /** CTA 색 — 기본 'blue'(흰 글씨) / 'yellow'(pdByellow + 검정 글씨). */
+  buttonVariant?: ButtonVariant;
   /** 좌상단 백 화살표 표시 (404만). 기본 false (블로킹 화면). */
   showBack?: boolean;
 }
@@ -35,12 +39,14 @@ export function StatusScreen({
   buttonIcon,
   buttonLabel,
   onButtonPress,
+  buttonVariant = 'blue',
   showBack = false,
 }: StatusScreenProps) {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const badgeStyle = badgeVariant === 'destructive' ? styles.badgeDestructive : styles.badgeBrand;
   const badgeTextStyle = badgeVariant === 'destructive' ? styles.badgeTextDestructive : styles.badgeTextBrand;
+  const isYellow = buttonVariant === 'yellow';
 
   return (
     <View style={styles.root}>
@@ -77,12 +83,18 @@ export function StatusScreen({
 
             <Pressable
               onPress={onButtonPress}
-              style={({ pressed }) => [styles.button, pressed && { opacity: 0.85 }]}
+              style={({ pressed }) => [
+                styles.button,
+                isYellow && styles.buttonYellow,
+                pressed && { opacity: 0.85 },
+              ]}
               accessibilityRole="button"
               accessibilityLabel={buttonLabel}
             >
               {buttonIcon}
-              <Text style={styles.buttonLabel}>{buttonLabel}</Text>
+              <Text style={[styles.buttonLabel, isYellow && styles.buttonLabelDark]}>
+                {buttonLabel}
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -205,6 +217,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: tokens.color.brandBlue,
   },
+  // 노랑 CTA(브랜드) — pdByellow + 검정 글씨 (다기기 로그아웃 등).
+  buttonYellow: { backgroundColor: tokens.color.pdByellow },
   // Figma Text md/SemiBold — 16/22 -0.112 white
   buttonLabel: {
     fontSize: 16,
@@ -213,4 +227,5 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sansSemibold,
     color: tokens.color.white,
   },
+  buttonLabelDark: { color: tokens.color.black },
 });

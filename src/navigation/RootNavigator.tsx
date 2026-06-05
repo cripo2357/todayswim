@@ -33,6 +33,7 @@ import { ErrorNotFoundScreen } from '@/screens/status/ErrorNotFoundScreen';
 import { ErrorNoInternetScreen } from '@/screens/status/ErrorNoInternetScreen';
 import { MaintenanceScreen } from '@/screens/status/MaintenanceScreen';
 import { AppUpdateRequiredScreen } from '@/screens/status/AppUpdateRequiredScreen';
+import { OtherDeviceLoginScreen } from '@/screens/status/OtherDeviceLoginScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -160,6 +161,12 @@ export function RootNavigator() {
       <Stack.Screen
         name="AppUpdateRequired"
         component={AppUpdateRequiredScreen}
+        options={{ gestureEnabled: false }}
+      />
+      {/* 단일 기기 정책 — 다른 기기 로그인 시 안내(블로킹, 뒤로가기 차단) */}
+      <Stack.Screen
+        name="OtherDeviceLogin"
+        component={OtherDeviceLoginScreen}
         options={{ gestureEnabled: false }}
       />
     </Stack.Navigator>

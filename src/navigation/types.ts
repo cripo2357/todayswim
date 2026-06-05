@@ -96,6 +96,9 @@ export type RootStackParamList = {
   ErrorNoInternet: undefined;
   Maintenance: { reopenLabel?: string };
   AppUpdateRequired: { versionLabel?: string; iosUrl?: string; androidUrl?: string };
+  // - OtherDeviceLogin: 단일 기기 정책 — useSingleDeviceGuard가 다른 기기 로그인
+  //   감지 시 signOut 후 reset(블로킹 화면).
+  OtherDeviceLogin: undefined;
 };
 
 declare global {

@@ -7,10 +7,11 @@
 // 감지되면 안내 후 signOut. App.tsx에서 1회 마운트(로그인 세션 동안 활성).
 
 import React from 'react';
-import { AppState, Alert } from 'react-native';
+import { AppState } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/store/auth';
 import { useProfile } from '@/store/profile';
+import { navigationRef } from '@/navigation/navigationRef';
 import { isSupersededByOtherDevice } from '@/lib/singleDevice';
 
 export function useSingleDeviceGuard(): void {
@@ -27,11 +28,12 @@ export function useSingleDeviceGuard(): void {
       if (await isSupersededByOtherDevice()) {
         if (cancelled || kicking) return;
         kicking = true;
-        Alert.alert(
-          '다른 기기에서 로그인되었습니다',
-          '한 계정은 한 기기에서만 사용할 수 있어요. 이 기기에서는 로그아웃됩니다.',
-        );
+        // 로그아웃 후 안내 화면(Figma 351:5786)으로 reset.
         await useAuth.getState().signOut();
+        navigationRef.current?.reset({
+          index: 0,
+          routes: [{ name: 'OtherDeviceLogin' }],
+        });
       }
     };
 
