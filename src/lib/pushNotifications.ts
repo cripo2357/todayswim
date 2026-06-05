@@ -18,10 +18,19 @@
 // 에 없으면 throw. expo-clipboard / expo-network 와 동일 격리 패턴.
 
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import { supabase } from '@/lib/supabase';
 import { logEvent } from '@/lib/analytics';
 
-const PROJECT_ID = process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
+// EAS projectId — getExpoPushTokenAsync 필수. env(EXPO_PUBLIC_EAS_PROJECT_ID)는
+// 프로덕션 EAS env에 안 들어가 있어서(빌드로그 확인) 늘 undefined였다 → projectId
+// 자동 해석 실패 시 토큰 발급이 throw → push_tokens 0행. app.config 의
+// extra.eas.projectId(또는 easConfig)에서 직접 해석해 항상 잡히게.
+const PROJECT_ID =
+  process.env.EXPO_PUBLIC_EAS_PROJECT_ID ??
+  (Constants.expoConfig?.extra?.eas as { projectId?: string } | undefined)
+    ?.projectId ??
+  Constants.easConfig?.projectId;
 
 /** 로그인 직후 호출. 권한 요청 → 토큰 발급 → push_tokens upsert.
  *  실패해도 throw 안 함 — 푸시 미등록은 인앱 알림으로 보완. */
@@ -69,7 +78,7 @@ export async function registerForPush(authUid: string | undefined): Promise<void
     if (!expoToken) return;
 
     // push_tokens 에 UPSERT — expo_token unique 라 같은 디바이스 재가입 시 갱신.
-    await supabase.from('push_tokens').upsert(
+    const { error } = await supabase.from('push_tokens').upsert(
       {
         user_id: authUid,
         expo_token: expoToken,
@@ -77,9 +86,14 @@ export async function registerForPush(authUid: string | undefined): Promise<void
       },
       { onConflict: 'expo_token' },
     );
+    // 진단 breadcrumb — 다음 빌드에서 토큰 등록이 실제로 도는지 확인용.
+    void logEvent(
+      error ? 'push_token_upsert_failed' : 'push_token_registered',
+    );
   } catch {
-    // expo-notifications 가 네이티브 미빌드 / 토큰 실패 / RLS 실패 — 모두
-    // 조용히 무시. 푸시 안 와도 인앱 알림(NotificationsTab) 으로 보완.
+    // expo-notifications 가 네이티브 미빌드 / 토큰 실패 — 조용히 무시.
+    // 푸시 안 와도 인앱 알림(NotificationsTab) 으로 보완.
+    void logEvent('push_token_register_error');
   }
 }
 
