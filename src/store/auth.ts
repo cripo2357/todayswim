@@ -159,8 +159,11 @@ export const useAuth = create<AuthState>((set) => ({
           setSentryUser(session.user.id);
           // SIGNED_IN/TOKEN_REFRESHED 어떤 경우든 binding 복구 시도.
           void syncProfileFromAuth(session);
-          // 푸시 토큰 등록 — SIGNED_IN 이벤트일 때만(TOKEN_REFRESHED 매번 X).
-          if (event === 'SIGNED_IN') {
+          // 푸시 토큰 등록 — 새 로그인(SIGNED_IN) + 앱 콜드스타트 세션 복원
+          // (INITIAL_SESSION) 둘 다. 후자가 없으면: 이미 로그인된 사용자가 푸시
+          // 엔타이틀먼트 추가된 빌드로 업데이트해도 재로그인 전엔 토큰이 등록
+          // 안 됨 = 푸시 안 옴. TOKEN_REFRESHED(고빈도)만 제외해 idempotent upsert.
+          if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
             void registerForPush(session.user.id);
           }
         } else {
