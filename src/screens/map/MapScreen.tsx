@@ -16,7 +16,6 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Supercluster from 'supercluster';
-import { captureRef } from 'react-native-view-shot';
 
 import IconFilter from '@assets/icons/filter.svg';
 import IconCloseCircle from '@assets/icons/close-circle.svg';
@@ -59,6 +58,7 @@ import {
   STACK_W,
   STACK_H,
 } from '@/components/map/MapProfileStack';
+import { MarkerBakery, type BakeJob } from '@/components/map/MarkerBakery';
 import { BUNDLE_AVATARS, isBundleAvatar } from '@/lib/avatars';
 import { Toast } from '@/components/ui/Toast';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -123,6 +123,15 @@ const STACK_LIFT = 9;
 // (preview 측정: 스택이 release에서도 최대 부하 — 줌 게이팅이 핵심 레버)
 const STACK_MIN_ZOOM = 14;
 
+// 스택 bake 캐시 키 — 참여자 구성(순서·관계·아바타)이 바뀌면 키가 바뀌어
+// 재캡처된다. 아바타(thumb/photo)까지 포함해 사진 변경도 반영.
+function stackBakeKey(poolId: string, stack: PoolStack): string {
+  const sig = stack.entries
+    .map((e) => `${e.userId}.${e.relation}.${e.thumbUri ?? e.photoUri ?? ''}`)
+    .join(',');
+  return `stack:${poolId}:${sig}${stack.overflow ? '#' : ''}`;
+}
+
 // 단순 평면 근사 거리(m). 짧은 거리/한국 위도에선 haversine과 차이 무시 가능.
 function approxDistanceMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const dLat = (lat2 - lat1) * 111_000;
@@ -185,39 +194,15 @@ export function MapScreen() {
   // 카드 콘텐츠(일정카드 개수) 따라 변동 → mapPadding 동적 갱신.
   const [cardOuterH, setCardOuterH] = React.useState(0);
 
-  // 내 위치 마커 — naver-map 커스텀 children 마커가 iOS에서 깨져서(사진 안 뜸),
-  // 링+사진을 숨은 영역에 렌더 → view-shot으로 data-uri 캡처 → 마커 image(httpUri)
-  // 로 넘김. image 경로는 풀 마커처럼 양 플랫폼 동일 렌더(children 한계 회피).
+  // 마커 합성(bake) — naver-map 커스텀 children 마커가 iOS에서 깨져서(내 위치
+  // 사진 사라짐·스택 아바타 찌그러짐), 합성 뷰를 화면 밖에서 캡처해 file:// 이미지로
+  // SDK 에 넘긴다(MarkerBakery). bakedUris: bake 키 → fileUri 캐시.
   const photoUri = profile?.photoUri;
-  const locShotRef = React.useRef<View>(null);
-  const [bakedLocUri, setBakedLocUri] = React.useState<string | null>(null);
-  React.useEffect(() => {
-    if (!photoUri) {
-      setBakedLocUri(null);
-      return;
-    }
-    let cancelled = false;
-    // 아바타(특히 사진 uri)는 비동기 로드라 여유 후 캡처(로드 전 캡처 방지).
-    const t = setTimeout(async () => {
-      if (cancelled || !locShotRef.current) return;
-      try {
-        const uri = await captureRef(locShotRef, {
-          format: 'png',
-          quality: 1,
-          result: 'data-uri',
-          width: 50,
-          height: 50,
-        });
-        if (!cancelled) setBakedLocUri(uri);
-      } catch {
-        /* 캡처 실패 시 링(MARKER_ME) 폴백 유지 */
-      }
-    }, 700);
-    return () => {
-      cancelled = true;
-      clearTimeout(t);
-    };
-  }, [photoUri]);
+  const [bakedUris, setBakedUris] = React.useState<Record<string, string>>({});
+  const onBaked = React.useCallback((key: string, uri: string) => {
+    setBakedUris((prev) => (prev[key] === uri ? prev : { ...prev, [key]: uri }));
+  }, []);
+  const locBakeKey = photoUri ? `loc:${photoUri}` : null;
 
   // 수영 클럽 FAB — 출시 시점에 클럽 기능 미포함. 탭 시 "준비중" 툴팁만
   // 5초 노출 (PoolBottomCard chip 패턴과 동일).
@@ -500,6 +485,70 @@ export function MapScreen() {
     return cluster.getClusters([-180, -85, 180, 85], zoomInt) as ClusterFeature[];
   }, [cluster, zoomInt]);
 
+  // 합성 대상(bake job) — 내 위치 마커 1개 + 보이는 풀 스택들. 각 합성 뷰를
+  // MarkerBakery 가 화면 밖에서 캡처 → file:// → bakedUris[key]. 마커는 그 이미지를
+  // image prop 으로 그린다(iOS children 한계 우회). 이미 구운 키는 아래서 필터.
+  const bakeJobs = React.useMemo<BakeJob[]>(() => {
+    const jobs: BakeJob[] = [];
+    if (photoUri) {
+      jobs.push({
+        key: `loc:${photoUri}`,
+        width: 50,
+        height: 50,
+        node: (
+          <View style={styles.locMarker}>
+            <Image source={MARKER_ME} style={styles.locRing} />
+            <LocationPhotoMarker photoUri={photoUri} />
+          </View>
+        ),
+      });
+    }
+    if (zoomInt >= STACK_MIN_ZOOM) {
+      for (const c of visibleClusters) {
+        if ('cluster' in c.properties && c.properties.cluster) continue;
+        const p = (c.properties as PoolProps).pool;
+        if (!filteredIds.has(p.id)) continue;
+        const stack = poolStacks.get(p.id);
+        if (!stack || stack.entries.length === 0) continue;
+        const size = (p.poolLength ?? 0) >= 50 && !p.isHotelPool ? 50 : 47;
+        const rowW = Math.round(size / 2 + STACK_PIN_GAP + STACK_W);
+        jobs.push({
+          key: stackBakeKey(p.id, stack),
+          width: rowW,
+          height: STACK_H,
+          node: (
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                width: rowW,
+                height: STACK_H,
+              }}
+            >
+              <View
+                style={{
+                  width: Math.round(size / 2 + STACK_PIN_GAP),
+                  height: STACK_H,
+                }}
+              />
+              <MapProfileStack
+                entries={stack.entries}
+                overflow={stack.overflow}
+              />
+            </View>
+          ),
+        });
+      }
+    }
+    return jobs;
+  }, [photoUri, zoomInt, visibleClusters, filteredIds, poolStacks]);
+
+  // 아직 안 구운 키만 캡처(재캡처 방지). 키 동일 = 캐시 재사용.
+  const pendingBakeJobs = React.useMemo(
+    () => bakeJobs.filter((j) => !bakedUris[j.key]),
+    [bakeJobs, bakedUris],
+  );
+
   const onMarkerPress = (poolId: string) => {
     void logEvent('pool_marker_tap', { pool_id: poolId });
     select(poolId);
@@ -636,12 +685,12 @@ export function MapScreen() {
           <NaverMapMarkerOverlay
             latitude={geo.coords.lat}
             longitude={geo.coords.lng}
-            // 로그인=구운 합성(링+사진) data-uri, 구워지기 전엔 링(MARKER_ME) 폴백.
+            // 로그인=구운 합성(링+사진) file://, 구워지기 전엔 링(MARKER_ME) 폴백.
             // 로그아웃=marker-me-guest. 모두 image 경로라 iOS·Android 동일 렌더.
             image={
-              photoUri
-                ? bakedLocUri
-                  ? { httpUri: bakedLocUri }
+              locBakeKey
+                ? bakedUris[locBakeKey]
+                  ? { httpUri: bakedUris[locBakeKey] }
                   : MARKER_ME
                 : MARKER_ME_GUEST
             }
@@ -779,12 +828,16 @@ export function MapScreen() {
               />
               {stack &&
               stack.entries.length > 0 &&
-              zoomInt >= STACK_MIN_ZOOM ? (
+              zoomInt >= STACK_MIN_ZOOM &&
+              bakedUris[stackBakeKey(p.id, stack)] ? (
                 <NaverMapMarkerOverlay
                   latitude={p.lat}
                   longitude={p.lng}
                   width={Math.round(size / 2 + STACK_PIN_GAP + STACK_W)}
                   height={STACK_H}
+                  // 스택은 MarkerBakery 가 구운 file:// 합성 이미지(스페이서+아바타)
+                  // 를 image 로 그린다 — iOS children 비트맵 캡처 한계 우회.
+                  image={{ httpUri: bakedUris[stackBakeKey(p.id, stack)] }}
                   // Figma 173:13735 frame=flex items-end → 스택을 핀 '바텀'에
                   // 정렬. 핀은 anchor 중앙(0.5)이라 핀 하단 = 좌표 + size/2.
                   // 스택 박스(STACK_H) 하단이 핀 하단에 오도록 anchor.y 보정
@@ -796,43 +849,16 @@ export function MapScreen() {
                   // stack 영역에 흡수되어 풀 선택 안 됨. stack 탭을 같은
                   // 풀의 onMarkerPress 로 라우팅해 풀 선택 보장.
                   onTap={() => onMarkerPress(p.id)}
-                >
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      width: Math.round(size / 2 + STACK_PIN_GAP + STACK_W),
-                      height: STACK_H,
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: Math.round(size / 2 + STACK_PIN_GAP),
-                        height: STACK_H,
-                      }}
-                    />
-                    <MapProfileStack
-                      entries={stack.entries}
-                      overflow={stack.overflow}
-                    />
-                  </View>
-                </NaverMapMarkerOverlay>
+                />
               ) : null}
             </React.Fragment>
           );
         })}
       </NaverMapView>
 
-      {/* 내 위치 마커 합성용 숨은 영역 — 링+사진을 렌더해 view-shot으로 캡처
-          → bakedLocUri(data-uri). off-screen이라 안 보임. photoUri 있을 때만. */}
-      {photoUri ? (
-        <View ref={locShotRef} collapsable={false} style={styles.hiddenShot}>
-          <View style={styles.locMarker}>
-            <Image source={MARKER_ME} style={styles.locRing} />
-            <LocationPhotoMarker photoUri={photoUri} />
-          </View>
-        </View>
-      ) : null}
+      {/* 마커 합성용 숨은 캡처 영역 — 내 위치/스택 합성 뷰를 화면 밖에서 렌더해
+          view-shot 으로 file:// 캡처(off-screen, 안 보임). 이미 구운 키는 제외. */}
+      <MarkerBakery jobs={pendingBakeJobs} onBaked={onBaked} />
 
       {/* Figma 38:1203 — 우측 FAB: 필터 / 내 위치 / 프로필 */}
       <View
@@ -1119,8 +1145,6 @@ const styles = StyleSheet.create({
   // 합성 마커 — 50px 박스에 링(absoluteFill) + 안쪽 사진(34 중앙). view-shot 캡처용.
   locMarker: { width: 50, height: 50, alignItems: 'center', justifyContent: 'center' },
   locRing: { ...StyleSheet.absoluteFillObject, width: 50, height: 50 },
-  // 캡처 전용 숨은 영역 — 화면 밖(off-screen)이라 사용자에게 안 보임.
-  hiddenShot: { position: 'absolute', left: -1000, top: -1000, width: 50, height: 50 },
   // 필터 적용중 — 좌측 X(초기화) + 우측 텍스트+아이콘(설정), 하나의 알약처럼 보이는 통합 View
   fabFilterPill: {
     // 둥근 FAB(44)와 동일 높이 — 필터 적용/미적용 시 컬럼 y 어긋남 방지
