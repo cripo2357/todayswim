@@ -171,6 +171,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   plugins: [
     // Sign in with Apple (iOS) — 네이티브 모듈 + entitlement 자동 구성.
     'expo-apple-authentication',
+    // 푸시 알림 — iOS aps-environment entitlement + Android FCM 설정 자동 구성.
+    // 이게 없으면 iOS에서 getExpoPushTokenAsync 실패(토큰 미발급) → OS 푸시 안 감
+    // (인앱 알림은 Supabase notifications 경로라 별개로 동작). EAS가 빌드 시
+    // APNs 푸시 키도 함께 관리.
+    'expo-notifications',
     // 네이티브 스플래시 (JS 로드 전) — JS의 SplashScreen 와 색·아이콘 일치시켜
     // 매끄러운 transition. cyan bg + 워드마크의 단순 fallback 아이콘.
     // image 가 따로 없어서 일단 icon.png 재사용 — 가운데 정렬, resizeMode contain.
