@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { Modal, View, Text, Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { AppModal } from '@/components/ui/AppModal';
 import { tokens } from '@/styles/tokens';
 import IconIdBadge from '@assets/icons/id-badge.svg';
 import IconIdChangeBlue from '@assets/icons/id-change-blue.svg';
@@ -45,7 +46,7 @@ export function IdChangeModal({
   onChange: () => void;
 }) {
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onKeep}>
+    <AppModal visible={visible} transparent animationType="fade" onRequestClose={onKeep}>
       <ModalShell
         onRequestClose={onKeep}
         illustration={<IllustConfused width="100%" height="100%" />}
@@ -76,7 +77,7 @@ export function IdChangeModal({
           </Pressable>
         </View>
       </ModalShell>
-    </Modal>
+    </AppModal>
   );
 }
 
@@ -89,7 +90,7 @@ export function IdChangeDoneModal({
   onConfirm: () => void;
 }) {
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onConfirm}>
+    <AppModal visible={visible} transparent animationType="fade" onRequestClose={onConfirm}>
       <ModalShell
         onRequestClose={onConfirm}
         illustration={<IllustIdDone width="100%" height="100%" />}
@@ -113,7 +114,7 @@ export function IdChangeDoneModal({
           </Pressable>
         </View>
       </ModalShell>
-    </Modal>
+    </AppModal>
   );
 }
 

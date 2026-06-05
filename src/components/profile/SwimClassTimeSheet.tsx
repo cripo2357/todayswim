@@ -7,6 +7,7 @@ import {
   View, Text, StyleSheet, Pressable, Modal, ScrollView, Animated, Dimensions,
   type NativeSyntheticEvent, type NativeScrollEvent,
 } from 'react-native';
+import { AppModal } from '@/components/ui/AppModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { DayOfWeek } from '@/types/schedule';
 import { tokens } from '@/styles/tokens';
@@ -95,7 +96,7 @@ export function SwimClassTimeSheet({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={close}>
+    <AppModal visible={visible} transparent animationType="none" onRequestClose={close}>
       <View style={styles.root}>
         <Pressable onPress={close} style={styles.backdrop} />
         <Animated.View
@@ -160,7 +161,7 @@ export function SwimClassTimeSheet({
           </SafeAreaView>
         </Animated.View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }
 

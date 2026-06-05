@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
+import { AppModal } from '@/components/ui/AppModal';
 import { Users } from 'lucide-react-native';
 import { tokens } from '@/styles/tokens';
 import IllustSent from '@assets/illustrations/friend-request-sent.svg';
@@ -20,7 +21,7 @@ export function FriendRequestSentModal({
   onClose: () => void;
 }) {
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <AppModal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.root}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <View style={styles.card}>
@@ -46,7 +47,7 @@ export function FriendRequestSentModal({
           </Pressable>
         </View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }
 

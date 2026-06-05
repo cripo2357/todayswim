@@ -9,6 +9,7 @@ import {
   View, Text, TextInput, StyleSheet, Pressable, Modal, Animated,
   Dimensions, ScrollView,
 } from 'react-native';
+import { AppModal } from '@/components/ui/AppModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Check, Calendar as LucideCalendar, Mail, XCircle,
@@ -341,7 +342,7 @@ export function AddScheduleSheet({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={close}>
+    <AppModal visible={visible} transparent animationType="none" onRequestClose={close}>
       {phase === 'done' ? (
         /* Figma 125:3342 — 중앙 정렬 축하 카드(바텀시트 아님) */
         <View style={styles.doneRoot}>
@@ -663,7 +664,7 @@ export function AddScheduleSheet({
           </Animated.View>
         </View>
       )}
-    </Modal>
+    </AppModal>
   );
 }
 

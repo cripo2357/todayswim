@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
+import { AppModal } from '@/components/ui/AppModal';
 import { LogOut } from 'lucide-react-native';
 import { tokens } from '@/styles/tokens';
 import IllustPlug from '@assets/illustrations/friend-reject.svg';
@@ -19,7 +20,7 @@ export function ConfirmLogoutModal({
   onClose: () => void;
 }) {
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <AppModal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.root}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <View style={styles.card}>
@@ -43,7 +44,7 @@ export function ConfirmLogoutModal({
           </Pressable>
         </View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }
 

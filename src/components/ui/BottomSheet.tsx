@@ -22,6 +22,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { tokens } from '@/styles/tokens';
 import { SheetCloseButton } from './SheetCloseButton';
+import { useSerializedVisible } from './modalGuard';
 
 const SCREEN_H = Dimensions.get('window').height;
 
@@ -55,11 +56,14 @@ export function BottomSheet({
   height,
   skipKeyboardDismiss,
 }: BottomSheetProps) {
+  // 모달 전환 직렬화 — 다른 모달이 닫히는 중이면 열림을 지연(iOS 멈춤 방지).
+  // 닫힘 시엔 전역에 기록돼 다음 모달이 직렬화됨. (modalGuard 전역 단일 출처)
+  const v = useSerializedVisible(visible);
   const slideY = React.useRef(new Animated.Value(SCREEN_H)).current;
-  const [render, setRender] = React.useState(visible);
+  const [render, setRender] = React.useState(v);
 
   React.useEffect(() => {
-    if (visible) {
+    if (v) {
       setRender(true);
       Animated.timing(slideY, {
         toValue: 0,
@@ -75,7 +79,7 @@ export function BottomSheet({
         if (finished) setRender(false);
       });
     }
-  }, [visible, render, slideY]);
+  }, [v, render, slideY]);
 
   if (!render) return null;
 

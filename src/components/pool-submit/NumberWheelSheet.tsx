@@ -6,6 +6,7 @@ import {
   View, Text, StyleSheet, Pressable, Modal, ScrollView, Animated, Dimensions,
   NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
+import { AppModal } from '@/components/ui/AppModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { tokens } from '@/styles/tokens';
 import { SheetCloseButton } from '@/components/ui/SheetCloseButton';
@@ -71,7 +72,7 @@ export function SingleWheelSheet({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={close}>
+    <AppModal visible={visible} transparent animationType="none" onRequestClose={close}>
       <View style={styles.root}>
         <Pressable onPress={close} style={styles.backdrop} />
         <Animated.View style={[styles.sheetWrap, { transform: [{ translateY: slideY }] }]}>
@@ -103,7 +104,7 @@ export function SingleWheelSheet({
           </SafeAreaView>
         </Animated.View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }
 
@@ -154,7 +155,7 @@ export function DualWheelSheet({
   }, [leftIdx, rightIdx]);
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={close}>
+    <AppModal visible={visible} transparent animationType="none" onRequestClose={close}>
       <View style={styles.root}>
         <Pressable onPress={close} style={styles.backdrop} />
         <Animated.View style={[styles.sheetWrap, { transform: [{ translateY: slideY }] }]}>
@@ -207,7 +208,7 @@ export function DualWheelSheet({
           </SafeAreaView>
         </Animated.View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }
 

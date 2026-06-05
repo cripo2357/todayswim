@@ -21,6 +21,7 @@ import {
   Pressable,
   StyleSheet,
 } from 'react-native';
+import { AppModal } from '@/components/ui/AppModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '@/styles/tokens';
 
@@ -43,7 +44,7 @@ export function ConfirmToast({
 }) {
   const insets = useSafeAreaInsets();
   return (
-    <Modal
+    <AppModal
       visible={visible}
       transparent
       animationType="fade"
@@ -71,7 +72,7 @@ export function ConfirmToast({
           </Pressable>
         </Pressable>
       </Pressable>
-    </Modal>
+    </AppModal>
   );
 }
 

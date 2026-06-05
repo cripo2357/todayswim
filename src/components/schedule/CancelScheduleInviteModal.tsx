@@ -8,6 +8,7 @@
 
 import React from 'react';
 import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
+import { AppModal } from '@/components/ui/AppModal';
 import { XCircle, Hourglass } from 'lucide-react-native';
 import { tokens } from '@/styles/tokens';
 import IllustReject from '@assets/illustrations/reject-schedule-invite.svg';
@@ -22,7 +23,7 @@ export function CancelScheduleInviteModal({
   onLater: () => void;
 }) {
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onLater}>
+    <AppModal visible={visible} transparent animationType="fade" onRequestClose={onLater}>
       <View style={styles.root}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onLater} />
         <View style={styles.card}>
@@ -64,7 +65,7 @@ export function CancelScheduleInviteModal({
           </View>
         </View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }
 

@@ -6,6 +6,7 @@ import {
   View, Text, StyleSheet, Pressable, Modal, Animated, Dimensions,
   ScrollView, NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
+import { AppModal } from '@/components/ui/AppModal';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import IconCalendar from '@assets/icons/calendar-form.svg';
@@ -130,7 +131,7 @@ export function CalendarSheet({ visible, initial, onConfirm, onClose }: Props) {
   };
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={close}>
+    <AppModal visible={visible} transparent animationType="none" onRequestClose={close}>
       <View style={styles.root}>
         <Pressable onPress={close} style={styles.backdrop} />
         <Animated.View style={[styles.sheetWrap, { transform: [{ translateY: slideY }] }]}>
@@ -245,7 +246,7 @@ export function CalendarSheet({ visible, initial, onConfirm, onClose }: Props) {
         onConfirm={(y, m) => { setYear(y); setMonth(m); }}
         onClose={() => setShowYearMonth(false)}
       />
-    </Modal>
+    </AppModal>
   );
 }
 
@@ -301,7 +302,7 @@ function YearMonthSheet({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={close}>
+    <AppModal visible={visible} transparent animationType="none" onRequestClose={close}>
       <View style={styles.root}>
         <Pressable onPress={close} style={styles.backdrop} />
         <Animated.View style={[styles.sheetWrap, { transform: [{ translateY: slideY }] }]}>
@@ -339,7 +340,7 @@ function YearMonthSheet({
           </SafeAreaView>
         </Animated.View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }
 

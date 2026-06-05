@@ -560,8 +560,10 @@ export function FriendsTab() {
         visible={addOpen}
         onClose={() => setAddOpen(false)}
         onSent={(name) => {
+          // AddFriendSheet(Modal) 닫고 → 완료 모달은 닫힘 애니메이션 후 오픈.
+          // iOS는 모달 닫히는 중 새 모달 띄우면 멈춤(모달 전환 직렬화).
           setAddOpen(false);
-          setSentName(name);
+          setTimeout(() => setSentName(name), 320);
         }}
       />
       <FriendRequestSentModal

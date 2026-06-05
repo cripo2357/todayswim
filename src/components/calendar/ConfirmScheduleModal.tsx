@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
+import { AppModal } from '@/components/ui/AppModal';
 import { Trash2 } from 'lucide-react-native';
 import { tokens } from '@/styles/tokens';
 import IllustDelete from '@assets/illustrations/schedule-delete.svg';
@@ -30,7 +31,7 @@ export function ConfirmScheduleModal({
   onClose: () => void;
 }) {
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <AppModal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.root}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <View style={styles.card}>
@@ -65,7 +66,7 @@ export function ConfirmScheduleModal({
           </View>
         </View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }
 

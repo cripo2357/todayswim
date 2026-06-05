@@ -11,6 +11,7 @@
 
 import React from 'react';
 import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
+import { AppModal } from '@/components/ui/AppModal';
 import { Check } from 'lucide-react-native';
 import { tokens } from '@/styles/tokens';
 import { logEvent } from '@/lib/analytics';
@@ -55,7 +56,7 @@ export function WithdrawFlowModal({
   }, [phase]);
 
   return (
-    <Modal
+    <AppModal
       visible={visible}
       transparent
       animationType="fade"
@@ -178,7 +179,7 @@ export function WithdrawFlowModal({
           </View>
         )}
       </View>
-    </Modal>
+    </AppModal>
   );
 }
 
