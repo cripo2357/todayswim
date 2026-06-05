@@ -15,7 +15,6 @@ import type { RootStackParamList } from '@/navigation/types';
 import { XCircle, Plus } from 'lucide-react-native';
 import IconChevronDown from '@assets/icons/chevron-down.svg';
 import IconUserDouble from '@assets/icons/user-double.svg';
-import IconChatSmile from '@assets/icons/chat-bubble-smile.svg';
 import IconIdBadgeWhite from '@assets/icons/id-badge-white.svg';
 import { type MockAccount } from '@/lib/mockData';
 import { useOtherSchedules } from '@/hooks/useOtherSchedules';
@@ -611,7 +610,6 @@ const FriendRow = React.memo(function FriendRow({
           {friend.nickname}
         </Text>
         <View style={styles.friendStatusRow}>
-          <IconChatSmile width={20} height={20} />
           <Text style={styles.friendStatus} numberOfLines={1}>
             {friend.status}
           </Text>
