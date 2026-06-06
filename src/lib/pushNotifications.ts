@@ -22,6 +22,8 @@ import Constants from 'expo-constants';
 import { supabase } from '@/lib/supabase';
 import { navigationRef } from '@/navigation/navigationRef';
 import type { TermsKey } from '@/lib/termsContent';
+import { useProfile } from '@/store/profile';
+import { markAllNotificationsAsRead } from '@/hooks/useNotifications';
 
 // EAS projectId — getExpoPushTokenAsync 필수. env(EXPO_PUBLIC_EAS_PROJECT_ID)는
 // 프로덕션 EAS env에 안 들어가 있어서(빌드로그 확인) 늘 undefined였다 → projectId
@@ -151,6 +153,11 @@ function resolveRoute(data: Record<string, unknown> | undefined): NavAction {
 async function navigateToNotification(
   data: Record<string, unknown> | undefined,
 ): Promise<void> {
+  // 푸시 탭 = 알림 확인 → 도착지(달력/친구/약관/메시지) 무관하게 읽음 처리.
+  // 앱이 "일괄 읽음" 모델이라 markAllRead 호출(메시지 탭 진입과 동일 동작).
+  const userCode = useProfile.getState().profile?.id;
+  if (userCode) void markAllNotificationsAsRead(userCode);
+
   const action = resolveRoute(data);
   // navigationRef 준비 대기(콜드스타트 — 앱 부팅 직후 탭 처리 대비).
   for (let i = 0; i < 20; i++) {
