@@ -20,7 +20,7 @@ import IconChevronDown from '@assets/icons/chevron-down.svg';
 import type { RootStackParamList } from '@/navigation/types';
 import { BottomSheet, SheetCtaButton } from '@/components/ui/BottomSheet';
 import type { MockAccount } from '@/lib/mockData';
-import { BUNDLE_AVATARS } from '@/lib/avatars';
+import { BUNDLE_AVATARS, isBundleAvatar } from '@/lib/avatars';
 import { useFriends } from '@/store/friends';
 import { useSentInvites, inviteSlotKey } from '@/store/sentInvites';
 import { dispatchMessage, dispatchMessageTo } from '@/lib/messages/dispatch';
@@ -137,7 +137,11 @@ export function InviteFriendsScreen() {
 
   const Avatar = ({ f }: { f: MockAccount }) => (
     <View style={styles.avatar}>
-      {React.createElement(BUNDLE_AVATARS[f.avatar], { width: 24, height: 24 })}
+      {isBundleAvatar(f.avatar) ? (
+        React.createElement(BUNDLE_AVATARS[f.avatar], { width: 24, height: 24 })
+      ) : (
+        <Image source={{ uri: f.avatar }} style={styles.avatarImg} />
+      )}
     </View>
   );
 
@@ -517,6 +521,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
+  avatarImg: { width: 24, height: 24 },
   // Figma 154:4544 — Medium 16/22 -0.112 #4B5563
   name: {
     fontSize: 16,
