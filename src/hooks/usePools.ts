@@ -30,10 +30,13 @@ interface PoolRow {
   has_schedule: boolean | null;
   is_active: boolean | null;
   free_swim_available: boolean | null;
-  price_per_session: number | null;
   price_weekday: number | null;
   price_weekend: number | null;
+  price_per_sat: number | null;
+  price_per_sun: number | null;
   price_monthly: number | null;
+  price_per_time: number | null;
+  price_per_time_count: number | null;
   photo_url: string | null;
 }
 
@@ -68,11 +71,13 @@ function rowToPool(row: PoolRow): Pool {
     isHotelPool: row.is_hotel_pool ?? undefined,
     hasSchedule: row.has_schedule ?? undefined,
     freeSwimAvailable: row.free_swim_available ?? undefined,
-    pricePerSession: row.price_per_session ?? undefined,
-    // 평일가: price_weekday 우선, 없으면 레거시 price_per_session 폴백.
-    priceWeekday: row.price_weekday ?? row.price_per_session ?? undefined,
+    priceWeekday: row.price_weekday ?? undefined,
     priceWeekend: row.price_weekend ?? undefined,
+    priceSat: row.price_per_sat ?? undefined,
+    priceSun: row.price_per_sun ?? undefined,
     priceMonthly: row.price_monthly ?? undefined,
+    pricePerTime: row.price_per_time ?? undefined,
+    pricePerTimeCount: row.price_per_time_count ?? undefined,
     photoUrl: row.photo_url ? { uri: resolvePoolPhotoUrl(row.photo_url) } : undefined,
   };
 }

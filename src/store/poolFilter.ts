@@ -99,10 +99,13 @@ export function filterPools(
       if (s.lane === '50m' && len !== 50) return false;
     }
     if (feeActive) {
-      // 요금 필터는 '1일 이용권' 기준. 일일요금이 아예 없는 풀(월권 전용 등)은 검색대상서 제외.
-      // (과거 `pricePerSession ?? 0` 폴백은 일일가 없는 풀을 0원=무조건 통과로 처리하던 버그)
-      const dailyPrices = [p.priceWeekday, p.priceWeekend, p.pricePerSession]
-        .filter((v): v is number => v != null);
+      // 요금 필터는 '1일 이용권' 기준. 일일요금이 아예 없는 풀(월권·쿠폰 전용)은 검색대상서 제외.
+      // 토/일 개별가는 없으면 주말 공통가 폴백. 월요금·회차권은 일일이 아니라 제외.
+      const dailyPrices = [
+        p.priceWeekday,
+        p.priceSat ?? p.priceWeekend,
+        p.priceSun ?? p.priceWeekend,
+      ].filter((v): v is number => v != null);
       if (dailyPrices.length === 0) return false;
       const minDaily = Math.min(...dailyPrices);
       if (s.fee === '오천원 이하' && minDaily > 5000) return false;
