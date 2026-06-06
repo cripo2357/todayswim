@@ -993,6 +993,10 @@ export function MapScreen() {
               style={styles.bottomScroll}
               contentContainerStyle={styles.bottomScrollContent}
               showsVerticalScrollIndicator={false}
+              // iOS는 세로 ScrollView가 alwaysBounceVertical 기본 true라 내용이
+              // 짧아도 끌면 튕긴다(드래그되는 느낌). false면 실제 넘칠 때만
+              // 스크롤·바운스 → 짧은 카드는 Android처럼 고정.
+              alwaysBounceVertical={false}
             >
               <PoolBottomCard
                 pool={selectedPool}
