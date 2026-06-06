@@ -32,16 +32,35 @@ const PROJECT_ID =
     ?.projectId ??
   Constants.easConfig?.projectId;
 
+// ⚠️ 임시 디버그 — push_tokens 0행 원인 추적용. push_debug 테이블에 각 단계를
+// 기록한다(logEvent 가 no-op 라 단말 로그를 볼 수 없어 서버 테이블로 대체).
+// 원인 잡으면 이 함수 + 호출 + 테이블 전부 제거할 것.
+async function pushDebug(
+  authUid: string | undefined,
+  step: string,
+  detail: string,
+): Promise<void> {
+  try {
+    await supabase
+      .from('push_debug')
+      .insert({ auth_uid: authUid ?? null, step, detail: detail.slice(0, 500) });
+  } catch {
+    /* ignore — 디버그 기록 실패는 무시 */
+  }
+}
+
 /** 로그인 직후 호출. 권한 요청 → 토큰 발급 → push_tokens upsert.
  *  실패해도 throw 안 함 — 푸시 미등록은 인앱 알림으로 보완. */
 export async function registerForPush(authUid: string | undefined): Promise<void> {
   if (!authUid) return;
   if (Platform.OS === 'web') return; // 웹 푸시는 별도 흐름(P3 outside scope)
 
+  await pushDebug(authUid, 'enter', `platform=${Platform.OS}`);
   try {
     const Notifications = await import('expo-notifications');
     const Device = await import('expo-device');
 
+    await pushDebug(authUid, 'device', `isDevice=${String(Device.isDevice)}`);
     // 실 디바이스만 — 시뮬레이터/에뮬레이터는 푸시 토큰 발급 불가.
     if (!Device.isDevice) return;
 
@@ -58,6 +77,7 @@ export async function registerForPush(authUid: string | undefined): Promise<void
           : 'push_permission_denied',
       );
     }
+    await pushDebug(authUid, 'permission', String(status));
     if (status !== 'granted') return; // 사용자 거부 — 조용히 통과.
 
     // Android 채널 — 8.0+ 에서 채널 미설정 시 알림 안 옴. 기본 채널 1개.
@@ -69,12 +89,14 @@ export async function registerForPush(authUid: string | undefined): Promise<void
       });
     }
 
+    await pushDebug(authUid, 'projectId', String(PROJECT_ID));
     // ExponentPushToken[...] 발급. projectId 는 EAS env / app.config.extra
     // 둘 다 fallback.
     const tokenResp = await Notifications.getExpoPushTokenAsync(
       PROJECT_ID ? { projectId: PROJECT_ID } : undefined,
     );
     const expoToken = tokenResp.data;
+    await pushDebug(authUid, 'token', expoToken ? expoToken : 'EMPTY');
     if (!expoToken) return;
 
     // push_tokens 에 UPSERT — expo_token unique 라 같은 디바이스 재가입 시 갱신.
@@ -86,13 +108,19 @@ export async function registerForPush(authUid: string | undefined): Promise<void
       },
       { onConflict: 'expo_token' },
     );
+    await pushDebug(authUid, 'upsert', error ? error.message : 'ok');
     // 진단 breadcrumb — 다음 빌드에서 토큰 등록이 실제로 도는지 확인용.
     void logEvent(
       error ? 'push_token_upsert_failed' : 'push_token_registered',
     );
-  } catch {
+  } catch (e) {
     // expo-notifications 가 네이티브 미빌드 / 토큰 실패 — 조용히 무시.
     // 푸시 안 와도 인앱 알림(NotificationsTab) 으로 보완.
+    await pushDebug(
+      authUid,
+      'error',
+      (e as { message?: string })?.message ?? String(e),
+    );
     void logEvent('push_token_register_error');
   }
 }
