@@ -101,15 +101,17 @@ export function filterPools(
     if (feeActive) {
       // 요금 필터는 '1일 이용권' 기준. 일일요금이 아예 없는 풀(월권·쿠폰 전용)은 검색대상서 제외.
       // 토/일 개별가는 없으면 주말 공통가 폴백. 월요금·회차권은 일일이 아니라 제외.
+      // 가격대 판정 = 일일가(주중/토/일) 중 '가장 비싼' 값 기준.
+      //   "오천원 이하" = 어느 요일에 가도 ≤5,000 보장(주말만 6,000이면 만원이하로 분류).
       const dailyPrices = [
         p.priceWeekday,
         p.priceSat ?? p.priceWeekend,
         p.priceSun ?? p.priceWeekend,
       ].filter((v): v is number => v != null);
       if (dailyPrices.length === 0) return false;
-      const minDaily = Math.min(...dailyPrices);
-      if (s.fee === '오천원 이하' && minDaily > 5000) return false;
-      if (s.fee === '만원 이하' && minDaily > 10000) return false;
+      const maxDaily = Math.max(...dailyPrices);
+      if (s.fee === '오천원 이하' && maxDaily > 5000) return false;
+      if (s.fee === '만원 이하' && maxDaily > 10000) return false;
     }
     if (facActive) {
       // 옵션 칩(어린이풀/다이빙/호텔)은 boolean flag — 선택한 옵션 모두 보유해야 통과 (AND).
