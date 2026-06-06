@@ -57,6 +57,12 @@ interface FriendSlot {
 export function FriendsTab() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  // 친구 탭 진입(mount)마다 서버 동기 — 상대가 한 친구 추가/삭제를 반영.
+  // (로컬 우선 store라 App.tsx 콜드시작 외엔 자동 갱신이 없던 갭 보완. 탭은
+  //  MyInfoScreen에서 조건부 렌더라 진입 시 mount → 이 effect 1회 실행.)
+  React.useEffect(() => {
+    void useFriends.getState().serverSync();
+  }, []);
   const requests = useFriends((s) => s.requests);
   const accept = useFriends((s) => s.accept);
   const reject = useFriends((s) => s.reject);
