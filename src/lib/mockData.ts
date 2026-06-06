@@ -8,7 +8,6 @@
 // (파일명은 다수 import 경로 호환을 위해 유지 — 향후 src/types 로 이전 가능.)
 
 import type { ScheduleVisibility } from '@/store/swimSchedule';
-import type { AvatarId } from '@/lib/avatars';
 import type { DayOfWeek } from '@/types/schedule';
 
 // 친구/계정 표시 모델 — 실 데이터 모델은 nickname 단일 식별자(profiles.nickname).
@@ -17,8 +16,8 @@ export interface MockAccount {
   nickname: string;
   status: string;
   code: string;
-  /** 번들 프로필 아바타 (avatar-male-1 등) */
-  avatar: AvatarId;
+  /** 아바타 URL(번들·업로드·소셜 통일) 또는 레거시 번들 ID. */
+  avatar: string;
 }
 
 // 다른 사용자의 슬롯 참여(소유 개념 아님 — 풀+날짜+시작/끝 단위 참여).
@@ -27,8 +26,9 @@ export interface OtherSchedule {
   id: string;
   userId: string;
   nickname: string;
-  avatar: AvatarId;
-  /** 업로드 사진 64px 썸네일 (소형 렌더용, 없으면 avatar 폴백). */
+  /** 아바타 URL(번들·업로드·소셜 통일) 또는 레거시 번들 ID. */
+  avatar: string;
+  /** 64px 썸네일 URL (소형 렌더용, 없으면 avatar 폴백). */
   avatarThumb?: string;
   isFriend: boolean;
   poolId: string;
@@ -44,7 +44,8 @@ export interface OtherLesson {
   id: string;
   userId: string;
   nickname: string;
-  avatar: AvatarId;
+  /** 아바타 URL(번들·업로드·소셜 통일) 또는 레거시 번들 ID. */
+  avatar: string;
   isFriend: boolean;
   poolId: string;
   poolName: string;

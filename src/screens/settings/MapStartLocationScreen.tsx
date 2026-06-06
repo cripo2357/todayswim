@@ -23,7 +23,7 @@ import { usePrefs } from '@/store/prefs';
 import { useFavorites } from '@/store/favorites';
 import { useProfile } from '@/store/profile';
 import { usePools } from '@/hooks/usePools';
-import { bundleAvatarPng, isBundleAvatar } from '@/lib/avatars';
+import { resolveAvatarUri } from '@/lib/avatars';
 import type { Pool } from '@/types/pool';
 import { logEvent } from '@/lib/analytics';
 
@@ -44,10 +44,11 @@ function PinIcon({ selected }: { selected: boolean }) {
 function MyAvatar({ photoUri }: { photoUri?: string }) {
   return (
     <View style={styles.thumb}>
-      {isBundleAvatar(photoUri) ? (
-        <Image source={bundleAvatarPng(photoUri, AV)} style={{ width: AV, height: AV }} />
-      ) : photoUri ? (
-        <Image source={{ uri: photoUri }} style={styles.thumbImg} />
+      {photoUri ? (
+        <Image
+          source={{ uri: resolveAvatarUri(photoUri, { size: AV }) }}
+          style={styles.thumbImg}
+        />
       ) : (
         <User size={22} color={tokens.color.ink400} strokeWidth={2} />
       )}

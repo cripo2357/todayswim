@@ -59,7 +59,7 @@ import {
   STACK_H,
 } from '@/components/map/MapProfileStack';
 import { MarkerBakery, type BakeJob } from '@/components/map/MarkerBakery';
-import { bundleAvatarPng, isBundleAvatar } from '@/lib/avatars';
+import { resolveAvatarUri } from '@/lib/avatars';
 import { Toast } from '@/components/ui/Toast';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { tokens } from '@/styles/tokens';
@@ -150,15 +150,12 @@ type ClusterFeature =
 /** 프로필 FAB 내용 — 로그인(프로필 있음)이면 아바타, 아니면 기본 아이콘. */
 function ProfileFabContent({ photoUri }: { photoUri?: string }) {
   if (!photoUri) return <IconProfile width={20} height={20} />;
-  if (isBundleAvatar(photoUri)) {
-    return (
-      <Image
-        source={bundleAvatarPng(photoUri, 44)}
-        style={{ width: 44, height: 44 }}
-      />
-    );
-  }
-  return <Image source={{ uri: photoUri }} style={styles.fabAvatarImg} />;
+  return (
+    <Image
+      source={{ uri: resolveAvatarUri(photoUri, { size: 44 }) }}
+      style={styles.fabAvatarImg}
+    />
+  );
 }
 
 /** 내 위치 마커의 안쪽 프로필 사진(34px 원형, Figma 130:3622).
@@ -170,14 +167,10 @@ function ProfileFabContent({ photoUri }: { photoUri?: string }) {
 function LocationPhotoMarker({ photoUri }: { photoUri: string }) {
   return (
     <View style={styles.locInner}>
-      {isBundleAvatar(photoUri) ? (
-        <Image
-          source={bundleAvatarPng(photoUri, 34)}
-          style={{ width: 34, height: 34 }}
-        />
-      ) : (
-        <Image source={{ uri: photoUri }} style={styles.locInnerImg} />
-      )}
+      <Image
+        source={{ uri: resolveAvatarUri(photoUri, { size: 34 }) }}
+        style={styles.locInnerImg}
+      />
     </View>
   );
 }

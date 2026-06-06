@@ -18,7 +18,7 @@ import IconUserDouble from '@assets/icons/user-double.svg';
 import IconIdBadgeWhite from '@assets/icons/id-badge-white.svg';
 import { type MockAccount } from '@/lib/mockData';
 import { useOtherSchedules } from '@/hooks/useOtherSchedules';
-import { bundleAvatarPng, isBundleAvatar, type AvatarId } from '@/lib/avatars';
+import { resolveAvatarUri } from '@/lib/avatars';
 import { Avatar as UiAvatar } from '@/components/ui/Avatar';
 import { useFriendList } from '@/hooks/useFriendList';
 import { RejectFriendModal } from '@/components/friends/RejectFriendModal';
@@ -412,18 +412,16 @@ export function FriendsTab() {
                         accessibilityLabel={`${p.nickname} 프로필 보기`}
                       >
                         <View style={styles.miniAvatar}>
-                          {isBundleAvatar(p.avatar) ? (
-                            <Image
-                              source={bundleAvatarPng(p.avatar, 24)}
-                              style={styles.miniAvatarImg}
-                            />
-                          ) : (
-                            <Image
-                              source={{ uri: p.avatarThumb ?? p.avatar }}
-                              style={styles.miniAvatarImg}
-                              resizeMode="cover"
-                            />
-                          )}
+                          <Image
+                            source={{
+                              uri: resolveAvatarUri(p.avatar, {
+                                thumbUri: p.avatarThumb,
+                                size: 24,
+                              }),
+                            }}
+                            style={styles.miniAvatarImg}
+                            resizeMode="cover"
+                          />
                         </View>
                         <Text style={styles.miniName} numberOfLines={1}>
                           {p.nickname}
@@ -596,7 +594,7 @@ export function FriendsTab() {
 
 // 친구·요청·검색 아바타 — 공유 ui/Avatar 위임(번들=PNG 티어, 친구
 // 관계 mint 링 2px). SVG 벡터 트리 다수 마운트 제거(friends_scalability).
-function Avatar({ size, avatarId }: { size: number; avatarId?: AvatarId }) {
+function Avatar({ size, avatarId }: { size: number; avatarId?: string }) {
   return (
     <UiAvatar
       photoUri={avatarId}

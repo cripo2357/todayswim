@@ -185,8 +185,7 @@ export async function tryFetchBlockedIds(meId: string): Promise<string[]> {
 
 /** id 목록 → MockAccount 객체 배열. friends store serverSync 가 사용.
  *  profile 조회 실패한 id 는 결과에서 제외. avatar 폴백 = 'avatar-male-1'.
- *  ※ avatar 는 strict AvatarId 타입이지만 서버 photo_uri 는 AvatarId 또는
- *    업로드 URL — UI Avatar 컴포넌트가 isBundleAvatar 로 분기라 cast 안전.
+ *  ※ avatar(=photo_uri)는 항상 아바타 URL(번들·업로드 통일) — resolveAvatarUri 정규화.
  *  P3 후속: 친구 코드 변경 cascade / 탈퇴 시 옛 row 처리. */
 export async function tryFetchAccountsByIds(
   ids: string[],
@@ -210,8 +209,8 @@ export async function tryFetchAccountsByIds(
       nickname: p.nickname,
       status: p.bio ?? '',
       code: p.id,
-      // 서버 URL avatar 도 AvatarId 로 cast — UI 가 isBundleAvatar 로 처리.
-      avatar: (p.photo_uri ?? 'avatar-male-1') as _MockAccount['avatar'],
+      // photo_uri 는 아바타 URL — 렌더 측 resolveAvatarUri 가 정규화.
+      avatar: p.photo_uri ?? 'avatar-male-1',
     }));
   } catch {
     return [];

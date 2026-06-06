@@ -82,7 +82,7 @@ export interface UserProfile {
   birthDate: string; // YYYY-MM-DD
   experienceYears: number; // 0~30, 30은 "30년 이상"
   strokes: Stroke[];
-  photoUri?: string; // 로컬 URI / 소셜 URL / 번들 AvatarId
+  photoUri?: string; // 아바타 URL(번들·업로드·소셜 통일) / 로컬 URI / 레거시 번들 ID
   // 소형 노출용 64px 썸네일 URL(avatar_thumb.jpg). 지도 스택 등 다수
   // 소형 렌더 시 512px 디코드 회피용. 없으면 photoUri 폴백.
   photoThumbUri?: string;

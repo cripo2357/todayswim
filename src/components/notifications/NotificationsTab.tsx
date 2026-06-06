@@ -19,7 +19,7 @@ import type { SvgProps } from 'react-native-svg';
 import { X, Check, ChevronRight } from 'lucide-react-native';
 import { tokens } from '@/styles/tokens';
 import { type MessageKind } from '@/lib/messages/rules';
-import { bundleAvatarPng, isBundleAvatar, type AvatarId } from '@/lib/avatars';
+import { resolveAvatarUri } from '@/lib/avatars';
 import type { RootStackParamList } from '@/navigation/types';
 import { RejectScheduleInviteModal } from '@/components/schedule/RejectScheduleInviteModal';
 import { CancelScheduleInviteModal } from '@/components/schedule/CancelScheduleInviteModal';
@@ -58,8 +58,8 @@ type SvgIconCmp = React.FC<SvgProps>;
  *  카드는 그 시점의 관계를 보존(예: friend_request_received는 영구적으로
  *  '비친구' 테두리 — 그때 비친구였음의 기록). v0.6 정책. */
 type AvatarRel = 'me' | 'friend' | 'stranger';
-// avatar.value = 번들 AvatarId('avatar-male-1') 또는 사진 uri(소셜/업로드).
-// isBundleAvatar로 구분해 SVG 또는 Image로 렌더(NotifSlot).
+// avatar.value = 아바타 URL(소셜·업로드·번들) 또는 레거시 ID.
+// resolveAvatarUri 로 정규화해 Image 렌더(NotifSlot).
 type Slot =
   | { type: 'avatar'; value: string }
   | { type: 'icon'; render: () => React.ReactNode };
@@ -387,21 +387,14 @@ const REL_BORDER: Record<AvatarRel, string> = {
 
 function NotifSlot({ slot, rel }: { slot: Slot; rel?: AvatarRel }) {
   if (slot.type === 'avatar') {
-    // value = 번들 AvatarId → PNG 티어 / 그 외(사진 uri) → Image.
+    // value = 아바타 URL(업로드·소셜·번들) 또는 레거시 ID — resolveAvatarUri 통일.
     const border = { borderColor: REL_BORDER[rel ?? 'friend'] };
-    if (isBundleAvatar(slot.value)) {
-      return (
-        <View style={[styles.avatarWrap, border]}>
-          <Image
-            source={bundleAvatarPng(slot.value, 40)}
-            style={{ width: 40, height: 40 }}
-          />
-        </View>
-      );
-    }
     return (
       <View style={[styles.avatarWrap, border]}>
-        <Image source={{ uri: slot.value }} style={styles.avatarImg} />
+        <Image
+          source={{ uri: resolveAvatarUri(slot.value, { size: 40 }) }}
+          style={styles.avatarImg}
+        />
       </View>
     );
   }

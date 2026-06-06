@@ -3,15 +3,14 @@
 // 전역 프로필 테두리 정책(profile_border_policy 메모리): 아바타 외곽선 색 =
 // 관계. 나=pd-byellow / 친구=pd-mint / 비친구=pd-gray. 모든 아바타 노출 공통.
 //
-// 사진 소스: 번들 아바타(AvatarId) / 업로드·소셜 URI / 없으면 기본 아이콘.
+// 사진 소스: 아바타 URL(번들·업로드·소셜) / 레거시 번들 ID / 없으면 기본 아이콘.
 // shared_ui_library 메모리에 따라 단일 출처로 추출 — 신규 노출은 이걸 사용.
 //
-// 성능: 번들 아바타는 SVG 벡터 트리 대신 표시 size에 맞는 PNG 티어
-// (sm64/md256, bundleAvatarPng)로 — 다수 동시 마운트 비용 회피
-// (friends_scalability 메모리). 업로드 사진은 ≤28 소형 노출(맵 스택·mini)
-// 시에만 thumbUri(64px) 우선해 512 디코드 회피, 실패 시 onError 로
-// photoUri 1회 폴백. 친구행48·요청40·검색32는 본본(512)을 다운샘플 —
-// 64 썸네일을 늘려 쓰는 회귀 방지. React.memo 로 마커/리스트 재렌더 절감.
+// 성능·통일: 모든 아바타를 resolveAvatarUri 로 단일 URI 정규화(번들/업로드 분기
+// 없음). 번들 아바타도 Storage 호스팅(avatar_uri_handling·profile_avatar_storage
+// 메모리). ≤28 소형 노출(맵 스택·mini)만 thumbUri(64px) 우선해 큰 이미지 디코드
+// 회피, 실패 시 onError 로 원본 1회 폴백. 친구행48·요청40·검색32는 본본(256/512)
+// 다운샘플. React.memo 로 마커/리스트 재렌더 절감.
 //
 // 외곽선 두께는 Figma 173-13735 가 border-0 이나 전역 정책 우선 — 얇게 1.5
 // 기본(호출부 borderWidth 로 조정/0 가능).
@@ -24,11 +23,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { User } from 'lucide-react-native';
-import {
-  bundleAvatarPng,
-  isBundleAvatar,
-  type AvatarId,
-} from '@/lib/avatars';
+import { resolveAvatarUri } from '@/lib/avatars';
 import { tokens } from '@/styles/tokens';
 
 export type AvatarRelation = 'me' | 'friend' | 'other';
@@ -62,11 +57,12 @@ function AvatarBase({
     setThumbFailed(false);
   }, [thumbUri, photoUri]);
 
-  const isBundle = isBundleAvatar(photoUri);
-  // 64px 썸네일은 ≤28 소형 노출(맵 스택·mini)에서만 우선 — 그보다 큰
-  // 디스플레이(친구행48 등)에서 64를 늘리면 흐릿. 본본(512)을 RN 다운샘플.
-  const useThumb = size <= 28 && !!thumbUri && !thumbFailed;
-  const photoSrc = isBundle ? undefined : useThumb ? thumbUri : photoUri;
+  // 모든 아바타(번들·업로드·소셜·레거시ID)를 단일 URI 로 정규화 — 분기 없음.
+  // 64px 썸네일은 ≤28 소형 노출(맵 스택·mini)에서만 우선, 실패 시 원본 폴백.
+  const photoSrc = resolveAvatarUri(photoUri, {
+    thumbUri: thumbFailed ? undefined : thumbUri,
+    size,
+  });
 
   // Figma 173-13735: 이미지는 원을 꽉 채우고(inset-0 size-full), 관계 링은
   // 이미지를 줄이지 않는 오버레이로. 그래야 -2px 겹침이 실제로 보인다.
@@ -83,14 +79,7 @@ function AvatarBase({
         style,
       ]}
     >
-      {isBundle ? (
-        // 번들 아바타: 표시 size에 맞는 PNG 티어(sm/md) — SVG 벡터
-        // 트리 다수 마운트 비용 회피(friends_scalability).
-        <Image
-          source={bundleAvatarPng(photoUri as AvatarId, size)}
-          style={{ width: size, height: size }}
-        />
-      ) : photoSrc ? (
+      {photoSrc ? (
         <Image
           source={{ uri: photoSrc }}
           style={{ width: size, height: size }}

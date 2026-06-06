@@ -1,13 +1,15 @@
 // 번들 프로필 아바타 — 원형 12종 (남 6 / 여 6).
-// profile.photoUri 에 AvatarId('avatar-male-1' 등)를 저장하면 번들 아바타,
-// 'file://' / 'http' 로 시작하면 사용자가 업로드한 사진으로 구분한다.
 //
-// 렌더는 PNG 2티어(thumb 64 / md 256)로 통일 — SVG 노출 경로는 전부 제거됨
-// (2026-06-07). 번들 최대 표시 ~76px이라 md(256)면 3배 디스플레이까지 선명해
-// SVG(원본 328KB·다수 마운트 비용)가 불필요했음. 모든 호출부는 bundleAvatarPng
-// 또는 ui/Avatar 를 사용(BUNDLE_AVATARS SVG 맵 삭제).
+// 이미지 호스팅 통일(2026-06-07): 번들 아바타도 업로드 사진과 똑같이 Supabase
+// Storage(`avatars/bundle/{id}.png` md256 + `{id}_64.png` thumb64)에 산다.
+// profiles.photo_uri 에는 항상 **URL** 을 저장(업로드 사진과 동일) — 번들/업로드
+// 구분 분기 없음. AvatarId 는 가입 시 기본 아바타를 "어느 12개 중 하나"로 고르는
+// 선택 열거에만 쓰고, 저장·렌더는 전부 URL.
+//
+// resolveAvatarUri 가 단일 정규화 지점: URL 은 통과, 레거시 'avatar-*' ID(옛 행)는
+// 런타임에 Storage URL 로 변환(안전망). 모든 렌더 호출부는 이 헬퍼 또는 ui/Avatar
+// 를 거치므로 흩어진 isBundleAvatar 분기가 없다.
 
-import type { ImageSourcePropType } from 'react-native';
 import type { Gender } from '@/store/profile';
 
 export type AvatarId =
@@ -15,55 +17,6 @@ export type AvatarId =
   | 'avatar-male-4' | 'avatar-male-5' | 'avatar-male-6'
   | 'avatar-female-1' | 'avatar-female-2' | 'avatar-female-3'
   | 'avatar-female-4' | 'avatar-female-5' | 'avatar-female-6';
-
-// 번들 아바타 다티어 PNG (SVG 벡터 트리 × 다수 마운트 비용 회피 —
-// friends_scalability 메모리). repo SVG를 sharp로 래스터화.
-// 치수 = "그 맥락 최대 표시 px × DPR(~3)": sm 64(thumb/) / md 256. (lg 512는
-// 미사용이라 제거 2026-06-07 — 앱 최대 아바타 표시 ~76px이라 md로 충분.)
-// scripts/avatar-thumbs.mjs 로 md 재생성(sm=기존 thumb/ 유지).
-export const BUNDLE_AVATAR_THUMBS: Record<AvatarId, ImageSourcePropType> = {
-  'avatar-male-1': require('@assets/avatars/thumb/avatar-male-1.png'),
-  'avatar-male-2': require('@assets/avatars/thumb/avatar-male-2.png'),
-  'avatar-male-3': require('@assets/avatars/thumb/avatar-male-3.png'),
-  'avatar-male-4': require('@assets/avatars/thumb/avatar-male-4.png'),
-  'avatar-male-5': require('@assets/avatars/thumb/avatar-male-5.png'),
-  'avatar-male-6': require('@assets/avatars/thumb/avatar-male-6.png'),
-  'avatar-female-1': require('@assets/avatars/thumb/avatar-female-1.png'),
-  'avatar-female-2': require('@assets/avatars/thumb/avatar-female-2.png'),
-  'avatar-female-3': require('@assets/avatars/thumb/avatar-female-3.png'),
-  'avatar-female-4': require('@assets/avatars/thumb/avatar-female-4.png'),
-  'avatar-female-5': require('@assets/avatars/thumb/avatar-female-5.png'),
-  'avatar-female-6': require('@assets/avatars/thumb/avatar-female-6.png'),
-};
-
-export const BUNDLE_AVATAR_MD: Record<AvatarId, ImageSourcePropType> = {
-  'avatar-male-1': require('@assets/avatars/md/avatar-male-1.png'),
-  'avatar-male-2': require('@assets/avatars/md/avatar-male-2.png'),
-  'avatar-male-3': require('@assets/avatars/md/avatar-male-3.png'),
-  'avatar-male-4': require('@assets/avatars/md/avatar-male-4.png'),
-  'avatar-male-5': require('@assets/avatars/md/avatar-male-5.png'),
-  'avatar-male-6': require('@assets/avatars/md/avatar-male-6.png'),
-  'avatar-female-1': require('@assets/avatars/md/avatar-female-1.png'),
-  'avatar-female-2': require('@assets/avatars/md/avatar-female-2.png'),
-  'avatar-female-3': require('@assets/avatars/md/avatar-female-3.png'),
-  'avatar-female-4': require('@assets/avatars/md/avatar-female-4.png'),
-  'avatar-female-5': require('@assets/avatars/md/avatar-female-5.png'),
-  'avatar-female-6': require('@assets/avatars/md/avatar-female-6.png'),
-};
-
-/** 표시 size(px)에 맞는 번들 PNG 티어 소스. sm≤28(맵 스택 20·mini 24) /
- *  md(그 외 — 검색 32·요청 40·친구행 48·프로필 76·픽커 116 등).
- *  번들 아바타의 유일한 렌더 경로(SVG 맵 제거 2026-06-07) — 모든 노출이 이걸
- *  쓰거나 ui/Avatar 경유. 임계값 ≤64는 회귀였음 — 친구행48이 sm(64)로
- *  떨어져 3x 디스플레이에서 흐릿했음. 친구행은 md(256)가 정상 티어. */
-export function bundleAvatarPng(
-  id: AvatarId,
-  size: number,
-): ImageSourcePropType {
-  if (size <= 28) return BUNDLE_AVATAR_THUMBS[id];
-  // md(256)면 앱 최대 표시(프로필 ~76px=물리 ~228)까지 선명. lg(512)는 미사용이라 제거(2026-06-07).
-  return BUNDLE_AVATAR_MD[id];
-}
 
 const MALE_AVATAR_IDS: AvatarId[] = [
   'avatar-male-1', 'avatar-male-2', 'avatar-male-3',
@@ -73,6 +26,60 @@ const FEMALE_AVATAR_IDS: AvatarId[] = [
   'avatar-female-1', 'avatar-female-2', 'avatar-female-3',
   'avatar-female-4', 'avatar-female-5', 'avatar-female-6',
 ];
+const ALL_AVATAR_IDS: AvatarId[] = [...MALE_AVATAR_IDS, ...FEMALE_AVATAR_IDS];
+const BUNDLE_AVATAR_ID_SET = new Set<string>(ALL_AVATAR_IDS);
+
+// Storage 공개 URL 베이스 — 현재 환경(EXPO_PUBLIC_SUPABASE_URL)에서 런타임 빌드라
+// dev/prod 자동 분기(URL 을 코드/마이그레이션에 박지 않음 — pool_photo_url_dev_baked).
+const STORAGE_BASE = process.env.EXPO_PUBLIC_SUPABASE_URL
+  ? `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/bundle`
+  : '';
+
+/** 번들 아바타 md(256) Storage URL. */
+export function bundleAvatarUrl(id: AvatarId): string {
+  return `${STORAGE_BASE}/${id}.png`;
+}
+/** 번들 아바타 thumb(64) Storage URL — size≤28 소형 노출용. */
+export function bundleAvatarThumbUrl(id: AvatarId): string {
+  return `${STORAGE_BASE}/${id}_64.png`;
+}
+
+/** 앱 시작 시 캐시 워밍용 — 전 번들 아바타(thumb+md) URL 목록. Image.prefetch 대상. */
+export function allBundleAvatarUrls(): string[] {
+  return ALL_AVATAR_IDS.flatMap((id) => [bundleAvatarThumbUrl(id), bundleAvatarUrl(id)]);
+}
+
+/** 레거시 번들 ID('avatar-male-1') 판별 — 옛 photo_uri 행 안전망용. */
+export function isBundleAvatar(photoUri: string | undefined): photoUri is AvatarId {
+  return !!photoUri && BUNDLE_AVATAR_ID_SET.has(photoUri);
+}
+
+/** 아바타 표시용 이미지 URI 단일 정규화 지점.
+ *  - URL(업로드·소셜·번들) → 그대로(소형이고 thumbUri 있으면 thumb 우선).
+ *  - 레거시 번들 ID('avatar-*') → Storage URL 로 변환(size≤28 면 thumb).
+ *  모든 렌더 호출부가 이걸 거쳐 번들/업로드 분기를 없앤다. */
+export function resolveAvatarUri(
+  value: string | undefined,
+  opts?: { thumbUri?: string; size?: number },
+): string | undefined {
+  if (!value) return undefined;
+  const small = (opts?.size ?? 999) <= 28;
+  // 레거시 번들 ID('avatar-*') → Storage URL.
+  if (BUNDLE_AVATAR_ID_SET.has(value)) {
+    return small ? bundleAvatarThumbUrl(value as AvatarId) : bundleAvatarUrl(value as AvatarId);
+  }
+  // 번들 Storage URL: 소형이면 _64 썸네일로 자동 전환(데이터가 thumb 안 들고와도
+  // 64 디코드 유지 — 맵 스택 등). startup prefetch 가 둘 다 캐시 워밍.
+  if (
+    small &&
+    value.includes('/avatars/bundle/') &&
+    value.endsWith('.png') &&
+    !value.endsWith('_64.png')
+  ) {
+    return value.replace(/\.png$/, '_64.png');
+  }
+  return small && opts?.thumbUri ? opts.thumbUri : value;
+}
 
 export function avatarsForGender(gender: Gender): AvatarId[] {
   return gender === 'female' ? FEMALE_AVATAR_IDS : MALE_AVATAR_IDS;
@@ -84,6 +91,8 @@ export function defaultAvatarForGender(gender: Gender): AvatarId {
   return ids[Math.floor(Math.random() * ids.length)];
 }
 
-export function isBundleAvatar(photoUri: string | undefined): photoUri is AvatarId {
-  return !!photoUri && photoUri in BUNDLE_AVATAR_MD;
+/** 가입 기본 아바타를 저장용 URL 쌍으로 — photo_uri(md)/photo_thumb_uri(thumb). */
+export function defaultAvatarUrls(gender: Gender): { url: string; thumbUrl: string } {
+  const id = defaultAvatarForGender(gender);
+  return { url: bundleAvatarUrl(id), thumbUrl: bundleAvatarThumbUrl(id) };
 }

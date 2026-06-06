@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, View } from 'react-native';
 import {
   NavigationContainer,
   getStateFromPath,
@@ -32,6 +32,7 @@ import { useFriends } from '@/store/friends';
 import { usePrefs } from '@/store/prefs';
 import { useFavorites } from '@/store/favorites';
 import { resetUserScopedState } from '@/lib/resetUserState';
+import { allBundleAvatarUrls } from '@/lib/avatars';
 import { tokens } from '@/styles/tokens';
 
 const queryClient = new QueryClient({
@@ -114,6 +115,15 @@ export default function App() {
   // 푸시 탭 라우팅 + 포그라운드 표시 셋업(1회) + 콜드스타트 처리.
   React.useEffect(() => {
     void setupPushNotificationRouting();
+  }, []);
+
+  // 번들 아바타(Storage 호스팅) 디스크 캐시 워밍(1회, best-effort) — 첫 렌더
+  // 깜빡임 + 지도 마커 비트맵 굽기 전 미로드 방지. 받으면 디스크 캐시라 이후
+  // 무네트워크. ~248KB(thumb+md 24장) 첫 실행 1회.
+  React.useEffect(() => {
+    for (const url of allBundleAvatarUrls()) {
+      void Image.prefetch(url).catch(() => {});
+    }
   }, []);
 
   // 앱 (재)시동 시 필터·선택 상태 초기화 + 인증 세션 복원.

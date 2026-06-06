@@ -47,7 +47,7 @@ import {
   type IM100Record,
 } from '@/store/profile';
 import { Toggle } from '@/components/ui/Toggle';
-import { isBundleAvatar, bundleAvatarPng } from '@/lib/avatars';
+import { resolveAvatarUri } from '@/lib/avatars';
 import { DAY_ORDER, groupByDay, formatClassChip } from '@/lib/swimClass';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
@@ -414,13 +414,11 @@ export function ProfileTab({
       <View style={styles.avatarWrap}>
         <View style={styles.avatar}>
           <View style={styles.avatarInner}>
-            {isBundleAvatar(profile.photoUri) ? (
+            {profile.photoUri ? (
               <Image
-                source={bundleAvatarPng(profile.photoUri, 76)}
-                style={{ width: 76, height: 76 }}
+                source={{ uri: resolveAvatarUri(profile.photoUri, { size: 76 }) }}
+                style={styles.avatarImg}
               />
-            ) : profile.photoUri ? (
-              <Image source={{ uri: profile.photoUri }} style={styles.avatarImg} />
             ) : (
               <IconUser width={36} height={36} />
             )}

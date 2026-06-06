@@ -18,7 +18,7 @@ import {
   isSchedulePast,
   type ScheduleVisibility,
 } from '@/store/swimSchedule';
-import { isBundleAvatar, bundleAvatarPng } from '@/lib/avatars';
+import { resolveAvatarUri } from '@/lib/avatars';
 import { usePrefs } from '@/store/prefs';
 import { resolveParticipants } from '@/lib/scheduleParticipants';
 import { useOtherSchedules } from '@/hooks/useOtherSchedules';
@@ -249,14 +249,14 @@ export function CalendarTab({
                     {/* 나 */}
                     <View style={styles.ptCell}>
                       <View style={[styles.ptAvatar, styles.ptAvatarMine]}>
-                        {isBundleAvatar(profile?.photoUri) ? (
+                        {profile?.photoUri ? (
                           <Image
-                            source={bundleAvatarPng(profile.photoUri, 24)}
-                            style={{ width: 24, height: 24 }}
-                          />
-                        ) : profile?.photoUri ? (
-                          <Image
-                            source={{ uri: profile.photoThumbUri ?? profile.photoUri }}
+                            source={{
+                              uri: resolveAvatarUri(profile.photoUri, {
+                                thumbUri: profile.photoThumbUri,
+                                size: 24,
+                              }),
+                            }}
                             style={styles.ptAvatarImg}
                           />
                         ) : (
@@ -292,17 +292,15 @@ export function CalendarTab({
                                   styles.ptAvatarFriend,
                                 ]}
                               >
-                                {isBundleAvatar(o.avatar) ? (
-                                  <Image
-                                    source={bundleAvatarPng(o.avatar, 24)}
-                                    style={{ width: 24, height: 24 }}
-                                  />
-                                ) : (
-                                  <Image
-                                    source={{ uri: o.avatarThumb ?? o.avatar }}
-                                    style={styles.ptAvatarImg}
-                                  />
-                                )}
+                                <Image
+                                  source={{
+                                    uri: resolveAvatarUri(o.avatar, {
+                                      thumbUri: o.avatarThumb,
+                                      size: 24,
+                                    }),
+                                  }}
+                                  style={styles.ptAvatarImg}
+                                />
                               </View>
                               <Text style={styles.ptName} numberOfLines={1}>
                                 {o.nickname}
@@ -364,17 +362,15 @@ export function CalendarTab({
                                   styles.ptAvatarOther,
                                 ]}
                               >
-                                {isBundleAvatar(o.avatar) ? (
-                                  <Image
-                                    source={bundleAvatarPng(o.avatar, 24)}
-                                    style={{ width: 24, height: 24 }}
-                                  />
-                                ) : (
-                                  <Image
-                                    source={{ uri: o.avatarThumb ?? o.avatar }}
-                                    style={styles.ptAvatarImg}
-                                  />
-                                )}
+                                <Image
+                                  source={{
+                                    uri: resolveAvatarUri(o.avatar, {
+                                      thumbUri: o.avatarThumb,
+                                      size: 24,
+                                    }),
+                                  }}
+                                  style={styles.ptAvatarImg}
+                                />
                               </View>
                               <Text style={styles.ptName} numberOfLines={1}>
                                 {o.nickname}

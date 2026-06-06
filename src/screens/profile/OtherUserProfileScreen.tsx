@@ -31,7 +31,7 @@ import { useProfile } from '@/store/profile';
 import { useAddScheduleIntent } from '@/store/addScheduleIntent';
 import { dispatchMessage, dispatchMessageTo } from '@/lib/messages/dispatch';
 import { usePools } from '@/hooks/usePools';
-import { bundleAvatarPng, isBundleAvatar } from '@/lib/avatars';
+import { resolveAvatarUri } from '@/lib/avatars';
 import { ConfirmFriendActionModal } from '@/components/friends/ConfirmFriendActionModal';
 import { FriendRequestSentModal } from '@/components/friends/FriendRequestSentModal';
 import { CancelFriendRequestModal } from '@/components/friends/CancelFriendRequestModal';
@@ -222,17 +222,10 @@ export function OtherUserProfileScreen() {
                 },
               ]}
             >
-              {isBundleAvatar(profile.avatar) ? (
-                <Image
-                  source={bundleAvatarPng(profile.avatar, 76)}
-                  style={{ width: 76, height: 76 }}
-                />
-              ) : (
-                <Image
-                  source={{ uri: profile.avatar }}
-                  style={styles.avatarImg}
-                />
-              )}
+              <Image
+                source={{ uri: resolveAvatarUri(profile.avatar, { size: 76 }) }}
+                style={styles.avatarImg}
+              />
             </View>
 
             {/* Figma 172:10640 — gap 20 (이름/소개·칩·스탯·CTA) */}

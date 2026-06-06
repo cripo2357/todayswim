@@ -18,11 +18,7 @@ import { useAuth } from '@/store/auth';
 import { pickProfileImage } from '@/lib/pickProfileImage';
 import { uploadProfileAvatar } from '@/lib/uploadProfileAvatar';
 import { logEvent } from '@/lib/analytics';
-import {
-  bundleAvatarPng,
-  defaultAvatarForGender,
-  isBundleAvatar,
-} from '@/lib/avatars';
+import { defaultAvatarUrls, resolveAvatarUri } from '@/lib/avatars';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
 import { formatDate } from '@/lib/dateFormat';
@@ -63,10 +59,10 @@ export function ProfileImageScreen() {
   const saveProfile = useProfile((s) => s.save);
   const authUser = useAuth((s) => s.user);
 
-  // 소셜 이미지가 없거나 로드 실패할 때 떨어질 번들 아바타 — 성별 기준 1회 픽
-  // (onError 폴백과 초기값이 같은 아바타를 쓰도록 고정).
-  const fallbackAvatar = React.useMemo(
-    () => defaultAvatarForGender(profile?.gender ?? 'male'),
+  // 소셜 이미지가 없거나 로드 실패할 때 떨어질 번들 기본 아바타 — 성별 기준 1회 픽,
+  // Storage URL 쌍(md+thumb)으로(저장도 렌더도 업로드 사진과 동일 경로).
+  const { url: fallbackAvatar, thumbUrl: fallbackThumb } = React.useMemo(
+    () => defaultAvatarUrls(profile?.gender ?? 'male'),
     [profile?.gender],
   );
   // 기본값 — 이미 등록된 사진(내 정보 수정) > 소셜 사진 > 성별 기반 번들 아바타.
@@ -77,14 +73,15 @@ export function ProfileImageScreen() {
   // 현재 선택된 사진 — 번들 AvatarId / 소셜 URL / 업로드 URI.
   const [photo, setPhoto] = React.useState<string>(initialPhoto);
 
-  // 소셜/원격 이미지 로드 실패(예: 카카오 기본 이미지·차단된 URL) → 번들 아바타
-  // 폴백. URL 이 truthy 라 ?? 폴백이 안 걸리던 케이스를 런타임에서 보정.
+  // 소셜/원격 이미지 로드 실패(예: 카카오 기본 이미지·차단된 URL) → 번들 기본
+  // 아바타 URL 로 폴백. URL 이 truthy 라 ?? 폴백이 안 걸리던 케이스 런타임 보정.
   const onPhotoError = React.useCallback(() => {
-    setPhoto((cur) => (isBundleAvatar(cur) ? cur : fallbackAvatar));
-    setPhotoThumb(undefined);
-  }, [fallbackAvatar]);
+    setPhoto(fallbackAvatar);
+    setPhotoThumb(fallbackThumb);
+  }, [fallbackAvatar, fallbackThumb]);
   const [photoThumb, setPhotoThumb] = React.useState<string | undefined>(
-    profile?.photoThumbUri,
+    profile?.photoThumbUri ??
+      (profile?.photoUri || authUser?.photoUrl ? undefined : fallbackThumb),
   );
   const [state, setState] = React.useState<State>('idle');
   const [errorReason, setErrorReason] = React.useState<ErrorReason>('format');
@@ -121,11 +118,12 @@ export function ProfileImageScreen() {
   const onComplete = async () => {
     if (!profile) return;
     await saveProfile({ ...profile, photoUri: photo, photoThumbUri: photoThumb });
-    // mode 식별: photoUri 가 avatar-* 면 default, 'http' 시작이면 upload(or social),
-    // 그 외(빈 값 등)은 unknown. social 과 upload 는 둘 다 URL 이라 추정만 가능.
-    const mode: 'default' | 'upload' = photo.startsWith('avatar-')
-      ? 'default'
-      : 'upload';
+    // mode 식별: Storage 번들 경로(또는 레거시 avatar-* ID)면 default, 그 외 URL 은
+    // upload(or social). social 과 upload 는 둘 다 URL 이라 추정만 가능.
+    const mode: 'default' | 'upload' =
+      photo.includes('/avatars/bundle/') || photo.startsWith('avatar-')
+        ? 'default'
+        : 'upload';
     void logEvent('profile_image_set', { mode });
     void logEvent('signup_complete');
     navigation.replace('Welcome');
@@ -180,18 +178,11 @@ function AvatarCircle({
           { width: inner, height: inner, borderRadius: inner / 2 },
         ]}
       >
-        {isBundleAvatar(photo) ? (
-          <Image
-            source={bundleAvatarPng(photo, inner)}
-            style={{ width: inner, height: inner }}
-          />
-        ) : (
-          <Image
-            source={{ uri: photo }}
-            style={{ width: inner, height: inner }}
-            onError={onError}
-          />
-        )}
+        <Image
+          source={{ uri: resolveAvatarUri(photo, { size: inner }) }}
+          style={{ width: inner, height: inner }}
+          onError={onError}
+        />
       </View>
     </View>
   );

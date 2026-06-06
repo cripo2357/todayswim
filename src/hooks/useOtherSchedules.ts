@@ -20,7 +20,6 @@ import { useFriends } from '@/store/friends';
 import {
   type OtherSchedule,
 } from '@/lib/mockData';
-import type { AvatarId } from '@/lib/avatars';
 import type { ScheduleVisibility } from '@/store/swimSchedule';
 
 function rowToOtherSchedule(
@@ -28,9 +27,9 @@ function rowToOtherSchedule(
   friendIds: Set<string>,
 ): OtherSchedule {
   const owner = row.profiles;
-  // 번들 AvatarId 또는 업로드 사진 uri 그대로 통과(렌더 측 가드가 분기).
+  // photo_uri 는 항상 아바타 URL(번들·업로드·소셜 통일) — 그대로 통과.
   // URI 를 버리면 업로드 사진 사용자가 기본 아바타로 잘못 보임. null 만 폴백.
-  const avatar = (owner?.photo_uri ?? 'avatar-male-1') as AvatarId;
+  const avatar = owner?.photo_uri ?? 'avatar-male-1';
   return {
     id: row.id,
     userId: row.profile_id,
