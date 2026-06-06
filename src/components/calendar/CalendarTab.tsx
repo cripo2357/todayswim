@@ -18,7 +18,7 @@ import {
   isSchedulePast,
   type ScheduleVisibility,
 } from '@/store/swimSchedule';
-import { isBundleAvatar, BUNDLE_AVATARS } from '@/lib/avatars';
+import { isBundleAvatar, bundleAvatarPng } from '@/lib/avatars';
 import { usePrefs } from '@/store/prefs';
 import { resolveParticipants } from '@/lib/scheduleParticipants';
 import { useOtherSchedules } from '@/hooks/useOtherSchedules';
@@ -250,10 +250,10 @@ export function CalendarTab({
                     <View style={styles.ptCell}>
                       <View style={[styles.ptAvatar, styles.ptAvatarMine]}>
                         {isBundleAvatar(profile?.photoUri) ? (
-                          React.createElement(
-                            BUNDLE_AVATARS[profile.photoUri],
-                            { width: 24, height: 24 },
-                          )
+                          <Image
+                            source={bundleAvatarPng(profile.photoUri, 24)}
+                            style={{ width: 24, height: 24 }}
+                          />
                         ) : profile?.photoUri ? (
                           <Image
                             source={{ uri: profile.photoThumbUri ?? profile.photoUri }}
@@ -293,10 +293,10 @@ export function CalendarTab({
                                 ]}
                               >
                                 {isBundleAvatar(o.avatar) ? (
-                                  React.createElement(
-                                    BUNDLE_AVATARS[o.avatar],
-                                    { width: 24, height: 24 },
-                                  )
+                                  <Image
+                                    source={bundleAvatarPng(o.avatar, 24)}
+                                    style={{ width: 24, height: 24 }}
+                                  />
                                 ) : (
                                   <Image
                                     source={{ uri: o.avatarThumb ?? o.avatar }}
@@ -365,10 +365,10 @@ export function CalendarTab({
                                 ]}
                               >
                                 {isBundleAvatar(o.avatar) ? (
-                                  React.createElement(
-                                    BUNDLE_AVATARS[o.avatar],
-                                    { width: 24, height: 24 },
-                                  )
+                                  <Image
+                                    source={bundleAvatarPng(o.avatar, 24)}
+                                    style={{ width: 24, height: 24 }}
+                                  />
                                 ) : (
                                   <Image
                                     source={{ uri: o.avatarThumb ?? o.avatar }}

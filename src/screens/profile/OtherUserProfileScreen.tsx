@@ -31,7 +31,7 @@ import { useProfile } from '@/store/profile';
 import { useAddScheduleIntent } from '@/store/addScheduleIntent';
 import { dispatchMessage, dispatchMessageTo } from '@/lib/messages/dispatch';
 import { usePools } from '@/hooks/usePools';
-import { BUNDLE_AVATARS, isBundleAvatar } from '@/lib/avatars';
+import { bundleAvatarPng, isBundleAvatar } from '@/lib/avatars';
 import { ConfirmFriendActionModal } from '@/components/friends/ConfirmFriendActionModal';
 import { FriendRequestSentModal } from '@/components/friends/FriendRequestSentModal';
 import { CancelFriendRequestModal } from '@/components/friends/CancelFriendRequestModal';
@@ -223,10 +223,10 @@ export function OtherUserProfileScreen() {
               ]}
             >
               {isBundleAvatar(profile.avatar) ? (
-                React.createElement(BUNDLE_AVATARS[profile.avatar], {
-                  width: 76,
-                  height: 76,
-                })
+                <Image
+                  source={bundleAvatarPng(profile.avatar, 76)}
+                  style={{ width: 76, height: 76 }}
+                />
               ) : (
                 <Image
                   source={{ uri: profile.avatar }}

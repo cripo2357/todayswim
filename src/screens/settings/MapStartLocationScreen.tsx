@@ -23,7 +23,7 @@ import { usePrefs } from '@/store/prefs';
 import { useFavorites } from '@/store/favorites';
 import { useProfile } from '@/store/profile';
 import { usePools } from '@/hooks/usePools';
-import { BUNDLE_AVATARS, isBundleAvatar } from '@/lib/avatars';
+import { bundleAvatarPng, isBundleAvatar } from '@/lib/avatars';
 import type { Pool } from '@/types/pool';
 import { logEvent } from '@/lib/analytics';
 
@@ -45,7 +45,7 @@ function MyAvatar({ photoUri }: { photoUri?: string }) {
   return (
     <View style={styles.thumb}>
       {isBundleAvatar(photoUri) ? (
-        React.createElement(BUNDLE_AVATARS[photoUri], { width: AV, height: AV })
+        <Image source={bundleAvatarPng(photoUri, AV)} style={{ width: AV, height: AV }} />
       ) : photoUri ? (
         <Image source={{ uri: photoUri }} style={styles.thumbImg} />
       ) : (

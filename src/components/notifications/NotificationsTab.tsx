@@ -19,7 +19,7 @@ import type { SvgProps } from 'react-native-svg';
 import { X, Check, ChevronRight } from 'lucide-react-native';
 import { tokens } from '@/styles/tokens';
 import { type MessageKind } from '@/lib/messages/rules';
-import { BUNDLE_AVATARS, isBundleAvatar, type AvatarId } from '@/lib/avatars';
+import { bundleAvatarPng, isBundleAvatar, type AvatarId } from '@/lib/avatars';
 import type { RootStackParamList } from '@/navigation/types';
 import { RejectScheduleInviteModal } from '@/components/schedule/RejectScheduleInviteModal';
 import { CancelScheduleInviteModal } from '@/components/schedule/CancelScheduleInviteModal';
@@ -387,13 +387,15 @@ const REL_BORDER: Record<AvatarRel, string> = {
 
 function NotifSlot({ slot, rel }: { slot: Slot; rel?: AvatarRel }) {
   if (slot.type === 'avatar') {
-    // value = 번들 AvatarId → SVG / 그 외(사진 uri) → Image.
+    // value = 번들 AvatarId → PNG 티어 / 그 외(사진 uri) → Image.
     const border = { borderColor: REL_BORDER[rel ?? 'friend'] };
     if (isBundleAvatar(slot.value)) {
-      const Avatar = BUNDLE_AVATARS[slot.value];
       return (
         <View style={[styles.avatarWrap, border]}>
-          <Avatar width={40} height={40} />
+          <Image
+            source={bundleAvatarPng(slot.value, 40)}
+            style={{ width: 40, height: 40 }}
+          />
         </View>
       );
     }

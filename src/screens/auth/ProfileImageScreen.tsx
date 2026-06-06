@@ -19,7 +19,7 @@ import { pickProfileImage } from '@/lib/pickProfileImage';
 import { uploadProfileAvatar } from '@/lib/uploadProfileAvatar';
 import { logEvent } from '@/lib/analytics';
 import {
-  BUNDLE_AVATARS,
+  bundleAvatarPng,
   defaultAvatarForGender,
   isBundleAvatar,
 } from '@/lib/avatars';
@@ -181,10 +181,10 @@ function AvatarCircle({
         ]}
       >
         {isBundleAvatar(photo) ? (
-          React.createElement(BUNDLE_AVATARS[photo], {
-            width: inner,
-            height: inner,
-          })
+          <Image
+            source={bundleAvatarPng(photo, inner)}
+            style={{ width: inner, height: inner }}
+          />
         ) : (
           <Image
             source={{ uri: photo }}

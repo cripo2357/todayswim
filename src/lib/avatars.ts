@@ -1,45 +1,20 @@
-// 번들 프로필 아바타 — 64x64 원형 SVG 12종 (남 6 / 여 6).
+// 번들 프로필 아바타 — 원형 12종 (남 6 / 여 6).
 // profile.photoUri 에 AvatarId('avatar-male-1' 등)를 저장하면 번들 아바타,
 // 'file://' / 'http' 로 시작하면 사용자가 업로드한 사진으로 구분한다.
+//
+// 렌더는 PNG 2티어(thumb 64 / md 256)로 통일 — SVG 노출 경로는 전부 제거됨
+// (2026-06-07). 번들 최대 표시 ~76px이라 md(256)면 3배 디스플레이까지 선명해
+// SVG(원본 328KB·다수 마운트 비용)가 불필요했음. 모든 호출부는 bundleAvatarPng
+// 또는 ui/Avatar 를 사용(BUNDLE_AVATARS SVG 맵 삭제).
 
-import type { FC } from 'react';
-import type { SvgProps } from 'react-native-svg';
 import type { ImageSourcePropType } from 'react-native';
 import type { Gender } from '@/store/profile';
-
-import AvatarMale1 from '@assets/avatars/avatar-male-1.svg';
-import AvatarMale2 from '@assets/avatars/avatar-male-2.svg';
-import AvatarMale3 from '@assets/avatars/avatar-male-3.svg';
-import AvatarMale4 from '@assets/avatars/avatar-male-4.svg';
-import AvatarMale5 from '@assets/avatars/avatar-male-5.svg';
-import AvatarMale6 from '@assets/avatars/avatar-male-6.svg';
-import AvatarFemale1 from '@assets/avatars/avatar-female-1.svg';
-import AvatarFemale2 from '@assets/avatars/avatar-female-2.svg';
-import AvatarFemale3 from '@assets/avatars/avatar-female-3.svg';
-import AvatarFemale4 from '@assets/avatars/avatar-female-4.svg';
-import AvatarFemale5 from '@assets/avatars/avatar-female-5.svg';
-import AvatarFemale6 from '@assets/avatars/avatar-female-6.svg';
 
 export type AvatarId =
   | 'avatar-male-1' | 'avatar-male-2' | 'avatar-male-3'
   | 'avatar-male-4' | 'avatar-male-5' | 'avatar-male-6'
   | 'avatar-female-1' | 'avatar-female-2' | 'avatar-female-3'
   | 'avatar-female-4' | 'avatar-female-5' | 'avatar-female-6';
-
-export const BUNDLE_AVATARS: Record<AvatarId, FC<SvgProps>> = {
-  'avatar-male-1': AvatarMale1,
-  'avatar-male-2': AvatarMale2,
-  'avatar-male-3': AvatarMale3,
-  'avatar-male-4': AvatarMale4,
-  'avatar-male-5': AvatarMale5,
-  'avatar-male-6': AvatarMale6,
-  'avatar-female-1': AvatarFemale1,
-  'avatar-female-2': AvatarFemale2,
-  'avatar-female-3': AvatarFemale3,
-  'avatar-female-4': AvatarFemale4,
-  'avatar-female-5': AvatarFemale5,
-  'avatar-female-6': AvatarFemale6,
-};
 
 // 번들 아바타 다티어 PNG (SVG 벡터 트리 × 다수 마운트 비용 회피 —
 // friends_scalability 메모리). repo SVG를 sharp로 래스터화.
@@ -77,9 +52,9 @@ export const BUNDLE_AVATAR_MD: Record<AvatarId, ImageSourcePropType> = {
 };
 
 /** 표시 size(px)에 맞는 번들 PNG 티어 소스. sm≤28(맵 스택 20·mini 24) /
- *  md≤160(검색 32·요청 40·친구행 48·프로필 ≤160) / lg(>160).
- *  SVG(BUNDLE_AVATARS)는 더 이상 노출 경로 아님 — 다수 마운트 비용 회피
- *  (friends_scalability). 임계값 ≤64는 회귀였음 — 친구행48이 sm(64)로
+ *  md(그 외 — 검색 32·요청 40·친구행 48·프로필 76·픽커 116 등).
+ *  번들 아바타의 유일한 렌더 경로(SVG 맵 제거 2026-06-07) — 모든 노출이 이걸
+ *  쓰거나 ui/Avatar 경유. 임계값 ≤64는 회귀였음 — 친구행48이 sm(64)로
  *  떨어져 3x 디스플레이에서 흐릿했음. 친구행은 md(256)가 정상 티어. */
 export function bundleAvatarPng(
   id: AvatarId,
@@ -110,5 +85,5 @@ export function defaultAvatarForGender(gender: Gender): AvatarId {
 }
 
 export function isBundleAvatar(photoUri: string | undefined): photoUri is AvatarId {
-  return !!photoUri && photoUri in BUNDLE_AVATARS;
+  return !!photoUri && photoUri in BUNDLE_AVATAR_MD;
 }

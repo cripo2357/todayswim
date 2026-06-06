@@ -20,7 +20,7 @@ import IconChevronDown from '@assets/icons/chevron-down.svg';
 import type { RootStackParamList } from '@/navigation/types';
 import { BottomSheet, SheetCtaButton } from '@/components/ui/BottomSheet';
 import type { MockAccount } from '@/lib/mockData';
-import { BUNDLE_AVATARS, isBundleAvatar } from '@/lib/avatars';
+import { bundleAvatarPng, isBundleAvatar } from '@/lib/avatars';
 import { useFriends } from '@/store/friends';
 import { useSentInvites, inviteSlotKey } from '@/store/sentInvites';
 import { dispatchMessage, dispatchMessageTo } from '@/lib/messages/dispatch';
@@ -138,7 +138,7 @@ export function InviteFriendsScreen() {
   const Avatar = ({ f }: { f: MockAccount }) => (
     <View style={styles.avatar}>
       {isBundleAvatar(f.avatar) ? (
-        React.createElement(BUNDLE_AVATARS[f.avatar], { width: 24, height: 24 })
+        <Image source={bundleAvatarPng(f.avatar, 24)} style={{ width: 24, height: 24 }} />
       ) : (
         <Image source={{ uri: f.avatar }} style={styles.avatarImg} />
       )}

@@ -59,7 +59,7 @@ import {
   STACK_H,
 } from '@/components/map/MapProfileStack';
 import { MarkerBakery, type BakeJob } from '@/components/map/MarkerBakery';
-import { BUNDLE_AVATARS, isBundleAvatar } from '@/lib/avatars';
+import { bundleAvatarPng, isBundleAvatar } from '@/lib/avatars';
 import { Toast } from '@/components/ui/Toast';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { tokens } from '@/styles/tokens';
@@ -151,8 +151,12 @@ type ClusterFeature =
 function ProfileFabContent({ photoUri }: { photoUri?: string }) {
   if (!photoUri) return <IconProfile width={20} height={20} />;
   if (isBundleAvatar(photoUri)) {
-    const Svg = BUNDLE_AVATARS[photoUri];
-    return <Svg width={44} height={44} />;
+    return (
+      <Image
+        source={bundleAvatarPng(photoUri, 44)}
+        style={{ width: 44, height: 44 }}
+      />
+    );
   }
   return <Image source={{ uri: photoUri }} style={styles.fabAvatarImg} />;
 }
@@ -167,10 +171,10 @@ function LocationPhotoMarker({ photoUri }: { photoUri: string }) {
   return (
     <View style={styles.locInner}>
       {isBundleAvatar(photoUri) ? (
-        React.createElement(BUNDLE_AVATARS[photoUri], {
-          width: 34,
-          height: 34,
-        })
+        <Image
+          source={bundleAvatarPng(photoUri, 34)}
+          style={{ width: 34, height: 34 }}
+        />
       ) : (
         <Image source={{ uri: photoUri }} style={styles.locInnerImg} />
       )}

@@ -47,7 +47,7 @@ import {
   type IM100Record,
 } from '@/store/profile';
 import { Toggle } from '@/components/ui/Toggle';
-import { isBundleAvatar, BUNDLE_AVATARS } from '@/lib/avatars';
+import { isBundleAvatar, bundleAvatarPng } from '@/lib/avatars';
 import { DAY_ORDER, groupByDay, formatClassChip } from '@/lib/swimClass';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
@@ -415,10 +415,10 @@ export function ProfileTab({
         <View style={styles.avatar}>
           <View style={styles.avatarInner}>
             {isBundleAvatar(profile.photoUri) ? (
-              React.createElement(BUNDLE_AVATARS[profile.photoUri], {
-                width: 76,
-                height: 76,
-              })
+              <Image
+                source={bundleAvatarPng(profile.photoUri, 76)}
+                style={{ width: 76, height: 76 }}
+              />
             ) : profile.photoUri ? (
               <Image source={{ uri: profile.photoUri }} style={styles.avatarImg} />
             ) : (

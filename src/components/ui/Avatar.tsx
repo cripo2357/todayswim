@@ -7,7 +7,7 @@
 // shared_ui_library 메모리에 따라 단일 출처로 추출 — 신규 노출은 이걸 사용.
 //
 // 성능: 번들 아바타는 SVG 벡터 트리 대신 표시 size에 맞는 PNG 티어
-// (sm64/md256/lg512, bundleAvatarPng)로 — 다수 동시 마운트 비용 회피
+// (sm64/md256, bundleAvatarPng)로 — 다수 동시 마운트 비용 회피
 // (friends_scalability 메모리). 업로드 사진은 ≤28 소형 노출(맵 스택·mini)
 // 시에만 thumbUri(64px) 우선해 512 디코드 회피, 실패 시 onError 로
 // photoUri 1회 폴백. 친구행48·요청40·검색32는 본본(512)을 다운샘플 —
@@ -84,7 +84,7 @@ function AvatarBase({
       ]}
     >
       {isBundle ? (
-        // 번들 아바타: 표시 size에 맞는 PNG 티어(sm/md/lg) — SVG 벡터
+        // 번들 아바타: 표시 size에 맞는 PNG 티어(sm/md) — SVG 벡터
         // 트리 다수 마운트 비용 회피(friends_scalability).
         <Image
           source={bundleAvatarPng(photoUri as AvatarId, size)}
