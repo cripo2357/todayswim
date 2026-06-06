@@ -4,6 +4,7 @@
 
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { useProfile } from '@/store/profile';
 
 interface SubmitPoolArgs {
   mode: 'create' | 'edit';
@@ -32,6 +33,8 @@ export function useSubmitPool() {
         pool_name: args.poolName.trim(),
         description: args.description?.trim() || null,
         submitter_contact: args.submitterContact?.trim() || null,
+        // 승인/거절 알림 발송 대상(profile.id). 비로그인 제출이면 null → 알림 스킵.
+        submitter_code: useProfile.getState().profile?.id ?? null,
         lane_count: args.mode === 'create' ? args.laneCount ?? null : null,
         pool_length: args.mode === 'create' ? args.poolLength ?? null : null,
         depth_min: args.mode === 'create' ? args.depthMin ?? null : null,
