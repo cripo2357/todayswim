@@ -136,6 +136,10 @@ function friendReqValue(v: FriendRequest, id: string): string {
   if (v !== 'id') return FRIEND_REQ_VALUE[v];
   return `ID(${id})로만`;
 }
+// 후원 진입점 노출 플래그. 출시 직후(유저 0·PMF 전)엔 후원 요청이 신뢰를 깎아 숨김.
+// 충성 유저·응원 문화가 생기면 true로 부활(후원=응원이라 그때는 북극성에 부합). [[product_north_star]]
+const SHOW_DONATION_ENTRY = false;
+
 export function SettingsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const signOut = useAuth((s) => s.signOut);
@@ -319,11 +323,13 @@ export function SettingsScreen() {
             label="Pool’s day에 메일 보내기"
             onPress={sendMail}
           />
-          <Row
-            icon={<IconPiggyBank width={24} height={24} />}
-            label="후원으로 서비스 응원하기"
-            onPress={() => navigation.navigate('Donation')}
-          />
+          {SHOW_DONATION_ENTRY && (
+            <Row
+              icon={<IconPiggyBank width={24} height={24} />}
+              label="후원으로 서비스 응원하기"
+              onPress={() => navigation.navigate('Donation')}
+            />
+          )}
         </Section>
 
         {/* 서비스 약관 (Figma 129:5245) — 가입후 조회용 4종. 단일
