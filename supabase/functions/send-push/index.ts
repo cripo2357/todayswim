@@ -48,6 +48,9 @@ interface RequestBody {
   title?: string;
   body?: string;
   data?: Record<string, unknown>;
+  /** 푸시 게이팅 카테고리. 받는 사람 profiles.notif_prefs[category]=false 면 스킵.
+   *  'none'/미지정(레거시)=게이팅 없이 발송. marketing 은 fail-closed(미동의 시 스킵). */
+  category?: string;
 }
 
 interface ExpoPushTicket {
@@ -132,11 +135,39 @@ serve(async (req) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
+  // 0) 카테고리 게이팅 — 받는 사람의 알림 토글(profiles.notif_prefs) 확인.
+  //  · category 미지정 / 'none' → 게이팅 없이 발송(레거시 호환).
+  //  · push_on=false → 전체 차단. notif_prefs[category]=false → 그 사람만 차단.
+  //  · marketing 은 fail-closed: prefs 없거나 marketing!==true 면 차단(정통망법 §50).
+  let targetUserIds = userIds;
+  const category = (body.category ?? '').trim();
+  if (category && category !== 'none') {
+    const { data: profs } = await admin
+      .from('profiles')
+      .select('auth_uid, notif_prefs')
+      .in('auth_uid', userIds);
+    type ProfRow = { auth_uid: string; notif_prefs: Record<string, boolean> | null };
+    const prefsByUid = new Map<string, Record<string, boolean> | null>(
+      ((profs as ProfRow[]) ?? []).map((p) => [p.auth_uid, p.notif_prefs]),
+    );
+    const isAllowed = (uid: string): boolean => {
+      const prefs = prefsByUid.get(uid);
+      if (category === 'marketing') return prefs?.marketing === true; // fail-closed
+      if (!prefs) return true; // prefs row 없음 → 비마케팅은 발송(fail-open)
+      if (prefs.push_on === false) return false; // 마스터 OFF
+      return prefs[category] !== false; // 해당 카테고리 토글
+    };
+    targetUserIds = userIds.filter(isAllowed);
+    if (targetUserIds.length === 0) {
+      return jsonResponse({ sent: 0, failed: 0, dead: [], gated: userIds.length });
+    }
+  }
+
   // 1) 대상 사용자의 토큰 fetch
   const { data: tokens, error: tokenErr } = await admin
     .from('push_tokens')
     .select('expo_token, user_id')
-    .in('user_id', userIds);
+    .in('user_id', targetUserIds);
   if (tokenErr) {
     return jsonResponse({ error: tokenErr.message }, 500);
   }

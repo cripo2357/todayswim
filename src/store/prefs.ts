@@ -5,6 +5,41 @@ import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSwimSchedules } from './swimSchedule';
 import { setConsent } from '@/lib/terms';
+import { supabase } from '@/lib/supabase';
+
+// 알림 토글 6종을 서버(profiles.notif_prefs)에 미러 — send-push 게이팅용.
+// **명시적 토글 변경 시에만** 호출(hydrate 복원값으로 서버 덮어쓰기 방지).
+// best-effort: 미로그인/네트워크 실패 silent. 로컬이 1차 source, 서버는 게이팅용.
+async function syncNotifPrefsToServer(p: {
+  pushOn: boolean;
+  notifFriendInvite: boolean;
+  notifScheduleReminder: boolean;
+  notifSubmissionResult: boolean;
+  notifServiceAnnounce: boolean;
+  notifMonthlyReport: boolean;
+  notifMarketing: boolean;
+}): Promise<void> {
+  try {
+    const uid = (await supabase.auth.getSession()).data.session?.user?.id;
+    if (!uid) return;
+    await supabase
+      .from('profiles')
+      .update({
+        notif_prefs: {
+          push_on: p.pushOn,
+          friend: p.notifFriendInvite,
+          schedule: p.notifScheduleReminder,
+          submission: p.notifSubmissionResult,
+          service: p.notifServiceAnnounce,
+          report: p.notifMonthlyReport,
+          marketing: p.notifMarketing,
+        },
+      })
+      .eq('auth_uid', uid);
+  } catch {
+    /* best-effort */
+  }
+}
 
 /** 다른 사람 수영 일정 보기 범위 */
 export type OthersScheduleView = 'friends' | 'public';
@@ -430,3 +465,27 @@ export const usePrefs = create<PrefsState>((set, get) => ({
     }
   },
 }));
+
+// ── 알림 토글 → 서버(profiles.notif_prefs) 미러 ──────────────────────────
+// 단일 구독으로 6 토글 변경 감지 → 서버 동기화(send-push 게이팅용).
+// seed 를 가입 기본값으로 둬서: 재설치(AsyncStorage 빈 상태→기본값 복원) 시엔
+// sig 불변 → 서버 덮어쓰기 X. 사용자가 바꾼 값(로컬 복원/토글)만 동기화.
+function notifSig(p: PrefsState): string {
+  return [
+    p.pushOn,
+    p.notifFriendInvite,
+    p.notifScheduleReminder,
+    p.notifSubmissionResult,
+    p.notifServiceAnnounce,
+    p.notifMonthlyReport,
+    p.notifMarketing,
+  ].join(',');
+}
+// 가입 기본값 sig: pushOn·5종 ON, 마케팅 OFF (위 초기 state 와 일치).
+let lastNotifSig = [true, true, true, true, true, true, false].join(',');
+usePrefs.subscribe((s) => {
+  const sig = notifSig(s);
+  if (sig === lastNotifSig) return;
+  lastNotifSig = sig;
+  void syncNotifPrefsToServer(s);
+});

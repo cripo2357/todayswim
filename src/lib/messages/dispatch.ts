@@ -32,6 +32,7 @@
 import { supabase } from '@/lib/supabase';
 import { useProfile } from '@/store/profile';
 import { RULES, type MessageKind, type MessageParams } from './rules';
+import { categoryOf, type NotifCategory } from './notifCategory';
 
 // ─────────────────────────────────────────────────────────────────────
 // OS 푸시 발송 helper — 친구코드(profile.id) → auth_uid 변환 → send-push.
@@ -42,6 +43,7 @@ async function sendPushToUserCode(
   title: string,
   bodyLines: string[],
   data: Record<string, unknown>,
+  category: NotifCategory,
 ): Promise<void> {
   try {
     // 친구코드 → auth_uid lookup. mock 사용자(auth_uid null) 는 skip.
@@ -61,6 +63,8 @@ async function sendPushToUserCode(
         // 빈 줄(separator) 은 제외.
         body: bodyLines.filter((l) => l.length > 0).join('\n'),
         data,
+        // 카테고리 — send-push 가 받는 사람 notif_prefs[category] 로 게이팅.
+        category,
       },
     });
   } catch {
@@ -100,6 +104,7 @@ export async function dispatchMessage(
   // - 'self': 본인 행만
   // - 'other': 상대 행만 (toUserCode 있을 때)
   // - 'both': 본인 + 상대 (toUserCode 있을 때만 상대 추가)
+  const category = categoryOf(kind);
   const rows: Record<string, unknown>[] = [];
   const base = {
     kind,
@@ -108,6 +113,7 @@ export async function dispatchMessage(
     params: snapshotParams,
     actions: content.actions ?? [],
     related,
+    category, // 트리거 경로 게이팅용 — notifications.category
   };
   if (rule.recipients === 'self' || rule.recipients === 'both') {
     rows.push({ ...base, user_code: userCode });
@@ -127,15 +133,23 @@ export async function dispatchMessage(
     // 오프라인/미인증 등 — 이력 적재 실패는 비차단(베스트 에포트).
   }
 
-  // OS 푸시 발송 — 본인 외 수신자만(본인은 인앱 confirm 으로 충분).
-  // void: await 안 함 — 호출자(액션 핸들러)가 푸시 응답까지 기다릴 필요 없음.
-  for (const row of rows) {
-    if (row.user_code !== userCode) {
+  // OS 푸시 발송.
+  // 규칙: category != 'none' AND NOT(본인행 AND category=='friend').
+  //  · friend 카테고리의 '본인행'은 내가 방금 한 행동 확인(수락/취소 등)이라 푸시 X.
+  //    상대행(신청자/피초대자)에게만 푸시.
+  //  · schedule/submission/service/report/marketing 은 본인이 곧 수신자라 본인행도 푸시.
+  //  · 실제 발송 여부는 send-push 가 받는 사람 토글(notif_prefs[category])로 최종 게이팅.
+  // void: 호출자(액션 핸들러)가 푸시 응답까지 기다릴 필요 없음.
+  if (category !== 'none') {
+    for (const row of rows) {
+      const isSelf = row.user_code === userCode;
+      if (isSelf && category === 'friend') continue; // 본인 액션 confirm — 푸시 X
       void sendPushToUserCode(
         row.user_code as string,
         content.title,
         content.body,
         related,
+        category,
       );
     }
   }
@@ -164,6 +178,7 @@ export async function dispatchMessageTo(
     pool: params.pool?.trim() || undefined,
   };
   const content = RULES[kind].build(snapshotParams);
+  const category = categoryOf(kind);
   try {
     await supabase.from('notifications').insert({
       user_code: toUserCode,
@@ -173,11 +188,21 @@ export async function dispatchMessageTo(
       params: snapshotParams,
       actions: content.actions ?? [],
       related,
+      category,
     });
   } catch {
     /* best-effort */
   }
 
-  // OS 푸시 — dispatchMessageTo 는 정의상 상대(remote)에게만 가니까 항상 발송.
-  void sendPushToUserCode(toUserCode, content.title, content.body, related);
+  // OS 푸시 — dispatchMessageTo 는 정의상 상대(remote=수신자)에게만 가니까,
+  // category != 'none' 이면 발송(받는 사람 토글로 send-push 가 최종 게이팅).
+  if (category !== 'none') {
+    void sendPushToUserCode(
+      toUserCode,
+      content.title,
+      content.body,
+      related,
+      category,
+    );
+  }
 }
