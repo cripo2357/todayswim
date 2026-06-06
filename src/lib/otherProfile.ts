@@ -24,7 +24,8 @@ export interface OtherProfile {
   id: string;
   nickname: string;
   bio: string; // 한 줄 자기소개(status 재사용)
-  avatar: MockAccount['avatar'];
+  /** 번들 AvatarId 또는 업로드 사진 uri — Avatar/가드가 둘 다 렌더. */
+  avatar: string;
   certifications: string[]; // 자격증
   im100?: string; // IM 100 기록
   strokes: string[]; // 가능 영법(자격증·IM100 둘 다 없을 때 노출)

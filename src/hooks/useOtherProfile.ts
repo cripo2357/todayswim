@@ -11,7 +11,6 @@ import {
   tryFetchOtherProfile,
   tryCountFriendsOf,
 } from '@/lib/friendsSync';
-import { isBundleAvatar, type AvatarId } from '@/lib/avatars';
 import type { OtherProfile } from '@/lib/otherProfile';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -31,12 +30,9 @@ export function useOtherProfile(userId: string): {
       const serviceDays = Number.isFinite(created)
         ? Math.max(0, Math.floor((Date.now() - created) / DAY_MS))
         : 0;
-      // 사진(uri) 아바타는 OtherUserProfile이 번들 SVG로 렌더 → 번들 id면 그대로,
-      // 아니면 기본 아바타 폴백(검색/타인일정과 동일 패턴).
-      const avatar: AvatarId =
-        row.photo_uri && isBundleAvatar(row.photo_uri)
-          ? row.photo_uri
-          : 'avatar-male-1';
+      // 번들 AvatarId 또는 업로드 사진 uri 그대로 통과(렌더 측 가드 분기).
+      // null 일 때만 기본 폴백 — URI 를 버리면 업로드 사진이 기본으로 잘못 보임.
+      const avatar = row.photo_uri ?? 'avatar-male-1';
 
       return {
         id: row.id,

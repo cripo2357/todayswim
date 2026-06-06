@@ -28,12 +28,9 @@ function rowToOtherSchedule(
   friendIds: Set<string>,
 ): OtherSchedule {
   const owner = row.profiles;
-  // photo_uri에 번들 AvatarId('avatar-male-1' 등)가 들어옴. OtherSchedule.avatar
-  // 는 AvatarId 타입이라 그대로 캐스트. URL이면 fallback id를 잡아두는 게 안전.
-  const avatarRaw = owner?.photo_uri ?? 'avatar-male-1';
-  const avatar = (
-    avatarRaw.startsWith('avatar-') ? avatarRaw : 'avatar-male-1'
-  ) as AvatarId;
+  // 번들 AvatarId 또는 업로드 사진 uri 그대로 통과(렌더 측 가드가 분기).
+  // URI 를 버리면 업로드 사진 사용자가 기본 아바타로 잘못 보임. null 만 폴백.
+  const avatar = (owner?.photo_uri ?? 'avatar-male-1') as AvatarId;
   return {
     id: row.id,
     userId: row.profile_id,

@@ -292,9 +292,16 @@ export function CalendarTab({
                                   styles.ptAvatarFriend,
                                 ]}
                               >
-                                {React.createElement(
-                                  BUNDLE_AVATARS[o.avatar],
-                                  { width: 24, height: 24 },
+                                {isBundleAvatar(o.avatar) ? (
+                                  React.createElement(
+                                    BUNDLE_AVATARS[o.avatar],
+                                    { width: 24, height: 24 },
+                                  )
+                                ) : (
+                                  <Image
+                                    source={{ uri: o.avatar }}
+                                    style={styles.ptAvatarImg}
+                                  />
                                 )}
                               </View>
                               <Text style={styles.ptName} numberOfLines={1}>
@@ -357,9 +364,16 @@ export function CalendarTab({
                                   styles.ptAvatarOther,
                                 ]}
                               >
-                                {React.createElement(
-                                  BUNDLE_AVATARS[o.avatar],
-                                  { width: 24, height: 24 },
+                                {isBundleAvatar(o.avatar) ? (
+                                  React.createElement(
+                                    BUNDLE_AVATARS[o.avatar],
+                                    { width: 24, height: 24 },
+                                  )
+                                ) : (
+                                  <Image
+                                    source={{ uri: o.avatar }}
+                                    style={styles.ptAvatarImg}
+                                  />
                                 )}
                               </View>
                               <Text style={styles.ptName} numberOfLines={1}>

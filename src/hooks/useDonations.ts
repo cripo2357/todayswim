@@ -15,7 +15,6 @@ import {
   type DonationRow,
 } from '@/lib/donationsSync';
 import { useProfile } from '@/store/profile';
-import type { AvatarId } from '@/lib/avatars';
 
 const QUERY_KEY = ['donations.all'] as const;
 
@@ -27,7 +26,8 @@ export interface DonationItem {
   id: string;
   profileId: string;
   nickname: string;
-  avatar: AvatarId;
+  /** 번들 AvatarId 또는 업로드 사진 uri — Avatar 컴포넌트가 둘 다 렌더. */
+  avatar: string;
   message: string;
   hidden: boolean;
   createdAt: string;
@@ -39,8 +39,8 @@ function rowToItem(
   row: DonationWithOwnerRow,
   myProfileId: string | null,
 ): DonationItem {
-  const a = row.profiles?.photo_uri ?? 'avatar-male-1';
-  const avatar = (a.startsWith('avatar-') ? a : 'avatar-male-1') as AvatarId;
+  // 번들 AvatarId 또는 업로드 사진 uri 그대로 통과(Avatar 컴포넌트가 둘 다 렌더).
+  const avatar = row.profiles?.photo_uri ?? 'avatar-male-1';
   return {
     id: row.id,
     profileId: row.profile_id,

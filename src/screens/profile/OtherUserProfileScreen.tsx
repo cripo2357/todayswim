@@ -31,7 +31,7 @@ import { useProfile } from '@/store/profile';
 import { useAddScheduleIntent } from '@/store/addScheduleIntent';
 import { dispatchMessage, dispatchMessageTo } from '@/lib/messages/dispatch';
 import { usePools } from '@/hooks/usePools';
-import { BUNDLE_AVATARS } from '@/lib/avatars';
+import { BUNDLE_AVATARS, isBundleAvatar } from '@/lib/avatars';
 import { ConfirmFriendActionModal } from '@/components/friends/ConfirmFriendActionModal';
 import { FriendRequestSentModal } from '@/components/friends/FriendRequestSentModal';
 import { CancelFriendRequestModal } from '@/components/friends/CancelFriendRequestModal';
@@ -222,10 +222,17 @@ export function OtherUserProfileScreen() {
                 },
               ]}
             >
-              {React.createElement(BUNDLE_AVATARS[profile.avatar], {
-                width: 76,
-                height: 76,
-              })}
+              {isBundleAvatar(profile.avatar) ? (
+                React.createElement(BUNDLE_AVATARS[profile.avatar], {
+                  width: 76,
+                  height: 76,
+                })
+              ) : (
+                <Image
+                  source={{ uri: profile.avatar }}
+                  style={styles.avatarImg}
+                />
+              )}
             </View>
 
             {/* Figma 172:10640 — gap 20 (이름/소개·칩·스탯·CTA) */}
@@ -495,6 +502,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#F8FAFC',
   },
+  // 업로드 사진 — 80 원형(보더 2 안쪽 76)을 꽉 채움.
+  avatarImg: { width: 76, height: 76 },
   // Figma 172:10642 — Bold 24/32 -0.288 #1F2937
   name: {
     fontFamily: tokens.font.sansBold,
