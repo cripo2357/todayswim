@@ -31,7 +31,7 @@ export interface TermsMeta {
   sections: TermsSection[];
 }
 
-const VERSION = 'v1.0.2';
+const VERSION = 'v1.0.3';
 const EFFECTIVE = '2026년 5월 28일';
 // v1.0.3 (2026-06-06): 앱 현황 정정 — Firebase Analytics 제거 반영(분석 도구
 //   미사용, 수집항목·위탁·자동수집·국외이전에서 삭제), Apple 계정 로그인 정식

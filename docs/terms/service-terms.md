@@ -1,11 +1,12 @@
 ---
-version: 1.0.2
+version: 1.0.3
 effectiveDate: 2026-05-28
-lastModified: 2026-05-26
+lastModified: 2026-06-06
 documentType: required-consent
 title: Pool's day 서비스 이용약관
 ---
 
+<!-- v1.0.3 (2026-06-06): Apple 계정 로그인 정식 도입 반영(소셜 로그인 제공자에 Apple 추가). 공개 배포 전 정정이라 별도 고지기간 미적용. -->
 <!-- v1.0.2 (2026-05-26): 사업자등록 완료 — 사업자등록번호·사업장 주소 placeholder 채움. -->
 <!-- v1.0.1 (2026-05-26): 4종 약관 동기 bump (본 약관 본문 변경 없음). -->
 

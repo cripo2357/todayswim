@@ -22,7 +22,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BrandWordmark from '@assets/illustrations/wordmark-poolsday-color.svg';
 import { WordmarkDroplets } from '@/components/ui/WordmarkDroplets';
 import { AppHeader } from '@/components/layout/AppHeader';
-import { TERMS_META } from '@/lib/termsContent';
+import { useTermsMeta } from '@/lib/useTerms';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
 
@@ -36,7 +36,8 @@ const CONTENT_TOP_PAD = HEADER_H + WORDMARK_TOP_PAD + WORDMARK_H + 32;
 
 export function TermsDetailScreen() {
   const { params } = useRoute<RouteProp<RootStackParamList, 'TermsDetail'>>();
-  const meta = TERMS_META[params.termsKey];
+  // 번들본 즉시 표시 → 서버/캐시 최신본으로 교체(서버 보관, 재빌드 없이 갱신).
+  const meta = useTermsMeta(params.termsKey);
   const insets = useSafeAreaInsets();
 
   const scrollY = React.useRef(new Animated.Value(0)).current;

@@ -1,11 +1,12 @@
 ---
-version: 1.0.2
+version: 1.0.3
 effectiveDate: 2026-05-28
-lastModified: 2026-05-26
+lastModified: 2026-06-06
 documentType: required-consent
 title: Pool's day 개인정보 수집·이용 동의서
 ---
 
+<!-- v1.0.3 (2026-06-06): 앱 현황 정정 — Firebase Analytics 제거(분석 도구 미사용, §2 수집항목·§5 처리위탁에서 삭제), Apple 계정 로그인 정식 반영(§2 소셜 신원·§5 위탁/국외이전에 Apple Inc. 추가). 공개 배포 전 정정이라 별도 고지기간 미적용. -->
 <!-- v1.0.2 (2026-05-26): 사업자등록 완료 — 4종 약관 v1.0.2 동기 bump. 본 동의서 본문 변경 없음. -->
 <!-- v1.0.1 (2026-05-26): 운영 인프라(Firebase Analytics 익명 통계 + Sentry 크래시·에러 리포팅) 도입 사실을 §2 수집 항목 + §5 처리위탁 양쪽에 반영. -->
 

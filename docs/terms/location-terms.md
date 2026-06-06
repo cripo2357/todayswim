@@ -1,11 +1,12 @@
 ---
-version: 1.0.2
+version: 1.0.3
 effectiveDate: 2026-05-28
-lastModified: 2026-05-26
+lastModified: 2026-06-06
 documentType: required-consent
 title: Pool's day 위치기반서비스 이용약관
 ---
 
+<!-- v1.0.3 (2026-06-06): 릴리스 버전 동기화 — 본 약관 본문 변경 없음(처리방침·수집동의·이용약관 v1.0.3 정정에 맞춰 버전만 통일). -->
 <!-- v1.0.2 (2026-05-26): 사업자등록 완료 — 사업자등록번호·사업장 주소 placeholder 채움. -->
 <!-- v1.0.1 (2026-05-26): 4종 약관 동기 bump (본 약관 본문 변경 없음). -->
 

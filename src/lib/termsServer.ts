@@ -16,10 +16,11 @@
 
 import { supabase } from '@/lib/supabase';
 import type { ConsentKey } from './terms';
+import type { TermsKey, TermsMeta } from './termsContent';
 
 /** 현재 게시 중인 약관 버전 — 본문(termsContent.ts) 개정 시 함께 갱신 + 새
  *  마이그레이션으로 terms 테이블에 새 row 추가, is_active 교체. */
-export const CURRENT_TERMS_VERSION = '1.0.0';
+export const CURRENT_TERMS_VERSION = '1.0.3';
 
 // ConsentKey(클라) ↔ terms_type(DB) 양방향 매핑.
 const TO_DB_TYPE: Record<ConsentKey, string> = {
@@ -67,6 +68,57 @@ export async function fetchServerTermsState(
       if (!(k in result)) result[k] = null;
     }
     return result;
+  } catch {
+    return null;
+  }
+}
+
+// ── 약관 본문(게시 버전) 조회 ──────────────────────────────────────────────
+// 본문 콘텐츠는 terms 테이블 is_active=true row 의 content jsonb 에 보관(서버
+// 보관 → 약관 개정 시 앱 재빌드 불필요). 번들 TERMS_META 가 항상 폴백 바닥이라
+// (lib/useTerms loadTerms) 조회 실패·오프라인·깨진 row 에도 화면은 안전.
+//
+// privacyPolicy 는 동의 대상이 아니라 ConsentKey 매핑(TO/FROM_DB_TYPE)엔 없지만
+// 열람 대상 문서라 본문 매핑엔 5종 모두 포함.
+const CONTENT_TYPE_TO_KEY: Record<string, TermsKey> = {
+  service: 'service',
+  privacy_consent: 'privacyConsent',
+  privacy_policy: 'privacyPolicy',
+  location: 'location',
+  marketing: 'marketing',
+};
+
+interface TermsRow {
+  type: string;
+  version: string;
+  content: Partial<TermsMeta> | null;
+}
+
+/** 게시 중(is_active)인 약관 5종 본문을 한 번에 조회. content jsonb 가 곧
+ *  TermsMeta 형태. 실패/깨진 row → null(또는 일부 누락) → 호출자가 번들 폴백.
+ *  best-effort: 절대 throw 하지 않음. */
+export async function fetchActiveTerms(): Promise<Partial<Record<TermsKey, TermsMeta>> | null> {
+  try {
+    const { data, error } = await supabase
+      .from('terms')
+      .select('type, version, content')
+      .eq('is_active', true);
+    if (error || !data) return null;
+
+    const out: Partial<Record<TermsKey, TermsMeta>> = {};
+    for (const row of data as TermsRow[]) {
+      const key = CONTENT_TYPE_TO_KEY[row.type];
+      const c = row.content;
+      // 방어: 본문 구조가 깨진 row 는 무시(번들 폴백 유지).
+      if (!key || !c || !Array.isArray(c.sections) || !c.title) continue;
+      out[key] = {
+        title: c.title,
+        version: c.version ?? `v${row.version}`,
+        effectiveDate: c.effectiveDate ?? '',
+        sections: c.sections,
+      };
+    }
+    return Object.keys(out).length ? out : null;
   } catch {
     return null;
   }
