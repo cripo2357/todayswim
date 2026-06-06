@@ -164,7 +164,11 @@ export function rowToSchedule(row: UserScheduleRow): MySwimSchedule {
  *  교체용. mapProfileStacks/scheduleParticipants 가 nickname·avatar 필요.
  *  Supabase nested select(`profiles!inner(...)`)로 한 쿼리. */
 export interface ScheduleWithOwnerRow extends UserScheduleRow {
-  profiles: { nickname: string; photo_uri: string | null } | null;
+  profiles: {
+    nickname: string;
+    photo_uri: string | null;
+    photo_thumb_uri: string | null;
+  } | null;
 }
 export async function tryFetchSchedulesWithOwner(
   profileIds: string[],
@@ -173,7 +177,7 @@ export async function tryFetchSchedulesWithOwner(
   try {
     const { data, error } = await supabase
       .from('user_schedules')
-      .select('*, profiles!inner(nickname, photo_uri)')
+      .select('*, profiles!inner(nickname, photo_uri, photo_thumb_uri)')
       .in('profile_id', profileIds)
       .neq('visibility', 'private');
     if (error || !data) return [];

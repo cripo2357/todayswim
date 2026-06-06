@@ -36,6 +36,8 @@ function rowToOtherSchedule(
     userId: row.profile_id,
     nickname: owner?.nickname ?? '',
     avatar,
+    // 소형(≤28px) 렌더는 64 썸네일로 — 512 다운스케일 앨리어싱 회피. 없으면 avatar 폴백.
+    avatarThumb: owner?.photo_thumb_uri ?? undefined,
     isFriend: friendIds.has(row.profile_id),
     poolId: row.pool_id ?? '',
     poolName: row.pool_name,

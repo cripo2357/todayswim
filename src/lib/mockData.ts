@@ -28,6 +28,8 @@ export interface OtherSchedule {
   userId: string;
   nickname: string;
   avatar: AvatarId;
+  /** 업로드 사진 64px 썸네일 (소형 렌더용, 없으면 avatar 폴백). */
+  avatarThumb?: string;
   isFriend: boolean;
   poolId: string;
   poolName: string;

@@ -256,7 +256,7 @@ export function CalendarTab({
                           )
                         ) : profile?.photoUri ? (
                           <Image
-                            source={{ uri: profile.photoUri }}
+                            source={{ uri: profile.photoThumbUri ?? profile.photoUri }}
                             style={styles.ptAvatarImg}
                           />
                         ) : (
@@ -299,7 +299,7 @@ export function CalendarTab({
                                   )
                                 ) : (
                                   <Image
-                                    source={{ uri: o.avatar }}
+                                    source={{ uri: o.avatarThumb ?? o.avatar }}
                                     style={styles.ptAvatarImg}
                                   />
                                 )}
@@ -371,7 +371,7 @@ export function CalendarTab({
                                   )
                                 ) : (
                                   <Image
-                                    source={{ uri: o.avatar }}
+                                    source={{ uri: o.avatarThumb ?? o.avatar }}
                                     style={styles.ptAvatarImg}
                                   />
                                 )}

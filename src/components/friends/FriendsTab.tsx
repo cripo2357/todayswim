@@ -51,7 +51,12 @@ interface FriendSlot {
   date: string;
   start: string;
   end: string;
-  participants: { userId: string; nickname: string; avatar: string }[];
+  participants: {
+    userId: string;
+    nickname: string;
+    avatar: string;
+    avatarThumb?: string;
+  }[];
 }
 
 export function FriendsTab() {
@@ -153,6 +158,7 @@ export function FriendsTab() {
           userId: o.userId,
           nickname: o.nickname,
           avatar: o.avatar,
+          avatarThumb: o.avatarThumb,
         });
       }
     }
@@ -413,7 +419,7 @@ export function FriendsTab() {
                             />
                           ) : (
                             <Image
-                              source={{ uri: p.avatar }}
+                              source={{ uri: p.avatarThumb ?? p.avatar }}
                               style={styles.miniAvatarImg}
                               resizeMode="cover"
                             />
