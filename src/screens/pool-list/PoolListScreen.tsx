@@ -26,6 +26,7 @@ import { usePools } from '@/hooks/usePools';
 import { useSchedules } from '@/hooks/useSchedules';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { usePoolFilter, filterPools } from '@/store/poolFilter';
+import { formatPoolPrice } from '@/lib/poolPrice';
 import { useSelection } from '@/store/selection';
 import type { Pool } from '@/types/pool';
 import type { RootStackParamList } from '@/navigation/types';
@@ -444,14 +445,8 @@ function PoolListCard({
             {pool.phone ? (
               <Text style={styles.phone} numberOfLines={1}>{pool.phone}</Text>
             ) : null}
-            {pool.priceWeekday != null ? (
-              <Text style={styles.price} numberOfLines={1}>
-                {pool.priceWeekend != null
-                  ? pool.priceWeekday === pool.priceWeekend
-                    ? `이용요금 ${pool.priceWeekday}원`
-                    : `평일 ${pool.priceWeekday}원 · 주말 ${pool.priceWeekend}원`
-                  : `이용요금 ${pool.priceWeekday}원`}
-              </Text>
+            {formatPoolPrice(pool) ? (
+              <Text style={styles.price} numberOfLines={1}>{formatPoolPrice(pool)}</Text>
             ) : null}
           </View>
           {pool.photoUrl ? (

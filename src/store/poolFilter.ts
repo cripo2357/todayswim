@@ -71,7 +71,7 @@ export function isFilterActive(s: FilterState): boolean {
  * 필터 조건에 매칭되는 풀만 반환.
  * - days: 1개 이상 선택 = 해당 요일 중 하나라도 운영하는 풀 (OR). 시간표 없는 풀은 자동 탈락.
  * - lane: '전체' 미적용 / '25m만' = 25m / '50m만' = 50m
- * - fee: '전체' 미적용 / '오천원 이하' = ≤5000 / '만원 이하' = ≤10000
+ * - fee: '전체' 미적용 / '오천원 이하' = 일일가 ≤5000 / '만원 이하' = ≤10000. 일일요금 없는 풀(월권 전용)은 제외.
  * - facilities: 1개 이상 선택 = 선택한 시설 모두 보유한 풀 (AND).
  */
 export function filterPools(
@@ -99,9 +99,14 @@ export function filterPools(
       if (s.lane === '50m' && len !== 50) return false;
     }
     if (feeActive) {
-      const price = p.pricePerSession ?? 0;
-      if (s.fee === '오천원 이하' && price > 5000) return false;
-      if (s.fee === '만원 이하' && price > 10000) return false;
+      // 요금 필터는 '1일 이용권' 기준. 일일요금이 아예 없는 풀(월권 전용 등)은 검색대상서 제외.
+      // (과거 `pricePerSession ?? 0` 폴백은 일일가 없는 풀을 0원=무조건 통과로 처리하던 버그)
+      const dailyPrices = [p.priceWeekday, p.priceWeekend, p.pricePerSession]
+        .filter((v): v is number => v != null);
+      if (dailyPrices.length === 0) return false;
+      const minDaily = Math.min(...dailyPrices);
+      if (s.fee === '오천원 이하' && minDaily > 5000) return false;
+      if (s.fee === '만원 이하' && minDaily > 10000) return false;
     }
     if (facActive) {
       // 옵션 칩(어린이풀/다이빙/호텔)은 boolean flag — 선택한 옵션 모두 보유해야 통과 (AND).

@@ -33,6 +33,7 @@ interface PoolRow {
   price_per_session: number | null;
   price_weekday: number | null;
   price_weekend: number | null;
+  price_monthly: number | null;
   photo_url: string | null;
 }
 
@@ -71,6 +72,7 @@ function rowToPool(row: PoolRow): Pool {
     // 평일가: price_weekday 우선, 없으면 레거시 price_per_session 폴백.
     priceWeekday: row.price_weekday ?? row.price_per_session ?? undefined,
     priceWeekend: row.price_weekend ?? undefined,
+    priceMonthly: row.price_monthly ?? undefined,
     photoUrl: row.photo_url ? { uri: resolvePoolPhotoUrl(row.photo_url) } : undefined,
   };
 }

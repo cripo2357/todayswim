@@ -12,6 +12,7 @@ import IconKids from '@assets/icons/facility-kids.svg';
 import IconDiving from '@assets/icons/facility-diving.svg';
 import IconHotel from '@assets/icons/facility-hotel.svg';
 import { logEvent } from '@/lib/analytics';
+import { formatPoolPrice } from '@/lib/poolPrice';
 import { useSwimSchedules } from '@/store/swimSchedule';
 import { useFriends } from '@/store/friends';
 import { useProfile } from '@/store/profile';
@@ -141,14 +142,8 @@ export function PoolBottomCard({
             {pool.phone ? (
               <Text style={styles.phone} numberOfLines={1}>{pool.phone}</Text>
             ) : null}
-            {pool.priceWeekday != null ? (
-              <Text style={styles.price} numberOfLines={1}>
-                {pool.priceWeekend != null
-                  ? pool.priceWeekday === pool.priceWeekend
-                    ? `이용요금 ${pool.priceWeekday}원`
-                    : `평일 ${pool.priceWeekday}원 · 주말 ${pool.priceWeekend}원`
-                  : `이용요금 ${pool.priceWeekday}원`}
-              </Text>
+            {formatPoolPrice(pool) ? (
+              <Text style={styles.price} numberOfLines={1}>{formatPoolPrice(pool)}</Text>
             ) : null}
           </View>
           {pool.photoUrl ? (

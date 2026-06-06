@@ -36,6 +36,7 @@ export interface Pool {
   pricePerSession?: number;     // (레거시) 단일 1회가 — priceWeekday로 대체
   priceWeekday?: number;        // 평일 성인 1회 가격 (KRW, 쉼표 없는 정수)
   priceWeekend?: number;        // 주말 성인 1회 가격 (KRW)
+  priceMonthly?: number;        // 월 등록(정기) 대표 월요금 (KRW) — 일일권 없는 월권 전용 풀에서 일일가 대신 표시
   // 수영장 건물 사진 (1:1, 정사각). 없으면 카드에서 미노출.
   // 로컬 require()는 number, 원격은 { uri: string } 형태.
   photoUrl?: number | { uri: string };
