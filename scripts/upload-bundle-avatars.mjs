@@ -9,11 +9,11 @@
 // 보안(security_secret_handling): service_role 키는 코드/채팅에 없음. .env.local
 //   (gitignored)에서만 읽고 절대 출력하지 않는다. 모델은 .env* 를 읽지 않는다.
 //
-// .env.local 에 (값은 Supabase 대시보드 → Project Settings → API. 채팅 금지):
-//   SUPABASE_URL_DEV=https://hldfsst....supabase.co
+// URL 은 공개값(anon 쪽)이라 아래 기본값으로 박혀 있음 — .env.local 엔 service_role
+// 키 2줄만 추가하면 된다(값은 Supabase 대시보드 → Project Settings → API. 채팅 금지):
 //   SUPABASE_SERVICE_ROLE_KEY_DEV=<service_role key>
-//   SUPABASE_URL_PROD=https://rwxefc....supabase.co
 //   SUPABASE_SERVICE_ROLE_KEY_PROD=<service_role key>
+// (URL 을 바꾸려면 SUPABASE_URL_DEV / SUPABASE_URL_PROD 로 덮어쓸 수 있음.)
 //
 // 사용:
 //   node scripts/upload-bundle-avatars.mjs          # dev 에만
@@ -39,6 +39,11 @@ function loadEnv(name) {
 
 const SRC = 'assets/avatars';
 const BUCKET = 'avatars';
+// 공개 프로젝트 URL(anon 쪽이라 비밀 아님 — 앱 번들에도 인라인됨). env 로 덮어쓰기 가능.
+const DEFAULT_URL = {
+  DEV: 'https://hldfsstyzbnqnrlqhhtc.supabase.co',
+  PROD: 'https://rwxefcbqybzsyjtpfbdt.supabase.co',
+};
 const ids = fs
   .readdirSync(SRC)
   .filter((f) => /^avatar-(male|female)-\d\.svg$/.test(f))
@@ -46,11 +51,11 @@ const ids = fs
   .sort();
 
 async function uploadEnv(label) {
-  const url = loadEnv(`SUPABASE_URL_${label}`);
+  const url = loadEnv(`SUPABASE_URL_${label}`) || DEFAULT_URL[label];
   const key = loadEnv(`SUPABASE_SERVICE_ROLE_KEY_${label}`);
-  if (!url || !key) {
+  if (!key) {
     console.error(
-      `✗ ${label}: SUPABASE_URL_${label} / SUPABASE_SERVICE_ROLE_KEY_${label} 없음. .env.local 확인(채팅 금지).`,
+      `✗ ${label}: SUPABASE_SERVICE_ROLE_KEY_${label} 없음. .env.local 에 추가(값은 채팅 금지).`,
     );
     return false;
   }
