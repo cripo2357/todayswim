@@ -40,3 +40,15 @@ export function formatPoolPrice(pool: Pool): string | null {
   }
   return null;
 }
+
+// 요금 필터용 — 일일가(주중/토/일) 중 '가장 비싼' 값. 토/일은 없으면 주말 공통가 폴백.
+// 일일가가 하나도 없으면(월권·회차권 전용) null → 요금 필터 대상서 제외.
+// 필터의 null·폴백·최고가 판정을 여기 한 곳에 모아 필터 코드를 깔끔하게 유지.
+export function maxDailyPrice(pool: Pool): number | null {
+  const sat = pool.priceSat ?? pool.priceWeekend ?? null;
+  const sun = pool.priceSun ?? pool.priceWeekend ?? null;
+  const daily = [pool.priceWeekday, sat, sun].filter(
+    (v): v is number => v != null,
+  );
+  return daily.length ? Math.max(...daily) : null;
+}
