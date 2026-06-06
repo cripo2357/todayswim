@@ -51,6 +51,8 @@ interface RequestBody {
   /** 푸시 게이팅 카테고리. 받는 사람 profiles.notif_prefs[category]=false 면 스킵.
    *  'none'/미지정(레거시)=게이팅 없이 발송. marketing 은 fail-closed(미동의 시 스킵). */
   category?: string;
+  /** 메시지 kind — 앱 푸시 탭 시 화면 딥링크 라우팅에 사용(data 에 주입). */
+  kind?: string;
 }
 
 interface ExpoPushTicket {
@@ -190,8 +192,12 @@ serve(async (req) => {
       title,
       body: body.body ?? '',
       sound: 'default',
-      // category 를 data 에 주입 — 앱이 푸시 탭 시 화면 라우팅에 사용.
-      data: { ...(body.data ?? {}), category: body.category ?? null },
+      // category·kind 를 data 에 주입 — 앱이 푸시 탭 시 화면 라우팅에 사용.
+      data: {
+        ...(body.data ?? {}),
+        category: body.category ?? null,
+        kind: body.kind ?? null,
+      },
     }));
 
     try {

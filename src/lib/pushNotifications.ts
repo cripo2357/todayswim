@@ -21,6 +21,7 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { supabase } from '@/lib/supabase';
 import { navigationRef } from '@/navigation/navigationRef';
+import type { TermsKey } from '@/lib/termsContent';
 
 // EAS projectId — getExpoPushTokenAsync 필수. env(EXPO_PUBLIC_EAS_PROJECT_ID)는
 // 프로덕션 EAS env에 안 들어가 있어서(빌드로그 확인) 늘 undefined였다 → projectId
@@ -109,21 +110,54 @@ export async function unregisterCurrentDevice(): Promise<void> {
 }
 
 // ── 푸시 탭 → 화면 라우팅 ────────────────────────────────────────────────
-// 카테고리 기반: schedule(리마인더·겹침·완료확인)=달력 탭, 그 외 전부=알림 탭
-// (알림 탭에 kind별 카드+액션이 이미 있음). 푸시 data.category 로 분기.
+// kind 별 딥링크(우선) → 없으면 category 폴백.
+//  · terms_updated            → 약관 상세(TermsDetail)
+//  · friend_request_accepted  → 내 정보 '친구' 탭(새 친구 보기)
+//  · invite_accepted / 일정류  → 내 정보 '달력' 탭(일정 보기)
+//  · 그 외(신청·초대 받음·처리결과·안내·리포트·마케팅) → '알림' 탭(kind별 카드+액션)
 type Tab = '달력' | '친구' | '알림';
-function tabForCategory(category: unknown): Tab {
-  return category === 'schedule' ? '달력' : '알림';
+type NavAction =
+  | { screen: 'TermsDetail'; termsKey: string }
+  | { screen: 'MyInfo'; initialTab: Tab };
+
+function resolveRoute(data: Record<string, unknown> | undefined): NavAction {
+  const kind = typeof data?.kind === 'string' ? data.kind : undefined;
+  switch (kind) {
+    case 'terms_updated':
+      return {
+        screen: 'TermsDetail',
+        termsKey: typeof data?.termsKey === 'string' ? data.termsKey : 'service',
+      };
+    case 'friend_request_accepted':
+      return { screen: 'MyInfo', initialTab: '친구' };
+    case 'invite_accepted':
+    case 'schedule_reminder_prev_day':
+    case 'schedule_reminder_1h':
+    case 'schedule_completion_prompt':
+    case 'friend_schedule_overlap':
+      return { screen: 'MyInfo', initialTab: '달력' };
+  }
+  // kind 없음/그 외 — category 폴백(schedule=달력, 나머지=알림).
+  return {
+    screen: 'MyInfo',
+    initialTab: data?.category === 'schedule' ? '달력' : '알림',
+  };
 }
 
 async function navigateToNotification(
   data: Record<string, unknown> | undefined,
 ): Promise<void> {
-  const tab = tabForCategory(data?.category);
+  const action = resolveRoute(data);
   // navigationRef 준비 대기(콜드스타트 — 앱 부팅 직후 탭 처리 대비).
   for (let i = 0; i < 20; i++) {
     if (navigationRef.isReady()) {
-      navigationRef.navigate('MyInfo', { initialTab: tab });
+      if (action.screen === 'TermsDetail') {
+        navigationRef.navigate('TermsDetail', {
+          termsKey: action.termsKey as TermsKey,
+        });
+      } else {
+        navigationRef.navigate('MyInfo', { initialTab: action.initialTab });
+      }
       return;
     }
     await new Promise((r) => setTimeout(r, 150));

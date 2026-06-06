@@ -76,7 +76,8 @@ begin
       'title',    new.title,
       'body',     coalesce(v_body_text, ''),
       'data',     new.related,
-      'category', new.category
+      'category', new.category,
+      'kind',     new.kind
     )
   );
 

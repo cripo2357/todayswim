@@ -44,6 +44,7 @@ async function sendPushToUserCode(
   bodyLines: string[],
   data: Record<string, unknown>,
   category: NotifCategory,
+  kind: MessageKind,
 ): Promise<void> {
   try {
     // 친구코드 → auth_uid lookup. mock 사용자(auth_uid null) 는 skip.
@@ -65,6 +66,8 @@ async function sendPushToUserCode(
         data,
         // 카테고리 — send-push 가 받는 사람 notif_prefs[category] 로 게이팅.
         category,
+        // kind — 앱 푸시 탭 시 화면 딥링크 라우팅에 사용.
+        kind,
       },
     });
   } catch {
@@ -150,6 +153,7 @@ export async function dispatchMessage(
         content.body,
         related,
         category,
+        kind,
       );
     }
   }
@@ -203,6 +207,7 @@ export async function dispatchMessageTo(
       content.body,
       related,
       category,
+      kind,
     );
   }
 }
