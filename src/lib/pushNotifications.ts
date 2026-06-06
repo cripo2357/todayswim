@@ -20,6 +20,7 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { supabase } from '@/lib/supabase';
+import { getInstallId } from '@/lib/singleDevice';
 import { navigationRef } from '@/navigation/navigationRef';
 import type { TermsKey } from '@/lib/termsContent';
 import { useProfile } from '@/store/profile';
@@ -74,11 +75,16 @@ export async function registerForPush(authUid: string | undefined): Promise<void
     if (!expoToken) return;
 
     // push_tokens 에 UPSERT — expo_token unique 라 같은 디바이스 재가입 시 갱신.
+    // device_id(설치 단위 안정 ID) 기록 → DB 트리거가 같은 device_id 의 옛 행
+    // (옛 토큰/옛 유저)을 삭제해 "한 기기=한 유저" 강제 → 계정전환 시 옛 유저에게
+    // 푸시 새는 것 차단([[push_token_stale_cross_delivery]]).
+    const installId = await getInstallId();
     await supabase.from('push_tokens').upsert(
       {
         user_id: authUid,
         expo_token: expoToken,
         platform: Platform.OS,
+        device_id: installId ?? undefined,
       },
       { onConflict: 'expo_token' },
     );

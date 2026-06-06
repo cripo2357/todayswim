@@ -14,6 +14,24 @@ import * as Crypto from 'expo-crypto';
 import { supabase } from '@/lib/supabase';
 
 const KEY = 'poolsday.deviceSession';
+const INSTALL_KEY = 'poolsday.installId';
+
+/** 설치 단위 안정 ID — 재설치 전까지 불변. 로그인마다 새로 생성하는
+ *  deviceSession(claimDevice)과 다름. 푸시 토큰 "한 기기=한 유저" 정리용
+ *  (registerForPush가 push_tokens.device_id에 기록 → DB 트리거가 같은
+ *  device_id의 옛 행 삭제). 없으면 1회 생성·저장. [[push_token_stale_cross_delivery]] */
+export async function getInstallId(): Promise<string | null> {
+  try {
+    let id = await AsyncStorage.getItem(INSTALL_KEY);
+    if (!id) {
+      id = Crypto.randomUUID();
+      await AsyncStorage.setItem(INSTALL_KEY, id);
+    }
+    return id;
+  } catch {
+    return null;
+  }
+}
 
 /** 이 기기를 활성 기기로 등록 — 로그인 성공 직후 / 프로필 생성 직후 호출.
  *
