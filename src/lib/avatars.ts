@@ -43,8 +43,9 @@ export const BUNDLE_AVATARS: Record<AvatarId, FC<SvgProps>> = {
 
 // 번들 아바타 다티어 PNG (SVG 벡터 트리 × 다수 마운트 비용 회피 —
 // friends_scalability 메모리). repo SVG를 sharp로 래스터화.
-// 치수 = "그 맥락 최대 표시 px × DPR(~3)": sm 64(thumb/) / md 256 / lg 512.
-// scripts/avatar-thumbs.mjs 로 md/lg 재생성(sm=기존 thumb/ 유지).
+// 치수 = "그 맥락 최대 표시 px × DPR(~3)": sm 64(thumb/) / md 256. (lg 512는
+// 미사용이라 제거 2026-06-07 — 앱 최대 아바타 표시 ~76px이라 md로 충분.)
+// scripts/avatar-thumbs.mjs 로 md 재생성(sm=기존 thumb/ 유지).
 export const BUNDLE_AVATAR_THUMBS: Record<AvatarId, ImageSourcePropType> = {
   'avatar-male-1': require('@assets/avatars/thumb/avatar-male-1.png'),
   'avatar-male-2': require('@assets/avatars/thumb/avatar-male-2.png'),
@@ -75,21 +76,6 @@ export const BUNDLE_AVATAR_MD: Record<AvatarId, ImageSourcePropType> = {
   'avatar-female-6': require('@assets/avatars/md/avatar-female-6.png'),
 };
 
-export const BUNDLE_AVATAR_LG: Record<AvatarId, ImageSourcePropType> = {
-  'avatar-male-1': require('@assets/avatars/lg/avatar-male-1.png'),
-  'avatar-male-2': require('@assets/avatars/lg/avatar-male-2.png'),
-  'avatar-male-3': require('@assets/avatars/lg/avatar-male-3.png'),
-  'avatar-male-4': require('@assets/avatars/lg/avatar-male-4.png'),
-  'avatar-male-5': require('@assets/avatars/lg/avatar-male-5.png'),
-  'avatar-male-6': require('@assets/avatars/lg/avatar-male-6.png'),
-  'avatar-female-1': require('@assets/avatars/lg/avatar-female-1.png'),
-  'avatar-female-2': require('@assets/avatars/lg/avatar-female-2.png'),
-  'avatar-female-3': require('@assets/avatars/lg/avatar-female-3.png'),
-  'avatar-female-4': require('@assets/avatars/lg/avatar-female-4.png'),
-  'avatar-female-5': require('@assets/avatars/lg/avatar-female-5.png'),
-  'avatar-female-6': require('@assets/avatars/lg/avatar-female-6.png'),
-};
-
 /** 표시 size(px)에 맞는 번들 PNG 티어 소스. sm≤28(맵 스택 20·mini 24) /
  *  md≤160(검색 32·요청 40·친구행 48·프로필 ≤160) / lg(>160).
  *  SVG(BUNDLE_AVATARS)는 더 이상 노출 경로 아님 — 다수 마운트 비용 회피
@@ -100,8 +86,8 @@ export function bundleAvatarPng(
   size: number,
 ): ImageSourcePropType {
   if (size <= 28) return BUNDLE_AVATAR_THUMBS[id];
-  if (size <= 160) return BUNDLE_AVATAR_MD[id];
-  return BUNDLE_AVATAR_LG[id];
+  // md(256)면 앱 최대 표시(프로필 ~76px=물리 ~228)까지 선명. lg(512)는 미사용이라 제거(2026-06-07).
+  return BUNDLE_AVATAR_MD[id];
 }
 
 const MALE_AVATAR_IDS: AvatarId[] = [
