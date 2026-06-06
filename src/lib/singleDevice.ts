@@ -15,19 +15,26 @@ import { supabase } from '@/lib/supabase';
 
 const KEY = 'poolsday.deviceSession';
 
-/** 이 기기를 활성 기기로 등록 — 로그인 성공 직후 / 프로필 생성 직후 호출. */
+/** 이 기기를 활성 기기로 등록 — 로그인 성공 직후 / 프로필 생성 직후 호출.
+ *
+ *  순서 중요: **서버 기록 → 성공 후 로컬 저장**. 로컬을 먼저 쓰면, 서버 UPDATE
+ *  가 커밋되기 전 찰나에 가드(useSingleDeviceGuard)가 검사할 때
+ *  server(옛 기기 id) ≠ local(새 id) 로 보여 신규 기기가 자기 자신을 로그아웃
+ *  하는 레이스가 생긴다. 서버를 먼저 확정하면 local 이 채워질 땐 이미
+ *  server==local 이라 오판 불가. */
 export async function claimDevice(): Promise<void> {
   try {
     const deviceId = Crypto.randomUUID();
-    await AsyncStorage.setItem(KEY, deviceId);
     const uid = (await supabase.auth.getSession()).data.session?.user?.id;
     if (!uid) return;
     // 본인 profiles row(auth_uid 매칭)에 기록. row 없으면(신규, 프로필 전) 0행 —
     // 프로필 생성 후 다시 claim.
-    await supabase
+    const { error } = await supabase
       .from('profiles')
       .update({ active_device: deviceId })
       .eq('auth_uid', uid);
+    if (error) return; // 서버 기록 실패 → 로컬도 안 바꿈(가드 오탐 방지)
+    await AsyncStorage.setItem(KEY, deviceId);
   } catch {
     /* best-effort */
   }
