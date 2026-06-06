@@ -16,6 +16,7 @@ import { useAddScheduleIntent } from '@/store/addScheduleIntent';
 import type { RootStackParamList } from '@/navigation/types';
 import { isAnonNickname, type DayOfWeek, type TimeSlot } from '@/types/schedule';
 import { visibleSeasonGroups } from '@/lib/seasonSchedule';
+import { formatWeeksLabel } from '@/lib/weekOfMonth';
 import { tokens } from '@/styles/tokens';
 import { logEvent } from '@/lib/analytics';
 
@@ -228,6 +229,11 @@ export function ScheduleViewScreen() {
                       <Text style={styles.slotChipText} numberOfLines={1}>
                         {slot.start} ~ {slot.end}
                       </Text>
+                      {formatWeeksLabel(slot.weeks) ? (
+                        <Text style={styles.slotChipWeeks} numberOfLines={1}>
+                          {formatWeeksLabel(slot.weeks)}
+                        </Text>
+                      ) : null}
                     </Pressable>
                   ))}
                 </View>
@@ -254,6 +260,11 @@ export function ScheduleViewScreen() {
                   <Text style={styles.slotChipText} numberOfLines={1}>
                     {slot.start} ~ {slot.end}
                   </Text>
+                  {formatWeeksLabel(slot.weeks) ? (
+                    <Text style={styles.slotChipWeeks} numberOfLines={1}>
+                      {formatWeeksLabel(slot.weeks)}
+                    </Text>
+                  ) : null}
                 </Pressable>
               ))}
             </>
@@ -448,6 +459,15 @@ const styles = StyleSheet.create({
     color: '#4B5563',
   },
   slotChipPressed: { opacity: 0.6 },
+  // 주차 운영(weeks) 슬롯 하위 라벨 — "1·3주". 임시 시각(Figma 확보 시 맞춤).
+  slotChipWeeks: {
+    marginTop: 2,
+    fontSize: 11,
+    lineHeight: 14,
+    letterSpacing: -0.084,
+    fontFamily: tokens.font.sansSemibold,
+    color: '#2563EB',
+  },
   // Figma 144:3796 — 계절/변형 그룹 간 세로 gap 20
   slotGroupsWrap: {
     gap: 20,

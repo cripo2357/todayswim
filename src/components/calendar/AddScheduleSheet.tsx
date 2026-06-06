@@ -32,6 +32,7 @@ import {
   resolveSeasonSlots,
   isSeasonTransitionMonth,
 } from '@/lib/seasonSchedule';
+import { slotRunsOnDate } from '@/lib/weekOfMonth';
 import {
   slotConflict,
   CONFLICT_LABEL,
@@ -185,7 +186,7 @@ export function AddScheduleSheet({
         );
         if (!transition) {
           const resolved = filterFutureToday(
-            resolveSeasonSlots(sch, dow, dt),
+            resolveSeasonSlots(sch, dow, dt).filter((s) => slotRunsOnDate(s, dt)),
             dt,
           );
           const i = resolved.findIndex(
@@ -302,8 +303,9 @@ export function AddScheduleSheet({
     ? schedules.find((s) => s.poolId === poolId)
     : undefined;
   // 오늘이면 이미 지난 시간대 슬롯은 미노출(등록 불가).
+  // 주차 운영 슬롯(weeks)은 선택 날짜의 주차에 안 맞으면 숨김 — 존재하지 않는 일정 등록 방지.
   const slots: TimeSlot[] = filterFutureToday(
-    resolveSeasonSlots(schedule, dow, date),
+    resolveSeasonSlots(schedule, dow, date).filter((s) => slotRunsOnDate(s, date)),
     date,
   );
 
