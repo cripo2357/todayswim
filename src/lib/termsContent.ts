@@ -33,6 +33,10 @@ export interface TermsMeta {
 
 const VERSION = 'v1.0.2';
 const EFFECTIVE = '2026년 5월 28일';
+// v1.0.3 (2026-06-06): 앱 현황 정정 — Firebase Analytics 제거 반영(분석 도구
+//   미사용, 수집항목·위탁·자동수집·국외이전에서 삭제), Apple 계정 로그인 정식
+//   도입 반영(소셜 신원·위탁·국외이전에 Apple Inc. 추가, "향후 도입" 문구 삭제).
+//   docs/terms/*.md 와 동기화. (공개 배포 전 정정이라 별도 고지기간 미적용)
 // v1.0.2 (2026-05-26): 사업자등록 완료 — 사업자등록번호·사업장 주소 placeholder
 //   채움. 4개 약관(service/privacyConsent/privacyPolicy/location) 동시.
 // v1.0.1 (2026-05-26): 운영 인프라(Firebase Analytics 익명 통계 +
@@ -471,11 +475,10 @@ export const TERMS_META: Record<TermsKey, TermsMeta> = {
           `위탁하고 있으며, 회원 데이터가 저장되는 인프라는 국내(서울 ` +
           `리전)에 위치합니다. 다만 다음의 경우 국외(미국 등) 위탁이 ` +
           `발생할 수 있습니다.\n\n` +
-          `· Google 계정으로 로그인하는 경우: Google LLC(미국)를 통한 본인 ` +
-          `인증\n` +
+          `· Google 또는 Apple 계정으로 로그인하는 경우: Google LLC(미국) ` +
+          `또는 Apple Inc.(미국)를 통한 본인 인증\n` +
           `· OS 푸시 알림 발송: Google LLC(Firebase Cloud Messaging, 미국) ` +
           `또는 Apple Inc.(APNs, 미국)\n` +
-          `· 익명 사용 통계: Google LLC(Firebase Analytics, 미국)\n` +
           `· 크래시 및 에러 리포팅: Functional Software Inc.(Sentry, 미국)\n\n` +
           `위탁 업체 및 처리 국가에 관한 자세한 사항은 개인정보 처리방침에서 ` +
           `안내합니다.`,
@@ -570,13 +573,7 @@ export const TERMS_META: Record<TermsKey, TermsMeta> = {
           `회사는 광고식별자(ADID/IDFA) 매칭이나 맞춤형 광고 목적의 행태정보 ` +
           `수집을 하지 않으며, 분석·광고 목적의 외부 도구를 사용하지 ` +
           `않습니다. 다만 서비스의 안정적 운영과 품질 개선을 위하여 다음 ` +
-          `세 가지 운영 인프라가 사용됩니다.\n\n` +
-          `· 익명 사용 통계: Firebase Analytics(Google LLC 운영, 미국)가 ` +
-          `화면 진입, 핵심 액션 이벤트, 앱 버전, 운영체제 종류 등 익명 ` +
-          `통계 데이터를 수집합니다. 닉네임·이메일·사용자 ID·GPS 좌표 같은 ` +
-          `개인 식별자는 전송되지 않으며, 광고 식별자(ADID/IDFA) 매칭도 ` +
-          `수행하지 않습니다. 통계는 서비스 사용 패턴 파악 및 품질 개선 ` +
-          `목적으로만 이용됩니다.\n\n` +
+          `운영 인프라가 사용됩니다.\n\n` +
           `· 크래시 및 에러 리포팅: Sentry(Functional Software Inc. 운영, ` +
           `미국)가 앱 비정상 종료 또는 처리되지 않은 오류 발생 시 스택 ` +
           `트레이스, 에러 메시지, 발생 환경(앱 버전, 운영체제 종류)을 ` +
@@ -646,12 +643,9 @@ export const TERMS_META: Record<TermsKey, TermsMeta> = {
           `푸시 알림 발송을 위한 푸시 토큰 처리 및 메시지 전송 / 처리 국가: ` +
           `미국\n` +
           `· 주식회사 카카오(Kakao Corp.): Kakao 계정 로그인을 통한 본인 ` +
-          `인증 / 처리 국가: 대한민국\n\n` +
-          `Apple 계정 로그인은 향후 도입 예정이며, 현재 운영되지 않습니다. ` +
-          `도입 시 본 처리방침을 통해 사전에 안내합니다.\n\n` +
-          `· Google LLC (Firebase Analytics): 화면 진입·핵심 액션 이벤트, ` +
-          `앱 버전, 운영체제 종류 등의 익명 사용 통계 수집·집계 / 처리 ` +
-          `국가: 미국\n` +
+          `인증 / 처리 국가: 대한민국\n` +
+          `· Apple Inc. (Sign in with Apple): Apple 계정 로그인을 통한 본인 ` +
+          `인증 / 처리 국가: 미국\n\n` +
           `· Functional Software Inc. (Sentry): 앱 비정상 종료 시점의 스택 ` +
           `트레이스, 에러 메시지, 발생 환경 수집·집계(서비스 안정성 개선 ` +
           `목적) / 처리 국가: 미국\n\n` +
@@ -719,13 +713,12 @@ export const TERMS_META: Record<TermsKey, TermsMeta> = {
           `광고식별자 등의 자동 수집 장치를 사용하지 않으며, 맞춤형 광고를 ` +
           `위한 행태정보를 처리하지 않습니다.\n\n` +
           `다만 서비스의 안정적 운영과 품질 개선을 위하여 §2(처리하는 ` +
-          `개인정보의 항목)에서 안내한 익명 사용 통계(Firebase Analytics — ` +
-          `Google LLC, 미국)와 크래시·에러 리포팅(Sentry — Functional ` +
-          `Software Inc., 미국)이 자동으로 동작합니다. 두 항목 모두 개인 ` +
+          `개인정보의 항목)에서 안내한 크래시·에러 리포팅(Sentry — ` +
+          `Functional Software Inc., 미국)이 자동으로 동작합니다. 개인 ` +
           `식별자(닉네임/이메일/사용자 ID/GPS 좌표)는 전송되지 않으며, ` +
           `Sentry 의 경우 로그인 사용자의 친구 코드(6자 무작위 문자열)만 ` +
           `함께 전송됩니다.\n\n` +
-          `이용자가 익명 사용 통계 및 크래시 리포팅을 수신·전송하지 않으려는 ` +
+          `이용자가 크래시 리포팅을 수신·전송하지 않으려는 ` +
           `경우, 앱을 사용하지 않거나 삭제함으로써 자동 수집을 중단할 수 ` +
           `있습니다. 단, 개별 항목 단위의 비활성 토글은 현재 제공되지 ` +
           `않으며, 향후 도입 시 본 처리방침을 통해 안내합니다.\n\n` +
@@ -781,8 +774,9 @@ export const TERMS_META: Record<TermsKey, TermsMeta> = {
           `회원 데이터가 저장되는 인프라는 국내(서울 리전)에 위치하므로, ` +
           `회사가 저장·관리하는 개인정보의 국외 이전은 발생하지 ` +
           `않습니다.\n\n` +
-          `다만 이용자가 Google 계정으로 로그인하는 경우, 본인 인증 ` +
-          `과정에서 Google LLC(미국)를 통한 인증 토큰 검증이 이루어집니다. ` +
+          `다만 이용자가 Google 또는 Apple 계정으로 로그인하는 경우, 본인 ` +
+          `인증 과정에서 각각 Google LLC(미국) 또는 Apple Inc.(미국)를 통한 ` +
+          `인증 토큰 검증이 이루어집니다. ` +
           `이는 이용자가 선택한 로그인 수단에 한하여 인증 목적으로만 ` +
           `처리되며, Kakao 계정 로그인을 이용하는 경우 해당 처리는 발생하지 ` +
           `않습니다.\n\n` +
@@ -795,9 +789,6 @@ export const TERMS_META: Record<TermsKey, TermsMeta> = {
           `국외 이전은 발생하지 않습니다.\n\n` +
           `또한 서비스의 안정적 운영과 품질 개선을 위하여 §2 에서 안내한 ` +
           `다음 항목이 국외로 이전됩니다.\n\n` +
-          `· 익명 사용 통계: Google LLC가 운영하는 Firebase Analytics(미국)로 ` +
-          `화면 진입·핵심 액션 이벤트, 앱 버전, 운영체제 종류 등 익명 통계 ` +
-          `데이터가 전송됩니다.\n` +
           `· 크래시 및 에러 리포팅: Functional Software Inc.가 운영하는 ` +
           `Sentry(미국)로 스택 트레이스, 에러 메시지, 발생 환경 및 로그인 ` +
           `사용자의 친구 코드(해당하는 경우)가 전송됩니다.\n\n` +
