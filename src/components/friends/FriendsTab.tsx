@@ -18,7 +18,7 @@ import IconUserDouble from '@assets/icons/user-double.svg';
 import IconIdBadgeWhite from '@assets/icons/id-badge-white.svg';
 import { type MockAccount } from '@/lib/mockData';
 import { useOtherSchedules } from '@/hooks/useOtherSchedules';
-import { bundleAvatarPng, type AvatarId } from '@/lib/avatars';
+import { bundleAvatarPng, isBundleAvatar, type AvatarId } from '@/lib/avatars';
 import { Avatar as UiAvatar } from '@/components/ui/Avatar';
 import { useFriendList } from '@/hooks/useFriendList';
 import { RejectFriendModal } from '@/components/friends/RejectFriendModal';
@@ -51,7 +51,7 @@ interface FriendSlot {
   date: string;
   start: string;
   end: string;
-  participants: { userId: string; nickname: string; avatar: AvatarId }[];
+  participants: { userId: string; nickname: string; avatar: string }[];
 }
 
 export function FriendsTab() {
@@ -400,12 +400,18 @@ export function FriendsTab() {
                         accessibilityLabel={`${p.nickname} 프로필 보기`}
                       >
                         <View style={styles.miniAvatar}>
-                          {/* SVG 벡터 트리 다수 마운트 회피 — PNG 티어
-                              (friends_scalability). 링은 miniAvatar 가 그림. */}
-                          <Image
-                            source={bundleAvatarPng(p.avatar, 24)}
-                            style={styles.miniAvatarImg}
-                          />
+                          {isBundleAvatar(p.avatar) ? (
+                            <Image
+                              source={bundleAvatarPng(p.avatar, 24)}
+                              style={styles.miniAvatarImg}
+                            />
+                          ) : (
+                            <Image
+                              source={{ uri: p.avatar }}
+                              style={styles.miniAvatarImg}
+                              resizeMode="cover"
+                            />
+                          )}
                         </View>
                         <Text style={styles.miniName} numberOfLines={1}>
                           {p.nickname}
