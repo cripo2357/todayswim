@@ -1,8 +1,8 @@
 # Pool's day 작업일지
 
 > git 커밋 기록(실제 author date) 기반 날짜별 정리. 추측 없이 커밋 사실만.
-> 기간: 2026-05-06(레포 초기화) ~ 2026-06-03(현재).
-> 단계: **P1 ✅ `phase1-complete` (2026-05-20) → P2 ✅ `phase2-complete` (2026-05-20) → P3(출시) — Android 프로덕션 심사 제출 완료 (2026-06-03), 승인 대기. iOS 트랙 별도 진행 예정.**
+> 기간: 2026-05-06(레포 초기화) ~ 2026-06-07(현재).
+> 단계: **P1 ✅ `phase1-complete` (2026-05-20) → P2 ✅ `phase2-complete` (2026-05-20) → P3(출시) — Android(2026-06-03)·iOS(2026-06-07) 프로덕션 심사 제출 완료, 둘 다 승인 대기.**
 
 ---
 
@@ -172,13 +172,21 @@ Play Console 화면을 단계별로 짚으며 앱 콘텐츠 선언·스토어 �
 
 **다음(출시 후)**: 심사 결과 대기 → 승인 시 대한민국 자동공개 / 거부 시 사유 확인·재제출. iOS 준비는 별도 트랙(★ Sign in with Apple 4.8 필수 미구현, iOS Google OAuth/`GOOGLE_IOS_URL_SCHEME` 미설정, Apple Developer 가입 전제).
 
+## 2026-06-06~07 — 약관 서버화 + iOS 바운스 정정 + iOS App Store 심사 제출 ★
+
+- **약관 본문 서버 보관** (commits f6d7e46, 1069876): 약관 5종 본문을 Supabase `terms` 테이블 `content` jsonb로 이전 → **앱 재빌드 없이 개정 가능**. 번들 `TERMS_META`를 항상 폴백 바닥으로(오프라인·조회실패·깨진 row 안전). `scripts/gen-terms-seed.mjs`로 시드 자동생성(0212, 자급자족·멱등 — 0044 스키마 가드 재포함), `termsServer.fetchActiveTerms()` + `lib/useTerms`(번들→캐시→서버 overlay), `TermsDetailScreen` 연동. dev·prod 시드 적용·검증(5종 v1.0.3 active, Apple 반영, Firebase Analytics 제거 확인). **service 약관 소셜 제공자 Apple 누락 데시ン크 발견·정정**. 버전 **1.0.3 통일**(VERSION·CURRENT_TERMS_VERSION·시드·docs 5종 frontmatter). 재동의 = 공지사항(+메일) 통보, **앱 내 강제 재동의 프로세스 미도입 결정**(중대 변경만 추후 웹 재동의 링크).
+- **iOS 카드/시트 바운스 끌림 수정** (commits 4daf9b2, c70c9bc): iOS 세로 ScrollView는 `alwaysBounceVertical` 기본 true라 내용이 짧아도 끌리는(드래그되는) 문제. 풀카드 + 바운드 패널 **9곳**(참여자시트·일정추가시트 본문+드롭다운·친구추가·초대 2곳·수업등록 드롭다운·상대프로필 모달·친구탭 검색)에 `false` 적용 → 내용 넘칠 때만 스크롤. 전체화면 스크린·휠피커는 iOS 표준 동작이라 제외. RefreshControl 전무 확인(새로고침 안 깨짐).
+- **EAS build 18** (id `1cc01a0e`, iOS production) → `eas submit` → ASC 처리 → TestFlight. **네이티브 배치**(image-picker·clipboard·expo-apple-authentication·google-signin) 첫 검증 + **소셜로그인 3종(Apple 포함) 실작동**·프로필사진·복사·약관 서버본문·바운스 전부 통과(흰화면/크래시 없음).
+- **iOS App Store 심사 제출 ★** (2026-06-07 00:26, 제출ID `f8ca3f30`): **한국 단일·무료(KRW)·자동 출시·Mac/Vision Pro 제외**. 수출규정 자동면제(`ITSAppUsesNonExemptEncryption:false`). 심사노트(비회원 열람 + Sign in with Apple, 4.8 충족)·"로그인 필요" 해제·연락처 입력. **심사 대기 중(Waiting for Review).** 상세 [LAUNCH-LOG](LAUNCH-LOG.md).
+- (병행) 풀 등록 — 광진구 3곳(0105~0107)·월권 전용 풀 월요금 표기(0216)·초기 풀 photo_url 정정(0217). *크리스 병렬 작업.*
+
 ---
 
 ## 단계 요약 (현 위치)
 
 - **P1 (목업·UX) — ✅ 완료** (2026-05-20, tag `phase1-complete`). 제품 정의·정책·디자인·약관·기본 데이터 결판.
 - **P2 (백엔드 SSOT) — ✅ 완료** (2026-05-20, tag `phase2-complete`). 13배치 + 마이그 0047/0048/0049/0059/0060 + 회귀 정정 2건. profiles/friends/blocks/user_schedules/notifications/auth_uid binding/RLS 보수적 하드닝.
-- **P3 (하드닝·출시) — Android 심사 제출 완료** (2026-05-21~2026-06-03). prod Supabase 분리 + RLS strict + 사업자등록 + EAS production + prod DB 정리 + SHA-1 등록(구글 로그인) + 내부테스트 검증 → **Google Play 프로덕션 심사 제출(vc12, 대한민국, 관리형게시 OFF). 승인 대기 중.**
-  - **남은 것**: ① Android 심사 승인(자동 공개) ② **iOS 출시 트랙**(Apple Developer 가입 / **Sign in with Apple 구현(4.8 필수)** / iOS Google OAuth·URL scheme / 스크린샷 / App Store Connect) ③ Kakao 비즈앱 정식 전환(이메일 scope).
+- **P3 (하드닝·출시) — Android·iOS 양 플랫폼 심사 제출 완료** (2026-05-21~2026-06-07). prod Supabase 분리 + RLS strict + 사업자등록 + EAS production + prod DB 정리 + SHA-1 등록(구글 로그인) + 내부테스트 검증 → **Google Play 심사 제출(vc12, 대한민국, 2026-06-03)**. 이후 약관 서버화 + iOS 바운스 정정 + build 18 → **App Store 심사 제출(0.1.0(18), 대한민국, 자동출시, 2026-06-07)**. **둘 다 승인 대기 중.**
+  - **남은 것**: ① **양 스토어 심사 승인**(승인 즉시 자동 공개) ② 2기기 검증(단일기기·계정간 푸시·수락거절·상대프로필) ③ Android Play 앱서명 SHA-1 + vc13(승인 후) ④ Kakao 비즈앱 정식 전환(이메일 scope).
 
 *무게중심: 코드 비중 P3 < P2 < P1. P3는 외부 의존(사업자 등록·스토어 심사)이 critical path.*

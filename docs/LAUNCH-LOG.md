@@ -1,7 +1,7 @@
 # Pool's day — 출시(배포) 일정 기록
 
-> Google Play 프로덕션 첫 출시까지의 전체 타임라인.
-> **최종 상태: 2026-06-03 프로덕션 심사 제출 완료 — 승인 대기 중.**
+> Google Play(2026-06-03) · App Store(2026-06-07) 프로덕션 첫 출시까지의 전체 타임라인.
+> **최종 상태: 양 스토어 프로덕션 심사 제출 완료 — 둘 다 승인 대기 중.**
 
 ## 출시 요약
 
@@ -76,6 +76,38 @@
 - 앱 액세스: **테스트 계정 불필요** 선언 (핵심 기능 로그인 없이 동작)
 - **"검토를 위해 변경사항 전송"** → 프로덕션 출시 / 국가 / 스토어등록정보 / 콘텐츠등급 / 타겟(18+) 일괄 **심사 제출 완료**
 - 관리형 게시 OFF → 승인 시 자동 공개
+
+---
+
+## 2026-06-07 — iOS App Store 첫 제출 ★
+
+### iOS 출시 요약
+| 항목 | 값 |
+|---|---|
+| 버전 | **v0.1.0 / build 18** |
+| 빌드 | EAS production — `1cc01a0e-8c22-41bf-ab13-1d6801866e53` |
+| 출시 국가 | 대한민국 (단일) · **무료(KRW)** |
+| 게시 방식 | **자동 출시** → 심사 승인 즉시 App Store 공개 |
+| 제출 ID | `f8ca3f30-0e57-4619-b9f3-f59d24956ad8` |
+| 제출 | 2026-06-07 00:26 / 김은호 |
+| 결과 통보 | cripo2357@gmail.com |
+
+### 선행 작업 (제출 전 같은 날)
+- **약관 본문 서버화**(terms 테이블 jsonb, 재빌드 없이 개정) + **iOS 카드/시트 바운스 끌림 정정 9곳** → build 18에 포함
+- **build 18** `eas build`(iOS prod) → `eas submit --id 1cc01a0e` → ASC 처리 → TestFlight "제출 준비 완료"
+- TestFlight 검증: 앱 구동(네이티브 배치 image-picker·clipboard·apple-auth·google-signin 첫 컴파일 무사)·**소셜로그인 3종(Apple 포함) 실작동**·프로필사진·복사·약관 서버본문·바운스 전부 통과
+
+### 제출 절차
+- 가격 및 사용 가능 여부: 특정 지역 → **대한민국** 단일 / 가격 **무료** / **Mac·Vision Pro 사용 가능 체크 해제**(지도·위치 앱 경험 보호)
+- 수출 규정: `ITSAppUsesNonExemptEncryption:false` → **자동 면제**(프롬프트 없음)
+- 앱 심사 정보: **"로그인 필요" 해제**(데모계정 불필요 — 비회원 열람 + Sign in with Apple) + **심사노트**(영문·국문, 4.8 충족) + 연락처
+- 빌드 18 첨부 + 가격 등급 → 빨간 블로커 해소 → **"심사를 위해 제출" → 심사 대기 중(Waiting for Review)**
+
+### Android 제출 시점엔 미완이었으나 iOS 트랙에서 해소된 선행조건
+- ✅ Apple Developer 가입(김은호 개인, 활성화)
+- ✅ **Sign in with Apple 구현**(`expo-apple-authentication` + `usesAppleSignIn` entitlement + Supabase Apple provider) — **4.8 필수 충족, mock 아님**
+- ✅ iOS Google OAuth / Kakao 로그인 작동
+- ✅ App Store Connect 등록정보(스크린샷 6.5"·설명·프로모션·개인정보·연령)
 
 ---
 
