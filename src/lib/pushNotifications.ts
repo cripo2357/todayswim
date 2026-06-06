@@ -118,10 +118,12 @@ export async function unregisterCurrentDevice(): Promise<void> {
 type Tab = '달력' | '친구' | '알림';
 type NavAction =
   | { screen: 'TermsDetail'; termsKey: string }
-  | { screen: 'MyInfo'; initialTab: Tab };
+  | { screen: 'MyInfo'; initialTab: Tab; focusScheduleId?: string };
 
 function resolveRoute(data: Record<string, unknown> | undefined): NavAction {
   const kind = typeof data?.kind === 'string' ? data.kind : undefined;
+  const scheduleId =
+    typeof data?.scheduleId === 'string' ? data.scheduleId : undefined;
   switch (kind) {
     case 'terms_updated':
       return {
@@ -130,10 +132,12 @@ function resolveRoute(data: Record<string, unknown> | undefined): NavAction {
       };
     case 'friend_request_accepted':
       return { screen: 'MyInfo', initialTab: '친구' };
-    case 'invite_accepted':
+    // 리마인더·완료확인 → 달력을 그 일정 날짜로 포커스(scheduleId 로 로컬 조회).
     case 'schedule_reminder_prev_day':
     case 'schedule_reminder_1h':
     case 'schedule_completion_prompt':
+      return { screen: 'MyInfo', initialTab: '달력', focusScheduleId: scheduleId };
+    case 'invite_accepted':
     case 'friend_schedule_overlap':
       return { screen: 'MyInfo', initialTab: '달력' };
   }
@@ -156,7 +160,10 @@ async function navigateToNotification(
           termsKey: action.termsKey as TermsKey,
         });
       } else {
-        navigationRef.navigate('MyInfo', { initialTab: action.initialTab });
+        navigationRef.navigate('MyInfo', {
+          initialTab: action.initialTab,
+          focusScheduleId: action.focusScheduleId,
+        });
       }
       return;
     }

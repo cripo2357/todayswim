@@ -69,7 +69,12 @@ function clampToToday(d: Date): Date {
   return dd.getTime() < t.getTime() ? t : d;
 }
 
-export function CalendarTab() {
+export function CalendarTab({
+  focusScheduleId,
+}: {
+  /** 푸시(리마인더) 탭 진입 시 이 일정의 날짜로 달력 포커스. */
+  focusScheduleId?: string;
+}) {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const profile = useProfile((s) => s.profile);
   const schedules = useSwimSchedules((s) => s.schedules);
@@ -89,6 +94,18 @@ export function CalendarTab() {
     [viewPref],
   );
   const [date, setDate] = React.useState(new Date());
+  // 리마인더 푸시로 들어오면 그 일정 날짜로 1회 포커스(일정 로드되면 찾는 즉시).
+  const focusedRef = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    if (!focusScheduleId || focusedRef.current === focusScheduleId) return;
+    const s = schedules.find((x) => x.id === focusScheduleId);
+    if (!s?.date) return; // 아직 로드 전/삭제됨 — 찾으면 다음 렌더에 재시도.
+    const [y, m, d] = s.date.split('-').map(Number);
+    if (y && m && d) {
+      setDate(new Date(y, m - 1, d));
+      focusedRef.current = focusScheduleId;
+    }
+  }, [focusScheduleId, schedules]);
   const [sheetOpen, setSheetOpen] = React.useState(false);
   // 공개여부 변경 시트 대상 일정 id (null = 닫힘)
   const [visEditId, setVisEditId] = React.useState<string | null>(null);

@@ -172,7 +172,9 @@ export function MyInfoScreen() {
         ) : null}
       </View>
 
-      {tab === '달력' && <CalendarTab />}
+      {tab === '달력' && (
+        <CalendarTab focusScheduleId={route.params?.focusScheduleId} />
+      )}
       {tab === '친구' && <FriendsTab />}
       {tab === '알림' && <NotificationsTab />}
     </SafeAreaView>
