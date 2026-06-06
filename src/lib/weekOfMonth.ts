@@ -20,14 +20,3 @@ export function slotRunsOnDate(slot: TimeSlot, date: Date): boolean {
   if (!slot.weeks || slot.weeks.length === 0) return true;
   return slot.weeks.includes(weekOfMonth(date));
 }
-
-/** 시간표 보기용 주차 라벨. 예: [1,3] → "1·3주". 매주면 null. */
-export function formatWeeksLabel(weeks?: number[]): string | null {
-  if (!weeks || weeks.length === 0) return null;
-  return (
-    weeks
-      .slice()
-      .sort((a, b) => a - b)
-      .join('·') + '주'
-  );
-}
