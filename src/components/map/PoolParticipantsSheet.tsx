@@ -81,6 +81,8 @@ export function PoolParticipantsSheet({
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          // iOS 바운스 끌림 방지 — 내용 짧으면 고정(풀카드와 동일).
+          alwaysBounceVertical={false}
         >
           {slots.map((slot) => (
             <SlotCard

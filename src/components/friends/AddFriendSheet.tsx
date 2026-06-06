@@ -257,6 +257,8 @@ export function AddFriendSheet({
                     style={styles.panelList}
                     nestedScrollEnabled
                     keyboardShouldPersistTaps="always"
+                    // iOS 바운스 끌림 방지 — 결과 적으면 고정.
+                    alwaysBounceVertical={false}
                   >
                     {results.map((u) => (
                       <Pressable

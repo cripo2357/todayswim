@@ -412,6 +412,8 @@ export function AddScheduleSheet({
                   keyboardShouldPersistTaps="always"
                   scrollEnabled={!poolOpen}
                   style={styles.body}
+                  // iOS 바운스 끌림 방지 — 내용 짧으면 고정(풀카드와 동일).
+                  alwaysBounceVertical={false}
                 >
                   {/* 수영장 — Figma 122:8027 닫힘 트리거 / 122:7490·147:5323 열림.
                       열림 패널은 body 마지막 자식으로(트리 최상위 = 그림자 없이
@@ -601,6 +603,8 @@ export function AddScheduleSheet({
                           contentContainerStyle={styles.poolListContent}
                           nestedScrollEnabled
                           keyboardShouldPersistTaps="always"
+                          // iOS 바운스 끌림 방지 — 결과 적으면 고정.
+                          alwaysBounceVertical={false}
                         >
                           {filteredPools.map((p) => (
                             <Pressable

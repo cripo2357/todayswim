@@ -187,6 +187,8 @@ export function InviteFriendsScreen() {
               style={styles.selectedList}
               keyboardShouldPersistTaps="always"
               showsVerticalScrollIndicator={false}
+              // iOS 바운스 끌림 방지 — 내용 짧으면 고정(풀카드와 동일).
+              alwaysBounceVertical={false}
             >
               {selected.map((f) => (
                 <View key={f.id} style={styles.selectedRow}>
@@ -274,6 +276,8 @@ export function InviteFriendsScreen() {
                 contentContainerStyle={styles.listContent}
                 nestedScrollEnabled
                 keyboardShouldPersistTaps="always"
+                // iOS 바운스 끌림 방지 — 목록 짧으면 고정.
+                alwaysBounceVertical={false}
               >
                 {filtered.map((f) => {
                   const on = selectedIds.has(f.id);

@@ -343,6 +343,8 @@ export function OtherUserProfileScreen() {
                 style={styles.schedScroll}
                 contentContainerStyle={styles.schedScrollContent}
                 showsVerticalScrollIndicator={false}
+                // iOS 바운스 끌림 방지 — 일정 적으면 고정(풀카드와 동일).
+                alwaysBounceVertical={false}
               >
                 {schedules.map((s) => {
                   const mine = mySlots.has(
