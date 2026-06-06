@@ -9,7 +9,12 @@ import {
   View, Text, TextInput, ScrollView, StyleSheet, Pressable,
   Alert, Image,
 } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import {
+  useNavigation,
+  useFocusEffect,
+  useRoute,
+  type RouteProp,
+} from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import IconCake from '@assets/icons/cake.svg';
@@ -76,8 +81,14 @@ type Tab = (typeof TABS)[number];
 
 export function MyInfoScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'MyInfo'>>();
   const profile = useProfile((s) => s.profile);
-  const [tab, setTab] = React.useState<Tab>('달력');
+  // 푸시 탭으로 들어오면 initialTab(달력/친구/알림)으로 바로 진입.
+  const [tab, setTab] = React.useState<Tab>(route.params?.initialTab ?? '달력');
+  // 이미 열린 상태에서 다른 푸시로 재진입 시에도 해당 탭으로 전환.
+  React.useEffect(() => {
+    if (route.params?.initialTab) setTab(route.params.initialTab);
+  }, [route.params?.initialTab]);
 
   // 탭 카운터 — 달력: 앞으로 예정된(지나지 않은) 내 일정 수,
   // 친구: 친구 수, 알림: 읽지 않은 알림(0이면 배지 미노출, max 99).

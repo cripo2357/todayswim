@@ -18,8 +18,9 @@ export type RootStackParamList = {
   ProfileImage: undefined;
   Welcome: undefined;
 
-  // 내 정보 (로그인 계정) — 3탭: 프로필 / 달력 / 사람들
-  MyInfo: undefined;
+  // 내 정보 (로그인 계정) — 3탭: 달력 / 친구 / 알림.
+  // initialTab: 푸시 탭 시 해당 탭으로 바로 진입(없으면 기본 '달력').
+  MyInfo: { initialTab?: '달력' | '친구' | '알림' } | undefined;
 
   // 설정 (내 정보 상단 우측 톱니 → 진입). Figma 129:5245
   Settings: undefined;

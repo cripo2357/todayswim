@@ -190,7 +190,8 @@ serve(async (req) => {
       title,
       body: body.body ?? '',
       sound: 'default',
-      data: body.data ?? {},
+      // category 를 data 에 주입 — 앱이 푸시 탭 시 화면 라우팅에 사용.
+      data: { ...(body.data ?? {}), category: body.category ?? null },
     }));
 
     try {

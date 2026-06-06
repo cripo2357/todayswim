@@ -18,6 +18,7 @@ import { RuntimeStatusGate } from '@/components/status/RuntimeStatusGate';
 import { initSentry, SentryErrorBoundary } from '@/lib/sentry';
 import { initAnalytics, logScreen } from '@/lib/analytics';
 import { maybeSendMonthlySummary } from '@/lib/monthlySummary';
+import { setupPushNotificationRouting } from '@/lib/pushNotifications';
 import { useNotificationsRealtime } from '@/hooks/useNotifications';
 import { useSingleDeviceGuard } from '@/hooks/useSingleDeviceGuard';
 import * as SplashScreen from 'expo-splash-screen';
@@ -109,6 +110,11 @@ export default function App() {
       })();
     }
   }, [profileId]);
+
+  // 푸시 탭 라우팅 + 포그라운드 표시 셋업(1회) + 콜드스타트 처리.
+  React.useEffect(() => {
+    void setupPushNotificationRouting();
+  }, []);
 
   // 앱 (재)시동 시 필터·선택 상태 초기화 + 인증 세션 복원.
   React.useEffect(() => {

@@ -20,6 +20,7 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { supabase } from '@/lib/supabase';
+import { navigationRef } from '@/navigation/navigationRef';
 
 // EAS projectId — getExpoPushTokenAsync 필수. env(EXPO_PUBLIC_EAS_PROJECT_ID)는
 // 프로덕션 EAS env에 안 들어가 있어서(빌드로그 확인) 늘 undefined였다 → projectId
@@ -104,5 +105,68 @@ export async function unregisterCurrentDevice(): Promise<void> {
       .eq('expo_token', expoToken);
   } catch {
     // best-effort.
+  }
+}
+
+// ── 푸시 탭 → 화면 라우팅 ────────────────────────────────────────────────
+// 카테고리 기반: schedule(리마인더·겹침·완료확인)=달력 탭, 그 외 전부=알림 탭
+// (알림 탭에 kind별 카드+액션이 이미 있음). 푸시 data.category 로 분기.
+type Tab = '달력' | '친구' | '알림';
+function tabForCategory(category: unknown): Tab {
+  return category === 'schedule' ? '달력' : '알림';
+}
+
+async function navigateToNotification(
+  data: Record<string, unknown> | undefined,
+): Promise<void> {
+  const tab = tabForCategory(data?.category);
+  // navigationRef 준비 대기(콜드스타트 — 앱 부팅 직후 탭 처리 대비).
+  for (let i = 0; i < 20; i++) {
+    if (navigationRef.isReady()) {
+      navigationRef.navigate('MyInfo', { initialTab: tab });
+      return;
+    }
+    await new Promise((r) => setTimeout(r, 150));
+  }
+}
+
+let pushRoutingSetup = false;
+/** 앱 마운트 시 1회 — 포그라운드 표시 + 푸시 탭 라우팅 + 콜드스타트 처리. */
+export async function setupPushNotificationRouting(): Promise<void> {
+  if (pushRoutingSetup) return;
+  pushRoutingSetup = true;
+  try {
+    const Notifications = await import('expo-notifications');
+
+    // 포그라운드(앱 켜진 상태)에서도 배너·사운드 노출. 없으면 iOS는 무음 무표시.
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowBanner: true,
+        shouldShowList: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+      }),
+    });
+
+    // 탭(앱 실행/백그라운드 중) → 해당 탭으로 이동.
+    Notifications.addNotificationResponseReceivedListener((response) => {
+      void navigateToNotification(
+        response.notification.request.content.data as
+          | Record<string, unknown>
+          | undefined,
+      );
+    });
+
+    // 콜드 스타트 — 앱이 꺼진 상태에서 푸시 탭으로 실행된 경우.
+    const last = await Notifications.getLastNotificationResponseAsync();
+    if (last) {
+      void navigateToNotification(
+        last.notification.request.content.data as
+          | Record<string, unknown>
+          | undefined,
+      );
+    }
+  } catch {
+    // expo-notifications 미빌드(dev client) 등 — 무시.
   }
 }
