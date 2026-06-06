@@ -63,3 +63,7 @@ supabase/.temp/
 
 # 일러스트 라이브러리 썸네일(생성물)
 assets/library/.catalog/
+
+# Google Play 서비스 계정 키 (절대 커밋 금지)
+play-service-account.json
+*-service-account*.json
