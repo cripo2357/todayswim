@@ -180,6 +180,16 @@ Play Console 화면을 단계별로 짚으며 앱 콘텐츠 선언·스토어 �
 - **iOS App Store 심사 제출 ★** (2026-06-07 00:26, 제출ID `f8ca3f30`): **한국 단일·무료(KRW)·자동 출시·Mac/Vision Pro 제외**. 수출규정 자동면제(`ITSAppUsesNonExemptEncryption:false`). 심사노트(비회원 열람 + Sign in with Apple, 4.8 충족)·"로그인 필요" 해제·연락처 입력. **심사 대기 중(Waiting for Review).** 상세 [LAUNCH-LOG](LAUNCH-LOG.md).
 - (병행) 풀 등록 — 광진구 3곳(0105~0107)·월권 전용 풀 월요금 표기(0216)·초기 풀 photo_url 정정(0217). *크리스 병렬 작업.*
 
+## 2026-06-07 (이어서) — 출시 후속: 카카오 네이티브 로그인·보안 하드닝·앱 슬림화·아바타 통일·SEO (대량) ★
+
+- **카카오 로그인 네이티브 SDK 전환** (commits 7c22a2f, 17983ae): 웹 OAuth → `@react-native-seoul/kakao-login` 네이티브(app-to-app 카카오톡 점프, `signInWithIdToken`). `kotlinVersion 2.0.21` 명시(Expo 55 충돌 회피). **iOS 빌드 OOM** = `ExpoModulesCore` Swift WMO가 카카오 팟 추가로 기본 머신 RAM 초과 → `eas.json production.ios.resourceClass: large`로 해결(맥 없이 웹검색→가설→단발 해결). 런타임 `Unacceptable audience` = 네이티브 앱키 `aud` 미등록 → **Supabase 카카오 프로바이더 Client ID에 네이티브 키 추가**(서버, 재빌드 불필요). 실기기 점프+로그인 검증 완료. → 안드로이드에도 동일 적용.
+- **보안 하드닝 + 친구 신청 서버 강제 (0225)** (commits 789ea9e, 38ba0c6): RLS 전수 감사 — `profiles` 로그인전용 select, `friend_request_mode`(off/id/all) 컬럼 + `search_friends_by_nickname`/`find_friend_by_code` SECURITY DEFINER RPC로 모드 게이팅, notifications·제보 insert 로그인전용, `push_debug` 드롭. 친구 신청 옵션 **'닉네임으로만' 제거**(3택 → off/id/all) + **모든 모드 서버 실효**(off=검색 자체 차단). dev·prod 적용.
+- **앱 슬림화 + 아바타 Storage 통일** (commits 8c10ac7, 2057905, cf897aa, 025bb6f, ae6d0d7, 2ecaba3): 번들 아바타 lg(512)·SVG맵 제거 → PNG 2벌(64 thumb/256)만. **번들 아바타도 Supabase Storage 호스팅** → `photo_uri` 항상 URL로 통일(업로드 사진과 동일 취급, 앱 용량↓). 업로드 스크립트는 공개 URL 기본값 박아 service_role 키 2줄만 필요. 소형(24px) 참여자 아바타 64썸네일로 앨리어싱 완화. **Fraunces 폰트 제거 + 일러스트 SVGO + 미사용 애셋 정리**(폰트가 번들 90%라 최적화 핵심).
+- **버그·정책** (commits e4be002, 3508790, deb0172, ded31fa, 1e371f7/5dce517/9f87831, 5315a1b, fe606d9): 푸시 **한 기기=한 유저 강제**(계정전환 오배달 영구 차단). 친구탭 진입 serverSync(상대 추가/삭제 반영). **내 위치 마커 사진 즉시 반영**(프로필 변경 시 굽기 전 prefetch 게이트 — 깜빡임 수정). 후원 진입점 숨김 플래그(출시 직후 신뢰 우선). 요금 필터 최저가→**최고가** 기준(`maxDailyPrice` 헬퍼 단일화) + 가격 표기 정리. EAS Android submit 설정(서비스 계정 internal 자동 업로드). 0220 마이그레이션 커밋 누락분 정리.
+- **출시 공지·버전 0.1.1·설정 폴리시** (commits bc5bd20, f2d9966, 1dedfee, 1135408): **출시 공지(0226, '풀스데이 서비스 오픈🏊')** + 테스트 더미 정리(dev·prod 적용). 버전 **0.1.0→0.1.1**(강제 업데이트 버전 경계 확보). 공지 info_update 아이콘 → 메가폰. 설정 푸터 **버전 동적화**(`expo.version`)·**카피라이트 연도 자동**(`right`→`rights` 오타 정정). 설정 그룹 순서 조정(지도 ↑ = 사용자 관계 프라이버시 연장선). `app_status` **스토어 URL(ios/android) dev·prod 채움** → 강제 업데이트 인프라 완비(`min_app_version`은 null 유지, 버튼은 플랫폼별 스토어로 분기). **랜딩 SEO** — index.md 키워드 카피(자유수영장·시간표·수영친구)+다운로드 뱃지, jekyll-seo-tag/sitemap 플러그인, OG/favicon. 내부 문서 2종 sitemap 제외.
+- **빌드·제출**: **build 18(vc18, iOS24/Android18)** → **vc19(iOS build 25/Android build 19, v0.1.1)** 양 플랫폼 `--auto-submit`. Android **internal 트랙** + iOS **TestFlight** 업로드 완료. (테스터 검증 → Android 프로덕션 승격 대기.)
+- (병행) **풀 등록 대량** — 용산·중구·종로·성동·광진·동대문 다수(POOL_0085~0109). `schedule_source_url` 기록 필수화. *크리스 병렬 작업.*
+
 ---
 
 ## 단계 요약 (현 위치)
@@ -187,6 +197,7 @@ Play Console 화면을 단계별로 짚으며 앱 콘텐츠 선언·스토어 �
 - **P1 (목업·UX) — ✅ 완료** (2026-05-20, tag `phase1-complete`). 제품 정의·정책·디자인·약관·기본 데이터 결판.
 - **P2 (백엔드 SSOT) — ✅ 완료** (2026-05-20, tag `phase2-complete`). 13배치 + 마이그 0047/0048/0049/0059/0060 + 회귀 정정 2건. profiles/friends/blocks/user_schedules/notifications/auth_uid binding/RLS 보수적 하드닝.
 - **P3 (하드닝·출시) — Android·iOS 양 플랫폼 심사 제출 완료** (2026-05-21~2026-06-07). prod Supabase 분리 + RLS strict + 사업자등록 + EAS production + prod DB 정리 + SHA-1 등록(구글 로그인) + 내부테스트 검증 → **Google Play 심사 제출(vc12, 대한민국, 2026-06-03)**. 이후 약관 서버화 + iOS 바운스 정정 + build 18 → **App Store 심사 제출(0.1.0(18), 대한민국, 자동출시, 2026-06-07)**. **둘 다 승인 대기 중.**
-  - **남은 것**: ① **양 스토어 심사 승인**(승인 즉시 자동 공개) ② 2기기 검증(단일기기·계정간 푸시·수락거절·상대프로필) ③ Android Play 앱서명 SHA-1 + vc13(승인 후) ④ Kakao 비즈앱 정식 전환(이메일 scope).
+  - **출시 후 후속(2026-06-07)**: 카카오 네이티브 로그인·RLS 하드닝(0225)·앱 슬림화/아바타 Storage 통일·다수 버그수정 → **vc19(v0.1.1)** 양 플랫폼 빌드+제출(Android internal·iOS TestFlight). 출시 공지(0226)·랜딩 SEO·강제 업데이트 인프라(스토어 URL) 완비. **Android vc17 프로덕션 라이브**.
+  - **남은 것**: ① **vc19 테스터 검증 → Android 프로덕션 승격** ② iOS 심사 승인 대기 ③ Search Console/네이버 사이트맵 제출 ④ 2기기 검증(단일기기·계정간 푸시·수락거절·상대프로필) ⑤ Kakao 비즈앱 정식 전환(이메일 scope).
 
 *무게중심: 코드 비중 P3 < P2 < P1. P3는 외부 의존(사업자 등록·스토어 심사)이 critical path.*
