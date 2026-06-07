@@ -24,7 +24,7 @@ insert into public.pools (
   price_weekday, photo_url,
   schedule_source_url
 ) values
-  ('POOL_0127', '시립노원청소년센터', '서울', '노원구',
+  ('POOL_0127', '노원청소년센터', '서울', '노원구',
     '서울특별시 노원구 덕릉로70길 99',
     37.6403309941757, 127.059580986248, 'indoor', 'public',
     '02-3391-4141', 'https://www.youthcenter.or.kr/',
