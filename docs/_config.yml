@@ -11,9 +11,22 @@
 # 자체가 public 이면 git 차원에선 누구나 열람 가능 — 이건 별개 layer).
 
 title: Pool's day
-description: 동네 자유수영장 + 시간표 + 친구 일정
+description: 동네 자유수영 수영장을 지도에서 찾고, 시간표를 확인하고, 수영 친구와 일정을 함께 잡는 앱.
 url: https://cripo2357.github.io
 baseurl: /todayswim
+lang: ko-KR
+author: CRIPO
+
+# SEO — 검색 노출용 메타/OG 태그 + sitemap 자동 생성 (GitHub Pages 화이트리스트 플러그인).
+# head-custom.html 의 {% seo %} 가 jekyll-seo-tag 출력을 head 에 주입.
+plugins:
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+# jekyll-seo-tag 기본 OG 이미지(페이지에 image 없을 때) + 트위터 카드.
+logo: /todayswim/assets/og-image.png
+twitter:
+  card: summary
 
 # 클린 URL — /terms/privacy-policy/ (확장자 없음, trailing slash).
 permalink: pretty

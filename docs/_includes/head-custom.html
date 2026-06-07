@@ -1,0 +1,15 @@
+<!-- Pool's day — SEO/OG 보강. jekyll-theme-minimal 이 head 에 include 하는 확장 지점.
+     테마 default.html 이 이미 {% raw %}{% seo %}{% endraw %} 를 호출하므로(jekyll-seo-tag),
+     여기서 다시 부르면 태그 중복 → 호출하지 않음. seo-tag 가 안 채우는
+     og:image 절대경로·favicon·theme-color 만 보강. -->
+<meta property="og:image" content="{{ '/assets/og-image.png' | absolute_url }}">
+<meta name="twitter:image" content="{{ '/assets/og-image.png' | absolute_url }}">
+<meta name="theme-color" content="#2563EB">
+<link rel="icon" type="image/png" href="{{ '/assets/og-image.png' | absolute_url }}">
+<link rel="apple-touch-icon" href="{{ '/assets/og-image.png' | absolute_url }}">
+
+<style>
+  /* 다운로드 뱃지 가로 정렬 — 랜딩 CTA. */
+  .cta-badges { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .cta-badges img { height: 56px; width: auto; }
+</style>
