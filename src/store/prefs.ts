@@ -41,6 +41,37 @@ async function syncNotifPrefsToServer(p: {
   }
 }
 
+// 친구 신청 받기 모드를 서버(profiles.friend_request_mode)에 미러 — 검색 RPC
+// (search_friends_by_nickname / find_friend_by_code, 0225)가 이 값으로 발견성
+// 게이팅. 명시적 토글 변경 시에만 호출. best-effort.
+async function syncFriendRequestToServer(mode: FriendRequest): Promise<void> {
+  try {
+    const uid = (await supabase.auth.getSession()).data.session?.user?.id;
+    if (!uid) return;
+    await supabase
+      .from('profiles')
+      .update({ friend_request_mode: mode })
+      .eq('auth_uid', uid);
+  } catch {
+    /* best-effort */
+  }
+}
+
+const K_FRIEND_REQ_MIGRATED = 'poolsday.prefs.friendReqMigrated';
+/** 기기당 1회: 로컬 friendRequest 값을 서버로 이관(0225 이전 로컬 전용 보정).
+ *  플래그로 1회만 — 이후 hydrate가 다기기 서버값을 덮어쓰지 않도록. */
+async function migrateFriendReqOnce(mode: FriendRequest): Promise<void> {
+  try {
+    if (await AsyncStorage.getItem(K_FRIEND_REQ_MIGRATED)) return;
+    const uid = (await supabase.auth.getSession()).data.session?.user?.id;
+    if (!uid) return; // 미로그인 — 다음 로그인 후 hydrate에서 재시도
+    await syncFriendRequestToServer(mode);
+    await AsyncStorage.setItem(K_FRIEND_REQ_MIGRATED, '1');
+  } catch {
+    /* best-effort */
+  }
+}
+
 /** 다른 사람 수영 일정 보기 범위 */
 export type OthersScheduleView = 'friends' | 'public';
 /** 수영 일정 초대 수신 여부 */
@@ -244,15 +275,18 @@ export const usePrefs = create<PrefsState>((set, get) => ({
       const submitV = nSu === 'false' ? false : true;
       const svcV = nSv === 'false' ? false : true;
       const reportV = nMo === 'false' ? false : true;
+      // 레거시 'nickname'(제거됨)·미인식 값은 'all'로 이관.
+      const friendReqV: FriendRequest = FRIEND_REQ_VALUES.includes(
+        f as FriendRequest,
+      )
+        ? (f as FriendRequest)
+        : 'all';
       set({
         // '프로필과 일정 공유' 단일 제어 — 일정 공유는 항상 프로필 공개 미러
         othersScheduleView: pv,
         scheduleInvite: i === 'off' ? 'off' : 'on',
         profileVisibility: pv,
-        // 레거시 'nickname'(제거됨)·미인식 값은 'all'로 이관.
-        friendRequest: FRIEND_REQ_VALUES.includes(f as FriendRequest)
-          ? (f as FriendRequest)
-          : 'all',
+        friendRequest: friendReqV,
         mapStartPoolId: ms || null,
         mapFriendHorizon,
         mapPublicHorizon,
@@ -266,6 +300,10 @@ export const usePrefs = create<PrefsState>((set, get) => ({
         notifMarketing: !!marketing, // timestamp 존재 = 동의 상태
         hydrated: true,
       });
+      // 친구신청 모드 1회 서버 이관 — 0225 이전엔 로컬 전용이라, 기존에 off/id로
+      // 바꿔둔 사용자의 설정을 서버 미러로 1회 올린다(이후엔 명시적 토글만 동기 →
+      // 다기기 덮어쓰기 방지). best-effort.
+      void migrateFriendReqOnce(friendReqV);
     } catch {
       set({ hydrated: true });
     }
@@ -306,6 +344,9 @@ export const usePrefs = create<PrefsState>((set, get) => ({
   setFriendRequest: async (v) => {
     await AsyncStorage.setItem(K_FRIEND_REQ, v);
     set({ friendRequest: v });
+    // 서버 미러(profiles.friend_request_mode) — 검색 RPC가 이 값으로 게이팅.
+    // 명시적 변경 시에만(hydrate 복원으로 서버 덮어쓰기 방지, notif_prefs와 동일).
+    void syncFriendRequestToServer(v);
   },
 
   setMapStartPoolId: async (v) => {

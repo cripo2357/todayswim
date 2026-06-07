@@ -228,18 +228,16 @@ export interface ProfileSearchRow {
   photo_uri: string | null;
 }
 
-/** 닉네임 부분일치(대소문자 무시) — Supabase ilike 와일드카드. 최대 20행. */
+/** 닉네임 부분일치 검색 — SECURITY DEFINER RPC(0225). 서버에서 친구신청 모드
+ *  강제: `friend_request_mode = 'all'` 사용자만 노출(off/id 제외, 우회 불가).
+ *  profiles 직접 ilike 폐기(프라이버시 게이트가 서버에 있어야 함). 최대 20행. */
 export async function trySearchProfilesByNickname(
   query: string,
 ): Promise<ProfileSearchRow[]> {
   const q = query.trim();
   if (!q) return [];
   try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, nickname, bio, photo_uri')
-      .ilike('nickname', `%${q}%`)
-      .limit(20);
+    const { data, error } = await supabase.rpc('search_friends_by_nickname', { q });
     if (error || !data) return [];
     return data as ProfileSearchRow[];
   } catch {
@@ -247,20 +245,17 @@ export async function trySearchProfilesByNickname(
   }
 }
 
-/** 6자리 친구코드 정확 일치(대문자). 없으면 null. */
+/** 6자리 친구코드 정확 일치 — SECURITY DEFINER RPC(0225). 서버에서 모드 강제:
+ *  `friend_request_mode IN ('id','all')` 사용자만(off 제외). 없으면 null. */
 export async function tryFindProfileByCode(
   code: string,
 ): Promise<ProfileSearchRow | null> {
   const c = code.trim().toUpperCase();
   if (c.length !== 6) return null;
   try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, nickname, bio, photo_uri')
-      .eq('id', c)
-      .maybeSingle();
-    if (error || !data) return null;
-    return data as ProfileSearchRow;
+    const { data, error } = await supabase.rpc('find_friend_by_code', { c });
+    if (error || !data || data.length === 0) return null;
+    return data[0] as ProfileSearchRow;
   } catch {
     return null;
   }
