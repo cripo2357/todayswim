@@ -106,6 +106,9 @@ export default function App() {
       void (async () => {
         await useSwimSchedules.getState().serverSync();
         await useFriends.getState().serverSync();
+        // 즐겨찾기·공개공유 설정 서버 복구(0269) — 재설치/기기변경/다기기.
+        void useFavorites.getState().serverSync();
+        void usePrefs.getState().serverSync();
         // 일정 동기 후 — 새 달이면 지난달 결산 1회 발송(멱등).
         void maybeSendMonthlySummary();
       })();

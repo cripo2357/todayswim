@@ -41,6 +41,38 @@ async function syncNotifPrefsToServer(p: {
   }
 }
 
+// 공개/공유 설정을 서버(profiles.profile_visibility / schedule_invite)에 미러
+// (0269). notif_prefs · friend_request_mode 와 동일 패턴 — 명시적 토글 변경 시
+// push, 로그인 후 serverSync 가 restore. 재설치/기기변경 복구. best-effort.
+// others_schedule_view 는 profile_visibility 의 미러(UI 단일 제어)라 컬럼 없음.
+async function syncProfileVisibilityToServer(
+  v: ProfileVisibility,
+): Promise<void> {
+  try {
+    const uid = (await supabase.auth.getSession()).data.session?.user?.id;
+    if (!uid) return;
+    await supabase
+      .from('profiles')
+      .update({ profile_visibility: v })
+      .eq('auth_uid', uid);
+  } catch {
+    /* best-effort */
+  }
+}
+
+async function syncScheduleInviteToServer(v: ScheduleInvite): Promise<void> {
+  try {
+    const uid = (await supabase.auth.getSession()).data.session?.user?.id;
+    if (!uid) return;
+    await supabase
+      .from('profiles')
+      .update({ schedule_invite: v })
+      .eq('auth_uid', uid);
+  } catch {
+    /* best-effort */
+  }
+}
+
 // 친구 신청 받기 모드를 서버(profiles.friend_request_mode)에 미러 — 검색 RPC
 // (search_friends_by_nickname / find_friend_by_code, 0225)가 이 값으로 발견성
 // 게이팅. 명시적 토글 변경 시에만 호출. best-effort.
@@ -142,6 +174,10 @@ interface PrefsState {
   notifMarketing: boolean;
   hydrated: boolean;
   hydrate: () => Promise<void>;
+  /** 서버(profiles)에서 공개/공유 설정 restore — 로그인 후 1회(App.tsx).
+   *  profileVisibility/scheduleInvite 를 서버값으로 덮어 재설치/기기변경 복구.
+   *  others_schedule_view 는 profileVisibility 미러라 함께 갱신. 미로그인/실패 no-op. */
+  serverSync: () => Promise<void>;
   setOthersScheduleView: (v: OthersScheduleView) => Promise<void>;
   setScheduleInvite: (v: ScheduleInvite) => Promise<void>;
   setProfileVisibility: (v: ProfileVisibility) => Promise<void>;
@@ -309,6 +345,40 @@ export const usePrefs = create<PrefsState>((set, get) => ({
     }
   },
 
+  serverSync: async () => {
+    // 서버 profiles 에서 공개/공유 설정 restore. 로그인 후 호출(profile.id 시점).
+    try {
+      const uid = (await supabase.auth.getSession()).data.session?.user?.id;
+      if (!uid) return; // 미로그인 — 로컬값 유지
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('profile_visibility, schedule_invite')
+        .eq('auth_uid', uid)
+        .maybeSingle();
+      if (error || !data) return; // 서버 못 읽음/신규 — 로컬값 유지
+      const row = data as {
+        profile_visibility: string | null;
+        schedule_invite: string | null;
+      };
+      const pv: ProfileVisibility =
+        row.profile_visibility === 'public' ? 'public' : 'friends';
+      const inv: ScheduleInvite = row.schedule_invite === 'off' ? 'off' : 'on';
+      // 서버값을 권위로 로컬 덮기 — others_schedule_view 는 profileVisibility 미러.
+      set({
+        profileVisibility: pv,
+        othersScheduleView: pv,
+        scheduleInvite: inv,
+      });
+      await Promise.all([
+        AsyncStorage.setItem(K_PROFILE_VIS, pv),
+        AsyncStorage.setItem(K_VIEW, pv),
+        AsyncStorage.setItem(K_INVITE, inv),
+      ]);
+    } catch {
+      /* best-effort — 로컬값 유지 */
+    }
+  },
+
   setOthersScheduleView: async (v) => {
     await AsyncStorage.setItem(K_VIEW, v);
     set({ othersScheduleView: v });
@@ -321,6 +391,8 @@ export const usePrefs = create<PrefsState>((set, get) => ({
   setScheduleInvite: async (v) => {
     await AsyncStorage.setItem(K_INVITE, v);
     set({ scheduleInvite: v });
+    // 서버 미러(profiles.schedule_invite) — 명시적 변경 시에만(0269).
+    void syncScheduleInviteToServer(v);
   },
 
   setProfileVisibility: async (v) => {
@@ -339,6 +411,9 @@ export const usePrefs = create<PrefsState>((set, get) => ({
     } else {
       set({ profileVisibility: v, othersScheduleView: v });
     }
+    // 서버 미러(profiles.profile_visibility) — 명시적 변경 시에만(0269).
+    // others_schedule_view 는 이 값의 미러라 별도 push 없음.
+    void syncProfileVisibilityToServer(v);
   },
 
   setFriendRequest: async (v) => {
