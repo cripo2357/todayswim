@@ -16,7 +16,7 @@ import type { Announcement, AnnouncementType } from '@/types/announcement';
 
 import IconNewFeature from '@assets/icons/announcement/new-feature.svg';
 import IconFeatureUpdate from '@assets/icons/announcement/feature-update.svg';
-import IconInfoUpdate from '@assets/icons/announcement/info-update.svg';
+import IconInfoUpdate from '@assets/icons/announcement/megaphone.svg';
 import IconEvent from '@assets/icons/announcement/event.svg';
 
 type SvgIcon = React.FC<{ width?: number; height?: number }>;

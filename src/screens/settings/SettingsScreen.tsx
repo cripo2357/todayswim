@@ -15,6 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronRight } from 'lucide-react-native';
+import Constants from 'expo-constants';
 
 import type { RootStackParamList } from '@/navigation/types';
 import { useAuth } from '@/store/auth';
@@ -62,6 +63,11 @@ import IconMapPin from '@assets/icons/settings/map-pin.svg';
 import IconPeople from '@assets/icons/settings/people.svg';
 
 const FEEDBACK_EMAIL = 'cripo2357@gmail.com';
+
+// 푸터 버전 — app.config expo.version 단일 출처(하드코딩 금지).
+const appVersion = Constants.expoConfig?.version ?? '0.0.0';
+// 카피라이트 연도 — 현재 연도 자동(해 바뀌어도 수동 수정 불필요).
+const copyrightYear = new Date().getFullYear();
 
 // (수영 일정 공유는 '프로필과 일정 공유'로 병합 — profileVisibility 단일 제어)
 // 친구의 수영 일정 초대
@@ -247,28 +253,10 @@ export function SettingsScreen() {
           />
         </Section>
 
-        {/* 수영장 (Figma 133:5162) */}
-        <Section title="수영장">
-          <Row
-            icon={<IconHeart width={24} height={24} />}
-            label="자주 가는 수영장"
-            onPress={() => navigation.navigate('FavoritePools')}
-          />
-          <Row
-            icon={<IconLifeBuoy width={24} height={24} />}
-            label="새로운 수영장 등록 요청"
-            onPress={() => navigation.navigate('PoolName', { mode: 'create' })}
-          />
-          <Row
-            icon={<IconEditPencil width={24} height={24} />}
-            label="수영장 정보 수정 요청"
-            onPress={() => navigation.navigate('PoolName', { mode: 'edit' })}
-          />
-        </Section>
-
         {/* 지도 (Figma 179:4763) — 시작 위치 / 친구 수영 일정 /
             (profileVis='public'일 때) 사람들 수영 일정.
-            "내 수영 일정·레슨" 행 폐기 (2026-05-22) — profileVisibility 와 중복. */}
+            "내 수영 일정·레슨" 행 폐기 (2026-05-22) — profileVisibility 와 중복.
+            사용자 관계(프로필 공개 범위)의 연장선이라 바로 아래 배치. */}
         <Section title="지도">
           <Row
             icon={<IconMapPin width={24} height={24} />}
@@ -302,6 +290,25 @@ export function SettingsScreen() {
               }
             />
           )}
+        </Section>
+
+        {/* 수영장 (Figma 133:5162) */}
+        <Section title="수영장">
+          <Row
+            icon={<IconHeart width={24} height={24} />}
+            label="자주 가는 수영장"
+            onPress={() => navigation.navigate('FavoritePools')}
+          />
+          <Row
+            icon={<IconLifeBuoy width={24} height={24} />}
+            label="새로운 수영장 등록 요청"
+            onPress={() => navigation.navigate('PoolName', { mode: 'create' })}
+          />
+          <Row
+            icon={<IconEditPencil width={24} height={24} />}
+            label="수영장 정보 수정 요청"
+            onPress={() => navigation.navigate('PoolName', { mode: 'edit' })}
+          />
         </Section>
 
         {/* 헬프 센터 */}
@@ -403,8 +410,8 @@ export function SettingsScreen() {
             />
           </View>
           <View style={styles.footerText}>
-            <Text style={styles.version}>Pool’s day v1.0.0</Text>
-            <Text style={styles.copyright}>© 2026 CRIPO. All right reserved</Text>
+            <Text style={styles.version}>Pool’s day v{appVersion}</Text>
+            <Text style={styles.copyright}>© {copyrightYear} CRIPO. All rights reserved</Text>
           </View>
         </View>
       </ScrollView>
