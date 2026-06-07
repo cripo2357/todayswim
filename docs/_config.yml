@@ -53,6 +53,8 @@ exclude:
   - P3-ENV-PROD-SETUP.md
   - P3-KAKAO-BIZ-SETUP.md
   - P3-EXTERNAL-CONSOLE-CHECKLIST.md
+  - LAUNCH-LOG.md
+  - app-store-submission-guide.md
   - store-meta/
   - "*.bak"
   - Gemfile
