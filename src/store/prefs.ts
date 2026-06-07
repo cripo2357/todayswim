@@ -47,8 +47,9 @@ export type OthersScheduleView = 'friends' | 'public';
 export type ScheduleInvite = 'on' | 'off';
 /** 내 프로필 공개 범위 */
 export type ProfileVisibility = 'friends' | 'public';
-/** 친구 신청 받기 범위 */
-export type FriendRequest = 'off' | 'id' | 'nickname' | 'all';
+/** 친구 신청 받기 범위 — off=아무도 / id=ID검색만 / all=ID+닉네임.
+ *  레거시 'nickname'(닉네임으로만)은 제거됨(2026-06-07) → hydrate에서 'all'로 이관. */
+export type FriendRequest = 'off' | 'id' | 'all';
 /** 지도 친구 수영 일정 스택 노출 시점 — 슬롯 시작 N 전 ~ 종료까지.
  *  'off'=스택 전체 미표시. mapProfileStacks 가 horizonMs 로 환산. */
 /** 친구 수영 일정 스택 노출 시점 (= 슬롯 시작 − horizonMs ~ 슬롯 종료).
@@ -159,14 +160,14 @@ const K_NOTIF_REPORT = 'poolsday.prefs.notifMonthlyReport';
 const K_TERMS_MARKETING = 'poolsday.terms.marketing';
 const K_TERMS_MARKETING_REJECTED = 'poolsday.terms.marketing.rejected';
 
-const FRIEND_REQ_VALUES: FriendRequest[] = ['off', 'id', 'nickname', 'all'];
+const FRIEND_REQ_VALUES: FriendRequest[] = ['off', 'id', 'all'];
 
 export const usePrefs = create<PrefsState>((set, get) => ({
   // 최초 가입자 기본값 (사용자 지정)
   othersScheduleView: 'friends', // 친구 일정만 보기
   scheduleInvite: 'on', // 초대 받기
   profileVisibility: 'friends', // 친구에게만 공개
-  friendRequest: 'nickname', // 닉네임으로만 신청 받기
+  friendRequest: 'all', // 기본 = 모두에게(ID+닉네임 검색). 레거시 'nickname' 대체
   mapStartPoolId: null, // 내 위치
   mapFriendHorizon: 'd1', // 1일 전부터 보기 (Figma 기본값)
   mapPublicHorizon: 'off', // 사람들 일정은 기본 OFF (profileVis=public일 때만 유효)
@@ -248,9 +249,10 @@ export const usePrefs = create<PrefsState>((set, get) => ({
         othersScheduleView: pv,
         scheduleInvite: i === 'off' ? 'off' : 'on',
         profileVisibility: pv,
+        // 레거시 'nickname'(제거됨)·미인식 값은 'all'로 이관.
         friendRequest: FRIEND_REQ_VALUES.includes(f as FriendRequest)
           ? (f as FriendRequest)
-          : 'nickname',
+          : 'all',
         mapStartPoolId: ms || null,
         mapFriendHorizon,
         mapPublicHorizon,
@@ -430,7 +432,7 @@ export const usePrefs = create<PrefsState>((set, get) => ({
       othersScheduleView: 'friends',
       scheduleInvite: 'on',
       profileVisibility: 'friends',
-      friendRequest: 'nickname',
+      friendRequest: 'all',
       mapStartPoolId: null,
       mapFriendHorizon: 'd1',
       mapPublicHorizon: 'off',

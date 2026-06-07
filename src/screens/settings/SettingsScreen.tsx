@@ -117,12 +117,10 @@ const MAP_PUBLIC_OPTIONS: Option<MapPublicHorizon>[] = [
 const FRIEND_REQ_OPTIONS: Option<FriendRequest>[] = [
   { value: 'off', label: '신청 안 받기' },
   { value: 'id', label: 'ID로만 신청 받기' },
-  { value: 'nickname', label: '닉네임으로만 신청 받기' },
   { value: 'all', label: '모두에게 신청 받기' },
 ];
 const FRIEND_REQ_VALUE: Record<Exclude<FriendRequest, 'id'>, string> = {
   off: '안 받음',
-  nickname: '닉네임으로만',
   all: '모든 사람에게',
 };
 /**
