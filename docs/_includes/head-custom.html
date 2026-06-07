@@ -17,7 +17,12 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   }
 
-  /* 다운로드 뱃지 가로 정렬 — 랜딩 CTA. */
-  .cta-badges { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
-  .cta-badges img { height: 56px; width: auto; }
+  /* 다운로드 뱃지 가로 정렬 — 랜딩 CTA.
+     애플 뱃지(SVG)는 여백이 거의 없고, 구글 뱃지(PNG)는 위아래 23% 투명 여백이
+     내장돼 있어 같은 height 로는 버튼 본체 크기가 안 맞음. 구글만 1.3배 키워
+     본체를 맞추고, 늘어난 여백은 음수 마진으로 당겨 행 높이를 애플에 정렬. */
+  .cta-badges { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+  .cta-badges img { width: auto; }
+  .cta-badges img[alt*="App Store"] { height: 52px; }
+  .cta-badges img[alt*="Google"]    { height: 68px; margin: -8px 0; }
 </style>
