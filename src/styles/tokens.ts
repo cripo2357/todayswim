@@ -77,23 +77,16 @@ export const font = {
   sansSemibold:'Pretendard-SemiBold',
   sansBold:    'Pretendard-Bold',
 
-  // 강조·로고 (영문)
-  serif:        'Fraunces-Regular',
-  serifItalic:  'Fraunces-Italic',
-  serifBold:    'Fraunces-Bold',
-  serifBoldItalic: 'Fraunces-BoldItalic',
-
   // 클러스터 카운트 (Figma 38:1078) — graffiti spray paint
   graffiti:     'RubikSprayPaint_400Regular',
 } as const;
 
 /**
  * 텍스트 스케일.
- * fontFamily는 Pretendard 가정. 위트 카피만 Fraunces italic.
+ * fontFamily는 Pretendard 가정.
  * letterSpacing은 RN에서 절대값(px). DESIGN.md의 -0.02em ≒ -0.6 (32px 기준).
  */
 export const text = {
-  display:    { fontFamily: font.serifBold,    fontSize: 48, lineHeight: 53, letterSpacing: -0.96 },
   h1:         { fontFamily: font.sansBold,     fontSize: 32, lineHeight: 38, letterSpacing: -0.64 },
   h2:         { fontFamily: font.sansSemibold, fontSize: 24, lineHeight: 31, letterSpacing: -0.24 },
   h3:         { fontFamily: font.sansSemibold, fontSize: 20, lineHeight: 28 },
@@ -103,7 +96,6 @@ export const text = {
   bodySm:     { fontFamily: font.sans,         fontSize: 14, lineHeight: 21 },
   caption:    { fontFamily: font.sansMedium,   fontSize: 13, lineHeight: 18, color: color.ink500 },
   label:      { fontFamily: font.sansSemibold, fontSize: 12, lineHeight: 12, letterSpacing: 0.48 }, // uppercase는 텍스트 컴포넌트에서 transform
-  witty:      { fontFamily: font.serifItalic,  fontSize: 16, lineHeight: 26, fontStyle: 'italic' as const },
 } as const;
 
 /**
