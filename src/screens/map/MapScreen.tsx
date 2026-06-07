@@ -195,6 +195,25 @@ export function MapScreen() {
   // 사진 사라짐·스택 아바타 찌그러짐), 합성 뷰를 화면 밖에서 캡처해 file:// 이미지로
   // SDK 에 넘긴다(MarkerBakery). bakedUris: bake 키 → fileUri 캐시.
   const photoUri = profile?.photoUri;
+  // 내 위치 마커 굽기 전 아바타 prefetch — 갓 바꾼 원격 사진이 고정 400ms 안에
+  // 다운로드 안 돼 "빈 마커"로 구워지고 재시작 전까지 안 바뀌던 레이스 방지.
+  // 캐시 완료된 photoUri 일 때만 굽는다(그 전엔 링만 노출 → 준비되면 사진 등장).
+  const [locPhotoReady, setLocPhotoReady] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    const uri = resolveAvatarUri(photoUri, { size: 34 });
+    if (!uri) {
+      setLocPhotoReady(null);
+      return;
+    }
+    let cancelled = false;
+    setLocPhotoReady(null); // 새 URL = 아직 미준비
+    void Image.prefetch(uri).finally(() => {
+      if (!cancelled) setLocPhotoReady(photoUri ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [photoUri]);
   const [bakedUris, setBakedUris] = React.useState<Record<string, string>>({});
   const onBaked = React.useCallback((key: string, uri: string) => {
     setBakedUris((prev) => (prev[key] === uri ? prev : { ...prev, [key]: uri }));
@@ -487,7 +506,8 @@ export function MapScreen() {
   // image prop 으로 그린다(iOS children 한계 우회). 이미 구운 키는 아래서 필터.
   const bakeJobs = React.useMemo<BakeJob[]>(() => {
     const jobs: BakeJob[] = [];
-    if (photoUri) {
+    // 아바타 prefetch 완료된 뒤에만 굽는다(빈 마커 캡처 방지).
+    if (photoUri && locPhotoReady === photoUri) {
       jobs.push({
         key: `loc:${photoUri}`,
         width: 50,
@@ -538,7 +558,7 @@ export function MapScreen() {
       }
     }
     return jobs;
-  }, [photoUri, zoomInt, visibleClusters, filteredIds, poolStacks]);
+  }, [photoUri, locPhotoReady, zoomInt, visibleClusters, filteredIds, poolStacks]);
 
   // 아직 안 구운 키만 캡처(재캡처 방지). 키 동일 = 캐시 재사용.
   const pendingBakeJobs = React.useMemo(
