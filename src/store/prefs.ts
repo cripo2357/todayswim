@@ -89,21 +89,6 @@ async function syncFriendRequestToServer(mode: FriendRequest): Promise<void> {
   }
 }
 
-const K_FRIEND_REQ_MIGRATED = 'poolsday.prefs.friendReqMigrated';
-/** 기기당 1회: 로컬 friendRequest 값을 서버로 이관(0225 이전 로컬 전용 보정).
- *  플래그로 1회만 — 이후 hydrate가 다기기 서버값을 덮어쓰지 않도록. */
-async function migrateFriendReqOnce(mode: FriendRequest): Promise<void> {
-  try {
-    if (await AsyncStorage.getItem(K_FRIEND_REQ_MIGRATED)) return;
-    const uid = (await supabase.auth.getSession()).data.session?.user?.id;
-    if (!uid) return; // 미로그인 — 다음 로그인 후 hydrate에서 재시도
-    await syncFriendRequestToServer(mode);
-    await AsyncStorage.setItem(K_FRIEND_REQ_MIGRATED, '1');
-  } catch {
-    /* best-effort */
-  }
-}
-
 /** 다른 사람 수영 일정 보기 범위 */
 export type OthersScheduleView = 'friends' | 'public';
 /** 수영 일정 초대 수신 여부 */
@@ -336,44 +321,84 @@ export const usePrefs = create<PrefsState>((set, get) => ({
         notifMarketing: !!marketing, // timestamp 존재 = 동의 상태
         hydrated: true,
       });
-      // 친구신청 모드 1회 서버 이관 — 0225 이전엔 로컬 전용이라, 기존에 off/id로
-      // 바꿔둔 사용자의 설정을 서버 미러로 1회 올린다(이후엔 명시적 토글만 동기 →
-      // 다기기 덮어쓰기 방지). best-effort.
-      void migrateFriendReqOnce(friendReqV);
+      // (친구신청 모드 1회 서버 이관 제거 — 재설치 시 로컬 기본값('all')이 서버의
+      //  사용자 설정을 덮어쓰는 오염 버그였음. 0269 부터 serverSync 가 서버→로컬
+      //  복원하므로 이관 불필요. 명시적 setFriendRequest 만 서버 push.)
     } catch {
       set({ hydrated: true });
     }
   },
 
   serverSync: async () => {
-    // 서버 profiles 에서 공개/공유 설정 restore. 로그인 후 호출(profile.id 시점).
+    // 서버 profiles 에서 계정 설정 restore. 로그인 후 호출(profile.id 시점).
+    // 복원 대상: 공개/공유(profile_visibility·schedule_invite) + 알림 5종
+    // (notif_prefs) + 친구신청 모드(friend_request_mode). 기존엔 이 미러들이
+    // push 전용이라 재설치 시 복원 안 됐음(설정 손실) — restore 경로로 보완.
+    // marketing 은 terms_agreements 가 권위(법정 동의)라 여기서 제외.
     try {
       const uid = (await supabase.auth.getSession()).data.session?.user?.id;
       if (!uid) return; // 미로그인 — 로컬값 유지
       const { data, error } = await supabase
         .from('profiles')
-        .select('profile_visibility, schedule_invite')
+        .select(
+          'profile_visibility, schedule_invite, notif_prefs, friend_request_mode',
+        )
         .eq('auth_uid', uid)
         .maybeSingle();
       if (error || !data) return; // 서버 못 읽음/신규 — 로컬값 유지
       const row = data as {
         profile_visibility: string | null;
         schedule_invite: string | null;
+        notif_prefs: Record<string, boolean> | null;
+        friend_request_mode: string | null;
       };
+
+      // 1) 공개/공유 — others_schedule_view 는 profileVisibility 미러.
       const pv: ProfileVisibility =
         row.profile_visibility === 'public' ? 'public' : 'friends';
       const inv: ScheduleInvite = row.schedule_invite === 'off' ? 'off' : 'on';
-      // 서버값을 권위로 로컬 덮기 — others_schedule_view 는 profileVisibility 미러.
-      set({
+
+      // 2) 친구신청 모드 — 서버값 우선, 미인식/null 이면 로컬 유지.
+      const fr: FriendRequest | null = FRIEND_REQ_VALUES.includes(
+        row.friend_request_mode as FriendRequest,
+      )
+        ? (row.friend_request_mode as FriendRequest)
+        : null;
+
+      // 3) 알림 5종 — notif_prefs 미러에서 복원. 누락 키는 ON(가입 기본).
+      //    pushOn 은 5 sub 의 OR(derived) 로 재계산. marketing 은 제외(terms 권위).
+      const np = row.notif_prefs ?? {};
+      const nf = np.friend !== false;
+      const ns = np.schedule !== false;
+      const nsu = np.submission !== false;
+      const nsv = np.service !== false;
+      const nr = np.report !== false;
+
+      // 서버값을 권위로 로컬 메모리 덮기.
+      set((s) => ({
         profileVisibility: pv,
         othersScheduleView: pv,
         scheduleInvite: inv,
-      });
-      await Promise.all([
+        friendRequest: fr ?? s.friendRequest,
+        notifFriendInvite: nf,
+        notifScheduleReminder: ns,
+        notifSubmissionResult: nsu,
+        notifServiceAnnounce: nsv,
+        notifMonthlyReport: nr,
+        pushOn: nf || ns || nsu || nsv || nr,
+      }));
+      const writes = [
         AsyncStorage.setItem(K_PROFILE_VIS, pv),
         AsyncStorage.setItem(K_VIEW, pv),
         AsyncStorage.setItem(K_INVITE, inv),
-      ]);
+        AsyncStorage.setItem(K_NOTIF_FRIEND, nf ? 'true' : 'false'),
+        AsyncStorage.setItem(K_NOTIF_SCHED, ns ? 'true' : 'false'),
+        AsyncStorage.setItem(K_NOTIF_SUBMIT, nsu ? 'true' : 'false'),
+        AsyncStorage.setItem(K_NOTIF_SVC, nsv ? 'true' : 'false'),
+        AsyncStorage.setItem(K_NOTIF_REPORT, nr ? 'true' : 'false'),
+      ];
+      if (fr) writes.push(AsyncStorage.setItem(K_FRIEND_REQ, fr));
+      await Promise.all(writes);
     } catch {
       /* best-effort — 로컬값 유지 */
     }
