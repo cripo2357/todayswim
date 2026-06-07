@@ -9,6 +9,14 @@
 <link rel="apple-touch-icon" href="{{ '/assets/og-image.png' | absolute_url }}">
 
 <style>
+  /* 사이드바 앱 아이콘 — 512px 원본을 적당히 줄이고 라운드 처리. */
+  header img[alt="Logo"] {
+    width: 88px;
+    height: auto;
+    border-radius: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  }
+
   /* 다운로드 뱃지 가로 정렬 — 랜딩 CTA. */
   .cta-badges { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
   .cta-badges img { height: 56px; width: auto; }

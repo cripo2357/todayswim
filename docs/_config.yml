@@ -24,7 +24,9 @@ plugins:
   - jekyll-sitemap
 
 # jekyll-seo-tag 기본 OG 이미지(페이지에 image 없을 때) + 트위터 카드.
-logo: /todayswim/assets/og-image.png
+# 경로는 baseurl 미포함 — 테마(사이드바)는 relative_url, seo-tag 는 absolute_url 로
+# 각각 /todayswim 을 한 번만 붙임. 여기에 /todayswim 을 박으면 이중 접두(404)됨.
+logo: /assets/og-image.png
 twitter:
   card: summary
 
