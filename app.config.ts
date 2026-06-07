@@ -237,6 +237,17 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         },
       },
     ],
+    // 카카오 네이티브 로그인 — 카카오톡 앱 점프(웹 동의창 회피, app-to-app).
+    // kakaoAppKey = 네이티브 앱 키(클라 공개키, 앱 바이너리에 박힘 — 네이버 ID와 동일 성격).
+    // kotlinVersion 은 Expo 55 기본값(2.0.21)으로 고정 — 플러그인 기본 1.5.10 이
+    // Expo 55 Kotlin(compose 플러그인 2.0+ 필요)과 충돌해 빌드 깨지는 것 방지.
+    [
+      '@react-native-seoul/kakao-login',
+      {
+        kakaoAppKey: '600eb4d3ee5877a0badff51445686179',
+        kotlinVersion: '2.0.21',
+      },
+    ],
     // Sentry plugin 임시 제거 — Sentry 프로젝트(SENTRY_ORG/PROJECT/AUTH_TOKEN)
     // 미생성 상태에서 source maps 자동 업로드가 빌드 자동 실패 유발.
     // disableAutoUpload 옵션이 의도대로 인식 안 됨. 출시 직전 Sentry 프로젝트

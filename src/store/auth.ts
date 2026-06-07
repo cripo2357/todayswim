@@ -3,8 +3,11 @@
  *
  *  - Google: 네이티브 SDK(@react-native-google-signin)로 idToken 받아
  *            supabase.auth.signInWithIdToken({ provider: 'google' }) 교환.
- *  - Kakao : supabase.auth.signInWithOAuth({ provider: 'kakao' }) +
- *            expo-web-browser 인앱 브라우저 + PKCE code 교환.
+ *  - Kakao : 네이티브 SDK(@react-native-seoul/kakao-login)로 로그인(카카오톡 앱
+ *            점프, 없으면 카카오계정 웹 폴백) → OIDC idToken 받아
+ *            supabase.auth.signInWithIdToken({ provider: 'kakao' }) 교환.
+ *            (구 방식: signInWithOAuth 웹 + PKCE — iOS 동의창에 Supabase ref
+ *            노출돼 네이티브로 교체. 비즈앱·OIDC 활성 전제.)
  *  - Apple : 미지원(향후 iOS 도입 예정). 약관에도 "현재 미운영"으로 명시.
  *
  * 세션은 supabase-js가 AsyncStorage에 영속(persistSession) — 앱 재시작 복원/자동 갱신.
@@ -15,8 +18,10 @@ import {
   GoogleSignin,
   statusCodes,
 } from '@react-native-google-signin/google-signin';
-import * as WebBrowser from 'expo-web-browser';
-import * as Linking from 'expo-linking';
+import {
+  login as kakaoLogin,
+  logout as kakaoLogout,
+} from '@react-native-seoul/kakao-login';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Crypto from 'expo-crypto';
 import type { Session } from '@supabase/supabase-js';
@@ -208,44 +213,35 @@ export const useAuth = create<AuthState>((set) => ({
   },
 
   signInWithKakao: async () => {
-    const redirectTo = Linking.createURL('auth/callback');
-    // ⚠️ Supabase GoTrue는 Kakao에 `account_email`을 서버측에서 강제
-    //   요청한다(클라 `scopes` 옵션으로 제거 불가 — 검증으로 확인됨:
-    //   `scopes:'profile_nickname profile_image'`를 줘도 콜백이
-    //   `Invalid scope: account_email`로 실패). 따라서 Kakao 로그인은
-    //   Kakao 앱을 **비즈 앱**으로 등록해 `account_email` 동의항목이
-    //   허용돼야 비로소 동작한다. (이메일=계정 key라 어차피 필요 —
-    //   memory email_account_key, docs/SUPABASE_SEOUL_MIGRATION.md §8.)
-    //   그때까지 카카오 로그인은 기능 불가(리전 이관과 무관한 외부 제약).
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'kakao',
-      options: { redirectTo, skipBrowserRedirect: true },
-    });
-    if (error) throw error;
-    if (!data?.url) throw new Error('Kakao OAuth URL 없음');
-
-    const res = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-    if (res.type !== 'success') return; // 취소/실패
-
-    // PKCE: 콜백 URL의 ?code= 를 세션으로 교환.
-    const cbUrl = new URL(res.url);
-    const code = cbUrl.searchParams.get('code');
-    if (!code) {
-      // Supabase는 실패 시 code 대신 error/error_description을 붙여 돌려보냄
-      // — 그 메시지를 그대로 노출(추측 대신 실제 원인).
-      const detail =
-        cbUrl.searchParams.get('error_description') ??
-        cbUrl.searchParams.get('error') ??
-        res.url;
-      throw new Error(`Kakao 콜백에 code 없음 — ${detail}`);
+    // 네이티브 카카오 SDK — 카카오톡 설치 시 앱으로 점프(웹 동의창 회피),
+    // 없으면 SDK가 카카오계정 웹 로그인으로 자동 폴백. OIDC 활성이라 응답에
+    // idToken 포함 → Supabase signInWithIdToken 으로 교환(nonce는 네이티브
+    // 흐름이라 미사용 — 토큰이 redirect URL 을 안 거쳐 재전송 위험 낮음).
+    // 비즈앱(account_email)·OIDC 활성 전제(둘 다 콘솔에서 ON 확인 2026-06-07).
+    try {
+      const token = await kakaoLogin();
+      if (!token?.idToken) {
+        // OIDC 미활성이면 idToken 이 비어 옴 — 콘솔 설정 누락 진단.
+        throw new Error('Kakao idToken 없음 — OpenID Connect 활성화 확인 필요.');
+      }
+      const { data, error } = await supabase.auth.signInWithIdToken({
+        provider: 'kakao',
+        token: token.idToken,
+      });
+      if (error) throw error;
+      set({ user: userFromSession(data.session) });
+      await syncProfileFromAuth(data.session); // 0059 binding
+      // 단일 기기 정책 — 이 기기를 활성 기기로 등록.
+      await claimDevice();
+    } catch (e) {
+      // 사용자가 카카오 로그인/동의를 취소 — 조용히 무시(Google 패턴과 동일).
+      const code = (e as { code?: string }).code ?? '';
+      const msg = (e as { message?: string }).message ?? '';
+      if (code === 'E_CANCELLED_OPERATION' || /cancel/i.test(`${code}${msg}`)) {
+        return;
+      }
+      throw e;
     }
-    const { data: sess, error: exErr } =
-      await supabase.auth.exchangeCodeForSession(code);
-    if (exErr) throw exErr;
-    set({ user: userFromSession(sess.session) });
-    await syncProfileFromAuth(sess.session); // 0059 binding
-    // 단일 기기 정책 — 이 기기를 활성 기기로 등록.
-    await claimDevice();
   },
 
   // Apple (iOS 전용) — expo-apple-authentication 네이티브 자격증명 →
@@ -308,6 +304,11 @@ export const useAuth = create<AuthState>((set) => ({
       await GoogleSignin.signOut();
     } catch {
       // Google 미로그인 상태면 무시
+    }
+    try {
+      await kakaoLogout();
+    } catch {
+      // Kakao 미로그인 상태면 무시
     }
     set({ user: null });
     // 계정 스코프 로컬 상태 전면 초기화 — 프로필·즐겨찾기·내 일정·친구·설정·
