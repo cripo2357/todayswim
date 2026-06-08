@@ -5,6 +5,41 @@
 
 ---
 
+## 라운드 2 (2026-06-08 재심사 후 추가 질문)
+
+연령등급(2.3.6)은 **통과**(메시지에서 사라짐). 남은 건 2.1 정보요청 1건:
+> "How do users invite friends?"
+
+→ 코드/빌드/마이그레이션 무관, **Resolution Center 회신만**. 아래 [라운드2 회신문] 붙여넣고 재제출.
+
+우리 앱 친구 흐름 = ①친구 추가(닉네임/ID 검색 → 초대장 보내기 → 수락) ②일정 초대(확정 일정에 친구 초대). 외부 초대 링크는 없음(기존 사용자끼리 검색 연결).
+
+### [라운드2 회신문]
+
+```
+Hello, and thank you for the question.
+
+In Pool's day, "friends" are other people who already use the app. Users connect with them entirely inside the app — there is no external invite or referral link. There are two related flows:
+
+1) Add a friend (create the connection)
+- Open the "Friends" tab and tap "Add friend".
+- Choose the "By nickname" or "By ID" tab and search:
+  - by nickname (for example: 물보라), or
+  - by the other person's 6-character friend code (for example: DEMO11).
+- Tap the result, then tap the "Send request" button.
+- When the other person accepts the request, you become friends and they appear in your Friends list.
+- For your review, the example accounts (DEMO11–DEMO16) automatically accept incoming requests, so the new friend appears in your Friends list within a few seconds (pull down to refresh the Friends list if needed).
+
+2) Invite a friend to a swim session (optional, after you already have friends)
+- Open the Calendar tab, select one of your confirmed swim schedules, and tap "Invite friends" to invite people from your friends list to join that session.
+
+So a new user first adds friends using flow (1) above. Step-by-step instructions and the example accounts are also included in the App Review Information notes.
+
+Thank you — please let us know if anything else is needed.
+```
+
+---
+
 ## ✅ 크리스 체크리스트 (순서대로)
 
 1. **[2.3.6] 연령 등급 수정** — App Store Connect → 앱 → **앱 정보(App Information)**
