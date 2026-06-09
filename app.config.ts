@@ -43,6 +43,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // (Firebase 제거 — RNFirebase + 정적프레임워크 + New Arch iOS 빌드
     //  비호환으로 v1에서 분리. 분석은 추후 New-Arch 호환 도구로 재추가.)
     infoPlist: {
+      // 앱 기본/지원 언어 = 한국어. 미선언 시 Expo 기본값(en)으로 잡혀 App Store
+      // "언어" 필드가 '영어'로 표시됨(한국어 전용 앱인데도). 한국어 명시.
+      CFBundleDevelopmentRegion: 'ko',
+      CFBundleLocalizations: ['ko'],
       NSLocationWhenInUseUsageDescription:
         '근처 수영장을 거리순으로 보여드리려면 위치 권한이 필요해요.',
       // 표준/면제 암호화만 사용 — App Store 암호화 수출규정 자동 컴플라이언스
