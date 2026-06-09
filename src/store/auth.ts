@@ -292,10 +292,11 @@ export const useAuth = create<AuthState>((set) => ({
   },
 
   signOut: async () => {
-    // 푸시 토큰 정리는 fire-and-forget — getExpoPushTokenAsync 가 Expo
-    // 서버 round-trip 이라 await 시 로그아웃 체감이 수초 멈춤. 함수 자체가
-    // try/catch best-effort 라 실패해도 stale row 만 남고 다음 등록 때 갱신.
-    void unregisterCurrentDevice();
+    // 푸시 토큰 정리 — device_id로 즉시 삭제(Expo round-trip 없음)라 빠르므로
+    // await 로 세션 유효할 때 확실히 제거. 예전 fire-and-forget은 삭제가
+    // 완료되기 전 signOut 으로 세션이 끊겨 stale row 가 남고, 로그아웃한
+    // 기기가 그 계정 푸시를 계속 받는 버그 원인이었음.
+    await unregisterCurrentDevice();
     void clearLocalDeviceId(); // 단일 기기 — 로컬 기기-세션 id 제거.
     // scope:'local' — 디바이스 세션만 즉시 무효화(서버 round-trip 없음).
     // 다른 디바이스 세션은 살려둠 — 본인 로그아웃 UX 최우선.

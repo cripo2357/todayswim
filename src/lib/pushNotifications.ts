@@ -99,19 +99,26 @@ export async function registerForPush(authUid: string | undefined): Promise<void
 export async function unregisterCurrentDevice(): Promise<void> {
   if (Platform.OS === 'web') return;
   try {
+    // device_id(installId)로 삭제 — Expo 서버 round-trip 불필요라 빠르고
+    // 거의 안 실패함. RLS(delete using user_id=auth.uid())가 내 행만 지움.
+    // 로그아웃 시 세션 유효할 때 await로 호출 → stale row 안 남음(로그아웃
+    // 기기가 계속 푸시 받던 버그 차단). [[push_token_stale_cross_delivery]]
+    const installId = await getInstallId();
+    if (installId) {
+      await supabase.from('push_tokens').delete().eq('device_id', installId);
+      return;
+    }
+
+    // 폴백 — installId 없을 때만 옛 경로(Expo round-trip).
     const Notifications = await import('expo-notifications');
     const Device = await import('expo-device');
     if (!Device.isDevice) return;
-
     const tokenResp = await Notifications.getExpoPushTokenAsync(
       PROJECT_ID ? { projectId: PROJECT_ID } : undefined,
     );
     const expoToken = tokenResp.data;
     if (!expoToken) return;
-    await supabase
-      .from('push_tokens')
-      .delete()
-      .eq('expo_token', expoToken);
+    await supabase.from('push_tokens').delete().eq('expo_token', expoToken);
   } catch {
     // best-effort.
   }
