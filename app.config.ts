@@ -16,7 +16,7 @@ const NAVER_MAPS_CLIENT_ID =
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: "Pool's day",
+  name: '풀스데이',
   slug: 'todayswim', // EAS 내부 식별자(슬러그)는 그대로. 표시 이름은 expo.dev에서 'poolsday'로 변경됨.
   version: '1.0.1',
   orientation: 'portrait',
