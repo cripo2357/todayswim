@@ -14,16 +14,14 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Mail, XCircle, Check, X } from 'lucide-react-native';
+import { Mail, XCircle, Check } from 'lucide-react-native';
 import IconChevronDown from '@assets/icons/chevron-down.svg';
 
 import type { RootStackParamList } from '@/navigation/types';
 import { BottomSheet, SheetCtaButton } from '@/components/ui/BottomSheet';
 import type { MockAccount } from '@/lib/mockData';
 import { resolveAvatarUri } from '@/lib/avatars';
-import { useQuery } from '@tanstack/react-query';
 import { useFriends } from '@/store/friends';
-import { tryFetchInviteOffIds } from '@/lib/friendsSync';
 import { useOtherSchedules } from '@/hooks/useOtherSchedules';
 import { useSentInvites, inviteSlotKey } from '@/store/sentInvites';
 import { dispatchMessage, dispatchMessageTo } from '@/lib/messages/dispatch';
@@ -81,41 +79,20 @@ export function InviteFriendsScreen() {
     }
     return s;
   }, [allOtherSchedules, poolId, date, start, end]);
-  // 선택 불가 대상 = 이미 참여 중 + 이미 초대장 보낸 친구. (Figma 150:9255:
-  // 목록에서 숨기지 않고 회색 X로 노출 — 검색은 되지만 선택만 막는다.)
-  const disabledIds = React.useMemo(
+  // 제외 대상 = 이미 참여 중 + 이미 초대장 보낸 친구.
+  const excludedIds = React.useMemo(
     () => new Set<string>([...joinedIds, ...sentIds]),
     [joinedIds, sentIds],
   );
   // 초대 후보 = 현재 친구(store) — block()/removeFriend()가 이미 반영된
-  // 단일 출처라 차단·삭제된 사용자는 절대 후보에 안 뜸. 선택 불가 친구도
-  // 목록엔 노출(회색 X)하므로 여기선 거르지 않고 정렬만.
+  // 단일 출처라 차단·삭제된 사용자는 절대 후보에 안 뜸.
   const friends = useFriends((s) => s.friends);
-  // '수영 일정 초대 안 받기'(schedule_invite='off') 친구는 후보에서 숨김
-  // (2026-06 사용자 결정 — 프라이버시: 회색 X로 노출하면 설정이 드러남).
-  const friendIdsKey = React.useMemo(
-    () =>
-      friends
-        .map((f) => f.id)
-        .sort()
-        .join(','),
-    [friends],
-  );
-  const { data: inviteOffIds } = useQuery({
-    queryKey: ['inviteOffIds', friendIdsKey],
-    queryFn: () => tryFetchInviteOffIds(friends.map((f) => f.id)),
-    enabled: friends.length > 0,
-  });
-  const hiddenIds = React.useMemo(
-    () => new Set(inviteOffIds ?? EMPTY_IDS),
-    [inviteOffIds],
-  );
   const sorted = React.useMemo(
     () =>
       friends
-        .filter((f) => !hiddenIds.has(f.id))
+        .filter((f) => !excludedIds.has(f.id))
         .sort((a, b) => a.nickname.localeCompare(b.nickname, 'ko')),
-    [friends, hiddenIds],
+    [friends, excludedIds],
   );
   const q = query.trim().toLowerCase();
   const filtered = q
@@ -315,42 +292,24 @@ export function InviteFriendsScreen() {
                 alwaysBounceVertical={false}
               >
                 {filtered.map((f) => {
-                  const disabled = disabledIds.has(f.id);
                   const on = selectedIds.has(f.id);
                   return (
                     <Pressable
                       key={f.id}
-                      onPress={disabled ? undefined : () => toggle(f)}
-                      disabled={disabled}
+                      onPress={() => toggle(f)}
                       style={styles.row}
-                      accessibilityRole="button"
-                      accessibilityState={{ disabled, selected: on }}
-                      accessibilityLabel={
-                        disabled
-                          ? `${f.nickname} 초대할 수 없음`
-                          : `${f.nickname} ${on ? '선택 해제' : '선택'}`
-                      }
                     >
-                      {disabled ? (
-                        // Figma 150:9255 — 선택 불가: pd-gray 원 + 흰 X.
-                        <View style={[styles.checkbox, styles.checkboxDisabled]}>
-                          <X
+                      <View
+                        style={[styles.checkbox, on && styles.checkboxOn]}
+                      >
+                        {on ? (
+                          <Check
                             size={11}
                             color={tokens.color.white}
                             strokeWidth={3}
                           />
-                        </View>
-                      ) : (
-                        <View style={[styles.checkbox, on && styles.checkboxOn]}>
-                          {on ? (
-                            <Check
-                              size={11}
-                              color={tokens.color.white}
-                              strokeWidth={3}
-                            />
-                          ) : null}
-                        </View>
-                      )}
+                        ) : null}
+                      </View>
                       <Avatar f={f} />
                       <Text style={styles.name} numberOfLines={1}>
                         {f.nickname}
@@ -565,11 +524,6 @@ const styles = StyleSheet.create({
   checkboxOn: {
     backgroundColor: tokens.color.pdMint,
     borderColor: tokens.color.pdMint,
-  },
-  // Figma 150:9255 — 선택 불가(초대중·참여중): pd-gray 채움 + 흰 X.
-  checkboxDisabled: {
-    backgroundColor: tokens.color.pdGray,
-    borderColor: tokens.color.pdGray,
   },
   // 아바타 24 원형 + pd-mint 보더(친구=mint, [[profile_border_policy]])
   avatar: {
