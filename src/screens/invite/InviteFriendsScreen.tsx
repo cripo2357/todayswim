@@ -22,6 +22,7 @@ import { BottomSheet, SheetCtaButton } from '@/components/ui/BottomSheet';
 import type { MockAccount } from '@/lib/mockData';
 import { resolveAvatarUri } from '@/lib/avatars';
 import { useFriends } from '@/store/friends';
+import { useOtherSchedules } from '@/hooks/useOtherSchedules';
 import { useSentInvites, inviteSlotKey } from '@/store/sentInvites';
 import { dispatchMessage, dispatchMessageTo } from '@/lib/messages/dispatch';
 import { useProfile } from '@/store/profile';
@@ -34,8 +35,6 @@ const SCREEN_H = Dimensions.get('window').height;
 const BODY_H = Math.round(SCREEN_H * 0.62);
 // 안정적 빈 배열(미초대 슬롯에서 매 렌더 새 [] 생성으로 인한 리렌더 방지)
 const EMPTY_IDS: string[] = [];
-// 참여 중 친구 제외 — 서버 슬롯 조회 연동 전까지 항상 빈 집합(reference-stable).
-const EMPTY_JOINED: Set<string> = new Set();
 
 // 앱 통일 "YY.MM.DD(요일) 오전/오후 H:MM" — @/lib/dateFormat 위임.
 function formatScheduleLine(iso: string, start: string): string {
@@ -63,9 +62,23 @@ export function InviteFriendsScreen() {
   const sentIds = sentBySlot[slotKey] ?? EMPTY_IDS;
 
   // 이미 이 슬롯(풀+날짜+시작/끝)에 참여 중인 친구는 초대 불필요 → 제외.
-  // (P3 prod, 2026-06-02): 슬롯 참여자 mock 소스 제거 — 서버 일정 fetch 미연동.
-  // 참여 중 제외는 서버 슬롯-단위 조회 연동 시 복원. 현재는 빈 집합.
-  const joinedIds = EMPTY_JOINED;
+  // useOtherSchedules(서버 친구 일정, 지도·달력·풀카드와 동일 소스) 중 이
+  // 슬롯과 정확히 일치하는 친구 userId 집합.
+  const allOtherSchedules = useOtherSchedules();
+  const joinedIds = React.useMemo(() => {
+    const s = new Set<string>();
+    for (const o of allOtherSchedules) {
+      if (
+        o.poolId === poolId &&
+        o.date === date &&
+        o.start === start &&
+        o.end === end
+      ) {
+        s.add(o.userId);
+      }
+    }
+    return s;
+  }, [allOtherSchedules, poolId, date, start, end]);
   // 제외 대상 = 이미 참여 중 + 이미 초대장 보낸 친구.
   const excludedIds = React.useMemo(
     () => new Set<string>([...joinedIds, ...sentIds]),

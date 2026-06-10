@@ -148,14 +148,15 @@ function todayYmd(): string {
 /**
  * 해당 사용자의 예정 수영 일정 — 비공개 제외, 오늘 이후, 슬롯 중복 제거.
  * (관계 무관 public, 친구면 friends도 표시.)
+ * source = useUserSchedules(userId) 결과(서버 fetch). 호출자가 주입.
  */
 export function upcomingSchedulesFor(
+  source: OtherSchedule[],
   userId: string,
   isFriend: boolean,
 ): OtherSchedule[] {
   const today = todayYmd();
   const seen = new Set<string>();
-  const source: OtherSchedule[] = []; // P3 prod: 서버 일정 소스 미연동 — 빈 배열.
   return source.filter((o) => {
     if (o.userId !== userId) return false;
     if (o.visibility === 'private') return false;

@@ -26,6 +26,7 @@ import {
   upcomingSchedulesFor,
 } from '@/lib/otherProfile';
 import { useOtherProfile } from '@/hooks/useOtherProfile';
+import { useUserSchedules } from '@/hooks/useUserSchedules';
 import { useSwimSchedules } from '@/store/swimSchedule';
 import { useProfile } from '@/store/profile';
 import { useAddScheduleIntent } from '@/store/addScheduleIntent';
@@ -85,9 +86,10 @@ export function OtherUserProfileScreen() {
   const { profile, isLoading } = useOtherProfile(userId);
   const isFriend = rel === 'friend';
   const labels = profile ? profileLabels(profile) : [];
+  const userSchedules = useUserSchedules(userId);
   const schedules = React.useMemo(
-    () => (profile ? upcomingSchedulesFor(userId, isFriend) : []),
-    [profile, userId, isFriend],
+    () => (profile ? upcomingSchedulesFor(userSchedules, userId, isFriend) : []),
+    [profile, userSchedules, userId, isFriend],
   );
 
   const mySchedules = useSwimSchedules((s) => s.schedules);

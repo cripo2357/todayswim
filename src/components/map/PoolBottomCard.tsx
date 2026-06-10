@@ -18,16 +18,12 @@ import { useFriends } from '@/store/friends';
 import { useProfile } from '@/store/profile';
 import { usePrefs } from '@/store/prefs';
 import { useAddScheduleIntent } from '@/store/addScheduleIntent';
-import type { OtherSchedule } from '@/lib/mockData';
+import { useOtherSchedules } from '@/hooks/useOtherSchedules';
 import {
   buildPoolScheduleSlots,
   type PoolScheduleSlot,
 } from '@/lib/poolScheduleSlots';
 import { PoolParticipantsSheet } from './PoolParticipantsSheet';
-
-// (P3 prod, 2026-06-02): 같은 슬롯 참여자 mock 제거 — 서버 일정 소스 미연동.
-// 내 일정만으로 슬롯 구성(otherSchedules 빈 배열, reference-stable).
-const OTHER_SCHEDULES: OtherSchedule[] = [];
 
 type ChipKey = 'kids' | 'diving' | 'hotel';
 const CHIP_LABEL: Record<ChipKey, string> = {
@@ -90,6 +86,13 @@ export function PoolBottomCard({
   const blockedIds = useFriends((s) => s.blocked);
   const othersScheduleView = usePrefs((s) => s.othersScheduleView);
   const setIntent = useAddScheduleIntent((s) => s.setIntent);
+  // 같은 슬롯 참여 친구 — useOtherSchedules(서버, 지도·달력과 동일 소스) 중
+  // 이 풀 것만. 비친구 전체공개는 슬롯-단위 fetch 후속(전 화면 일관).
+  const allOtherSchedules = useOtherSchedules();
+  const poolOtherSchedules = React.useMemo(
+    () => allOtherSchedules.filter((o) => o.poolId === pool.id),
+    [allOtherSchedules, pool.id],
+  );
   const slots = React.useMemo(
     () =>
       buildPoolScheduleSlots({
@@ -100,7 +103,7 @@ export function PoolBottomCard({
           avatar: profile?.photoUri,
         },
         mySchedules,
-        otherSchedules: OTHER_SCHEDULES,
+        otherSchedules: poolOtherSchedules,
         blockedIds,
         othersScheduleView,
       }),
@@ -110,6 +113,7 @@ export function PoolBottomCard({
       profile?.name,
       profile?.photoUri,
       mySchedules,
+      poolOtherSchedules,
       blockedIds,
       othersScheduleView,
     ],

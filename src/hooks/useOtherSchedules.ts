@@ -27,7 +27,7 @@ import type { ScheduleVisibility } from '@/store/swimSchedule';
 // 재계산되지 않도록(MapScreen 주석 참고).
 const EMPTY_OTHER_SCHEDULES: OtherSchedule[] = [];
 
-function rowToOtherSchedule(
+export function rowToOtherSchedule(
   row: ScheduleWithOwnerRow,
   friendIds: Set<string>,
 ): OtherSchedule {
