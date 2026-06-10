@@ -54,6 +54,13 @@ export function isBundleAvatar(photoUri: string | undefined): photoUri is Avatar
   return !!photoUri && BUNDLE_AVATAR_ID_SET.has(photoUri);
 }
 
+/** 외부(소셜 제공자 CDN) 사진 URL 판별 — 우리 Storage(/avatars/)도 번들 ID도
+ *  아닌 http(s) URL. 가입 시 우리 Storage 로 재호스팅할 대상(카카오/구글 CDN).
+ *  우리 업로드/번들 URL 은 항상 '/avatars/' 를 포함하므로 그걸로 구분. */
+export function isExternalAvatarUrl(value: string | undefined): boolean {
+  return !!value && /^https?:\/\//.test(value) && !value.includes('/avatars/');
+}
+
 /** 아바타 표시용 이미지 URI 단일 정규화 지점.
  *  - URL(업로드·소셜·번들) → 그대로(소형이고 thumbUri 있으면 thumb 우선).
  *  - 레거시 번들 ID('avatar-*') → Storage URL 로 변환(size≤28 면 thumb).

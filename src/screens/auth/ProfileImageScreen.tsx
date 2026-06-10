@@ -17,8 +17,13 @@ import { useProfile } from '@/store/profile';
 import { useAuth } from '@/store/auth';
 import { pickProfileImage } from '@/lib/pickProfileImage';
 import { uploadProfileAvatar } from '@/lib/uploadProfileAvatar';
+import { rehostRemoteAvatar } from '@/lib/rehostRemoteAvatar';
 import { logEvent } from '@/lib/analytics';
-import { defaultAvatarUrls, resolveAvatarUri } from '@/lib/avatars';
+import {
+  defaultAvatarUrls,
+  resolveAvatarUri,
+  isExternalAvatarUrl,
+} from '@/lib/avatars';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
 import { formatDate } from '@/lib/dateFormat';
@@ -117,11 +122,28 @@ export function ProfileImageScreen() {
 
   const onComplete = async () => {
     if (!profile) return;
-    await saveProfile({ ...profile, photoUri: photo, photoThumbUri: photoThumb });
+    let finalPhoto = photo;
+    let finalThumb = photoThumb;
+    // 소셜(카카오/구글) CDN 사진은 우리 Storage 로 재호스팅 — 제공자 URL 회전·
+    // 만료로 깨지는 것 방지 + 업로드 사진과 형식 통일. 실패 시 원 URL 폴백(가입 X).
+    if (isExternalAvatarUrl(photo)) {
+      setState('uploading');
+      const rehosted = await rehostRemoteAvatar(photo);
+      if (rehosted.status === 'ok') {
+        finalPhoto = rehosted.url;
+        finalThumb = rehosted.thumbUrl;
+      }
+      setState('idle');
+    }
+    await saveProfile({
+      ...profile,
+      photoUri: finalPhoto,
+      photoThumbUri: finalThumb,
+    });
     // mode 식별: Storage 번들 경로(또는 레거시 avatar-* ID)면 default, 그 외 URL 은
-    // upload(or social). social 과 upload 는 둘 다 URL 이라 추정만 가능.
+    // upload(or social→재호스팅됨). social 과 upload 는 둘 다 URL 이라 추정만 가능.
     const mode: 'default' | 'upload' =
-      photo.includes('/avatars/bundle/') || photo.startsWith('avatar-')
+      finalPhoto.includes('/avatars/bundle/') || finalPhoto.startsWith('avatar-')
         ? 'default'
         : 'upload';
     void logEvent('profile_image_set', { mode });
