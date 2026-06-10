@@ -39,11 +39,14 @@ import { useFriends } from '@/store/friends';
 import { useFavorites } from '@/store/favorites';
 import type { OtherSchedule, OtherLesson } from '@/lib/mockData';
 import { logEvent } from '@/lib/analytics';
-// MapScreen 한정 — useOtherSchedules 사용 금지 ([[naver_map_oob_mock_only]]).
-// 2026-05-20 회귀: 6배치(f529ecf)에서 useOtherSchedules 도입 시 naver-map
-// 마운트에서 java.lang.IndexOutOfBoundsException(ArrayList.get) 발생.
-// (P3 prod, 2026-06-02): 친구 일정/레슨 mock 소스 제거 — 빈 배열. 서버 친구
-// 일정 노출은 naver-map SDK race 해결 후 별도 경로로 재진입.
+// 친구 일정 지도 노출 — 2026-06-10 재진입(Phase 2).
+// 과거 회귀(f529ecf, 2026-05-20): useOtherSchedules 데이터가 naver-map *마운트
+// 도중* 도착해 마커 churn → java.lang.IndexOutOfBoundsException(ArrayList.get).
+// 해법: hook 호출은 하되, 실제 피드는 onInitialized(네이티브 지도 완전 초기화)
+// 이후로만 게이트(mapReady). 마운트 중엔 빈 배열 → 마커 churn 없음. 초기화 후
+// 마커 추가는 줌 변화 시 풀 마커 추가와 동일 경로라 안전. 추가로 스택은 아바타
+// prefetch 완료 후에만 굽는 게이트가 깔려 있어 빈/churn 캡처도 방지.
+import { useOtherSchedules } from '@/hooks/useOtherSchedules';
 import {
   buildPoolProfileStacks,
   type PoolStack,
@@ -65,8 +68,10 @@ import { Toast } from '@/components/ui/Toast';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { tokens } from '@/styles/tokens';
 
-// 친구 일정/레슨 소스 — P3 prod 더미 제거로 빈 배열(reference-stable).
-const MAP_OTHER_SCHEDULES: OtherSchedule[] = [];
+// 지도 초기화 전 / 친구 레슨 폴백 — reference-stable 빈 배열.
+// 친구 일정은 useOtherSchedules(서버)로 옴(mapReady 게이트). 친구 레슨은 아직
+// 서버 hook 미존재 → 빈 배열 유지(남은 Phase 2 갭).
+const EMPTY_OTHER_SCHEDULES: OtherSchedule[] = [];
 const MAP_OTHER_LESSONS: OtherLesson[] = [];
 
 // 뒤로가기 종료 안내 노출 시간(ms). 이 시간 내 한 번 더 누르면 앱 종료.
@@ -192,6 +197,9 @@ export function MapScreen() {
   const unread = useUnreadCount();
   const mapRef = React.useRef<NaverMapViewRef | null>(null);
   const insets = useSafeAreaInsets();
+  // 네이티브 지도 초기화 완료 플래그 — onInitialized 후 true. 친구 일정(서버)
+  // 피드를 이 시점 이후로 게이트해 마운트 중 마커 churn 크래시 회피.
+  const [mapReady, setMapReady] = React.useState(false);
 
   const selectedPoolId = useSelection((s) => s.selectedPoolId);
   const select = useSelection((s) => s.select);
@@ -439,16 +447,18 @@ export function MapScreen() {
     [schedules],
   );
 
-  // 풀별 프로필 스택 — 나/친구 중 노출창(슬롯 시작 N 전 ~ 종료) 내 일정자.
-  // N = prefs.mapFriendHorizon ('d1'/'h12'/'h6'). 'off'면 스택 전체 미표시(나 포함).
-  // 친구 일정 소스 — naver-map race 회피로 mock 직접 사용
-  // (위 import 코멘트 / [[naver_map_oob_mock_only]] 메모리). 노출/차단은
-  // useFriends 경유. 실 서버 친구 일정 노출은 SDK race 해결 후 재진입 가능.
+  // 풀별 프로필 스택 — 나/친구/사람들 중 노출창(슬롯 시작 N 전 ~ 종료) 내 일정자.
+  // N = prefs.mapFriendHorizon ('d1'/'h12'/'h6'). 노출/차단은 useFriends 경유.
+  // 친구 일정 소스 = useOtherSchedules(서버). 단, naver-map 마운트 레이스
+  // (위 import 코멘트) 회피로 onInitialized 완료(mapReady) 전엔 빈 배열 피드.
   const mySchedules = useSwimSchedules((s) => s.schedules);
   const friends = useFriends((s) => s.friends);
   const blocked = useFriends((s) => s.blocked);
   const favoriteIds = useFavorites((s) => s.ids);
-  const otherSchedules = MAP_OTHER_SCHEDULES;
+  const serverOtherSchedules = useOtherSchedules();
+  const otherSchedules = mapReady
+    ? serverOtherSchedules
+    : EMPTY_OTHER_SCHEDULES;
   const poolStacks = React.useMemo<Map<string, PoolStack>>(
     () =>
       showStack
@@ -737,6 +747,8 @@ export function MapScreen() {
         ref={mapRef}
         style={StyleSheet.absoluteFill}
         initialCamera={INITIAL_CAMERA}
+        // 네이티브 지도 완전 초기화 신호 — 이후에만 친구 일정(서버) 마커 피드.
+        onInitialized={() => setMapReady(true)}
         onCameraChanged={onCameraChanged}
         // 풀 선택 시 카드 실측 높이 기준 mapPadding.bottom 동적 → 마커가 카드
         // 상단으로부터 위로 MARKER_ABOVE_CARD_TOP_PX(250) 떨어진 곳에 위치.

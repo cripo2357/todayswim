@@ -177,6 +177,7 @@ export function buildPoolProfileStacks(
         userId: o.userId,
         relation: 'friend',
         photoUri: f.avatar, // 노출 아바타는 useFriends 소스 기준
+        thumbUri: o.avatarThumb, // 소형(20px) 노출 64 썸네일(동일 profiles 행)
         poolId: o.poolId,
         startMs: slotMs(o.date, o.start),
         endMs: slotMs(o.date, o.end),
@@ -189,6 +190,7 @@ export function buildPoolProfileStacks(
         userId: o.userId,
         relation: 'other',
         photoUri: o.avatar,
+        thumbUri: o.avatarThumb,
         poolId: o.poolId,
         startMs: slotMs(o.date, o.start),
         endMs: slotMs(o.date, o.end),

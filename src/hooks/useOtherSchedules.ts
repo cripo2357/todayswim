@@ -22,6 +22,11 @@ import {
 } from '@/lib/mockData';
 import type { ScheduleVisibility } from '@/store/swimSchedule';
 
+// reference-stable 빈 배열 — data 미정(친구 0명/미fetch) 시 매 렌더 새 [] 반환을
+// 막는다. MapScreen 처럼 otherSchedules 를 의존하는 무거운 memo 체인이 매 렌더
+// 재계산되지 않도록(MapScreen 주석 참고).
+const EMPTY_OTHER_SCHEDULES: OtherSchedule[] = [];
+
 function rowToOtherSchedule(
   row: ScheduleWithOwnerRow,
   friendIds: Set<string>,
@@ -78,5 +83,5 @@ export function useOtherSchedules(): OtherSchedule[] {
   });
 
   // P3 prod 준비: 서버가 단일 권위 — mock 폴백 제거. 친구 0건/서버 0건 모두 빈 배열.
-  return data ?? [];
+  return data ?? EMPTY_OTHER_SCHEDULES;
 }
