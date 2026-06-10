@@ -47,6 +47,7 @@ import { logEvent } from '@/lib/analytics';
 import {
   buildPoolProfileStacks,
   type PoolStack,
+  type StackEntry,
 } from '@/lib/mapProfileStacks';
 import {
   usePrefs,
@@ -122,6 +123,14 @@ const STACK_LIFT = 9;
 // 최대 성능 비용. supercluster maxZoom=13이라 14↑은 거의 개별 풀.
 // (preview 측정: 스택이 release에서도 최대 부하 — 줌 게이팅이 핵심 레버)
 const STACK_MIN_ZOOM = 14;
+
+// 스택 아바타가 실제 렌더할 URI(MapProfileStack 의 Avatar size=20 = ui/Avatar
+// 와 동일 인자). prefetch 게이트와 bake 게이트가 같은 URI 를 봐야 하므로 단일
+// 헬퍼로 묶는다. 2026-06-07 이후 번들 아바타도 원격 URL 이라 모든 엔트리가 prefetch
+// 대상.
+function stackEntryUri(e: StackEntry): string | undefined {
+  return resolveAvatarUri(e.photoUri, { thumbUri: e.thumbUri, size: 20 });
+}
 
 // 스택 bake 캐시 키 — 참여자 구성(순서·관계·아바타)이 바뀌면 키가 바뀌어
 // 재캡처된다. 아바타(thumb/photo)까지 포함해 사진 변경도 반영.
@@ -501,6 +510,49 @@ export function MapScreen() {
     return cluster.getClusters([-180, -85, 180, 85], zoomInt) as ClusterFeature[];
   }, [cluster, zoomInt]);
 
+  // 스택 아바타 prefetch 게이트 — 내 위치 마커(locPhotoReady)와 동일 원리.
+  // 2026-06-07 이후 번들 아바타도 원격 URL 이라, 콜드스타트 때 원격 썸네일이
+  // BakeCell 의 400ms 안에 안 깔리면 빈 스택으로 구워지고 안정적인 bake 키 탓에
+  // 재시작 전까지 박혀버렸다. 그려질 아바타가 모두 캐시된 뒤에만 굽는다.
+  const [readyAvatars, setReadyAvatars] = React.useState<Set<string>>(
+    () => new Set(),
+  );
+  const avatarPrefetchRef = React.useRef<Set<string>>(new Set());
+
+  // 현재 보이는 스택들이 그릴 아바타 URI 모음(줌 게이팅 동일 적용).
+  const stackAvatarUris = React.useMemo(() => {
+    if (zoomInt < STACK_MIN_ZOOM) return [] as string[];
+    const uris = new Set<string>();
+    for (const c of visibleClusters) {
+      if ('cluster' in c.properties && c.properties.cluster) continue;
+      const p = (c.properties as PoolProps).pool;
+      if (!filteredIds.has(p.id)) continue;
+      const stack = poolStacks.get(p.id);
+      if (!stack) continue;
+      for (const e of stack.entries) {
+        const u = stackEntryUri(e);
+        if (u) uris.add(u);
+      }
+    }
+    return [...uris];
+  }, [zoomInt, visibleClusters, filteredIds, poolStacks]);
+
+  React.useEffect(() => {
+    for (const uri of stackAvatarUris) {
+      if (avatarPrefetchRef.current.has(uri)) continue;
+      avatarPrefetchRef.current.add(uri);
+      // finally: 실패해도 ready 로 표시 → bake 진행, 깨진 이미지는 Avatar onError 폴백.
+      void Image.prefetch(uri).finally(() => {
+        setReadyAvatars((prev) => {
+          if (prev.has(uri)) return prev;
+          const next = new Set(prev);
+          next.add(uri);
+          return next;
+        });
+      });
+    }
+  }, [stackAvatarUris]);
+
   // 합성 대상(bake job) — 내 위치 마커 1개 + 보이는 풀 스택들. 각 합성 뷰를
   // MarkerBakery 가 화면 밖에서 캡처 → file:// → bakedUris[key]. 마커는 그 이미지를
   // image prop 으로 그린다(iOS children 한계 우회). 이미 구운 키는 아래서 필터.
@@ -527,6 +579,12 @@ export function MapScreen() {
         if (!filteredIds.has(p.id)) continue;
         const stack = poolStacks.get(p.id);
         if (!stack || stack.entries.length === 0) continue;
+        // 아바타 이미지가 모두 캐시 완료된 뒤에만 굽는다(빈 스택 캡처 방지).
+        const allReady = stack.entries.every((e) => {
+          const u = stackEntryUri(e);
+          return !u || readyAvatars.has(u);
+        });
+        if (!allReady) continue;
         const size = (p.poolLength ?? 0) >= 50 && !p.isHotelPool ? 50 : 47;
         const rowW = Math.round(size / 2 + STACK_PIN_GAP + STACK_W);
         jobs.push({
@@ -558,7 +616,15 @@ export function MapScreen() {
       }
     }
     return jobs;
-  }, [photoUri, locPhotoReady, zoomInt, visibleClusters, filteredIds, poolStacks]);
+  }, [
+    photoUri,
+    locPhotoReady,
+    zoomInt,
+    visibleClusters,
+    filteredIds,
+    poolStacks,
+    readyAvatars,
+  ]);
 
   // 아직 안 구운 키만 캡처(재캡처 방지). 키 동일 = 캐시 재사용.
   const pendingBakeJobs = React.useMemo(
