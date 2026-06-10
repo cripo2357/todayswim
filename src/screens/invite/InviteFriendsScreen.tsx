@@ -21,7 +21,9 @@ import type { RootStackParamList } from '@/navigation/types';
 import { BottomSheet, SheetCtaButton } from '@/components/ui/BottomSheet';
 import type { MockAccount } from '@/lib/mockData';
 import { resolveAvatarUri } from '@/lib/avatars';
+import { useQuery } from '@tanstack/react-query';
 import { useFriends } from '@/store/friends';
+import { tryFetchInviteOffIds } from '@/lib/friendsSync';
 import { useOtherSchedules } from '@/hooks/useOtherSchedules';
 import { useSentInvites, inviteSlotKey } from '@/store/sentInvites';
 import { dispatchMessage, dispatchMessageTo } from '@/lib/messages/dispatch';
@@ -89,10 +91,31 @@ export function InviteFriendsScreen() {
   // 단일 출처라 차단·삭제된 사용자는 절대 후보에 안 뜸. 선택 불가 친구도
   // 목록엔 노출(회색 X)하므로 여기선 거르지 않고 정렬만.
   const friends = useFriends((s) => s.friends);
+  // '수영 일정 초대 안 받기'(schedule_invite='off') 친구는 후보에서 숨김
+  // (2026-06 사용자 결정 — 프라이버시: 회색 X로 노출하면 설정이 드러남).
+  const friendIdsKey = React.useMemo(
+    () =>
+      friends
+        .map((f) => f.id)
+        .sort()
+        .join(','),
+    [friends],
+  );
+  const { data: inviteOffIds } = useQuery({
+    queryKey: ['inviteOffIds', friendIdsKey],
+    queryFn: () => tryFetchInviteOffIds(friends.map((f) => f.id)),
+    enabled: friends.length > 0,
+  });
+  const hiddenIds = React.useMemo(
+    () => new Set(inviteOffIds ?? EMPTY_IDS),
+    [inviteOffIds],
+  );
   const sorted = React.useMemo(
     () =>
-      [...friends].sort((a, b) => a.nickname.localeCompare(b.nickname, 'ko')),
-    [friends],
+      friends
+        .filter((f) => !hiddenIds.has(f.id))
+        .sort((a, b) => a.nickname.localeCompare(b.nickname, 'ko')),
+    [friends, hiddenIds],
   );
   const q = query.trim().toLowerCase();
   const filtered = q

@@ -178,6 +178,26 @@ export async function tryFetchOutgoingRequestToIds(
   }
 }
 
+/** 친구 중 '수영 일정 초대 안 받기'(profiles.schedule_invite='off') 설정한
+ *  사용자 id. 초대 화면에서 후보 목록에서 숨기는 용도(2026-06 사용자 결정 —
+ *  프라이버시). RLS/권한으로 막히면 [] → 그땐 숨기지 않음(기존 동작 유지). */
+export async function tryFetchInviteOffIds(
+  friendIds: string[],
+): Promise<string[]> {
+  if (friendIds.length === 0) return [];
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id')
+      .in('id', friendIds)
+      .eq('schedule_invite', 'off');
+    if (error || !data) return [];
+    return data.map((r) => r.id as string);
+  } catch {
+    return [];
+  }
+}
+
 /** 차단 목록 fetch — blocker=me. */
 export async function tryFetchBlockedIds(meId: string): Promise<string[]> {
   try {
