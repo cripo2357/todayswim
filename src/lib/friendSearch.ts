@@ -1,8 +1,9 @@
 // 새 친구 검색 — Figma 168:7488 / 168:9354.
 //
-// (P3 prod, 2026-06-02): mock 후보 제거 — 서버 profiles 닉네임/코드 검색 백엔드는
-// 미구현이라 현재 후보 풀은 비어 있음(검색 0건). 기존 친구/차단 제외 로직과
-// 정렬·랭킹 구조는 서버 연동 시 재사용할 수 있도록 유지한다.
+// 실 검색은 서버(useFriendSearch → 0225 RPC)가 단일 출처. 이 파일은 이제
+// 타입(FriendSearchUser/Opts)·친구코드 유틸 re-export·eligibility 필터만 제공.
+// 아래 mock 검색(searchByNickname/findByCode)은 ALL=[] 라 항상 0건인 죽은
+// 경로 — 호출처 없음. 제거 예정(타입/유틸과 분리 후).
 
 import type { MockAccount } from '@/lib/mockData';
 

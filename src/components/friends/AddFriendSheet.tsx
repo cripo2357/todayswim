@@ -9,7 +9,9 @@
 // ID: 6자리 정확 입력 → 자동 조회. 찾으면 같은 행으로 표시, 6자인데
 // 못 찾으면 실패 문구. (findByCode = accountCode 완전일치, 부분검색 X)
 //
-// Phase-1: friendSearch(목업). 서버 조회/상대 비공개 게이팅은 Phase-2 갭.
+// 검색은 서버 단일 출처 — useFriendSearch 가 0225 SECURITY DEFINER RPC
+// (search_friends_by_nickname / find_friend_by_code) 호출. 상대 비공개 게이팅
+// (friend_request_mode)도 서버에서 강제. mock 검색 폐기.
 // 아바타 외곽선: 비친구라 profile_border_policy 따라 relation="other"
 // (pd-gray). Figma 는 mint 로 그려졌으나 전역 테두리 정책 우선(불일치 메모).
 

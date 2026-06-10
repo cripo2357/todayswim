@@ -135,18 +135,27 @@ export async function tryFetchFriendIds(meId: string): Promise<string[]> {
   }
 }
 
-/** 받은 요청 fetch — to=me, status=pending. */
-export async function tryFetchIncomingRequestFromIds(
+/** 받은 요청 1건 — 신청자 id + 받은 시각(표시용). */
+export interface IncomingRequestRow {
+  fromId: string;
+  createdAt: string;
+}
+
+/** 받은 요청 fetch — to=me, status=pending. created_at 포함(받은 시각 표시). */
+export async function tryFetchIncomingRequests(
   meId: string,
-): Promise<string[]> {
+): Promise<IncomingRequestRow[]> {
   try {
     const { data, error } = await supabase
       .from('friend_requests')
-      .select('from_profile_id')
+      .select('from_profile_id, created_at')
       .eq('to_profile_id', meId)
       .eq('status', 'pending');
     if (error || !data) return [];
-    return data.map((r) => r.from_profile_id as string);
+    return data.map((r) => ({
+      fromId: r.from_profile_id as string,
+      createdAt: r.created_at as string,
+    }));
   } catch {
     return [];
   }

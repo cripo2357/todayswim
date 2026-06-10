@@ -20,12 +20,13 @@ import {
   tryDeleteFriendship,
   tryInsertBlock,
   tryFetchFriendIds,
-  tryFetchIncomingRequestFromIds,
+  tryFetchIncomingRequests,
   tryFetchOutgoingRequestToIds,
   tryFetchBlockedIds,
   tryFetchAccountsByIds,
 } from '@/lib/friendsSync';
 import { logEvent } from '@/lib/analytics';
+import { formatDateTime } from '@/lib/dateFormat';
 
 /** 현재 유저 친구코드 — 없으면 서버 호출 skip. */
 function myProfileId(): string | undefined {
@@ -90,13 +91,17 @@ export const useFriends = create<FriendsState>((set) => ({
     if (!me) return; // Apple mock / 비로그인 — 빈 상태 유지
 
     // 4종 병렬 fetch — friendships / incoming / outgoing / blocks.
-    const [friendIds, incomingIds, outgoingIds, blockedIds] =
+    const [friendIds, incomingRows, outgoingIds, blockedIds] =
       await Promise.all([
         tryFetchFriendIds(me),
-        tryFetchIncomingRequestFromIds(me),
+        tryFetchIncomingRequests(me),
         tryFetchOutgoingRequestToIds(me),
         tryFetchBlockedIds(me),
       ]);
+    const incomingIds = incomingRows.map((r) => r.fromId);
+    const incomingAtById = new Map(
+      incomingRows.map((r) => [r.fromId, r.createdAt]),
+    );
 
     // 표시(닉네임/아바타) 필요한 ids 만 union — blocked·outgoing 은 id 만으로 OK.
     const visibleIds = Array.from(new Set([...friendIds, ...incomingIds]));
@@ -111,13 +116,14 @@ export const useFriends = create<FriendsState>((set) => ({
       .map((id) => {
         const a = accountMap.get(id);
         if (!a) return null;
+        const at = incomingAtById.get(id);
         return {
           id: a.id,
           avatar: a.avatar,
           nickname: a.nickname,
           status: a.status,
-          // 표시 시각 — server 측 created_at 가져오는 풍부 fetch 는 후속 (v1 = 빈 값).
-          time: '',
+          // 받은 시각 — friend_requests.created_at, 알림과 동일 통일 포맷.
+          time: at ? formatDateTime(at) : '',
         } satisfies FriendRequest;
       })
       .filter((x): x is FriendRequest => !!x);
