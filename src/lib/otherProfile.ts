@@ -17,7 +17,9 @@ function hash(id: string): number {
 }
 
 const CERT_POOL = ['생활스포츠지도사 2급', '생활스포츠지도사 1급', '수상인명구조원'];
-const IM100_POOL = ['IM 100 2분 이내', 'IM 100 1분 50초 이내', 'IM 100 1분 40초 이내'];
+// 저장값 형식(시간만 — store/profile IM100Record)과 동일. 'IM 100' 접두는
+// 표시 시 formatIm100Label 이 붙인다.
+const IM100_POOL = ['2분 이내', '1분 30초 이내', '3분 이내'];
 const STROKE_POOL = ['자유형', '평영', '배영', '접영'];
 
 export interface OtherProfile {
@@ -106,13 +108,24 @@ export function getOtherProfile(userId: string): OtherProfile | null {
 }
 
 /**
+ * IM100 기록 칩 라벨 — 저장값은 시간만('3분 이내' 등)이라 보는 사람이 알 수
+ * 있게 'IM 100 ' 접두. 미설정('기록 없음')·빈값은 칩 미노출(undefined).
+ */
+export function formatIm100Label(
+  record: string | undefined,
+): string | undefined {
+  if (!record || record === '기록 없음') return undefined;
+  return `IM 100 ${record}`;
+}
+
+/**
  * 프로필 라벨 칩: 자격증 또는 IM100 기록이 있으면 그것들을, 둘 다 없으면
- * 가능 영법을 노출(스펙).
+ * 가능 영법을 노출(스펙). IM100 은 'IM 100 ' 접두 + '기록 없음' 제외.
  */
 export function profileLabels(p: OtherProfile): string[] {
   // 공개 설정된 것만 노출
   const certs = p.showCerts ? p.certifications : [];
-  const im100 = p.showIm100 ? p.im100 : undefined;
+  const im100 = p.showIm100 ? formatIm100Label(p.im100) : undefined;
   if (certs.length > 0 || im100) {
     return [...certs, ...(im100 ? [im100] : [])];
   }

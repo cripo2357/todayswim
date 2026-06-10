@@ -230,14 +230,17 @@ export function OtherUserProfileScreen() {
 
             {/* Figma 172:10640 — gap 20 (이름/소개·칩·스탯·CTA) */}
             <View style={styles.group20}>
-              {/* Figma 172:10641 — gap 4 (이름 + 한 줄 소개) */}
+              {/* Figma 172:10641 — gap 4 (이름 + 한 줄 소개).
+                  자기소개 미작성 시 빈 줄/여백 없이 이름만(gap 미적용). */}
               <View style={styles.nameGroup}>
                 <Text style={styles.name} numberOfLines={1}>
                   {profile.nickname}
                 </Text>
-                <Text style={styles.bio} numberOfLines={2}>
-                  {profile.bio}
-                </Text>
+                {profile.bio?.trim() ? (
+                  <Text style={styles.bio} numberOfLines={2}>
+                    {profile.bio}
+                  </Text>
+                ) : null}
               </View>
 
               {labels.length > 0 ? (
