@@ -143,16 +143,29 @@ serve(async (req) => {
   //  · marketing 은 fail-closed: prefs 없거나 marketing!==true 면 차단(정통망법 §50).
   let targetUserIds = userIds;
   const category = (body.category ?? '').trim();
+  const kind = (body.kind ?? '').trim();
   if (category && category !== 'none') {
     const { data: profs } = await admin
       .from('profiles')
-      .select('auth_uid, notif_prefs')
+      .select('auth_uid, notif_prefs, schedule_invite')
       .in('auth_uid', userIds);
-    type ProfRow = { auth_uid: string; notif_prefs: Record<string, boolean> | null };
+    type ProfRow = {
+      auth_uid: string;
+      notif_prefs: Record<string, boolean> | null;
+      schedule_invite: string | null;
+    };
     const prefsByUid = new Map<string, Record<string, boolean> | null>(
       ((profs as ProfRow[]) ?? []).map((p) => [p.auth_uid, p.notif_prefs]),
     );
+    const scheduleInviteByUid = new Map<string, string | null>(
+      ((profs as ProfRow[]) ?? []).map((p) => [p.auth_uid, p.schedule_invite]),
+    );
     const isAllowed = (uid: string): boolean => {
+      // '수영 일정 초대 안 받기'(schedule_invite='off')면 일정 초대 푸시 스킵.
+      // notif_prefs(푸시 토글)와 별개 설정 — invite_received kind 에만 적용.
+      if (kind === 'invite_received' && scheduleInviteByUid.get(uid) === 'off') {
+        return false;
+      }
       const prefs = prefsByUid.get(uid);
       if (category === 'marketing') return prefs?.marketing === true; // fail-closed
       if (!prefs) return true; // prefs row 없음 → 비마케팅은 발송(fail-open)
