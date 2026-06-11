@@ -74,7 +74,7 @@ insert into public.pools (
 ) values
   ('POOL_0158', '춘천근로자종합복지관', '강원', '춘천시', '강원특별자치도 춘천시 후석로440번길 9',
     37.88923710807, 127.743914035586, 'indoor', 'public',
-    '033-240-1600', 'https://www.cuc.or.kr/totalWelfare.do', null, null, null, null,
+    '033-240-1600', 'https://www.cuc.or.kr/totalWelfare.do', 6, 25, 0.8, 1.5,
     '{}', false, false, false,
     true, true, 3000, 3000, null, 'https://www.cuc.or.kr/totalWelfare.do')
 on conflict (id) do nothing;
@@ -266,7 +266,7 @@ insert into public.pools (
 ) values
   ('POOL_0214', '삼척시종합사회복지관웰빙센터수영장', '강원', '삼척시', '강원특별자치도 삼척시 원당로2길 72-6',
     37.4374107179928, 129.152846273768, 'indoor', 'public',
-    '033-575-1512', 'https://www.samcheok.go.kr', null, 25, null, null,
+    '033-575-1512', 'https://www.samcheok.go.kr', 7, 25, null, null,
     '{}', true, false, false,
     true, true, 3500, 3500, null, 'https://www.samcheok.go.kr')
 on conflict (id) do nothing;
