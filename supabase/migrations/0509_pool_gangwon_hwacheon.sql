@@ -17,7 +17,7 @@ insert into public.pools (
 ) values
   ('POOL_0532', '화천국민문화체육센터수영장', '강원', '화천군', '강원특별자치도 화천군 화천읍 상승로 45-12',
     38.10531224043828, 127.7041608046142, 'indoor', 'public',
-    null, 'https://www.ihc.go.kr', 5, null, 1.3, 1.3,
+    null, 'https://www.ihc.go.kr', 5, 25, 1.3, 1.3,
     '{}', true, false, false,
     true, true, 3000, 3000, null, 'https://www.ihc.go.kr')
 on conflict (id) do nothing;
