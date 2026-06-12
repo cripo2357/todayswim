@@ -25,7 +25,7 @@ on conflict (pool_id) do nothing;
 update public.pools set has_schedule = true where id = 'POOL_0536' and exists (select 1 from public.schedules where pool_id = 'POOL_0536');
 
 insert into public.pools (id, name, region, district, address, lat, lng, type, ownership, phone, website, lane_count, pool_length, depth_min, depth_max, facilities, has_kids_pool, has_diving_pool, is_hotel_pool, has_schedule, free_swim_available, price_weekday, price_weekend, photo_url, schedule_source_url) values
-  ('POOL_0537', '영월국민체육센터수영장', '강원', '영월군', '강원특별자치도 영월군 영월읍 제방안길 100', 37.1777897673996, 128.462683674516, 'indoor', 'public', '033-370-1347', 'https://www.yw.go.kr', null, null, null, null, '{}', false, false, false, true, true, 3800, 3800, null, 'https://www.yw.go.kr')
+  ('POOL_0537', '영월국민체육센터수영장', '강원', '영월군', '강원특별자치도 영월군 영월읍 제방안길 100', 37.1777897673996, 128.462683674516, 'indoor', 'public', '033-370-1347', 'https://www.yw.go.kr', null, 25, null, null, '{}', false, false, false, true, true, 3800, 3800, null, 'https://www.yw.go.kr')
 on conflict (id) do nothing;
 insert into public.schedules (pool_id, author_nickname, by_day, day_notes, updated_at) values
   ('POOL_0537', '풀스데이', $${"화":[{"start":"06:00","end":"21:00","hours":15}],"수":[{"start":"06:00","end":"21:00","hours":15}],"목":[{"start":"06:00","end":"21:00","hours":15}],"금":[{"start":"06:00","end":"21:00","hours":15}],"토":[{"start":"06:00","end":"21:00","hours":15}],"일":[{"start":"09:00","end":"18:00","hours":9}]}$$::jsonb, '{}'::jsonb, '2026-06-13'::timestamptz)
