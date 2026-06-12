@@ -76,14 +76,14 @@ insert into public.schedules (pool_id, author_nickname, by_day, day_notes, updat
 on conflict (pool_id) do nothing;
 update public.pools set has_schedule = true where id = 'POOL_0545' and exists (select 1 from public.schedules where pool_id = 'POOL_0545');
 
--- 5) 장수군수영장 (전북 장수군, 너울관/한누리전당) — 운영시간 윈도우
+-- 5) 한누리전당수영장 (전북 장수군, 장수한누리전당 내) — 운영시간 윈도우. 실사용/지도명으로 등록.
 insert into public.pools (
   id, name, region, district, address, lat, lng, type, ownership,
   phone, website, lane_count, pool_length, depth_min, depth_max,
   facilities, has_kids_pool, has_diving_pool, is_hotel_pool,
   has_schedule, free_swim_available, price_weekday, price_weekend, photo_url, schedule_source_url
 ) values
-  ('POOL_0546', '장수군수영장', '전북', '장수군', '전북특별자치도 장수군 장수읍 한누리로 393',
+  ('POOL_0546', '한누리전당수영장', '전북', '장수군', '전북특별자치도 장수군 장수읍 한누리로 393',
     35.6410248943658, 127.518197150891, 'indoor', 'public',
     '063-350-1641', 'https://www.jangsu.go.kr', 5, 25, null, null,
     '{}', false, false, false,
