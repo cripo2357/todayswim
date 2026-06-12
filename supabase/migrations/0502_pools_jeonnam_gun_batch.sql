@@ -57,14 +57,14 @@ insert into public.schedules (pool_id, author_nickname, by_day, day_notes, updat
 on conflict (pool_id) do nothing;
 update public.pools set has_schedule = true where id = 'POOL_0504' and exists (select 1 from public.schedules where pool_id = 'POOL_0504');
 
--- 4) 영암군국민체육센터수영장 (전남 영암군) — 요금·규격 공식 미게재(null)
+-- 4) 영암국민체육센터 (전남 영암군) — 요금·규격 공식 미게재(null)
 insert into public.pools (
   id, name, region, district, address, lat, lng, type, ownership,
   phone, website, lane_count, pool_length, depth_min, depth_max,
   facilities, has_kids_pool, has_diving_pool, is_hotel_pool,
   has_schedule, free_swim_available, price_weekday, price_weekend, photo_url, schedule_source_url
 ) values
-  ('POOL_0505', '영암군국민체육센터수영장', '전남', '영암군', '전라남도 영암군 영암읍 역리 100',
+  ('POOL_0505', '영암국민체육센터', '전남', '영암군', '전라남도 영암군 영암읍 역리 100',
     34.8053608797878, 126.703215004707, 'indoor', 'public',
     '061-470-6516', 'https://www.yeongam.go.kr', null, null, null, null,
     '{}', false, false, false,
