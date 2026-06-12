@@ -95,9 +95,11 @@ export function filterPools(
       if (!hit) return false;
     }
     if (laneActive) {
+      // 마커와 동일 기준: 50m 이상 = 큰 풀, 그 미만(길이 있음) = 25m급.
+      // 비정규 길이(예: 외도 51m)도 정확값을 유지하면서 올바른 그룹에 잡히게 함.
       const len = p.poolLength ?? 0;
-      if (s.lane === '25m' && len !== 25) return false;
-      if (s.lane === '50m' && len !== 50) return false;
+      if (s.lane === '25m' && !(len > 0 && len < 50)) return false;
+      if (s.lane === '50m' && len < 50) return false;
     }
     if (feeActive) {
       // 요금 필터는 '1일 이용권' 기준. 일일요금이 아예 없는 풀(월권·쿠폰 전용)은 검색대상서 제외.
