@@ -129,6 +129,9 @@ const STACK_LIFT = 9;
 // (preview 측정: 스택이 release에서도 최대 부하 — 줌 게이팅이 핵심 레버)
 const STACK_MIN_ZOOM = 14;
 
+// supercluster 조회 기본 범위(월드 전체) — 첫 카메라 이벤트 전 폴백.
+const WORLD_BBOX: [number, number, number, number] = [-180, -85, 180, 85];
+
 // 스택 아바타가 실제 렌더할 URI(MapProfileStack 의 Avatar size=20 = ui/Avatar
 // 와 동일 인자). prefetch 게이트와 bake 게이트가 같은 URI 를 봐야 하므로 단일
 // 헬퍼로 묶는다. 2026-06-07 이후 번들 아바타도 원격 URL 이라 모든 엔트리가 prefetch
@@ -365,6 +368,20 @@ export function MapScreen() {
   const cameraRef = React.useRef<Camera>(INITIAL_CAMERA);
   const [zoomInt, setZoomInt] = React.useState(Math.round(INITIAL_CAMERA.zoom ?? 14));
 
+  // viewport bbox — supercluster 조회 범위. 월드 전체 대신 '보이는 영역(+여유 패딩)'만
+  // 조회해 화면 밖 풀 마커를 안 그린다 → 비용이 풀 개수와 무관(화면에 보이는 수십 개만).
+  // 매 프레임 setState 회피: bboxRef 에 저장하고 카메라 멈춤(debounce)에만 state 커밋.
+  const bboxRef = React.useRef<[number, number, number, number]>(WORLD_BBOX);
+  const [bbox, setBbox] = React.useState<[number, number, number, number]>(WORLD_BBOX);
+  const bboxTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bboxInited = React.useRef(false);
+  React.useEffect(
+    () => () => {
+      if (bboxTimer.current) clearTimeout(bboxTimer.current);
+    },
+    [],
+  );
+
   // (2026-05-21) 카메라 idle 게이팅 시도 → 깜빡임으로 거부. 비트맵 캡처
   // cascade는 이론적 우려였고 실제 frame drop이 측정되기 전까지 도입 X.
   // 사전 perf 하드닝은 사용자 체감 UI 우선 (대화 기록: ae259a8 → 2308948 →
@@ -517,8 +534,8 @@ export function MapScreen() {
   }, [pools]);
 
   const visibleClusters = React.useMemo<ClusterFeature[]>(() => {
-    return cluster.getClusters([-180, -85, 180, 85], zoomInt) as ClusterFeature[];
-  }, [cluster, zoomInt]);
+    return cluster.getClusters(bbox, zoomInt) as ClusterFeature[];
+  }, [cluster, zoomInt, bbox]);
 
   // 스택 아바타 prefetch 게이트 — 내 위치 마커(locPhotoReady)와 동일 원리.
   // 2026-06-07 이후 번들 아바타도 원격 URL 이라, 콜드스타트 때 원격 썸네일이
@@ -675,6 +692,26 @@ export function MapScreen() {
     const newZoomInt = Math.round(zoom);
     if (newZoomInt !== zoomInt) {
       setZoomInt(newZoomInt);
+    }
+
+    // viewport bbox 갱신 — region(SW 기준 + delta)을 [W,S,E,N] bbox로. 여유 패딩(PAD)
+    // 으로 가장자리 팝인 방지. 첫 이벤트는 즉시(시작 시 전체 렌더 최소화), 이후는 멈춤에만.
+    const r = cam.region;
+    if (r) {
+      const PAD = 0.5;
+      bboxRef.current = [
+        Math.max(-180, r.longitude - r.longitudeDelta * PAD),
+        Math.max(-85, r.latitude - r.latitudeDelta * PAD),
+        Math.min(180, r.longitude + r.longitudeDelta * (1 + PAD)),
+        Math.min(85, r.latitude + r.latitudeDelta * (1 + PAD)),
+      ];
+      if (!bboxInited.current) {
+        bboxInited.current = true;
+        setBbox(bboxRef.current);
+      } else {
+        if (bboxTimer.current) clearTimeout(bboxTimer.current);
+        bboxTimer.current = setTimeout(() => setBbox(bboxRef.current), 100);
+      }
     }
 
     // 비-Gesture 이벤트(animateCameraTo 등)는 baseline만 갱신하고 deselect 평가 안함.
