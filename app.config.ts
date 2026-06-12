@@ -18,7 +18,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: '풀스데이',
   slug: 'todayswim', // EAS 내부 식별자(슬러그)는 그대로. 표시 이름은 expo.dev에서 'poolsday'로 변경됨.
-  version: '1.0.2',
+  version: '1.0.3',
   orientation: 'portrait',
   scheme: 'poolsday',
   userInterfaceStyle: 'light', // DESIGN.md §1-4 다크모드는 Phase 2
