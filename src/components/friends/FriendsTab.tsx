@@ -15,7 +15,6 @@ import type { RootStackParamList } from '@/navigation/types';
 import { XCircle, Plus } from 'lucide-react-native';
 import IconChevronDown from '@assets/icons/chevron-down.svg';
 import IconUserDouble from '@assets/icons/user-double.svg';
-import IconIdBadgeWhite from '@assets/icons/id-badge-white.svg';
 import { type MockAccount } from '@/lib/mockData';
 import { useOtherSchedules } from '@/hooks/useOtherSchedules';
 import { resolveAvatarUri } from '@/lib/avatars';
@@ -633,15 +632,6 @@ const FriendRow = React.memo(function FriendRow({
           </Text>
         </View>
       </View>
-      <Pressable
-        style={styles.profileBtn}
-        onPress={() => onOpen(friend.id)}
-        accessibilityRole="button"
-        accessibilityLabel={`${friend.nickname} 프로필`}
-      >
-        <Text style={styles.profileBtnLabel}>프로필</Text>
-        <IconIdBadgeWhite width={16} height={16} />
-      </Pressable>
     </View>
   );
 });
@@ -960,21 +950,5 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sans,
     color: '#4B5563',
   },
-  // Figma 168:3872 — pd-mint bg r8 px10 py4
-  profileBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: tokens.color.pdMint,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  profileBtnLabel: {
-    fontSize: 12,
-    lineHeight: 16,
-    letterSpacing: -0.06,
-    fontFamily: tokens.font.sansBold,
-    color: tokens.color.white,
-  },
+
 });

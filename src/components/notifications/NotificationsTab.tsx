@@ -80,6 +80,8 @@ interface Notif {
   name?: string;
   /** related.senderUserId — 친구 신청·초대 보낸 사람 친구코드(=profiles.id). */
   senderUserId?: string;
+  /** related.scheduleId — 리마인더 등 일정 포커스/dead-link용. */
+  scheduleId?: string;
   /** related.senderAvatar — 카드에 보일 상대 아바타(번들 id 또는 사진 uri). 친구
    *  신청/초대 발송 시점에 저장된 실제 상대 아바타. NotifCard 액션에서 양측 적재에도 사용. */
   senderAvatar?: string;
@@ -201,6 +203,8 @@ interface DeadLinkMeta {
   senderAlive?: boolean; // 발신자/신청자 살아있나
   termsKeyValid?: boolean; // 약관 키 유효한가
   focusDate?: string; // 일정 보기 시 달력을 열 날짜(YYYY-MM-DD)
+  scheduleId?: string; // 일정 포커스용 id(리마인더 카드 탭)
+  senderUserId?: string; // 상대 프로필 진입용 친구코드(친구 카드 탭)
 }
 
 /**
@@ -257,19 +261,28 @@ function handleAction(
  * dead-link 가드: navigate 전 entity 존재 확인 (스펙 §6 정책 가이드).
  */
 function handleCardTap(navigation: Nav, kind: MessageKind, meta: DeadLinkMeta = {}) {
-  // 친구/프로필 관련 → MyInfo (실 운영 시 OtherUserProfile / 프로필탭)
-  if (kind === 'friend_request_accepted' || kind === 'nickname_changed_by_admin') {
+  // 친구 신청 수락 → 그 친구 프로필. senderUserId 없으면(구 알림) 내 정보 폴백.
+  if (kind === 'friend_request_accepted') {
     if (meta.senderAlive === false) {
       return Alert.alert('탈퇴한 회원입니다', '');
     }
+    return meta.senderUserId
+      ? navigation.navigate('OtherUserProfile', { userId: meta.senderUserId })
+      : navigation.navigate('MyInfo');
+  }
+  // 닉네임 변경(내 닉네임 = 본인 건) → 내 정보.
+  if (kind === 'nickname_changed_by_admin') {
     return navigation.navigate('MyInfo');
   }
-  // 일정 리마인더 → MyInfo (실 운영 시 ScheduleView with id)
+  // 일정 리마인더 → 달력을 그 일정 날짜로 포커스(scheduleId). 없으면 오늘.
   if (kind === 'schedule_reminder_prev_day' || kind === 'schedule_reminder_1h') {
     if (meta.scheduleAlive === false) {
       return Alert.alert('삭제된 일정입니다', '');
     }
-    return navigation.navigate('MyInfo');
+    return navigation.navigate('MyInfo', {
+      initialTab: '달력',
+      ...(meta.scheduleId ? { focusScheduleId: meta.scheduleId } : {}),
+    });
   }
   // 환영·결산 → MapMain
   if (kind === 'welcome' || kind === 'monthly_summary')
@@ -313,6 +326,10 @@ function rowToNotif(row: NotificationRow): Notif {
         ? row.related.senderUserId
         : undefined,
     senderAvatar,
+    scheduleId:
+      typeof row.related?.scheduleId === 'string'
+        ? row.related.scheduleId
+        : undefined,
     inviteSlot: inviteSlotFromRow(row),
     inviteeIds: Array.isArray(row.related?.inviteeIds)
       ? (row.related.inviteeIds as unknown[]).filter(
@@ -666,7 +683,14 @@ function NotifCard({ notif }: { notif: Notif }) {
   if (cardTappable) {
     return (
       <>
-        <Pressable onPress={() => handleCardTap(navigation, notif.kind)}>
+        <Pressable
+          onPress={() =>
+            handleCardTap(navigation, notif.kind, {
+              scheduleId: notif.scheduleId,
+              senderUserId: notif.senderUserId,
+            })
+          }
+        >
           {body}
         </Pressable>
         {modals}
