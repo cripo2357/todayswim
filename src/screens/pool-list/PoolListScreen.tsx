@@ -486,10 +486,10 @@ function TabBtn({
   );
 }
 
-/** 거리 km 포맷 — < 1km은 소수점 2자리, >= 1km은 소수점 1자리, > 100km은 정수. */
+/** 거리 포맷 — 50m 이내는 '근처', 10km 미만은 소수 1자리, 10km 이상은 정수. */
 function formatDistance(km: number): string {
-  if (km < 1) return `${km.toFixed(2)}km`;
-  if (km < 100) return `${km.toFixed(1)}km`;
+  if (km < 0.05) return '근처';
+  if (km < 10) return `${km.toFixed(1)}km`;
   return `${Math.round(km)}km`;
 }
 
