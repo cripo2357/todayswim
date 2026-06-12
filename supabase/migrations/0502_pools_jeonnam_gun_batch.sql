@@ -3,15 +3,15 @@
 -- 자유수영 슬롯만 by_day에 반영. 첨벙/블로그 미사용. 좌표=카카오 Local API.
 -- 장성군(시간표 균일·월휴관/규격 불확실)·완도/함평/화순/구례/담양/고흥/보성 등은 보류.
 
--- 1) 강진국민체육센터실내수영장 (전남 강진군)
+-- 1) 강진군실내수영장 (전남 강진군)
 insert into public.pools (
   id, name, region, district, address, lat, lng, type, ownership,
   phone, website, lane_count, pool_length, depth_min, depth_max,
   facilities, has_kids_pool, has_diving_pool, is_hotel_pool,
   has_schedule, free_swim_available, price_weekday, price_weekend, photo_url, schedule_source_url
 ) values
-  ('POOL_0502', '강진국민체육센터실내수영장', '전남', '강진군', '전라남도 강진군 강진읍 종합운동장길 60',
-    34.6458293772778, 126.782770129444, 'indoor', 'public',
+  ('POOL_0502', '강진군실내수영장', '전남', '강진군', '전라남도 강진군 강진읍 종합운동장길 60',
+    34.647372043652545, 126.78143209337364, 'indoor', 'public',
     '061-430-3812', 'https://www.gangjin.go.kr/sports/facility/pool', 6, 25, null, null,
     '{}', true, false, false,
     true, true, 3000, 3000, null, 'https://www.gangjin.go.kr/sports/facility/pool/usage_fee')
@@ -21,14 +21,14 @@ insert into public.schedules (pool_id, author_nickname, by_day, day_notes, updat
 on conflict (pool_id) do nothing;
 update public.pools set has_schedule = true where id = 'POOL_0502' and exists (select 1 from public.schedules where pool_id = 'POOL_0502');
 
--- 2) 우슬국민체육센터조오련수영장 (전남 해남군)
+-- 2) 우슬국민체육센터 (전남 해남군, 조오련수영장)
 insert into public.pools (
   id, name, region, district, address, lat, lng, type, ownership,
   phone, website, lane_count, pool_length, depth_min, depth_max,
   facilities, has_kids_pool, has_diving_pool, is_hotel_pool,
   has_schedule, free_swim_available, price_weekday, price_weekend, photo_url, schedule_source_url
 ) values
-  ('POOL_0503', '우슬국민체육센터조오련수영장', '전남', '해남군', '전라남도 해남군 해남읍 해남로 72',
+  ('POOL_0503', '우슬국민체육센터', '전남', '해남군', '전라남도 해남군 해남읍 해남로 72',
     34.5674731621709, 126.618343005549, 'indoor', 'public',
     '061-530-5796', 'https://sports.haenam.go.kr', 8, 25, null, null,
     '{}', false, false, false,
