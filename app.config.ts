@@ -239,6 +239,18 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         android: {
           extraMavenRepos: ['https://repository.map.naver.com/archive/maven'],
         },
+        // AppCheckCore(Swift, GoogleSignIn transitive)가 GoogleUtilities·
+        // RecaptchaInterop(모듈 미정의)에 의존 → 정적 라이브러리 빌드에서 이 둘에
+        // modular headers 가 있어야 AppCheckCore 의 Swift import 가 된다. pod 버전이
+        // caret 이라 구글 pod 신버전이 올라오며 깨짐(2026-06-13, 직전 빌드는 통과).
+        // 에러: "The Swift pod `AppCheckCore` depends upon `GoogleUtilities` and
+        // `RecaptchaInterop`, which do not define modules."
+        ios: {
+          extraPods: [
+            { name: 'GoogleUtilities', modular_headers: true },
+            { name: 'RecaptchaInterop', modular_headers: true },
+          ],
+        },
       },
     ],
     // 카카오 네이티브 로그인 — 카카오톡 앱 점프(웹 동의창 회피, app-to-app).
