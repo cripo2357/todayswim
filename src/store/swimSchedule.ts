@@ -52,7 +52,7 @@ interface SwimScheduleState {
    *  profile.id 가 생긴 시점에 App.tsx useEffect 가 호출. session 미인증
    *  (Apple mock / 비로그인) 시 호출 안 됨 → AsyncStorage 캐시 유지. */
   serverSync: () => Promise<void>;
-  add: (s: Omit<MySwimSchedule, 'id' | 'createdAt'>) => Promise<void>;
+  add: (s: Omit<MySwimSchedule, 'id' | 'createdAt'>) => Promise<string>;
   remove: (id: string) => Promise<void>;
   setVisibility: (id: string, visibility: ScheduleVisibility) => Promise<void>;
   /** 지난 일정 "수영 완료" 확정/해제 */
@@ -121,6 +121,7 @@ export const useSwimSchedules = create<SwimScheduleState>((set, get) => ({
       // 같은 슬롯에 일정 있는 친구 있으면 본인 알림함에 겹침 알림(best-effort).
       void checkFriendOverlap(item);
     }
+    return item.id;
   },
 
   remove: async (id) => {

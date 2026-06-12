@@ -30,6 +30,7 @@ import { useFriends } from '@/store/friends';
 import { useProfile } from '@/store/profile';
 import { useSwimSchedules } from '@/store/swimSchedule';
 import { dispatchMessage, dispatchMessageTo } from '@/lib/messages/dispatch';
+import { respondInviteBySlot, cancelInvitesBySlot } from '@/lib/scheduleInvitesSync';
 
 // 프로젝트 SVG 아이콘 — 전부 announcement/ 회색톤(#1F2937)으로 통일.
 // 알림 전용 사본(설정 메뉴 등 원본은 자기 색 유지 — sed로 fill만 치환한 복제).
@@ -199,6 +200,7 @@ interface DeadLinkMeta {
   poolAlive?: boolean; // 풀 살아있나
   senderAlive?: boolean; // 발신자/신청자 살아있나
   termsKeyValid?: boolean; // 약관 키 유효한가
+  focusDate?: string; // 일정 보기 시 달력을 열 날짜(YYYY-MM-DD)
 }
 
 /**
@@ -228,8 +230,11 @@ function handleAction(
     if (meta.scheduleAlive === false) {
       return Alert.alert('삭제된 일정입니다', '');
     }
-    // 실 운영 시 ScheduleView(일정 id). 샘플은 mock id 없어 MyInfo로 안전 이동.
-    return navigation.navigate('MyInfo');
+    // 달력 탭으로 이동 + 슬롯 날짜로 포커스(focusDate=YYYY-MM-DD). 없으면 오늘.
+    return navigation.navigate('MyInfo', {
+      initialTab: '달력',
+      ...(meta.focusDate ? { focusDate: meta.focusDate } : {}),
+    });
   }
   if (label === '보기' || label === '근처 수영장 보기') {
     // "보기" = 풀 보기일 때 dead-link 가드 (pool_submission_approved 등).
@@ -331,7 +336,8 @@ const INVITE_TTL_MS = 72 * 60 * 60 * 1000;
 /** invite_received row → 일정 추가용 슬롯. related(poolId/date/start/end) +
  *  params.pool(발송 시점 풀명 스냅샷)이 모두 있어야 유효. 하나라도 없으면 undefined. */
 function inviteSlotFromRow(row: NotificationRow): Notif['inviteSlot'] {
-  if (row.kind !== 'invite_received') return undefined;
+  if (row.kind !== 'invite_received' && row.kind !== 'invite_sent')
+    return undefined;
   const r = row.related ?? {};
   const poolId = typeof r.poolId === 'string' ? r.poolId : undefined;
   const date = typeof r.date === 'string' ? r.date : undefined;
@@ -419,7 +425,7 @@ function NotifCard({ notif }: { notif: Notif }) {
     !!notif.createdAtMs &&
     Date.now() - notif.createdAtMs > INVITE_TTL_MS;
 
-  const onActionPress = (label: string) => {
+  const onActionPress = async (label: string) => {
     if (notif.kind === 'invite_received' && label === '거절') {
       setRejectVisible(true);
       return;
@@ -493,9 +499,10 @@ function NotifCard({ notif }: { notif: Notif }) {
             s.start === slot.start &&
             s.end === slot.end,
         );
+      let acceptedId: string | undefined;
       if (!dup) {
         // 초대 수락 = 초대자(친구)에게 보이도록 기본 '친구 공개'로 참여.
-        void useSwimSchedules.getState().add({
+        acceptedId = await useSwimSchedules.getState().add({
           poolId: slot.poolId,
           poolName: slot.poolName,
           date: slot.date,
@@ -505,6 +512,16 @@ function NotifCard({ notif }: { notif: Notif }) {
         });
       }
       const my = useProfile.getState().profile;
+      // 서버 초대 상태 전이(수락) — (초대자,나,슬롯) 자연키. best-effort.
+      if (notif.senderUserId && my?.id) {
+        void respondInviteBySlot(
+          notif.senderUserId,
+          my.id,
+          { poolId: slot.poolId, date: slot.date, start: slot.start },
+          'accepted',
+          acceptedId,
+        );
+      }
       // 본인 이력: "{초대한 사람}님과 … 함께해요"
       void dispatchMessage('invite_accepted', {
         name: notif.name ?? '',
@@ -528,7 +545,9 @@ function NotifCard({ notif }: { notif: Notif }) {
       setHandledMsg('일정에 참여했어요');
       return;
     }
-    handleAction(navigation, notif.kind, label);
+    handleAction(navigation, notif.kind, label, {
+      focusDate: notif.inviteSlot?.date ?? notif.dateLabel,
+    });
   };
 
   const body = (
@@ -587,6 +606,20 @@ function NotifCard({ notif }: { notif: Notif }) {
         onReject={() => {
           void logEvent('invite_rejected');
           setRejectVisible(false);
+          // 서버 초대 상태 전이(거절) — (초대자,나,슬롯) 자연키. best-effort.
+          const myR = useProfile.getState().profile;
+          if (notif.senderUserId && myR?.id && notif.inviteSlot) {
+            void respondInviteBySlot(
+              notif.senderUserId,
+              myR.id,
+              {
+                poolId: notif.inviteSlot.poolId,
+                date: notif.inviteSlot.date,
+                start: notif.inviteSlot.start,
+              },
+              'rejected',
+            );
+          }
           // 본인 이력만 기록(정책: 발신자 무알림 — friend reject와 일관).
           void dispatchMessage('invite_rejected', {
             name: notif.name ?? '',
@@ -601,8 +634,20 @@ function NotifCard({ notif }: { notif: Notif }) {
         onCancel={() => {
           void logEvent('invite_canceled');
           setCancelVisible(false);
-          // 초대받은 친구들에게 invite_canceled 발송(각자 알림함 + 푸시).
           const my = useProfile.getState().profile;
+          // 서버 초대 상태 전이(취소) — (나,피초대자들,슬롯) 자연키. best-effort.
+          if (my?.id && notif.inviteeIds?.length && notif.inviteSlot) {
+            void cancelInvitesBySlot(
+              my.id,
+              notif.inviteeIds,
+              {
+                poolId: notif.inviteSlot.poolId,
+                date: notif.inviteSlot.date,
+                start: notif.inviteSlot.start,
+              },
+            );
+          }
+          // 초대받은 친구들에게 invite_canceled 발송(각자 알림함 + 푸시).
           if (my?.name && notif.inviteeIds?.length) {
             for (const toId of notif.inviteeIds) {
               void dispatchMessageTo(toId, 'invite_canceled', {

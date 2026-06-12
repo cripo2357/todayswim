@@ -25,6 +25,8 @@ import { useFriends } from '@/store/friends';
 import { useOtherSchedules } from '@/hooks/useOtherSchedules';
 import { useSentInvites, inviteSlotKey } from '@/store/sentInvites';
 import { dispatchMessage, dispatchMessageTo } from '@/lib/messages/dispatch';
+import { createInvites } from '@/lib/scheduleInvitesSync';
+import { useSwimSchedules } from '@/store/swimSchedule';
 import { useProfile } from '@/store/profile';
 import { tokens } from '@/styles/tokens';
 import { formatDateTime } from '@/lib/dateFormat';
@@ -112,6 +114,26 @@ export function InviteFriendsScreen() {
     void logEvent('friend_invite_sent', { invitee_count: selected.length });
     // 보낸 초대 기록 → 다음에 같은 슬롯 열면 검색 대상에서 제외.
     markInvited(slotKey, selected.map((f) => f.id));
+    // 초대 관계 영속화(0296) — 피초대자별 pending 행. best-effort, 알림과 별개.
+    const meId = useProfile.getState().profile?.id;
+    if (meId) {
+      // 초대자 원본 일정 id(딥링크/컨텍스트) — 같은 슬롯 본인 일정에서 조회.
+      const mySched = useSwimSchedules
+        .getState()
+        .schedules.find(
+          (s) =>
+            s.poolId === poolId &&
+            s.date === date &&
+            s.start === start &&
+            s.end === end,
+        );
+      void createInvites(
+        meId,
+        selected.map((f) => f.id),
+        { poolId, poolName, poolPhotoUrl, date, start, end },
+        mySched?.id,
+      );
+    }
     // 발송 이력 적재 (Rule: invite_sent — 본인 이력)
     // inviteeIds: 초대받은 친구 친구코드 — 나중에 알림 탭에서 '초대 취소' 누르면
     // 이들에게 invite_canceled 발송하기 위해 related에 보존.

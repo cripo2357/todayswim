@@ -173,7 +173,10 @@ export function MyInfoScreen() {
       </View>
 
       {tab === '달력' && (
-        <CalendarTab focusScheduleId={route.params?.focusScheduleId} />
+        <CalendarTab
+          focusScheduleId={route.params?.focusScheduleId}
+          focusDate={route.params?.focusDate}
+        />
       )}
       {tab === '친구' && <FriendsTab />}
       {tab === '알림' && <NotificationsTab />}

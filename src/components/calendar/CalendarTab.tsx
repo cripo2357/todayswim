@@ -71,9 +71,12 @@ function clampToToday(d: Date): Date {
 
 export function CalendarTab({
   focusScheduleId,
+  focusDate,
 }: {
   /** 푸시(리마인더) 탭 진입 시 이 일정의 날짜로 달력 포커스. */
   focusScheduleId?: string;
+  /** 일정 보기(초대 수락 등) 시 달력을 이 날짜(YYYY-MM-DD)로 포커스. */
+  focusDate?: string;
 }) {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const profile = useProfile((s) => s.profile);
@@ -106,6 +109,15 @@ export function CalendarTab({
       focusedRef.current = focusScheduleId;
     }
   }, [focusScheduleId, schedules]);
+  // 일정 보기(초대 수락 등) — focusDate(YYYY-MM-DD)로 1회 포커스.
+  const focusedDateRef = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    if (!focusDate || focusedDateRef.current === focusDate) return;
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(focusDate);
+    if (!m) return;
+    setDate(new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+    focusedDateRef.current = focusDate;
+  }, [focusDate]);
   const [sheetOpen, setSheetOpen] = React.useState(false);
   // 공개여부 변경 시트 대상 일정 id (null = 닫힘)
   const [visEditId, setVisEditId] = React.useState<string | null>(null);
