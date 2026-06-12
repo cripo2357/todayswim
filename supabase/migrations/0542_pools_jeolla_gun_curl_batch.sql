@@ -65,7 +65,7 @@ insert into public.pools (
   facilities, has_kids_pool, has_diving_pool, is_hotel_pool,
   has_schedule, free_swim_available, price_weekday, price_weekend, photo_url, schedule_source_url
 ) values
-  ('POOL_0545', '무주수달수영장', '전북', '무주군', '전북특별자치도 무주군 무주읍 한풍루로 326-17',
+  ('POOL_0545', '수달수영장', '전북', '무주군', '전북특별자치도 무주군 무주읍 한풍루로 326-17',
     36.0023020975959, 127.662680538826, 'indoor', 'public',
     '063-320-5614', 'https://tour.muju.go.kr', 6, 25, null, null,
     '{}', true, false, false,

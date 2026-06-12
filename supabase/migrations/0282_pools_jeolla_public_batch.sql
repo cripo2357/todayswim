@@ -38,7 +38,7 @@ insert into public.pools (
   facilities, has_kids_pool, has_diving_pool, is_hotel_pool,
   has_schedule, free_swim_available, price_weekday, price_weekend, photo_url, schedule_source_url
 ) values
-  ('POOL_0171', '전주덕진수영장', '전북', '전주시 덕진구', '전북특별자치도 전주시 덕진구 백제대로 310',
+  ('POOL_0171', '덕진수영장', '전북', '전주시 덕진구', '전북특별자치도 전주시 덕진구 백제대로 310',
     35.8404169626426, 127.125640580319, 'indoor', 'public',
     '063-239-2651', 'https://www.jjss.or.kr', 10, 50, 1.4, 1.4,
     '{}', false, false, false,
@@ -146,7 +146,7 @@ insert into public.pools (
   facilities, has_kids_pool, has_diving_pool, is_hotel_pool,
   has_schedule, free_swim_available, price_weekday, price_weekend, photo_url, schedule_source_url
 ) values
-  ('POOL_0177', '순천팔마수영장', '전남', '순천시', '전라남도 순천시 팔마로 333',
+  ('POOL_0177', '팔마수영장', '전남', '순천시', '전라남도 순천시 팔마로 333',
     34.9351149129514, 127.520027186816, 'indoor', 'public',
     '061-749-8501', 'https://www.suncheon.go.kr/yeyak/edu/swim/0001/', 7, 25, 1.1, 1.3,
     '{}', true, false, false,
@@ -182,7 +182,7 @@ insert into public.pools (
   facilities, has_kids_pool, has_diving_pool, is_hotel_pool,
   has_schedule, free_swim_available, price_weekday, price_weekend, photo_url, schedule_source_url
 ) values
-  ('POOL_0179', '순천신대유청소년수영장', '전남', '순천시', '전라남도 순천시 해룡면 매안로 138',
+  ('POOL_0179', '신대유청소년수영장', '전남', '순천시', '전라남도 순천시 해룡면 매안로 138',
     34.9366419460028, 127.55088735235, 'indoor', 'public',
     null, 'https://www.suncheon.go.kr/yeyak/edu/swim/0001/', 8, 25, 1.2, 1.3,
     '{}', true, false, false,
