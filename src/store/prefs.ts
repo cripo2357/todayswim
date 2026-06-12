@@ -73,6 +73,20 @@ async function syncScheduleInviteToServer(v: ScheduleInvite): Promise<void> {
   }
 }
 
+// 지도 설정(시작 풀·지평선)을 서버(profiles.map_*)에 미러(0508). 위 helper 들과
+// 동일 패턴 — 명시적 setter 변경 시에만 push. best-effort.
+async function syncMapPrefToServer(
+  patch: Record<string, string | null>,
+): Promise<void> {
+  try {
+    const uid = (await supabase.auth.getSession()).data.session?.user?.id;
+    if (!uid) return;
+    await supabase.from('profiles').update(patch).eq('auth_uid', uid);
+  } catch {
+    /* best-effort */
+  }
+}
+
 // 친구 신청 받기 모드를 서버(profiles.friend_request_mode)에 미러 — 검색 RPC
 // (search_friends_by_nickname / find_friend_by_code, 0225)가 이 값으로 발견성
 // 게이팅. 명시적 토글 변경 시에만 호출. best-effort.
@@ -341,7 +355,7 @@ export const usePrefs = create<PrefsState>((set, get) => ({
       const { data, error } = await supabase
         .from('profiles')
         .select(
-          'profile_visibility, schedule_invite, notif_prefs, friend_request_mode',
+          'profile_visibility, schedule_invite, notif_prefs, friend_request_mode, map_start_pool_id, map_friend_horizon, map_public_horizon',
         )
         .eq('auth_uid', uid)
         .maybeSingle();
@@ -351,6 +365,9 @@ export const usePrefs = create<PrefsState>((set, get) => ({
         schedule_invite: string | null;
         notif_prefs: Record<string, boolean> | null;
         friend_request_mode: string | null;
+        map_start_pool_id: string | null;
+        map_friend_horizon: string | null;
+        map_public_horizon: string | null;
       };
 
       // 1) 공개/공유 — others_schedule_view 는 profileVisibility 미러.
@@ -374,6 +391,21 @@ export const usePrefs = create<PrefsState>((set, get) => ({
       const nsv = np.service !== false;
       const nr = np.report !== false;
 
+      // 4) 지도 설정(0508) — 서버값 우선. start_pool 은 null(미설정)이면 로컬 유지,
+      //    지평선은 유효값일 때만 적용(미인식/null 이면 로컬 유지).
+      const cur = get();
+      const msp = row.map_start_pool_id ?? cur.mapStartPoolId;
+      const mfh: MapFriendHorizon = FRIEND_HORIZON_VALUES.includes(
+        row.map_friend_horizon as MapFriendHorizon,
+      )
+        ? (row.map_friend_horizon as MapFriendHorizon)
+        : cur.mapFriendHorizon;
+      const mph: MapPublicHorizon = PUBLIC_HORIZON_VALUES.includes(
+        row.map_public_horizon as MapPublicHorizon,
+      )
+        ? (row.map_public_horizon as MapPublicHorizon)
+        : cur.mapPublicHorizon;
+
       // 서버값을 권위로 로컬 메모리 덮기.
       set((s) => ({
         profileVisibility: pv,
@@ -386,6 +418,9 @@ export const usePrefs = create<PrefsState>((set, get) => ({
         notifServiceAnnounce: nsv,
         notifMonthlyReport: nr,
         pushOn: nf || ns || nsu || nsv || nr,
+        mapStartPoolId: msp,
+        mapFriendHorizon: mfh,
+        mapPublicHorizon: mph,
       }));
       const writes = [
         AsyncStorage.setItem(K_PROFILE_VIS, pv),
@@ -398,6 +433,13 @@ export const usePrefs = create<PrefsState>((set, get) => ({
         AsyncStorage.setItem(K_NOTIF_REPORT, nr ? 'true' : 'false'),
       ];
       if (fr) writes.push(AsyncStorage.setItem(K_FRIEND_REQ, fr));
+      writes.push(AsyncStorage.setItem(K_MAP_FRIENDS, mfh));
+      writes.push(AsyncStorage.setItem(K_MAP_PUBLIC, mph));
+      writes.push(
+        msp
+          ? AsyncStorage.setItem(K_MAP_START, msp)
+          : AsyncStorage.removeItem(K_MAP_START),
+      );
       await Promise.all(writes);
     } catch {
       /* best-effort — 로컬값 유지 */
@@ -453,11 +495,13 @@ export const usePrefs = create<PrefsState>((set, get) => ({
     if (v) await AsyncStorage.setItem(K_MAP_START, v);
     else await AsyncStorage.removeItem(K_MAP_START);
     set({ mapStartPoolId: v });
+    void syncMapPrefToServer({ map_start_pool_id: v });
   },
 
   setMapFriendHorizon: async (v) => {
     await AsyncStorage.setItem(K_MAP_FRIENDS, v);
     set({ mapFriendHorizon: v });
+    void syncMapPrefToServer({ map_friend_horizon: v });
   },
 
   setMapPublicHorizon: async (v) => {
@@ -465,6 +509,7 @@ export const usePrefs = create<PrefsState>((set, get) => ({
     // 보존(친구공개로 잠시 전환됐다 다시 public 시 복원).
     await AsyncStorage.setItem(K_MAP_PUBLIC, v);
     set({ mapPublicHorizon: v });
+    void syncMapPrefToServer({ map_public_horizon: v });
   },
 
   // 마스터(푸시 알림) 토글 — 5 sub로 cascade. 마케팅은 정통망법 §50 별도
