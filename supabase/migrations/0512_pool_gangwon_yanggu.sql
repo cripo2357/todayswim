@@ -8,7 +8,7 @@
 -- prod 적용=supabase-js insert(pg prune). 이 파일=source-of-record.
 
 insert into public.pools (id, name, region, district, address, lat, lng, type, ownership, phone, website, lane_count, pool_length, depth_min, depth_max, facilities, has_kids_pool, has_diving_pool, is_hotel_pool, has_schedule, free_swim_available, price_weekday, price_weekend, photo_url, schedule_source_url) values
-  ('POOL_0549', '양구청소년수련관수영장', '강원', '양구군', '강원특별자치도 양구군 양구읍 박수근로 366-27', 38.10579409316898, 127.98158457726151, 'indoor', 'public', '033-480-2586', 'https://yanggu.go.kr/happyedu', null, null, null, null, '{}', false, false, false, true, true, 3000, 3000, null, 'https://yanggu.go.kr/happyedu/Home/H30000/H30100/html')
+  ('POOL_0549', '양구청소년수련관수영장', '강원', '양구군', '강원특별자치도 양구군 양구읍 박수근로 366-27', 38.10579409316898, 127.98158457726151, 'indoor', 'public', '033-480-2586', 'https://yanggu.go.kr/happyedu', 4, 25, null, null, '{}', false, false, false, true, true, 3000, 3000, null, 'https://yanggu.go.kr/happyedu/Home/H30000/H30100/html')
 on conflict (id) do nothing;
 insert into public.schedules (pool_id, author_nickname, by_day, day_notes, updated_at) values
   ('POOL_0549', '풀스데이', $${"화":[{"start":"09:00","end":"22:00","hours":13}],"수":[{"start":"09:00","end":"22:00","hours":13}],"목":[{"start":"09:00","end":"22:00","hours":13}],"금":[{"start":"09:00","end":"22:00","hours":13}],"토":[{"start":"09:00","end":"18:00","hours":9}],"일":[{"start":"09:00","end":"18:00","hours":9}]}$$::jsonb, '{}'::jsonb, '2026-06-13'::timestamptz)
