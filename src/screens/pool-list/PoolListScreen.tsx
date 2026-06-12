@@ -28,7 +28,7 @@ import { useGeolocation } from '@/hooks/useGeolocation';
 import { usePoolFilter, filterPools } from '@/store/poolFilter';
 import { formatPoolPrice } from '@/lib/poolPrice';
 import { useSelection } from '@/store/selection';
-import type { Pool } from '@/types/pool';
+import type { Pool, Region } from '@/types/pool';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
 import Swimmer from '@assets/icons/swimmer.svg';
@@ -42,6 +42,23 @@ import { Tooltip } from '@/components/ui/Tooltip';
 
 const PAGE_SIZE = 10;
 type SortBy = 'distance' | 'name';
+
+// 지역 드롭다운 — 2글자 라벨 그룹(광역시는 인접 도에 흡수). 지리 북→남 순.
+// 라벨 선택 시 members 의 모든 region 풀을 보여준다(전국 = 미적용).
+type RegionGroup = { label: string; members: Region[] };
+const REGION_GROUPS: RegionGroup[] = [
+  { label: '서울', members: ['서울'] },
+  { label: '경기', members: ['경기'] },
+  { label: '인천', members: ['인천'] },
+  { label: '강원', members: ['강원'] },
+  { label: '충북', members: ['충북'] },
+  { label: '충남', members: ['대전', '세종', '충남'] },
+  { label: '전북', members: ['전북'] },
+  { label: '전남', members: ['광주', '전남'] },
+  { label: '경북', members: ['대구', '경북'] },
+  { label: '경남', members: ['부산', '울산', '경남'] },
+  { label: '제주', members: ['제주'] },
+];
 
 /** Haversine — 두 GPS 좌표 간 km 거리. */
 function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
@@ -81,6 +98,32 @@ export function PoolListScreen() {
     [pools, schedules, filter],
   );
 
+  // ── 지역 그룹 인라인 필터 — 기본 '전국'(미적용). pool.region 기반. ──
+  const [region, setRegion] = React.useState<string>('전국'); // '전국' | RegionGroup.label
+  const [regionOpen, setRegionOpen] = React.useState(false);
+  // 풀이 실제로 있는 그룹만(상세필터 적용분 기준) 노출.
+  const availableGroups = React.useMemo(
+    () =>
+      REGION_GROUPS.filter((g) =>
+        g.members.some((m) => filteredPools.some((p) => p.region === m)),
+      ),
+    [filteredPools],
+  );
+  // 선택 그룹이 (상세필터 변동으로) 사라지면 전국으로 복귀.
+  React.useEffect(() => {
+    if (region !== '전국' && !availableGroups.some((g) => g.label === region)) {
+      setRegion('전국');
+    }
+  }, [region, availableGroups]);
+  // 지역 스코프 — 이후 거리계산·정렬·검색 모두 이 집합 기준.
+  const regionPools = React.useMemo(() => {
+    if (region === '전국') return filteredPools;
+    const g = REGION_GROUPS.find((x) => x.label === region);
+    if (!g) return filteredPools;
+    const members = new Set<Region>(g.members);
+    return filteredPools.filter((p) => members.has(p.region));
+  }, [filteredPools, region]);
+
   // 거리순은 위치 있을 때만. 기본 거리순(위치 있으면), 위치 없으면 이름순.
   // 위치가 mount 후 도착한 경우에도 자동으로 거리순으로 전환 — 단 사용자가 직접 탭을 누르면 그 선택 존중.
   const [sortBy, setSortBy] = React.useState<SortBy>(hasLocation ? 'distance' : 'name');
@@ -100,43 +143,43 @@ export function PoolListScreen() {
     if (!geo.coords) return null;
     const me = { lat: geo.coords.lat, lng: geo.coords.lng };
     const map = new Map<string, number>();
-    for (const p of filteredPools) {
+    for (const p of regionPools) {
       map.set(p.id, haversineKm(me, { lat: p.lat, lng: p.lng }));
     }
     return map;
-  }, [filteredPools, geo.coords]);
+  }, [regionPools, geo.coords]);
 
   const sortedPools = React.useMemo(() => {
     if (sortBy === 'name') {
-      return [...filteredPools].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+      return [...regionPools].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
     }
-    if (!distanceMap) return filteredPools;
-    return [...filteredPools].sort(
+    if (!distanceMap) return regionPools;
+    return [...regionPools].sort(
       (a, b) => (distanceMap.get(a.id) ?? 0) - (distanceMap.get(b.id) ?? 0),
     );
-  }, [filteredPools, sortBy, distanceMap]);
+  }, [regionPools, sortBy, distanceMap]);
 
   // ── 수영장 이름 검색 (Figma 103:1830 / 147:5326) — 수영 일정 추가와 동일 패턴 ──
   const favIds = useFavorites((s) => s.ids);
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [draft, setDraft] = React.useState(''); // 검색칸 입력값
   const [query, setQuery] = React.useState(''); // 확정된 필터(목록 적용)
-  const [triggerY, setTriggerY] = React.useState(0);
+  const [rowBottom, setRowBottom] = React.useState(0);
   const searchInputRef = React.useRef<TextInput>(null);
 
   // 드롭다운 결과 — 즐겨찾기 먼저(가나다), 그 다음 일반(가나다).
   const dropdownPools = React.useMemo(() => {
     const q = draft.trim().toLowerCase();
     const matched = q
-      ? filteredPools.filter((p) => p.name.toLowerCase().includes(q))
-      : filteredPools;
+      ? regionPools.filter((p) => p.name.toLowerCase().includes(q))
+      : regionPools;
     const favSet = new Set(favIds);
     const byKo = (a: Pool, b: Pool) => a.name.localeCompare(b.name, 'ko');
     return [
       ...matched.filter((p) => favSet.has(p.id)).sort(byKo),
       ...matched.filter((p) => !favSet.has(p.id)).sort(byKo),
     ];
-  }, [filteredPools, draft, favIds]);
+  }, [regionPools, draft, favIds]);
 
   // 확정 검색어로 목록 필터. 검색 중이면 결과를 즐겨찾기 먼저(가나다)
   // → 일반(가나다)로 정렬. 빈 값이면 전체(거리순/이름순 그대로).
@@ -168,11 +211,19 @@ export function PoolListScreen() {
     setSearchOpen(false);
   };
 
+  // 지역 선택 — 그 그룹으로 스코프. 검색어 초기화(지역 바뀌면 결과 혼란 방지).
+  const onSelectRegion = (r: string) => {
+    setRegion(r);
+    setRegionOpen(false);
+    setQuery('');
+    setDraft('');
+  };
+
   // 페이지네이션: 10개씩 노출. 정렬/필터/검색 바뀌면 1페이지로 리셋.
   const [visibleCount, setVisibleCount] = React.useState(PAGE_SIZE);
   React.useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [sortBy, filteredPools.length, query]);
+  }, [sortBy, regionPools.length, query]);
 
   const visiblePools = searchedPools.slice(0, visibleCount);
   const canLoadMore = visibleCount < searchedPools.length;
@@ -198,7 +249,7 @@ export function PoolListScreen() {
   return (
     <ScreenContainer withHorizontalPadding={false} background={tokens.color.bgPaper}>
       <AppHeader
-        title={`수영장 목록 (${filteredPools.length})`}
+        title={`수영장 목록 (${regionPools.length})`}
         background={tokens.color.bgPaper}
         rightSlot={
           <Pressable
@@ -214,28 +265,47 @@ export function PoolListScreen() {
       />
 
       <View style={styles.contentWrap}>
-        {/* 수영장 이름 검색 (Figma 163:6226) — 라벨 + 닫힘 트리거 */}
-        <View style={styles.searchArea}>
-          <Text style={styles.searchLabel}>수영장</Text>
-          <View onLayout={(e) => setTriggerY(e.nativeEvent.layout.y)}>
-            <Pressable
-              onPress={() => setSearchOpen(true)}
-              style={styles.poolTrigger}
-              accessibilityRole="button"
-              accessibilityLabel="수영장 이름 검색"
+        {/* 지역 + 수영장 이름 — 한 줄 (Figma 367:6217) */}
+        <View
+          style={styles.filterRow}
+          onLayout={(e) =>
+            setRowBottom(e.nativeEvent.layout.y + e.nativeEvent.layout.height)
+          }
+        >
+          <Pressable
+            onPress={() => {
+              setSearchOpen(false);
+              setRegionOpen(true);
+            }}
+            style={styles.regionTrigger}
+            accessibilityRole="button"
+            accessibilityLabel="지역 선택"
+          >
+            <Text style={styles.regionTriggerText} numberOfLines={1}>
+              {region}
+            </Text>
+            <IconChevronDown width={20} height={20} />
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              setRegionOpen(false);
+              setSearchOpen(true);
+            }}
+            style={styles.searchTrigger}
+            accessibilityRole="button"
+            accessibilityLabel="수영장 이름 검색"
+          >
+            <Text
+              style={[
+                styles.poolTriggerText,
+                !query && styles.poolTriggerPlaceholder,
+              ]}
+              numberOfLines={1}
             >
-              <Text
-                style={[
-                  styles.poolTriggerText,
-                  !query && styles.poolTriggerPlaceholder,
-                ]}
-                numberOfLines={1}
-              >
-                {query || '수영장 이름'}
-              </Text>
-              <IconChevronDown width={20} height={20} />
-            </Pressable>
-          </View>
+              {query || '수영장 이름'}
+            </Text>
+            <IconChevronDown width={20} height={20} />
+          </Pressable>
         </View>
 
         {/* 정렬 탭 — 거리순(위치 있을 때만) / 이름순 */}
@@ -259,7 +329,7 @@ export function PoolListScreen() {
         <FlatList
           data={visiblePools}
           keyExtractor={(item) => item.id}
-          scrollEnabled={!searchOpen}
+          scrollEnabled={!searchOpen && !regionOpen}
           renderItem={({ item }) => (
             <PoolListCard
               pool={item}
@@ -295,7 +365,7 @@ export function PoolListScreen() {
               accessibilityRole="button"
               accessibilityLabel="수영장 검색 닫고 검색"
             />
-            <View style={[styles.poolPanel, { top: triggerY }]}>
+            <View style={[styles.poolPanel, { top: rowBottom }]}>
               {/* Figma 147:5406 — 검색칸 #F8FAFC 알약 */}
               <View style={styles.poolSearch}>
                 <View style={styles.poolSearchInputWrap}>
@@ -348,6 +418,44 @@ export function PoolListScreen() {
                 {dropdownPools.length === 0 ? (
                   <Text style={styles.poolEmpty}>검색 결과가 없어요.</Text>
                 ) : null}
+              </ScrollView>
+            </View>
+          </>
+        ) : null}
+
+        {/* 지역 드롭다운 float — 필터 행 아래, 좌측 정렬 */}
+        {regionOpen ? (
+          <>
+            <Pressable
+              style={styles.poolBackdrop}
+              onPress={() => setRegionOpen(false)}
+              accessibilityRole="button"
+              accessibilityLabel="지역 선택 닫기"
+            />
+            <View style={[styles.regionPanel, { top: rowBottom }]}>
+              <ScrollView
+                style={styles.regionList}
+                nestedScrollEnabled
+                keyboardShouldPersistTaps="always"
+                showsVerticalScrollIndicator={false}
+              >
+                {['전국', ...availableGroups.map((g) => g.label)].map((r) => (
+                  <Pressable
+                    key={r}
+                    onPress={() => onSelectRegion(r)}
+                    style={styles.poolItem}
+                  >
+                    <Text
+                      style={[
+                        styles.poolItemText,
+                        r === region && styles.regionItemActive,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {r}
+                    </Text>
+                  </Pressable>
+                ))}
               </ScrollView>
             </View>
           </>
@@ -536,20 +644,62 @@ const styles = StyleSheet.create({
   // 검색 float가 목록 위에 뜨도록 relative 컨테이너
   contentWrap: { flex: 1, position: 'relative' },
 
-  // ── 수영장 검색 (Figma 163:6226 / 147:5326) — AddScheduleSheet와 동일 ──
-  // 라벨 + 닫힘 트리거 영역 (frame 103:2640 px16 py8)
-  searchArea: {
+  // ── 지역 + 수영장 검색 한 줄 (Figma 367:6217) ──
+  filterRow: {
+    flexDirection: 'row',
     paddingHorizontal: 16,
     paddingTop: 8,
-    gap: 8,
+    gap: 10,
   },
-  // Figma 163:6227 — SemiBold 14/20 -0.084 #4B5563
-  searchLabel: {
-    fontSize: 14,
-    lineHeight: 20,
-    letterSpacing: -0.084,
+  // 지역 필 (Figma 163:6226 — 86 너비). border #94A3B8 r14 minH48 px12
+  regionTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: 86,
+    minHeight: 48,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#94A3B8',
+    borderRadius: 14,
+    backgroundColor: tokens.color.white,
+  },
+  regionTriggerText: {
+    flex: 1,
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sans,
+    color: '#1F2937',
+  },
+  // 검색 필 — 남는 폭 채움(flex). poolTrigger 와 동일 톤.
+  searchTrigger: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 48,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#94A3B8',
+    borderRadius: 14,
+    backgroundColor: tokens.color.white,
+  },
+  // 지역 드롭다운 패널 — 필터 행 아래, 좌측 정렬(160 너비)
+  regionPanel: {
+    position: 'absolute',
+    left: 16,
+    width: 160,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
+    backgroundColor: tokens.color.white,
+    padding: 8,
+    gap: 4,
+    ...tokens.shadow.lg,
+  },
+  regionList: { maxHeight: 288 },
+  regionItemActive: {
     fontFamily: tokens.font.sansSemibold,
-    color: '#4B5563',
+    color: tokens.color.ink900,
   },
   // Figma 163:6228 — border #94A3B8 r14 minH48 px12
   poolTrigger: {
