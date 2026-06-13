@@ -11,6 +11,7 @@
 import { useProfile } from '@/store/profile';
 import { useFavorites } from '@/store/favorites';
 import { useSwimSchedules } from '@/store/swimSchedule';
+import { useSwimDiaries } from '@/store/swimDiary';
 import { useFriends } from '@/store/friends';
 import { useSentInvites } from '@/store/sentInvites';
 import { usePrefs } from '@/store/prefs';
@@ -34,6 +35,7 @@ export async function resetUserScopedState(
     useProfile.getState().clear(),
     useFavorites.getState().reset(),
     useSwimSchedules.getState().reset(),
+    useSwimDiaries.getState().reset(),
     usePrefs.getState().reset(),
     ...(clearConsent ? [clearTerms()] : []),
   ]);

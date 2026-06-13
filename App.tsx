@@ -28,6 +28,7 @@ import { useSelection } from '@/store/selection';
 import { useAuth } from '@/store/auth';
 import { useProfile } from '@/store/profile';
 import { useSwimSchedules } from '@/store/swimSchedule';
+import { useSwimDiaries } from '@/store/swimDiary';
 import { useFriends } from '@/store/friends';
 import { usePrefs } from '@/store/prefs';
 import { useFavorites } from '@/store/favorites';
@@ -105,6 +106,7 @@ export default function App() {
     if (profileId) {
       void (async () => {
         await useSwimSchedules.getState().serverSync();
+        void useSwimDiaries.getState().serverSync();
         await useFriends.getState().serverSync();
         // 즐겨찾기·공개공유 설정 서버 복구(0269) — 재설치/기기변경/다기기.
         void useFavorites.getState().serverSync();
@@ -140,6 +142,7 @@ export default function App() {
         // 로그인(실세션/Apple mock) — 계정 데이터·설정 로컬 복원.
         void useProfile.getState().hydrate();
         void useSwimSchedules.getState().hydrate();
+        void useSwimDiaries.getState().hydrate();
         void usePrefs.getState().hydrate();
         void useFavorites.getState().hydrate();
       } else {
