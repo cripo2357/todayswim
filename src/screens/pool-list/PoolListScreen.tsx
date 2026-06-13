@@ -41,20 +41,26 @@ import { Tooltip } from '@/components/ui/Tooltip';
 
 const PAGE_SIZE = 10;
 
-// 지역 드롭다운 — 2글자 라벨 그룹(광역시는 인접 도에 흡수). 지리 북→남 순.
-// 라벨 선택 시 members 의 모든 region 풀을 보여준다(전국 = 미적용).
+// 지역 드롭다운 — 17개 시·도 개별. 수도권→충청→전라→경상→제주 순(크리스 확정).
+// 라벨 선택 시 그 region 풀만(전국 = 미적용). RegionGroup 구조 유지(추후 묶음 대비).
 type RegionGroup = { label: string; members: Region[] };
 const REGION_GROUPS: RegionGroup[] = [
   { label: '서울', members: ['서울'] },
   { label: '경기', members: ['경기'] },
   { label: '인천', members: ['인천'] },
   { label: '강원', members: ['강원'] },
+  { label: '대전', members: ['대전'] },
+  { label: '세종', members: ['세종'] },
   { label: '충북', members: ['충북'] },
-  { label: '충남', members: ['대전', '세종', '충남'] },
+  { label: '충남', members: ['충남'] },
+  { label: '광주', members: ['광주'] },
   { label: '전북', members: ['전북'] },
-  { label: '전남', members: ['광주', '전남'] },
-  { label: '경북', members: ['대구', '경북'] },
-  { label: '경남', members: ['부산', '울산', '경남'] },
+  { label: '전남', members: ['전남'] },
+  { label: '부산', members: ['부산'] },
+  { label: '대구', members: ['대구'] },
+  { label: '울산', members: ['울산'] },
+  { label: '경북', members: ['경북'] },
+  { label: '경남', members: ['경남'] },
   { label: '제주', members: ['제주'] },
 ];
 
