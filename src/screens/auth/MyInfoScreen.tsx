@@ -18,6 +18,7 @@ import {
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import IconCake from '@assets/icons/cake.svg';
+import IconWeight from '@assets/icons/weight.svg';
 import IconCalendarForm from '@assets/icons/calendar-form.svg';
 import IconArrowUpload from '@assets/icons/arrow-upload.svg';
 import IconEdit from '@assets/icons/edit.svg';
@@ -220,6 +221,10 @@ export function ProfileTab({
     // skipped/error → 로컬 URI 유지 (무손실, 현행 동작)
   };
   const [bio, setBio] = React.useState(profile.bio ?? '');
+  // 몸무게 — 자연수 문자열(숫자만). 빈 값=미입력('정보 없음'). 저장은 blur 시 patch.
+  const [weightStr, setWeightStr] = React.useState(() =>
+    profile.weight != null ? String(profile.weight) : '',
+  );
   const bioInputRef = React.useRef<TextInput>(null);
   const [bioEditing, setBioEditing] = React.useState(false);
   // "변경" 버튼: 비활성 → 편집 시작 / 편집 중 → 저장.
@@ -594,6 +599,37 @@ export function ProfileTab({
         </Pressable>
         <Text style={styles.fieldNote}>
           나이는 비공개이며, 모임 참여시 연령대 확인에만 사용합니다.
+        </Text>
+      </Field>
+
+      <Field label="몸무게">
+        <View style={styles.inputBox}>
+          <IconWeight width={20} height={20} />
+          <View style={styles.weightInputWrap}>
+            <TextInput
+              value={weightStr}
+              onChangeText={(v) =>
+                setWeightStr(v.replace(/[^0-9]/g, '').slice(0, 3))
+              }
+              onEndEditing={() =>
+                patch({ weight: weightStr ? Number(weightStr) : undefined })
+              }
+              keyboardType="number-pad"
+              style={styles.weightInput}
+              maxLength={3}
+            />
+            {weightStr.length === 0 ? (
+              <Text style={styles.weightPlaceholder} pointerEvents="none">
+                정보 없음
+              </Text>
+            ) : null}
+          </View>
+          {weightStr.length > 0 ? (
+            <Text style={styles.weightUnit}>kg</Text>
+          ) : null}
+        </View>
+        <Text style={styles.fieldNote}>
+          몸무게는 선택 입력이며, 칼로리 계산에만 사용됩니다.
         </Text>
       </Field>
 
@@ -1129,6 +1165,34 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     letterSpacing: -0.084,
+    fontFamily: tokens.font.sans,
+    color: '#4B5563',
+  },
+  // 몸무게 입력 — 숫자(자연수) + 'kg' + 빈 값 시 '정보 없음' 오버레이.
+  weightInputWrap: { flex: 1, justifyContent: 'center' },
+  weightInput: {
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sans,
+    color: '#4B5563',
+    padding: 0,
+  },
+  weightPlaceholder: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sans,
+    color: '#94A3B8',
+    includeFontPadding: false,
+  },
+  weightUnit: {
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
     fontFamily: tokens.font.sans,
     color: '#4B5563',
   },

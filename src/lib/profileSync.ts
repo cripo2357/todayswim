@@ -31,6 +31,7 @@ interface ProfileRow {
   nickname: string;
   gender: string;
   birth_date: string;
+  weight: number | null;
   experience_years: number;
   strokes: string[];
   bio: string | null;
@@ -56,6 +57,7 @@ function rowToProfile(row: ProfileRow): UserProfile {
     name: row.nickname,
     gender: row.gender as Gender,
     birthDate: row.birth_date,
+    weight: row.weight ?? undefined,
     experienceYears: row.experience_years,
     strokes: row.strokes as Stroke[],
     photoUri: row.photo_uri ?? undefined,
@@ -89,6 +91,7 @@ function profileToRow(
     nickname: p.name,
     gender: p.gender,
     birth_date: p.birthDate,
+    weight: p.weight ?? null,
     experience_years: p.experienceYears,
     strokes: p.strokes,
     bio: p.bio ?? null,

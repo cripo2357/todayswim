@@ -80,6 +80,8 @@ export interface UserProfile {
   name: string;
   gender: Gender;
   birthDate: string; // YYYY-MM-DD
+  /** 몸무게(kg, 자연수). 선택 입력 — 칼로리 계산에만 사용. 미입력=undefined('정보 없음'). */
+  weight?: number;
   experienceYears: number; // 0~30, 30은 "30년 이상"
   strokes: Stroke[];
   photoUri?: string; // 아바타 URL(번들·업로드·소셜 통일) / 로컬 URI / 레거시 번들 ID
