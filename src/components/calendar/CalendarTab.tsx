@@ -16,6 +16,7 @@ import {
   useSwimSchedules,
   dateKey,
   isSchedulePast,
+  isScheduleStarted,
   type ScheduleVisibility,
 } from '@/store/swimSchedule';
 import { resolveAvatarUri } from '@/lib/avatars';
@@ -26,7 +27,6 @@ import { useFriends } from '@/store/friends';
 import type { RootStackParamList } from '@/navigation/types';
 import { tokens } from '@/styles/tokens';
 import { formatDateTime } from '@/lib/dateFormat';
-import IconSwim from '@assets/icons/swim.svg';
 import { WeekCalendar } from './WeekCalendar';
 import { AddScheduleSheet } from './AddScheduleSheet';
 import { ConfirmScheduleModal } from './ConfirmScheduleModal';
@@ -142,6 +142,7 @@ export function CalendarTab({
       schedule: s,
       participants: resolveParticipants(s, viewPref, blockedIds, otherSchedules),
       past: isSchedulePast(s),
+      started: isScheduleStarted(s),
     }));
   }, [schedules, selKey, viewPref, blockedIds, otherSchedules]);
 
@@ -201,7 +202,7 @@ export function CalendarTab({
             </Text>
           </View>
         ) : (
-          dayItems.map(({ schedule: s, participants: pg, past }) => (
+          dayItems.map(({ schedule: s, participants: pg, past, started }) => (
             <Pressable
               key={s.id}
               onLongPress={() => onCancel(s.id)}
@@ -216,17 +217,17 @@ export function CalendarTab({
                   <Text style={styles.when} numberOfLines={1}>
                     {formatScheduleLine(s.date, s.start)}
                   </Text>
-                  {/* past 는 dayItems 에서 사전 계산. 지난 일정 = "수영 완료"
-                      배지(Figma 133:3874) / 예정 일정 = 공개여부 변경 chip. */}
-                  {past ? (
+                  {/* started(슬롯 시작 경과) = "수영 일기 작성" 배지(Figma 368:6234,
+                      pd-mint) / 시작 전 = 공개여부 변경 chip. 참여자 표시는 종료(past) 기준.
+                      ⚠ onPress 임시: 일기 작성 화면 미구현 → 기존 관리 시트(완료/삭제). */}
+                  {started ? (
                     <Pressable
                       onPress={() => setPastEditId(s.id)}
                       style={styles.doneChip}
                       accessibilityRole="button"
-                      accessibilityLabel="지난 일정 관리"
+                      accessibilityLabel="수영 일기 작성"
                     >
-                      <Text style={styles.doneChipLabel}>수영 완료</Text>
-                      <IconSwim width={12} height={12} />
+                      <Text style={styles.doneChipLabel}>수영 일기 작성</Text>
                     </Pressable>
                   ) : (
                     <Pressable
@@ -542,9 +543,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#4B5563',
+    backgroundColor: tokens.color.pdMint,
     borderWidth: 1,
-    borderColor: '#4B5563',
+    borderColor: tokens.color.pdMint,
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 4,

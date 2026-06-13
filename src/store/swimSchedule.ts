@@ -75,6 +75,17 @@ export function isSchedulePast(s: {
   return new Date() > new Date(y, m - 1, d, hh, mm, 0, 0);
 }
 
+/** 슬롯 시작 시각이 지났는가 — '수영 일기 작성' 버튼 전환 기준(시작 시점).
+ *  참여자 표시(다른사람/친구초대)는 종료 기준 isSchedulePast 유지. */
+export function isScheduleStarted(s: {
+  date: string;
+  start: string;
+}): boolean {
+  const [y, m, d] = s.date.split('-').map(Number);
+  const [hh, mm] = s.start.split(':').map(Number);
+  return new Date() > new Date(y, m - 1, d, hh, mm, 0, 0);
+}
+
 const STORAGE_KEY = 'poolsday.swimSchedules';
 
 export const useSwimSchedules = create<SwimScheduleState>((set, get) => ({
