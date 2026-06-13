@@ -2,8 +2,7 @@
 //
 // 흐름: MapScreen 하단 "수영장 목록" 버튼 → 이 화면
 // - 표시 대상: 지도에 보이는 풀 (필터 적용분)
-// - 정렬: 거리순(내 위치 기준 Haversine) / 이름순(가나다 localeCompare)
-// - 거리순 탭은 위치 권한 없거나 좌표 미상이면 미노출 → 이름순만
+// - 정렬: 거리순 고정(내 위치 기준 Haversine). 위치 없으면 이름순(가나다) 폴백. 탭 없음.
 // - 페이지네이션: 10개 단위로 스크롤 끝에서 추가 로드 (서비스 속도 보호)
 
 import React from 'react';
@@ -41,7 +40,6 @@ import IconHotel from '@assets/icons/facility-hotel.svg';
 import { Tooltip } from '@/components/ui/Tooltip';
 
 const PAGE_SIZE = 10;
-type SortBy = 'distance' | 'name';
 
 // 지역 드롭다운 — 2글자 라벨 그룹(광역시는 인접 도에 흡수). 지리 북→남 순.
 // 라벨 선택 시 members 의 모든 region 풀을 보여준다(전국 = 미적용).
@@ -85,7 +83,6 @@ export function PoolListScreen() {
   const filter = usePoolFilter();
   const selectAndFocus = useSelection((s) => s.selectAndFocus);
   const geo = useGeolocation({ auto: true });
-  const hasLocation = geo.status === 'granted' && !!geo.coords;
 
   // ?? [] 인라인은 매 렌더 새 array reference → 의존 hook 재계산.
   // useMemo 로 안정 reference.
@@ -124,20 +121,6 @@ export function PoolListScreen() {
     return filteredPools.filter((p) => members.has(p.region));
   }, [filteredPools, region]);
 
-  // 거리순은 위치 있을 때만. 기본 거리순(위치 있으면), 위치 없으면 이름순.
-  // 위치가 mount 후 도착한 경우에도 자동으로 거리순으로 전환 — 단 사용자가 직접 탭을 누르면 그 선택 존중.
-  const [sortBy, setSortBy] = React.useState<SortBy>(hasLocation ? 'distance' : 'name');
-  const userOverrideRef = React.useRef(false);
-  const handleSetSort = (s: SortBy) => {
-    userOverrideRef.current = true;
-    setSortBy(s);
-  };
-  React.useEffect(() => {
-    if (userOverrideRef.current) return;
-    if (hasLocation && sortBy !== 'distance') setSortBy('distance');
-    if (!hasLocation && sortBy === 'distance') setSortBy('name');
-  }, [hasLocation, sortBy]);
-
   // 거리 계산 — 위치 있을 때 풀별 km 거리. 정렬과 카드 표시 모두 사용.
   const distanceMap = React.useMemo<Map<string, number> | null>(() => {
     if (!geo.coords) return null;
@@ -149,15 +132,15 @@ export function PoolListScreen() {
     return map;
   }, [regionPools, geo.coords]);
 
+  // 정렬 — 거리순 고정(위치 있을 때). 위치 없으면 이름순(가나다) 폴백. 정렬 탭 없음.
   const sortedPools = React.useMemo(() => {
-    if (sortBy === 'name') {
+    if (!distanceMap) {
       return [...regionPools].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
     }
-    if (!distanceMap) return regionPools;
     return [...regionPools].sort(
       (a, b) => (distanceMap.get(a.id) ?? 0) - (distanceMap.get(b.id) ?? 0),
     );
-  }, [regionPools, sortBy, distanceMap]);
+  }, [regionPools, distanceMap]);
 
   // ── 수영장 이름 검색 (Figma 103:1830 / 147:5326) — 수영 일정 추가와 동일 패턴 ──
   const favIds = useFavorites((s) => s.ids);
@@ -223,7 +206,7 @@ export function PoolListScreen() {
   const [visibleCount, setVisibleCount] = React.useState(PAGE_SIZE);
   React.useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [sortBy, regionPools.length, query]);
+  }, [regionPools.length, query]);
 
   const visiblePools = searchedPools.slice(0, visibleCount);
   const canLoadMore = visibleCount < searchedPools.length;
@@ -308,23 +291,6 @@ export function PoolListScreen() {
           </Pressable>
         </View>
 
-        {/* 정렬 탭 — 거리순(위치 있을 때만) / 이름순 */}
-        <View style={styles.tabsWrap}>
-          <View style={styles.tabs}>
-            {hasLocation ? (
-              <TabBtn
-                label="거리순"
-                active={sortBy === 'distance'}
-                onPress={() => handleSetSort('distance')}
-              />
-            ) : null}
-            <TabBtn
-              label="이름순"
-              active={sortBy === 'name'}
-              onPress={() => handleSetSort('name')}
-            />
-          </View>
-        </View>
 
         <FlatList
           data={visiblePools}
@@ -465,26 +431,6 @@ export function PoolListScreen() {
   );
 }
 
-function TabBtn({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[styles.tabBtn, active && styles.tabBtnActive]}
-      accessibilityRole="tab"
-      accessibilityState={{ selected: active }}
-    >
-      <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>{label}</Text>
-    </Pressable>
-  );
-}
 
 /** 거리 포맷 — 50m 이내는 '근처', 10km 미만은 소수 1자리, 10km 이상은 정수. */
 function formatDistance(km: number): string {
@@ -808,45 +754,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // 정렬 탭 (Figma 103:1830 상단 segmented control)
-  tabsWrap: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 16,
-  },
-  // Figma 103:2641 — bg #F1F5F9, radius 18, padding 4
-  tabs: {
-    flexDirection: 'row',
-    backgroundColor: '#F1F5F9',
-    borderRadius: 18,
-    padding: 4,
-  },
-  // Figma I103:2641 — h 40, radius 14
-  tabBtn: {
-    flex: 1,
-    height: 40,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tabBtnActive: {
-    backgroundColor: tokens.color.bgPaper,
-    ...(tokens.shadow.sm),
-  },
-  tabLabel: {
-    fontSize: 14,
-    lineHeight: 20,
-    letterSpacing: -0.084,
-    fontFamily: tokens.font.sansMedium,
-    color: tokens.color.ink500,
-  },
-  tabLabelActive: {
-    fontFamily: tokens.font.sansSemibold,
-    color: tokens.color.ink900,
-  },
 
   listContent: {
     paddingHorizontal: 16,
+    paddingTop: 16,
     paddingBottom: 32,
     // Figma 103:1834 — 카드 사이 gap 32
     gap: 32,
