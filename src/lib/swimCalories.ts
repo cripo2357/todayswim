@@ -1,17 +1,14 @@
-// 수영 칼로리 + 음식 환산 — 수영 일기 통계 엔진. (크리스 확정 2026-06-14, 페이스기반 확정)
+// 수영 칼로리 + 음식 환산 — 수영 일기 통계 엔진. (크리스 확정 2026-06-14, 페이스 선형 확정)
 //
-// kcal = 체중(kg) × 수영시간(h) × MET(페이스)
-//   페이스 = 총거리(m) ÷ 시간(분).  MET = MET_BASE + SLOPE × max(0, 페이스 - THRESHOLD).
-//   "시간이 기본 + 빠르게 치면(페이스↑) 강도 보너스" 구조.
+// kcal = 체중(kg) × 수영시간(h) × MET(페이스),  페이스 = 총거리(m) ÷ 시간(분)
+//   MET = 2.64 + 0.10 × 페이스  ≡  kcal = 179×h + 0.113×거리 (@68kg)
+//   "물속 기저(시간) + 빠를수록 강도(페이스) 가산" 구조. floor·임계점 없이 페이스에 선형.
 //
-// 애플워치 실측 3샘플로 calibration (성인 남성 ≈72kg, 총칼로리 기준):
-//   ② 276m/24분/141kcal  → 페이스11.5 → 분당5.88kcal (저강도 floor)
-//   ① 1550m/60분/345kcal → 페이스25.8 → 분당5.75kcal (저강도 floor)
-//   ③ 1850m/42분/326kcal → 페이스44.0 → 분당7.76kcal (고강도 ↑)
-//   → 페이스 ~30m/분 이하는 ~4.85 MET로 평평, 그 위로 선형 상승. 셋 다 1% 내 적중.
-// 거리·영법은 "페이스(=거리/시간)"를 통해 강도로 간접 반영됨(직접 MET 곱셈은 실측과 어긋나 폐기:
-//   샘플② 접영 25%인데 분당 안 올랐고, 거리기반 역산 REF는 48 vs 24로 2배 벌어졌음).
-// 강도 높은 샘플 더 모이면 SLOPE/THRESHOLD 재calibration 가능.
+// 애플워치 실측 29샘플 최소제곱 회귀로 calibration (총칼로리 기준). MAPE ~10%.
+//   잔차 ~10%는 사람마다 다른 몸무게·심박(강도) 탓 — 거리·시간만으론 더 못 줄임(애플은 심박 보유).
+//   초기 3샘플로 만든 floor+임계점 모델은 고강도 과소평가(페이스45=실측MET8.7인데 모델6.7)라 폐기.
+// 거리·영법은 "페이스(=거리/시간)"를 통해 강도로 간접 반영(직접 MET 곱셈은 실측과 어긋나 폐기:
+//   접영 25% 샘플인데 분당 안 올랐고, 거리기반 역산값도 2배 벌어졌음). STROKE_MET은 참고용.
 // 체중 = profile.weight(선택 입력) 우선 → 없으면 성별×연령대 기본표 → 전체 폴백.
 // 음식 환산 = 베스트핏(1~5개로 가장 깔끔히 떨어지는 친숙한 음식), 주류 제외, "OO N개 태웠어요!".
 
@@ -83,11 +80,12 @@ export interface SwimStats {
   kcal: number;
 }
 
-// 페이스기반 MET calibration (애플워치 실측 3샘플, 72kg 총칼로리). 셋 다 1% 내 적중.
-const MET_BASE = 4.85; // 저강도 floor(페이스 THRESHOLD 이하 = 쉬엄쉬엄)
-const PACE_THRESHOLD = 30; // m/min — 이 이상부터 강도 보너스
-const PACE_MET_SLOPE = 0.115; // THRESHOLD 초과 m/min당 MET 증가
-const MET_MAX = 12; // 엘리트 스프린트 폭주 방지(접영 MET 상한 근처)
+// 페이스 선형 MET calibration — 애플워치 실측 29샘플 최소제곱 회귀(@68kg).
+//   kcal = 179×h + 0.113×거리 ≡ 체중 × h × (2.64 + 0.10×페이스). MAPE ~10%.
+// MET_BASE = 물속 저강도/휴식 기저(페이스 0이어도 발생), SLOPE = 페이스(m/min)당 증가.
+const MET_BASE = 2.64;
+const MET_PACE_SLOPE = 0.1; // m/min당 MET 증가(빠를수록 강도↑)
+const MET_MAX = 13; // 엘리트 스프린트 폭주 방지(페이스 ~104m/min에서 도달)
 
 /** 사용자가 입력한 거리·시간으로 유효 MET·칼로리 산출. kcal = 체중 × 시간(h) × MET(페이스). */
 export function computeSwimStats(
@@ -104,10 +102,7 @@ export function computeSwimStats(
   // 거리가 0이면(기록 없음) 칼로리도 0 — 시간만으론 '수영'으로 안 침.
   if (totalDistance > 0 && hours > 0) {
     const pace = totalDistance / input.durationMin; // m/min
-    const met = Math.min(
-      MET_MAX,
-      MET_BASE + PACE_MET_SLOPE * Math.max(0, pace - PACE_THRESHOLD),
-    );
+    const met = Math.min(MET_MAX, MET_BASE + MET_PACE_SLOPE * pace);
     kcal = Math.round(weightKg * hours * met);
   }
   return { totalDistance, breakdown, durationMin: input.durationMin, kcal };
