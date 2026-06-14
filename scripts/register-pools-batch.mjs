@@ -90,15 +90,16 @@ async function main() {
   // 현재 max id
   const { data: ids } = await sb.from('pools').select('id').order('id', { ascending: false }).limit(1);
   let next = Number(ids[0].id.replace('POOL_', ''));
-  // 기존 이름/주소(중복 pre-check)
-  const { data: existing } = await sb.from('pools').select('name,address').limit(5000);
-  const seen = new Set(existing.map((p) => (p.name || '').replace(/\s/g, '')));
+  // 기존 이름+지역(중복 pre-check) — 동명 다른지역 시설(올림픽기념국민생활관 등) 허용
+  const { data: existing } = await sb.from('pools').select('name,region').limit(5000);
+  const seen = new Set(existing.map((p) => (p.name || '').replace(/\s/g, '') + '|' + (p.region || '')));
 
   const plan = [];
   for (const p of pools) {
     const cleanName = (p.name || '').replace(/\s/g, '');
     if (!cleanName) { console.warn('SKIP(이름없음):', JSON.stringify(p)); continue; }
-    if (seen.has(cleanName)) { console.warn('SKIP(중복):', cleanName); continue; }
+    const dupKey = cleanName + '|' + (p.region || '');
+    if (seen.has(dupKey)) { console.warn('SKIP(중복):', cleanName, p.region); continue; }
     if (!p.schedule_source_url) { console.warn('SKIP(시간표출처 없음):', cleanName); continue; }
     if (!p.by_day_en || !p.by_day_en.length) { console.warn('SKIP(by_day 없음):', cleanName); continue; }
 
@@ -131,7 +132,7 @@ async function main() {
       updated_at: nowIso, approved_at: nowIso, last_verified_at: nowIso,
     };
     plan.push({ poolRow, schedRow, via });
-    seen.add(cleanName);
+    seen.add(dupKey);
   }
 
   console.log(`\n=== 등록 계획 ${plan.length}건 (${apply ? 'APPLY' : 'DRY-RUN'}) ===`);
