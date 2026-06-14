@@ -76,8 +76,13 @@ export interface SwimStats {
   kcal: number;
 }
 
-/** 표준 수영 페이스(m/min). 거리기반 칼로리 보정상수. */
-const REF_PACE = 30;
+/**
+ * 표준 수영 페이스(m/min) — 거리기반 칼로리 보정상수.
+ * 애플워치 실측 앵커로 calibration: 일반 성인 남성(≈72kg)이 1550m 혼영 세트를
+ * 쳤을 때 애플워치 총 345kcal → REF = 72 × Σ(MET×거리) ÷ (60×345) ≈ 48.
+ * (이전 30은 "쭉 중강도" 가정이라 실제보다 ~40% 높게 나옴 — 휴식·이지 구간 미반영.)
+ */
+const REF_PACE = 48;
 
 /** 거리 = 레인 × 회, kcal = 체중 × Σ(MET×거리) ÷ (60×REF). 시간 무관(거리기반). */
 export function computeSwimStats(
