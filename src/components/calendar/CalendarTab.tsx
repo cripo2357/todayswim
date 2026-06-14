@@ -305,6 +305,16 @@ export function CalendarTab({
                       </Text>
                     </View>
 
+                    {/* 내 수영 노트 — "나" 셀 아래 전체폭(Figma 372:12027). */}
+                    {(() => {
+                      const dn = diaries.find(
+                        (d) => d.scheduleId === s.id,
+                      )?.note;
+                      return dn ? (
+                        <Text style={styles.diaryNote}>{dn}</Text>
+                      ) : null;
+                    })()}
+
                     {/* 친구 섹션 (비공개 아니면) — 친구 + 친구초대(마지막).
                         지난 일정은 친구초대 미노출(친구 0명이면 섹션 자체 생략). */}
                     {pg.showInvite && (pg.friends.length > 0 || !past) ? (
@@ -584,6 +594,13 @@ const styles = StyleSheet.create({
 
   // Figma 120:3156 — 참여자 영역(나 / 친구그리드+초대 / 다른사람그리드)
   participants: { gap: 12 },
+  // 내 수영 노트 — "나" 셀 아래 전체폭(Figma 372:12027).
+  diaryNote: {
+    fontSize: 14,
+    lineHeight: 22,
+    fontFamily: tokens.font.sans,
+    color: '#4B5563',
+  },
   // 1행 3명 고정 — 고정폭(px) 대신 정확히 1/3 폭이라 화면 너비와
   // 무관하게 항상 3열(좁은 기기서 2열로 무너지던 버그 해결).
   ptGrid: {

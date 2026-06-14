@@ -1,11 +1,13 @@
-// 작성된 일기의 인라인 요약 — 달력 카드(Figma 372:11773). 노트 + 통계(거리/kcal/시간)
-// + 영법별 거리 막대. 저장값 아닌 입력값으로 swimCalories 재계산.
+// 작성된 일기의 인라인 요약 — 일정 카드(Figma 372:11773).
+// 통계(거리/kcal/시간) + 레포트 문구 + 영법별 거리 막대. 저장값 아닌 입력값으로
+// swimCalories 재계산. 노트는 카드의 참여자("나") 셀 아래에 별도 표시(CalendarTab).
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Flame, Clock } from 'lucide-react-native';
 import { useProfile } from '@/store/profile';
 import {
   computeSwimStats,
+  buildSwimReport,
   resolveWeightKg,
   formatSwimDuration,
   type StrokeKey,
@@ -14,7 +16,8 @@ import type { SwimDiary } from '@/store/swimDiary';
 import { tokens } from '@/styles/tokens';
 import IconSwim from '@assets/icons/swim.svg';
 
-const ALL: StrokeKey[] = ['자유형', '배영', '평영', '접영', '기타'];
+// Figma 372 막대 순서 — 자유형·배영·접영·평영·기타.
+const ALL: StrokeKey[] = ['자유형', '배영', '접영', '평영', '기타'];
 function toMin(t: string): number {
   const [h, m] = t.split(':').map(Number);
   return (h || 0) * 60 + (m || 0);
@@ -28,12 +31,12 @@ export function DiarySummary({ diary }: { diary: SwimDiary }) {
     { laneLength: diary.laneLength, reps: diary.reps, durationMin },
     weight,
   );
+  const report = buildSwimReport(stats, diary.laneLength, !!profile?.weight);
   const maxDist = Math.max(1, ...stats.breakdown.map((b) => b.distance));
   const durLabel = formatSwimDuration(durationMin);
 
   return (
     <View style={styles.root}>
-      {diary.note ? <Text style={styles.note}>{diary.note}</Text> : null}
       <View style={styles.statRow}>
         <View style={styles.stat}>
           <IconSwim width={20} height={20} color={tokens.color.pdMint} />
@@ -53,6 +56,9 @@ export function DiarySummary({ diary }: { diary: SwimDiary }) {
           <Text style={styles.statLabel}>시간</Text>
         </View>
       </View>
+
+      {report ? <Text style={styles.report}>{report.main}</Text> : null}
+
       <View style={styles.bars}>
         {ALL.map((k) => {
           const dist =
@@ -82,22 +88,29 @@ export function DiarySummary({ diary }: { diary: SwimDiary }) {
 }
 
 const styles = StyleSheet.create({
-  root: { gap: 12, paddingTop: 4 },
-  note: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: tokens.font.sans,
-    color: '#1F2937',
-  },
+  root: { gap: 16, paddingTop: 4 },
   statRow: { flexDirection: 'row', justifyContent: 'space-around' },
   stat: { alignItems: 'center', gap: 4 },
   statValue: {
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: 18,
+    lineHeight: 24,
+    letterSpacing: -0.144,
     fontFamily: tokens.font.sansBold,
     color: '#1F2937',
   },
-  statLabel: { fontSize: 12, fontFamily: tokens.font.sans, color: '#94A3B8' },
+  statLabel: {
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.112,
+    fontFamily: tokens.font.sans,
+    color: '#4B5563',
+  },
+  report: {
+    fontSize: 14,
+    lineHeight: 22,
+    fontFamily: tokens.font.sans,
+    color: '#4B5563',
+  },
   bars: { gap: 8 },
   bdRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   bdLabelWrap: { flex: 1, justifyContent: 'center', minHeight: 24 },
@@ -117,8 +130,16 @@ const styles = StyleSheet.create({
   },
   bdLabel: {
     fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: -0.084,
     fontFamily: tokens.font.sansSemibold,
+    color: tokens.color.black,
+  },
+  bdDist: {
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: -0.084,
+    fontFamily: tokens.font.sansMedium,
     color: '#1F2937',
   },
-  bdDist: { fontSize: 14, fontFamily: tokens.font.sans, color: '#4B5563' },
 });

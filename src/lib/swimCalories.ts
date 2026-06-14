@@ -25,7 +25,7 @@ export const STROKE_MET: Record<StrokeKey, number> = {
   기타: 6.0,
 };
 
-const STROKE_ORDER: StrokeKey[] = ['자유형', '배영', '평영', '접영', '기타'];
+const STROKE_ORDER: StrokeKey[] = ['자유형', '배영', '접영', '평영', '기타'];
 
 // 성별×연령대 기본 체중(kg) — 한국 성인 평균 근사치. profile.weight 미입력 시 폴백.
 const DEFAULT_WEIGHT: Record<'male' | 'female', Record<number, number>> = {

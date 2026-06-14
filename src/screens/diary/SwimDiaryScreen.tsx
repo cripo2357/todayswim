@@ -1,7 +1,7 @@
-// 수영 일기 작성/수정 화면 — Figma 370:6133.
-// 입력(레인·총거리·영법별 회수·실제 시간·노트) → swimCalories 엔진으로 통계/레포트
-// 실시간 계산(저장값 아님). 저장 시 공개범위(나만/친구/모두) 선택 → useSwimDiaries.upsert.
-// 시간은 슬롯 시간 기본값 → SwimTimeSheet(372:10661)로 수정(종료<시작 차단).
+// 수영 일기 작성/수정 화면 — Figma 381:6283.
+// 입력 전용(레인·총거리·영법별 회수·실제 시간·노트). 통계/칼로리/막대/레포트는
+// 작성 중 산만함을 줄이려 제거 → 결과 리포트는 일정 카드(DiarySummary, 372:11773)에서만.
+// 공개범위는 카드의 칩(인라인)으로 선택, 저장은 하단 CTA. 시간은 슬롯 기본 + 시트로 수정.
 
 import React from 'react';
 import {
@@ -20,7 +20,7 @@ import {
   type RouteProp,
 } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Flame, Clock, ChevronDown } from 'lucide-react-native';
+import { Clock, ChevronDown, User, BookOpen } from 'lucide-react-native';
 
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { AppHeader } from '@/components/layout/AppHeader';
@@ -31,32 +31,33 @@ import {
 } from '@/store/swimSchedule';
 import { useSwimDiaries } from '@/store/swimDiary';
 import { useProfile } from '@/store/profile';
-import {
-  computeSwimStats,
-  buildSwimReport,
-  resolveWeightKg,
-  formatSwimDuration,
-  type StrokeKey,
-} from '@/lib/swimCalories';
+import { usePrefs } from '@/store/prefs';
+import { useFriends } from '@/store/friends';
+import { useOtherSchedules } from '@/hooks/useOtherSchedules';
+import { resolveParticipants } from '@/lib/scheduleParticipants';
+import { resolveAvatarUri } from '@/lib/avatars';
+import type { StrokeKey } from '@/lib/swimCalories';
 import { tokens } from '@/styles/tokens';
 import { formatDate, formatTimeHHMM } from '@/lib/dateFormat';
 import type { RootStackParamList } from '@/navigation/types';
 import IconSwim from '@assets/icons/swim.svg';
 import { SwimTimeSheet } from '@/components/diary/SwimTimeSheet';
 
-const NAMED: StrokeKey[] = ['자유형', '배영', '평영', '접영'];
-const ALL: StrokeKey[] = ['자유형', '배영', '평영', '접영', '기타'];
+// 영법 입력 순서 — Figma 381:6283 (자유형·배영·접영·평영).
+const NAMED: StrokeKey[] = ['자유형', '배영', '접영', '평영'];
 
 const VIS_OPTIONS: Option<ScheduleVisibility>[] = [
   { value: 'private', label: '나만 보기' },
   { value: 'friends', label: '친구들에게 일기 공유' },
   { value: 'public', label: '모든 사람에게 일기 공유' },
 ];
+// 카드 칩의 짧은 라벨.
+const VIS_CHIP: Record<ScheduleVisibility, string> = {
+  private: '나만 보기',
+  friends: '친구에게 공개',
+  public: '전체 공개',
+};
 
-function toMin(t: string): number {
-  const [h, m] = t.split(':').map(Number);
-  return (h || 0) * 60 + (m || 0);
-}
 function onlyDigits(v: string, max = 4): number | undefined {
   const s = v.replace(/[^0-9]/g, '').slice(0, max);
   return s ? Number(s) : undefined;
@@ -75,6 +76,9 @@ export function SwimDiaryScreen() {
   );
   const upsert = useSwimDiaries((s) => s.upsert);
   const profile = useProfile((s) => s.profile);
+  const viewPref = usePrefs((s) => s.othersScheduleView);
+  const blockedIds = useFriends((s) => s.blocked);
+  const otherSchedules = useOtherSchedules();
 
   const [start, setStart] = React.useState(existing?.start ?? schedule?.start ?? '06:00');
   const [end, setEnd] = React.useState(existing?.end ?? schedule?.end ?? '07:00');
@@ -96,7 +100,10 @@ export function SwimDiaryScreen() {
     },
   );
   const [note, setNote] = React.useState(existing?.note ?? '');
-  const [saveOpen, setSaveOpen] = React.useState(false);
+  const [visibility, setVisibility] = React.useState<ScheduleVisibility>(
+    existing?.visibility ?? schedule?.visibility ?? 'friends',
+  );
+  const [visOpen, setVisOpen] = React.useState(false);
   const [timeOpen, setTimeOpen] = React.useState(false);
   // 텍스트 입력 포커스 중에는 다른 조작(레인 토글·시간 시트)을 막고 키보드만 내림.
   const [editing, setEditing] = React.useState(false);
@@ -110,6 +117,14 @@ export function SwimDiaryScreen() {
   }, [schedule, navigation]);
   if (!schedule) return null;
 
+  const pg = resolveParticipants(
+    schedule,
+    viewPref,
+    blockedIds,
+    otherSchedules,
+  );
+  const myName = profile?.name?.trim() || '내 닉네임';
+
   const namedSum = NAMED.reduce((a, k) => a + (reps[k] ?? 0), 0);
   // 영법별 합이 총 횟수를 넘으면 오류(저장 차단). 총 미입력 시 합을 총으로 간주.
   const overReps = totalReps != null && namedSum > totalReps;
@@ -118,18 +133,10 @@ export function SwimDiaryScreen() {
     ...reps,
     기타: Math.max(0, total - namedSum),
   };
-  const weight = profile ? resolveWeightKg(profile) : 63;
-  const durationMin = Math.max(0, toMin(end) - toMin(start));
-  const stats = computeSwimStats(
-    { laneLength: lane, reps: engineReps, durationMin },
-    weight,
-  );
-  const report = buildSwimReport(stats, lane, !!profile?.weight);
-  const maxDist = Math.max(1, ...stats.breakdown.map((b) => b.distance));
-  const canSave = !overReps && stats.totalDistance > 0;
+  const canSave = !overReps && total > 0;
 
-  const save = (visibility: ScheduleVisibility) => {
-    setSaveOpen(false);
+  const save = () => {
+    if (!canSave) return;
     void upsert({
       scheduleId,
       poolId: schedule.poolId,
@@ -154,8 +161,7 @@ export function SwimDiaryScreen() {
     fn();
   };
 
-  const whenLabel = `${formatDate(schedule.date)} ${formatTimeHHMM(start)}`;
-  const durLabel = formatSwimDuration(durationMin);
+  const whenLabel = `${formatDate(schedule.date)} ${formatTimeHHMM(schedule.start)}`;
 
   return (
     <ScreenContainer
@@ -168,6 +174,7 @@ export function SwimDiaryScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
+        {/* 풀 카드 — 풀명/일시/공개칩 + 썸네일 + 참여자 */}
         <View style={styles.card}>
           <View style={styles.cardTop}>
             <View style={styles.cardInfo}>
@@ -177,12 +184,93 @@ export function SwimDiaryScreen() {
               <Text style={styles.when} numberOfLines={1}>
                 {whenLabel}
               </Text>
+              <Pressable
+                onPress={guarded(() => setVisOpen(true))}
+                style={styles.visChip}
+                accessibilityRole="button"
+                accessibilityLabel="일기 공개 범위"
+              >
+                <Text style={styles.visChipLabel}>{VIS_CHIP[visibility]}</Text>
+                <ChevronDown
+                  size={12}
+                  color={tokens.color.pdBlue}
+                  strokeWidth={2}
+                />
+              </Pressable>
             </View>
             {schedule.poolPhotoUrl ? (
               <Image
                 source={{ uri: schedule.poolPhotoUrl }}
                 style={styles.thumb}
               />
+            ) : null}
+          </View>
+
+          {/* 참여자 — 슬롯 공개범위·관계 기준(읽기전용). Figma 120:3156. */}
+          <View style={styles.participants}>
+            <View style={styles.ptCell}>
+              <View style={[styles.ptAvatar, styles.ptAvatarMine]}>
+                {profile?.photoUri ? (
+                  <Image
+                    source={{
+                      uri: resolveAvatarUri(profile.photoUri, {
+                        thumbUri: profile.photoThumbUri,
+                        size: 24,
+                      }),
+                    }}
+                    style={styles.ptAvatarImg}
+                  />
+                ) : (
+                  <User size={12} color={tokens.color.ink400} strokeWidth={2} />
+                )}
+              </View>
+              <Text style={styles.ptName} numberOfLines={1}>
+                {myName}
+              </Text>
+            </View>
+
+            {pg.friends.length > 0 || pg.others.length > 0 ? (
+              <>
+                <View style={styles.divider} />
+                <View style={styles.ptGrid}>
+                  {pg.friends.map((o) => (
+                    <View key={o.id} style={styles.ptCell}>
+                      <View style={[styles.ptAvatar, styles.ptAvatarFriend]}>
+                        <Image
+                          source={{
+                            uri: resolveAvatarUri(o.avatar, {
+                              thumbUri: o.avatarThumb,
+                              size: 24,
+                            }),
+                          }}
+                          style={styles.ptAvatarImg}
+                        />
+                      </View>
+                      <Text style={styles.ptName} numberOfLines={1}>
+                        {o.nickname}
+                      </Text>
+                    </View>
+                  ))}
+                  {pg.others.map((o) => (
+                    <View key={o.id} style={styles.ptCell}>
+                      <View style={[styles.ptAvatar, styles.ptAvatarOther]}>
+                        <Image
+                          source={{
+                            uri: resolveAvatarUri(o.avatar, {
+                              thumbUri: o.avatarThumb,
+                              size: 24,
+                            }),
+                          }}
+                          style={styles.ptAvatarImg}
+                        />
+                      </View>
+                      <Text style={styles.ptName} numberOfLines={1}>
+                        {o.nickname}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </>
             ) : null}
           </View>
         </View>
@@ -267,64 +355,9 @@ export function SwimDiaryScreen() {
           </Text>
         ) : null}
 
-        <View style={[styles.statCard, styles.mt24]}>
-          <View style={styles.statTop}>
-            <View style={styles.stat}>
-              <IconSwim width={20} height={20} color={tokens.color.pdMint} />
-              <Text style={styles.statValue}>
-                {stats.totalDistance.toLocaleString()}m
-              </Text>
-              <Text style={styles.statLabel}>거리</Text>
-            </View>
-            <View style={styles.stat}>
-              <Flame size={20} color={tokens.color.red} strokeWidth={2} />
-              <Text style={styles.statValue}>{stats.kcal}kcal</Text>
-              <Text style={styles.statLabel}>칼로리</Text>
-            </View>
-            <View style={styles.stat}>
-              <Clock size={20} color={tokens.color.pdBlue} strokeWidth={2} />
-              <Text style={styles.statValue}>{durLabel}</Text>
-              <Text style={styles.statLabel}>시간</Text>
-            </View>
-          </View>
-          <View style={styles.breakdown}>
-            {ALL.map((k) => {
-              const dist =
-                stats.breakdown.find((b) => b.stroke === k)?.distance ?? 0;
-              return (
-                <View key={k} style={styles.bdRow}>
-                  <View style={styles.bdLabelWrap}>
-                    <View
-                      style={[
-                        styles.bdBar,
-                        { width: `${Math.round((dist / maxDist) * 100)}%` },
-                        dist === 0 && styles.bdBarEmpty,
-                      ]}
-                    />
-                    <View style={styles.bdLabelRow}>
-                      <IconSwim
-                        width={16}
-                        height={16}
-                        color={tokens.color.ink900}
-                      />
-                      <Text style={styles.bdLabel}>{k}</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.bdDist}>{dist.toLocaleString()}m</Text>
-                </View>
-              );
-            })}
-          </View>
-        </View>
+        <View style={styles.sectionDivider} />
 
-        {report ? (
-          <View style={styles.mt16}>
-            <Text style={styles.reportMain}>{report.main}</Text>
-            <Text style={styles.reportNote}>{report.note}</Text>
-          </View>
-        ) : null}
-
-        <Text style={[styles.fieldLabel, styles.mt24]}>수영 노트</Text>
+        <Text style={styles.fieldLabel}>수영 노트</Text>
         <View style={styles.noteBox}>
           <TextInput
             value={note}
@@ -345,7 +378,7 @@ export function SwimDiaryScreen() {
 
       <View style={styles.footer}>
         <Pressable
-          onPress={() => setSaveOpen(true)}
+          onPress={save}
           disabled={!canSave}
           style={({ pressed }) => [
             styles.cta,
@@ -358,16 +391,24 @@ export function SwimDiaryScreen() {
           <Text style={[styles.ctaLabel, !canSave && styles.ctaLabelDisabled]}>
             {existing ? '수영 일기 수정' : '수영 일기 작성'}
           </Text>
+          <BookOpen
+            size={20}
+            color={canSave ? tokens.color.black : tokens.color.pdGray}
+            strokeWidth={2}
+          />
         </Pressable>
       </View>
 
       <OptionSheet<ScheduleVisibility>
-        visible={saveOpen}
-        onClose={() => setSaveOpen(false)}
+        visible={visOpen}
+        onClose={() => setVisOpen(false)}
         title="수영 일기 공개 범위"
         options={VIS_OPTIONS}
-        value={existing?.visibility ?? schedule.visibility}
-        onConfirm={save}
+        value={visibility}
+        onConfirm={(v) => {
+          setVisibility(v);
+          setVisOpen(false);
+        }}
       />
 
       <SwimTimeSheet
@@ -390,6 +431,7 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.color.bgPaper,
     borderRadius: 16,
     padding: 16,
+    gap: 16,
     ...tokens.shadow.lg,
   },
   cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
@@ -406,7 +448,60 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sans,
     color: '#4B5563',
   },
-  thumb: { width: 64, height: 64, borderRadius: 6, backgroundColor: '#E2E8F0' },
+  visChip: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderColor: tokens.color.pdBlue,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginTop: 4,
+  },
+  visChipLabel: {
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: -0.06,
+    fontFamily: tokens.font.sansMedium,
+    color: tokens.color.pdBlue,
+  },
+  thumb: { width: 74, height: 74, borderRadius: 6, backgroundColor: '#E2E8F0' },
+  // 참여자
+  divider: { height: 1, backgroundColor: tokens.color.lineDefault },
+  participants: { gap: 12 },
+  ptGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 8 },
+  ptCell: {
+    width: '33.333%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingRight: 8,
+  },
+  ptAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ptAvatarMine: { borderColor: tokens.color.pdByellow },
+  ptAvatarFriend: { borderColor: tokens.color.pdMint },
+  ptAvatarOther: { borderColor: tokens.color.pdGray },
+  ptAvatarImg: { width: 24, height: 24 },
+  ptName: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: -0.06,
+    fontFamily: tokens.font.sansMedium,
+    color: '#1F2937',
+  },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -426,7 +521,6 @@ const styles = StyleSheet.create({
     color: '#4B5563',
   },
   mt16: { marginTop: 16 },
-  mt24: { marginTop: 24 },
   inputBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -533,57 +627,10 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sans,
     color: tokens.color.red,
   },
-  statCard: {
-    backgroundColor: tokens.color.white,
-    borderRadius: 16,
-    padding: 16,
-    gap: 16,
-    ...tokens.shadow.lg,
-  },
-  statTop: { flexDirection: 'row', justifyContent: 'space-around' },
-  stat: { alignItems: 'center', gap: 4 },
-  statValue: {
-    fontSize: 16,
-    lineHeight: 22,
-    fontFamily: tokens.font.sansBold,
-    color: '#1F2937',
-  },
-  statLabel: { fontSize: 12, fontFamily: tokens.font.sans, color: '#94A3B8' },
-  breakdown: { gap: 8 },
-  bdRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  bdLabelWrap: { flex: 1, justifyContent: 'center', minHeight: 24 },
-  bdBar: {
-    position: 'absolute',
-    left: 0,
-    height: 20,
-    borderRadius: 6,
-    backgroundColor: tokens.color.pdByellow,
-  },
-  bdBarEmpty: { backgroundColor: 'transparent' },
-  bdLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 6,
-  },
-  bdLabel: {
-    fontSize: 14,
-    fontFamily: tokens.font.sansSemibold,
-    color: '#1F2937',
-  },
-  bdDist: { fontSize: 14, fontFamily: tokens.font.sans, color: '#4B5563' },
-  reportMain: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: tokens.font.sans,
-    color: '#4B5563',
-  },
-  reportNote: {
-    marginTop: 8,
-    fontSize: 12,
-    lineHeight: 16,
-    fontFamily: tokens.font.sans,
-    color: '#94A3B8',
+  sectionDivider: {
+    height: 1,
+    backgroundColor: tokens.color.lineDefault,
+    marginVertical: 16,
   },
   noteBox: {
     minHeight: 96,
@@ -622,6 +669,8 @@ const styles = StyleSheet.create({
     minHeight: 48,
     borderRadius: 14,
     backgroundColor: tokens.color.pdByellow,
+    flexDirection: 'row',
+    gap: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
