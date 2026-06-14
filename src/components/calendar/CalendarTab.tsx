@@ -20,6 +20,7 @@ import {
   type ScheduleVisibility,
 } from '@/store/swimSchedule';
 import { useSwimDiaries } from '@/store/swimDiary';
+import { DiarySummary } from './DiarySummary';
 import { resolveAvatarUri } from '@/lib/avatars';
 import { usePrefs } from '@/store/prefs';
 import { resolveParticipants } from '@/lib/scheduleParticipants';
@@ -233,6 +234,13 @@ export function CalendarTab({
                           ? '수영 일기 완료'
                           : '수영 일기 작성'}
                       </Text>
+                      {diaries.some((d) => d.scheduleId === s.id) ? (
+                        <ChevronDown
+                          size={12}
+                          color={tokens.color.white}
+                          strokeWidth={2}
+                        />
+                      ) : null}
                     </Pressable>
                   ) : (
                     <Pressable
@@ -257,6 +265,13 @@ export function CalendarTab({
                   <Image source={{ uri: s.poolPhotoUrl }} style={styles.thumb} />
                 ) : null}
               </View>
+
+              {/* 작성된 일기 — 노트·통계·영법별 막대 인라인(Figma 372:11773). */}
+              {diaries
+                .filter((d) => d.scheduleId === s.id)
+                .map((d) => (
+                  <DiarySummary key={d.id || d.scheduleId} diary={d} />
+                ))}
 
               {/* 참여자 — Figma 133:3885: "내" 위에는 구분선 없음.
                   Figma 120:3156. 같은 슬롯 참여자를 공개여부·관계·

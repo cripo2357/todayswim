@@ -40,6 +40,7 @@ import { tokens } from '@/styles/tokens';
 import { formatDateTime } from '@/lib/dateFormat';
 import type { RootStackParamList } from '@/navigation/types';
 import IconSwim from '@assets/icons/swim.svg';
+import { SwimTimeSheet } from '@/components/diary/SwimTimeSheet';
 
 const NAMED: StrokeKey[] = ['자유형', '배영', '접영', '평형'];
 const ALL: StrokeKey[] = ['자유형', '배영', '접영', '평형', '기타'];
@@ -73,8 +74,8 @@ export function SwimDiaryScreen() {
   const upsert = useSwimDiaries((s) => s.upsert);
   const profile = useProfile((s) => s.profile);
 
-  const [start] = React.useState(existing?.start ?? schedule?.start ?? '06:00');
-  const [end] = React.useState(existing?.end ?? schedule?.end ?? '07:00');
+  const [start, setStart] = React.useState(existing?.start ?? schedule?.start ?? '06:00');
+  const [end, setEnd] = React.useState(existing?.end ?? schedule?.end ?? '07:00');
   const [lane, setLane] = React.useState<number>(existing?.laneLength ?? 25);
   const [totalReps, setTotalReps] = React.useState<number | undefined>(() =>
     existing
@@ -94,6 +95,7 @@ export function SwimDiaryScreen() {
   );
   const [note, setNote] = React.useState(existing?.note ?? '');
   const [saveOpen, setSaveOpen] = React.useState(false);
+  const [timeOpen, setTimeOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (!schedule) navigation.goBack();
@@ -177,7 +179,11 @@ export function SwimDiaryScreen() {
         </View>
 
         <Text style={styles.fieldLabel}>총 수영 시간</Text>
-        <Pressable style={styles.inputBox} accessibilityLabel="수영 시간">
+        <Pressable
+          style={styles.inputBox}
+          onPress={() => setTimeOpen(true)}
+          accessibilityLabel="수영 시간"
+        >
           <Text style={styles.inputValue}>
             {start} ~ {end}
           </Text>
@@ -316,6 +322,17 @@ export function SwimDiaryScreen() {
         options={VIS_OPTIONS}
         value={existing?.visibility ?? schedule.visibility}
         onConfirm={save}
+      />
+
+      <SwimTimeSheet
+        visible={timeOpen}
+        initialStart={start}
+        initialEnd={end}
+        onConfirm={(s, e) => {
+          setStart(s);
+          setEnd(e);
+        }}
+        onClose={() => setTimeOpen(false)}
       />
     </ScreenContainer>
   );
