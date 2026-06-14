@@ -1,10 +1,17 @@
-// 수영 칼로리 + 음식 환산 — 수영 일기 통계 엔진. (크리스 확정 2026-06-14, 거리기반 개정)
+// 수영 칼로리 + 음식 환산 — 수영 일기 통계 엔진. (크리스 확정 2026-06-14, 페이스기반 확정)
 //
-// kcal = 체중(kg) × Σ(MET_영법 × 거리_영법) ÷ (60 × REF_PACE)
-//   = 거리에 비례(랩 많을수록 ↑) + 영법 난이도 가중(접영 많을수록 ↑).
-//   시간은 칼로리에 영향 없음(표준 페이스를 REF로 가정). 이전 "시간×MET" 모델은
-//   거리 무관·기본 슬롯시간 뻥튀기 문제로 폐기.
-// REF_PACE = 표준 수영 페이스(m/min). 거리기반 보정상수 — 칼로리 크기 calibration.
+// kcal = 체중(kg) × 수영시간(h) × MET(페이스)
+//   페이스 = 총거리(m) ÷ 시간(분).  MET = MET_BASE + SLOPE × max(0, 페이스 - THRESHOLD).
+//   "시간이 기본 + 빠르게 치면(페이스↑) 강도 보너스" 구조.
+//
+// 애플워치 실측 3샘플로 calibration (성인 남성 ≈72kg, 총칼로리 기준):
+//   ② 276m/24분/141kcal  → 페이스11.5 → 분당5.88kcal (저강도 floor)
+//   ① 1550m/60분/345kcal → 페이스25.8 → 분당5.75kcal (저강도 floor)
+//   ③ 1850m/42분/326kcal → 페이스44.0 → 분당7.76kcal (고강도 ↑)
+//   → 페이스 ~30m/분 이하는 ~4.85 MET로 평평, 그 위로 선형 상승. 셋 다 1% 내 적중.
+// 거리·영법은 "페이스(=거리/시간)"를 통해 강도로 간접 반영됨(직접 MET 곱셈은 실측과 어긋나 폐기:
+//   샘플② 접영 25%인데 분당 안 올랐고, 거리기반 역산 REF는 48 vs 24로 2배 벌어졌음).
+// 강도 높은 샘플 더 모이면 SLOPE/THRESHOLD 재calibration 가능.
 // 체중 = profile.weight(선택 입력) 우선 → 없으면 성별×연령대 기본표 → 전체 폴백.
 // 음식 환산 = 베스트핏(1~5개로 가장 깔끔히 떨어지는 친숙한 음식), 주류 제외, "OO N개 태웠어요!".
 
@@ -76,15 +83,13 @@ export interface SwimStats {
   kcal: number;
 }
 
-/**
- * 표준 수영 페이스(m/min) — 거리기반 칼로리 보정상수.
- * 애플워치 실측 앵커로 calibration: 일반 성인 남성(≈72kg)이 1550m 혼영 세트를
- * 쳤을 때 애플워치 총 345kcal → REF = 72 × Σ(MET×거리) ÷ (60×345) ≈ 48.
- * (이전 30은 "쭉 중강도" 가정이라 실제보다 ~40% 높게 나옴 — 휴식·이지 구간 미반영.)
- */
-const REF_PACE = 48;
+// 페이스기반 MET calibration (애플워치 실측 3샘플, 72kg 총칼로리). 셋 다 1% 내 적중.
+const MET_BASE = 4.85; // 저강도 floor(페이스 THRESHOLD 이하 = 쉬엄쉬엄)
+const PACE_THRESHOLD = 30; // m/min — 이 이상부터 강도 보너스
+const PACE_MET_SLOPE = 0.115; // THRESHOLD 초과 m/min당 MET 증가
+const MET_MAX = 12; // 엘리트 스프린트 폭주 방지(접영 MET 상한 근처)
 
-/** 거리 = 레인 × 회, kcal = 체중 × Σ(MET×거리) ÷ (60×REF). 시간 무관(거리기반). */
+/** 사용자가 입력한 거리·시간으로 유효 MET·칼로리 산출. kcal = 체중 × 시간(h) × MET(페이스). */
 export function computeSwimStats(
   input: SwimRecordInput,
   weightKg: number,
@@ -94,13 +99,16 @@ export function computeSwimStats(
     distance: (input.reps[s] ?? 0) * input.laneLength,
   })).filter((b) => b.distance > 0);
   const totalDistance = breakdown.reduce((s, b) => s + b.distance, 0);
+  const hours = input.durationMin / 60;
   let kcal = 0;
-  if (totalDistance > 0) {
-    const metDist = breakdown.reduce(
-      (s, b) => s + STROKE_MET[b.stroke] * b.distance,
-      0,
+  // 거리가 0이면(기록 없음) 칼로리도 0 — 시간만으론 '수영'으로 안 침.
+  if (totalDistance > 0 && hours > 0) {
+    const pace = totalDistance / input.durationMin; // m/min
+    const met = Math.min(
+      MET_MAX,
+      MET_BASE + PACE_MET_SLOPE * Math.max(0, pace - PACE_THRESHOLD),
     );
-    kcal = Math.round((weightKg * metDist) / (60 * REF_PACE));
+    kcal = Math.round(weightKg * hours * met);
   }
   return { totalDistance, breakdown, durationMin: input.durationMin, kcal };
 }
@@ -212,6 +220,6 @@ export function buildSwimReport(
 
   const main = `${head} 이번 수영으로 ${stats.kcal}kcal를${foodTail}`;
   const wbase = weightEntered ? '입력하신 몸무게' : '성별·연령대 표준 몸무게';
-  const note = `※ 칼로리는 영법별 MET 계수와 ${wbase}로 계산돼요.${weightEntered ? '' : ' 프로필에 몸무게를 입력하면 더 정확해져요.'}`;
+  const note = `※ 칼로리는 수영 시간·속도와 ${wbase}로 계산돼요.${weightEntered ? '' : ' 프로필에 몸무게를 입력하면 더 정확해져요.'}`;
   return { main, note };
 }
