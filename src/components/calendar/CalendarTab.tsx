@@ -19,6 +19,7 @@ import {
   isScheduleStarted,
   type ScheduleVisibility,
 } from '@/store/swimSchedule';
+import { useSwimDiaries } from '@/store/swimDiary';
 import { resolveAvatarUri } from '@/lib/avatars';
 import { usePrefs } from '@/store/prefs';
 import { resolveParticipants } from '@/lib/scheduleParticipants';
@@ -46,10 +47,10 @@ const MANAGE_OPTIONS: Option<ManageAction>[] = [
   { value: 'public', label: VIS_LABEL.public },
 ];
 
-// 지난 일정 관리 시트 — 수영 완료 확정 / 일정 삭제
-type PastAction = 'complete' | 'delete';
+// 시작된 일정 관리 시트 — 수영 일기(작성/수정) / 일정 삭제
+type PastAction = 'diary' | 'delete';
 const PAST_OPTIONS: Option<PastAction>[] = [
-  { value: 'complete', label: '수영 완료' },
+  { value: 'diary', label: '수영 일기' },
   { value: 'delete', label: '일정 삭제' },
 ];
 
@@ -81,9 +82,9 @@ export function CalendarTab({
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const profile = useProfile((s) => s.profile);
   const schedules = useSwimSchedules((s) => s.schedules);
+  const diaries = useSwimDiaries((s) => s.diaries);
   const remove = useSwimSchedules((s) => s.remove);
   const setVisibility = useSwimSchedules((s) => s.setVisibility);
-  const setCompleted = useSwimSchedules((s) => s.setCompleted);
   const viewPref = usePrefs((s) => s.othersScheduleView);
   const blockedIds = useFriends((s) => s.blocked);
   // P2: 친구 일정 서버 fetch (서버 0건이면 mock 폴백).
@@ -227,7 +228,11 @@ export function CalendarTab({
                       accessibilityRole="button"
                       accessibilityLabel="수영 일기 작성"
                     >
-                      <Text style={styles.doneChipLabel}>수영 일기 작성</Text>
+                      <Text style={styles.doneChipLabel}>
+                        {diaries.some((d) => d.scheduleId === s.id)
+                          ? '수영 일기 완료'
+                          : '수영 일기 작성'}
+                      </Text>
                     </Pressable>
                   ) : (
                     <Pressable
@@ -438,15 +443,16 @@ export function CalendarTab({
         onClose={() => setPastEditId(null)}
         title="일정 관리"
         options={PAST_OPTIONS}
-        value={
-          schedules.find((x) => x.id === pastEditId)?.completed
-            ? 'complete'
-            : null
-        }
+        value={null}
         onConfirm={(v) => {
           if (!pastEditId) return;
-          if (v === 'complete') setCompleted(pastEditId, true);
-          else onDeletePast(pastEditId);
+          const id = pastEditId;
+          setPastEditId(null);
+          if (v === 'diary') {
+            navigation.navigate('SwimDiary', { scheduleId: id });
+          } else {
+            onDeletePast(id);
+          }
         }}
       />
 

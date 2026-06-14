@@ -25,6 +25,7 @@ import { MapStartLocationScreen } from '@/screens/settings/MapStartLocationScree
 import { NotificationSettingsScreen } from '@/screens/settings/NotificationSettingsScreen';
 import { ProfileScreen } from '@/screens/auth/ProfileScreen';
 import { SwimClassRegisterScreen } from '@/screens/profile/SwimClassRegisterScreen';
+import { SwimDiaryScreen } from '@/screens/diary/SwimDiaryScreen';
 import { OtherUserProfileScreen } from '@/screens/profile/OtherUserProfileScreen';
 import { InviteFriendsScreen } from '@/screens/invite/InviteFriendsScreen';
 import { InviteDoneScreen } from '@/screens/invite/InviteDoneScreen';
@@ -94,6 +95,7 @@ export function RootNavigator() {
       />
 
       <Stack.Screen name="PoolName" component={PoolNameScreen} />
+      <Stack.Screen name="SwimDiary" component={SwimDiaryScreen} />
       <Stack.Screen
         name="PoolDone"
         component={PoolDoneScreen}

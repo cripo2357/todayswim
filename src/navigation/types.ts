@@ -63,6 +63,8 @@ export type RootStackParamList = {
 
   // 자유수영 시간표 조회 (조회 전용 — 사용자 작성/수정 요청 기능 없음)
   ScheduleView: { poolId: string };
+  // 수영 일기 작성/수정 — 해당 수영 일정(scheduleId)에 1:1.
+  SwimDiary: { scheduleId: string };
 
   // 수영장 등록·수정
   PoolName: { mode: 'create' | 'edit'; poolId?: string };
