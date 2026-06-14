@@ -1,7 +1,7 @@
 // 수영 일기 작성/수정 화면 — Figma 370:6133.
 // 입력(레인·총거리·영법별 회수·실제 시간·노트) → swimCalories 엔진으로 통계/레포트
 // 실시간 계산(저장값 아님). 저장 시 공개범위(나만/친구/모두) 선택 → useSwimDiaries.upsert.
-// 시간 시트(372:10661)는 후속 — 현재는 일정 슬롯 시간 기본값.
+// 시간은 슬롯 시간 기본값 → SwimTimeSheet(372:10661)로 수정(종료<시작 차단).
 
 import React from 'react';
 import {
@@ -12,6 +12,7 @@ import {
   StyleSheet,
   Pressable,
   Image,
+  Keyboard,
 } from 'react-native';
 import {
   useNavigation,
@@ -34,16 +35,17 @@ import {
   computeSwimStats,
   buildSwimReport,
   resolveWeightKg,
+  formatSwimDuration,
   type StrokeKey,
 } from '@/lib/swimCalories';
 import { tokens } from '@/styles/tokens';
-import { formatDateTime } from '@/lib/dateFormat';
+import { formatDate, formatTimeHHMM } from '@/lib/dateFormat';
 import type { RootStackParamList } from '@/navigation/types';
 import IconSwim from '@assets/icons/swim.svg';
 import { SwimTimeSheet } from '@/components/diary/SwimTimeSheet';
 
-const NAMED: StrokeKey[] = ['자유형', '배영', '접영', '평형'];
-const ALL: StrokeKey[] = ['자유형', '배영', '접영', '평형', '기타'];
+const NAMED: StrokeKey[] = ['자유형', '배영', '평영', '접영'];
+const ALL: StrokeKey[] = ['자유형', '배영', '평영', '접영', '기타'];
 
 const VIS_OPTIONS: Option<ScheduleVisibility>[] = [
   { value: 'private', label: '나만 보기' },
@@ -96,6 +98,12 @@ export function SwimDiaryScreen() {
   const [note, setNote] = React.useState(existing?.note ?? '');
   const [saveOpen, setSaveOpen] = React.useState(false);
   const [timeOpen, setTimeOpen] = React.useState(false);
+  // 텍스트 입력 포커스 중에는 다른 조작(레인 토글·시간 시트)을 막고 키보드만 내림.
+  const [editing, setEditing] = React.useState(false);
+  const focusProps = {
+    onFocus: () => setEditing(true),
+    onBlur: () => setEditing(false),
+  };
 
   React.useEffect(() => {
     if (!schedule) navigation.goBack();
@@ -103,7 +111,9 @@ export function SwimDiaryScreen() {
   if (!schedule) return null;
 
   const namedSum = NAMED.reduce((a, k) => a + (reps[k] ?? 0), 0);
-  const total = Math.max(totalReps ?? namedSum, namedSum);
+  // 영법별 합이 총 횟수를 넘으면 오류(저장 차단). 총 미입력 시 합을 총으로 간주.
+  const overReps = totalReps != null && namedSum > totalReps;
+  const total = totalReps ?? namedSum;
   const engineReps: Partial<Record<StrokeKey, number>> = {
     ...reps,
     기타: Math.max(0, total - namedSum),
@@ -116,6 +126,7 @@ export function SwimDiaryScreen() {
   );
   const report = buildSwimReport(stats, lane, !!profile?.weight);
   const maxDist = Math.max(1, ...stats.breakdown.map((b) => b.distance));
+  const canSave = !overReps && stats.totalDistance > 0;
 
   const save = (visibility: ScheduleVisibility) => {
     setSaveOpen(false);
@@ -134,14 +145,17 @@ export function SwimDiaryScreen() {
     navigation.goBack();
   };
 
-  const whenLabel = (() => {
-    const [y, m, d] = schedule.date.split('-').map(Number);
-    const [hh, mm] = start.split(':').map(Number);
-    return formatDateTime(new Date(y, m - 1, d, hh, mm));
-  })();
-  const durLabel = `${Math.floor(durationMin / 60)}시간${
-    durationMin % 60 ? ` ${durationMin % 60}분` : ''
-  }`;
+  // 포커스 중이면 키보드만 내리고 동작 취소(첫 탭=키보드 닫기).
+  const guarded = (fn: () => void) => () => {
+    if (editing) {
+      Keyboard.dismiss();
+      return;
+    }
+    fn();
+  };
+
+  const whenLabel = `${formatDate(schedule.date)} ${formatTimeHHMM(start)}`;
+  const durLabel = formatSwimDuration(durationMin);
 
   return (
     <ScreenContainer
@@ -174,18 +188,18 @@ export function SwimDiaryScreen() {
         </View>
 
         <View style={styles.sectionHeader}>
-          <IconSwim width={22} height={22} />
+          <IconSwim width={22} height={22} color={tokens.color.pdMint} />
           <Text style={styles.sectionLabel}>수영 기록</Text>
         </View>
 
         <Text style={styles.fieldLabel}>총 수영 시간</Text>
         <Pressable
           style={styles.inputBox}
-          onPress={() => setTimeOpen(true)}
+          onPress={guarded(() => setTimeOpen(true))}
           accessibilityLabel="수영 시간"
         >
           <Text style={styles.inputValue}>
-            {start} ~ {end}
+            {formatTimeHHMM(start)} ~ {formatTimeHHMM(end)}
           </Text>
           <Clock size={20} color="#94A3B8" strokeWidth={2} />
         </Pressable>
@@ -194,22 +208,28 @@ export function SwimDiaryScreen() {
         <View style={styles.distRow}>
           <Pressable
             style={styles.laneBox}
-            onPress={() => setLane((l) => (l === 25 ? 50 : 25))}
+            onPress={guarded(() => setLane((l) => (l === 25 ? 50 : 25)))}
             accessibilityLabel="레인 길이"
           >
             <Text style={styles.inputValue}>{lane}m</Text>
             <ChevronDown size={20} color="#94A3B8" strokeWidth={2} />
           </Pressable>
-          <View style={styles.repBox}>
-            <TextInput
-              value={totalReps != null ? String(totalReps) : ''}
-              onChangeText={(v) => setTotalReps(onlyDigits(v))}
-              keyboardType="number-pad"
-              placeholder="00"
-              placeholderTextColor="#94A3B8"
-              style={styles.repInput}
-              maxLength={4}
-            />
+          <View style={[styles.repBox, overReps && styles.boxError]}>
+            <View style={styles.numFill}>
+              <TextInput
+                value={totalReps != null ? String(totalReps) : ''}
+                onChangeText={(v) => setTotalReps(onlyDigits(v))}
+                keyboardType="number-pad"
+                style={styles.repInput}
+                maxLength={4}
+                {...focusProps}
+              />
+              {totalReps == null ? (
+                <Text style={styles.numPlaceholder} pointerEvents="none">
+                  00
+                </Text>
+              ) : null}
+            </View>
             <Text style={styles.unit}>회</Text>
           </View>
         </View>
@@ -219,27 +239,38 @@ export function SwimDiaryScreen() {
             <View key={k} style={styles.strokeCell}>
               <Text style={styles.strokeLabel}>{k}</Text>
               <View style={styles.strokeBox}>
-                <TextInput
-                  value={reps[k] != null ? String(reps[k]) : ''}
-                  onChangeText={(v) =>
-                    setReps((r) => ({ ...r, [k]: onlyDigits(v) }))
-                  }
-                  keyboardType="number-pad"
-                  placeholder="00"
-                  placeholderTextColor="#94A3B8"
-                  style={styles.strokeInput}
-                  maxLength={4}
-                />
+                <View style={styles.numFill}>
+                  <TextInput
+                    value={reps[k] != null ? String(reps[k]) : ''}
+                    onChangeText={(v) =>
+                      setReps((r) => ({ ...r, [k]: onlyDigits(v) }))
+                    }
+                    keyboardType="number-pad"
+                    style={styles.strokeInput}
+                    maxLength={4}
+                    {...focusProps}
+                  />
+                  {reps[k] == null ? (
+                    <Text style={styles.numPlaceholder} pointerEvents="none">
+                      00
+                    </Text>
+                  ) : null}
+                </View>
                 <Text style={styles.strokeUnit}>회</Text>
               </View>
             </View>
           ))}
         </View>
+        {overReps ? (
+          <Text style={styles.errorText}>
+            영법별 횟수의 합이 총 횟수를 넘을 수 없어요.
+          </Text>
+        ) : null}
 
         <View style={[styles.statCard, styles.mt24]}>
           <View style={styles.statTop}>
             <View style={styles.stat}>
-              <IconSwim width={20} height={20} />
+              <IconSwim width={20} height={20} color={tokens.color.pdMint} />
               <Text style={styles.statValue}>
                 {stats.totalDistance.toLocaleString()}m
               </Text>
@@ -271,7 +302,11 @@ export function SwimDiaryScreen() {
                       ]}
                     />
                     <View style={styles.bdLabelRow}>
-                      <IconSwim width={16} height={16} />
+                      <IconSwim
+                        width={16}
+                        height={16}
+                        color={tokens.color.ink900}
+                      />
                       <Text style={styles.bdLabel}>{k}</Text>
                     </View>
                   </View>
@@ -294,12 +329,16 @@ export function SwimDiaryScreen() {
           <TextInput
             value={note}
             onChangeText={(v) => setNote(v.slice(0, 300))}
-            placeholder="오늘 수영에서 느낀 점을 기록하세요."
-            placeholderTextColor="#94A3B8"
             multiline
             maxLength={300}
             style={styles.noteInput}
+            {...focusProps}
           />
+          {note.length === 0 ? (
+            <Text style={styles.notePlaceholder} pointerEvents="none">
+              오늘 수영에서 느낀 점을 기록하세요.
+            </Text>
+          ) : null}
           <Text style={styles.noteCount}>{note.length}/300</Text>
         </View>
       </ScrollView>
@@ -307,11 +346,18 @@ export function SwimDiaryScreen() {
       <View style={styles.footer}>
         <Pressable
           onPress={() => setSaveOpen(true)}
-          style={({ pressed }) => [styles.cta, pressed && { opacity: 0.85 }]}
+          disabled={!canSave}
+          style={({ pressed }) => [
+            styles.cta,
+            !canSave && styles.ctaDisabled,
+            pressed && canSave && { opacity: 0.85 },
+          ]}
           accessibilityRole="button"
-          accessibilityLabel="수영 일기 작성"
+          accessibilityLabel={existing ? '수영 일기 수정' : '수영 일기 작성'}
         >
-          <Text style={styles.ctaLabel}>수영 일기 작성</Text>
+          <Text style={[styles.ctaLabel, !canSave && styles.ctaLabelDisabled]}>
+            {existing ? '수영 일기 수정' : '수영 일기 작성'}
+          </Text>
         </Pressable>
       </View>
 
@@ -421,13 +467,26 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: tokens.color.white,
   },
+  boxError: { borderColor: tokens.color.red },
+  numFill: { flex: 1, justifyContent: 'center' },
+  numPlaceholder: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    textAlign: 'right',
+    fontSize: 16,
+    lineHeight: 22,
+    fontFamily: tokens.font.sans,
+    color: '#94A3B8',
+    includeFontPadding: false,
+  },
   repInput: {
-    flex: 1,
     fontSize: 16,
     fontFamily: tokens.font.sans,
     color: '#1F2937',
     padding: 0,
     textAlign: 'right',
+    includeFontPadding: false,
   },
   unit: {
     marginLeft: 6,
@@ -454,18 +513,25 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.color.white,
   },
   strokeInput: {
-    flex: 1,
     fontSize: 16,
     fontFamily: tokens.font.sans,
     color: '#1F2937',
     padding: 0,
     textAlign: 'right',
+    includeFontPadding: false,
   },
   strokeUnit: {
     marginLeft: 4,
     fontSize: 14,
     fontFamily: tokens.font.sans,
     color: '#4B5563',
+  },
+  errorText: {
+    marginTop: 8,
+    fontSize: 12,
+    lineHeight: 16,
+    fontFamily: tokens.font.sans,
+    color: tokens.color.red,
   },
   statCard: {
     backgroundColor: tokens.color.white,
@@ -535,6 +601,16 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     minHeight: 60,
   },
+  notePlaceholder: {
+    position: 'absolute',
+    left: 12,
+    top: 12,
+    fontSize: 16,
+    lineHeight: 22,
+    fontFamily: tokens.font.sans,
+    color: '#94A3B8',
+    includeFontPadding: false,
+  },
   noteCount: {
     alignSelf: 'flex-end',
     fontSize: 12,
@@ -549,9 +625,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  ctaDisabled: { backgroundColor: tokens.color.pdBgray },
   ctaLabel: {
     fontSize: 16,
     fontFamily: tokens.font.sansBold,
     color: tokens.color.black,
   },
+  ctaLabelDisabled: { color: tokens.color.pdGray },
 });

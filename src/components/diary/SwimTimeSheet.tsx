@@ -110,7 +110,11 @@ export function SwimTimeSheet({
     }).start(() => onClose());
   };
 
+  // 종료 시각은 시작보다 늦어야 함(같거나 앞서면 등록 불가).
+  const invalid = eH * 60 + eM <= sH * 60 + sM;
+
   const submit = () => {
+    if (invalid) return;
     onConfirm(`${pad2(sH)}:${pad2(sM)}`, `${pad2(eH)}:${pad2(eM)}`);
     close();
   };
@@ -173,17 +177,33 @@ export function SwimTimeSheet({
                 </View>
               </View>
 
+              {invalid ? (
+                <Text style={styles.errorText}>
+                  종료 시각은 시작 시각보다 늦어야 해요.
+                </Text>
+              ) : null}
+
               <Pressable
                 onPress={submit}
+                disabled={invalid}
                 style={({ pressed }) => [
                   styles.cta,
-                  pressed && { opacity: 0.85 },
+                  invalid && styles.ctaDisabled,
+                  pressed && !invalid && { opacity: 0.85 },
                 ]}
                 accessibilityRole="button"
                 accessibilityLabel="수영 시간 등록"
               >
-                <Text style={styles.ctaLabel}>수영 시간 등록</Text>
-                <Clock size={20} color={tokens.color.black} strokeWidth={2} />
+                <Text
+                  style={[styles.ctaLabel, invalid && styles.ctaLabelDisabled]}
+                >
+                  수영 시간 등록
+                </Text>
+                <Clock
+                  size={20}
+                  color={invalid ? tokens.color.pdGray : tokens.color.black}
+                  strokeWidth={2}
+                />
               </Pressable>
             </View>
           </SafeAreaView>
@@ -314,6 +334,14 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.color.pdMint,
   },
   row: { height: ROW_HEIGHT, alignItems: 'center', justifyContent: 'center' },
+  errorText: {
+    marginTop: -16,
+    fontSize: 12,
+    lineHeight: 16,
+    fontFamily: tokens.font.sans,
+    color: tokens.color.red,
+    textAlign: 'center',
+  },
   cta: {
     minHeight: 48,
     paddingHorizontal: 20,
@@ -325,6 +353,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
   },
+  ctaDisabled: { backgroundColor: tokens.color.pdBgray },
   ctaLabel: {
     fontSize: 16,
     lineHeight: 22,
@@ -332,4 +361,5 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sansBold,
     color: tokens.color.black,
   },
+  ctaLabelDisabled: { color: tokens.color.pdGray },
 });

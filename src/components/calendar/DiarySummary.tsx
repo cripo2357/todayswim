@@ -7,13 +7,14 @@ import { useProfile } from '@/store/profile';
 import {
   computeSwimStats,
   resolveWeightKg,
+  formatSwimDuration,
   type StrokeKey,
 } from '@/lib/swimCalories';
 import type { SwimDiary } from '@/store/swimDiary';
 import { tokens } from '@/styles/tokens';
 import IconSwim from '@assets/icons/swim.svg';
 
-const ALL: StrokeKey[] = ['자유형', '배영', '접영', '평형', '기타'];
+const ALL: StrokeKey[] = ['자유형', '배영', '평영', '접영', '기타'];
 function toMin(t: string): number {
   const [h, m] = t.split(':').map(Number);
   return (h || 0) * 60 + (m || 0);
@@ -28,16 +29,14 @@ export function DiarySummary({ diary }: { diary: SwimDiary }) {
     weight,
   );
   const maxDist = Math.max(1, ...stats.breakdown.map((b) => b.distance));
-  const durLabel = `${Math.floor(durationMin / 60)}시간${
-    durationMin % 60 ? ` ${durationMin % 60}분` : ''
-  }`;
+  const durLabel = formatSwimDuration(durationMin);
 
   return (
     <View style={styles.root}>
       {diary.note ? <Text style={styles.note}>{diary.note}</Text> : null}
       <View style={styles.statRow}>
         <View style={styles.stat}>
-          <IconSwim width={20} height={20} />
+          <IconSwim width={20} height={20} color={tokens.color.pdMint} />
           <Text style={styles.statValue}>
             {stats.totalDistance.toLocaleString()}m
           </Text>
@@ -69,7 +68,7 @@ export function DiarySummary({ diary }: { diary: SwimDiary }) {
                   ]}
                 />
                 <View style={styles.bdLabelRow}>
-                  <IconSwim width={16} height={16} />
+                  <IconSwim width={16} height={16} color={tokens.color.ink900} />
                   <Text style={styles.bdLabel}>{k}</Text>
                 </View>
               </View>

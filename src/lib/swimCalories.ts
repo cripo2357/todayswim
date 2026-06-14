@@ -1,24 +1,27 @@
-// 수영 칼로리 + 음식 환산 — 수영 일기 통계 엔진. (크리스 확정 2026-06-14)
+// 수영 칼로리 + 음식 환산 — 수영 일기 통계 엔진. (크리스 확정 2026-06-14, 거리기반 개정)
 //
-// kcal = 체중(kg) × 수영시간(h) × 영법가중평균MET
-//   영법가중평균MET = Σ(MET_영법 × 거리_영법) / 총거리   (접영 많을수록 ↑)
+// kcal = 체중(kg) × Σ(MET_영법 × 거리_영법) ÷ (60 × REF_PACE)
+//   = 거리에 비례(랩 많을수록 ↑) + 영법 난이도 가중(접영 많을수록 ↑).
+//   시간은 칼로리에 영향 없음(표준 페이스를 REF로 가정). 이전 "시간×MET" 모델은
+//   거리 무관·기본 슬롯시간 뻥튀기 문제로 폐기.
+// REF_PACE = 표준 수영 페이스(m/min). 거리기반 보정상수 — 칼로리 크기 calibration.
 // 체중 = profile.weight(선택 입력) 우선 → 없으면 성별×연령대 기본표 → 전체 폴백.
 // 음식 환산 = 베스트핏(1~5개로 가장 깔끔히 떨어지는 친숙한 음식), 주류 제외, "OO N개 태웠어요!".
 
 import type { UserProfile } from '@/store/profile';
 
-export type StrokeKey = '자유형' | '배영' | '접영' | '평형' | '기타';
+export type StrokeKey = '자유형' | '배영' | '평영' | '접영' | '기타';
 
 // 영법별 MET (Compendium of Physical Activities, 자유수영 중강도).
 export const STROKE_MET: Record<StrokeKey, number> = {
   자유형: 8.3,
   배영: 9.5,
-  평형: 10.3, // breaststroke
+  평영: 10.3, // breaststroke
   접영: 13.8, // butterfly — 가장 높음
   기타: 6.0,
 };
 
-const STROKE_ORDER: StrokeKey[] = ['자유형', '배영', '접영', '평형', '기타'];
+const STROKE_ORDER: StrokeKey[] = ['자유형', '배영', '평영', '접영', '기타'];
 
 // 성별×연령대 기본 체중(kg) — 한국 성인 평균 근사치. profile.weight 미입력 시 폴백.
 const DEFAULT_WEIGHT: Record<'male' | 'female', Record<number, number>> = {
@@ -73,7 +76,10 @@ export interface SwimStats {
   kcal: number;
 }
 
-/** 거리 = 레인 × 회, kcal = 체중 × 시간(h) × 가중평균MET. */
+/** 표준 수영 페이스(m/min). 거리기반 칼로리 보정상수. */
+const REF_PACE = 30;
+
+/** 거리 = 레인 × 회, kcal = 체중 × Σ(MET×거리) ÷ (60×REF). 시간 무관(거리기반). */
 export function computeSwimStats(
   input: SwimRecordInput,
   weightKg: number,
@@ -83,13 +89,13 @@ export function computeSwimStats(
     distance: (input.reps[s] ?? 0) * input.laneLength,
   })).filter((b) => b.distance > 0);
   const totalDistance = breakdown.reduce((s, b) => s + b.distance, 0);
-  const hours = input.durationMin / 60;
   let kcal = 0;
-  if (totalDistance > 0 && hours > 0) {
-    const wMet =
-      breakdown.reduce((s, b) => s + STROKE_MET[b.stroke] * b.distance, 0) /
-      totalDistance;
-    kcal = Math.round(weightKg * hours * wMet);
+  if (totalDistance > 0) {
+    const metDist = breakdown.reduce(
+      (s, b) => s + STROKE_MET[b.stroke] * b.distance,
+      0,
+    );
+    kcal = Math.round((weightKg * metDist) / (60 * REF_PACE));
   }
   return { totalDistance, breakdown, durationMin: input.durationMin, kcal };
 }
