@@ -52,7 +52,8 @@ export type MessageKind =
   | 'nickname_changed_by_admin' // 운영자 닉네임 강제 변경(P0)
   | 'monthly_summary' // 월간 수영 결산 (8변형)
   | 'schedule_completion_prompt' // 일정 종료 후 완료 확인
-  | 'friend_schedule_overlap' // 같은 수영장+시간 친구 일정 겹침
+  | 'friend_schedule_overlap' // (본인) 내가 등록한 슬롯에 이미 친구가 있음
+  | 'friend_joined_my_slot' // (친구) 내 슬롯에 친구가 새로 합류함
   | 'donation_thanks'; // 후원 입금 확인 — 운영자 처리 후 자동 감사 인사
 
 export type MessageRecipient = 'self' | 'other' | 'both';
@@ -267,11 +268,28 @@ export const RULES: Record<MessageKind, Rule> = {
       };
     },
   },
+  // 본인 알림 — 내가 등록한 슬롯에 이미 친구가 있을 때. count=겹친 친구 수.
   friend_schedule_overlap: {
+    recipients: 'self',
+    build: (p) => {
+      const extra = (p.count ?? 1) - 1;
+      const who =
+        extra > 0
+          ? `${nick(p)}님 외 ${extra}명도 이 시간에 수영해요.`
+          : `${nick(p)}님도 이 시간에 수영해요.`;
+      return {
+        title: '같은 수영 일정',
+        body: [venueLine(p), who],
+        actions: ['일정 보기'],
+      };
+    },
+  },
+  // 친구 알림 — 내 슬롯에 친구(=발신자 본인)가 새로 합류. dispatchMessageTo로 발송.
+  friend_joined_my_slot: {
     recipients: 'self',
     build: (p) => ({
       title: '같은 수영 일정',
-      body: [venueLine(p), `${nick(p)}님도 수영 일정이 있어요.`],
+      body: [venueLine(p), `${nick(p)}님도 이 시간에 수영해요.`],
       actions: ['일정 보기'],
     }),
   },

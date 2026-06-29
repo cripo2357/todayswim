@@ -152,6 +152,7 @@ const KIND_TO_SLOT: Partial<Record<MessageKind, Slot>> = {
   friend_request_accepted: avatar('avatar-female-2'),
   invite_received: avatar('avatar-male-3'),
   friend_schedule_overlap: avatar('avatar-female-3'),
+  friend_joined_my_slot: avatar('avatar-male-3'),
   // 부정(거절·취소·만료·반려) → [반려] 통일.
   friend_request_rejected: SLOT_REJECT,
   invite_rejected: SLOT_REJECT,

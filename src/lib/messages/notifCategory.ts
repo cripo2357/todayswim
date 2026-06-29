@@ -47,6 +47,7 @@ export const MESSAGE_CATEGORY: Record<MessageKind, NotifCategory> = {
   schedule_reminder_prev_day: 'schedule',
   schedule_reminder_1h: 'schedule',
   friend_schedule_overlap: 'schedule',
+  friend_joined_my_slot: 'schedule',
   schedule_completion_prompt: 'schedule',
 
   // 정보 수정 요청 및 처리결과 (비동기 결과 → 푸시 적합)

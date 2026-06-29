@@ -154,6 +154,7 @@ function resolveRoute(data: Record<string, unknown> | undefined): NavAction {
       return { screen: 'MyInfo', initialTab: '달력', focusScheduleId: scheduleId };
     case 'invite_accepted':
     case 'friend_schedule_overlap':
+    case 'friend_joined_my_slot':
       return { screen: 'MyInfo', initialTab: '달력' };
   }
   // kind 없음/그 외 — category 폴백(schedule=달력, 나머지=알림).
