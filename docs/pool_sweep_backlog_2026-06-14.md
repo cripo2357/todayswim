@@ -1,6 +1,8 @@
-# 전국 POI 스윕 — 남은 등록 백로그 (2026-06-14, 갱신)
+# 전국 POI 스윕 — 남은 등록 백로그 (2026-06-30 갱신)
 
-전국 17개 시도 POI 전수스윕(워크플로). **등록 완료: clean 91 + 검토 19 + 캡처 6(서울 0862~0866) = 116곳. prod 447→560.**
+전국 17개 시도 POI 전수스윕(워크플로). 6/14 기준 116곳 등록(prod 447→560). 이후 아래 캡처/공식소스 백로그를 순차 처리 중.
+
+**진행: 캡처 백로그 29곳 중 13곳 등록(0867~0879) + 1곳 제외(부천=자유수영 미운영) = 14곳 처리. 14곳 남음. 현재 prod 573.**
 
 ## 보류 5곳 (검토 24곳 중) — 등록 안 함
 
@@ -12,39 +14,41 @@
 | 경기 평택 무봉산청소년수련원 | 계절 야외풀 | 제외 |
 | 충남 홍성 홍성학생수영장 | 추첨 회원모집제 | 제외 |
 
-## 현장 캡처 필요 (29곳) — 크리스 캡처 대기
+## 캡처/공식소스 백로그 (29곳) — 처리 현황
 
-| 지역 | 시설 | 주소 | 공식 | 전화 |
-|---|---|---|---|---|
-| 부산/부산진구 | 부산학생교육문화회관수영장 | 부산광역시 부산진구 성지곡로 15 (초읍동) | https://home.pen.go.kr/becs/cm/cntnts/cntntsView.do?mi=10316&cntntsId=2670 | 051-808-3360 |
-| 부산/사하구 | 다대실내수영장 | 부산광역시 사하구 다대로 734 (다대동) | https://www.saha.go.kr/portal/contents.do?mId=0407030000 | 051-970-1253 |
-| 대구/동구 | 동부여성문화회관실내수영장 | 대구광역시 동구 신암북로11길 54-2 | https://www.daegu.go.kr/woman/index.do?menu_id=00050159 |  |
-| 인천/서구 | 드림파크스포츠센터 | 인천광역시 서구 자원순환로 12 | https://dreamparksc.ksponco.or.kr/ | 032-569-7980 |
-| 인천/남동구 | 올림픽기념국민생활관 | 인천광역시 남동구 구월로 251 | https://www.insiseol.or.kr/olympics/ |  |
-| 인천/강화군 | 강화국민체육센터 | 인천광역시 강화군 강화읍 강화대로 591 | https://www.ganghwa.go.kr/open_content/main/part/culture/facility.jsp | 032-933-9696 |
-| 대전/유성구 | 구즉국민체육센터 | 대전광역시 유성구 송강로42번길 34 | https://m.cafe.daum.net/yuseonggu9345570/bAfz/2 | 042-933-5570 |
-| 대전/대덕구 | 대덕국민체육센터 | 대전광역시 대덕구 대덕대로1486번길 101 | https://cafe.naver.com/ddnsc | 042-716-3000 |
-| 울산/북구 | 오토밸리복지센터수영장 | 울산광역시 북구 산업로 1020 | https://crs.ubimc.or.kr/yeyak/etc/introduce_detail?mem_id=B0001001 | 052-255-5550 |
-| 경기/고양시 | 일산올림픽스포츠센터수영장 | 경기 고양시 일산동구 중앙로 1182 | https://www.ksponco.or.kr/sports/ilsansports | 031-900-1780 |
-| 경기/안성시 | 안성시국민체육센터실내수영장 | 경기 안성시 보개면 양복리 210 | https://www.anseongsports.or.kr/content.html?md=0132 | 031-651-0741 |
-| 경기/평택시 | 이충문화체육센터수영장 | 경기 평택시 장안웃길 149 | https://www.pyeongtaek.go.kr/pyeongtaek/contents.do?mId=1404000000 | 031-8024-7440 |
-| 경기/여주시 | 여주시노인복지관수영장 | 경기 여주시 여흥로160번길 27 | http://www.yjsilver.or.kr/page/view.php/biz7 | 031-881-0052 |
-| 경기/부천시 | 경기도부천학생수영장 | 경기 부천시 오정구 성오로 203 | https://www.goebc.kr/goebc/cm/cntnts/cntntsView.do?mi=12885&cntntsId=2454 | 032-620-0112 |
-| 강원/삼척시 | 도계수영장 | 강원특별자치도 삼척시 도계읍 도계느티로 25-18 | https://www.samcheok.go.kr/sports/facility.php |  |
-| 충북/음성군 | 대소국민체육센터 | 충청북도 음성군 대소읍 대화3길 13-14 | https://www.eumseong.go.kr/www/contents.do?key=696 | 043-871-5915 |
-| 충북/진천군 | 광혜원개방형다목적체육관 | 충청북도 진천군 광혜원면 선수촌로 104-28 | https://www.jincheon.go.kr/sportspromotion/home/index.do | 043-539-3802 |
-| 충남/공주시 | 공주학생수영장 | 충청남도 공주시 동현길 17 | https://www.cngje.go.kr/ | 041-857-2185 |
-| 충남/당진시 | 당진학생수영장 | 충청남도 당진시 운학길 41 | https://www.cnbye.go.kr/dangjin/main.do |  |
-| 충남/서천군 | 서천학생수영장 | 충청남도 서천군 장항읍 성주길 6-21 | https://www.cnsce.go.kr/sub/editor.do?mId=165&edNo=12 | 041-834-1010 |
-| 충남/천안시 동남구 | 천안학생스포츠센터 | 충청남도 천안시 동남구 중앙로 169 | https://swim.cnbye.go.kr/main/main.action | 041-834-1010 |
-| 전북/군산시 | 서군산체육센터 | 전북특별자치도 군산시 임사길 14 | https://www.gunsan.go.kr/main/m2363 | 063-454-3293 |
-| 전북/익산시 | 함열올림픽스포츠센터 | 전북특별자치도 익산시 함열읍 함낭로 511 | https://www.iksan.go.kr/hamyeol/index.do?menuUid=ff80808197387a4f019752eb780702ea | 063-859-4623 |
-| 전북/임실군 | 임실국민체육센터 | 전북특별자치도 임실군 임실읍 호국로 1628 | http://www.imsil.go.kr/town/board/view.imsil?menuCd=DOM_000000711004001000&boardId=BBS_0000003&dataSid=51742 | 063-640-4456 |
-| 전남/광양시 | 광양스포츠센터수영장 | 전라남도 광양시 봉강면 명암길 7 | https://www.gysports.co.kr/sports/user/fee.do |  |
-| 전남/광양시 | 성황스포츠센터수영장 | 전라남도 광양시 성황도이로 66-16 | https://gwangyang.go.kr/menu.es?mid=a11203050308 | 061-797-3937 |
-| 전남/나주시 | 나주빛가람복합문화체육센터수영장 | 전라남도 나주시 상야2길 17 | https://www.naju.go.kr/www/administration/new/notify?mode=view&idx=605288 |  |
-| 경북/포항시 남구 | 포항송도국민체육센터 | 경상북도 포항시 남구 송도해안길 67 | https://www.phsisul.org/sisul_34/sub/info_2.do |  |
-| 제주/서귀포시 | 안덕면문화체육복합센터 | 제주특별자치도 서귀포시 안덕면 화순서서로 89 | https://www.seogwipo.go.kr/field/living/sportsfacilities/facilities/physical.htm | 064-760-4315 |
+✅=등록 / ⛔=제외 / ⬜=남음
+
+| 상태 | 지역 | 시설 | 주소 | 공식 | 전화 |
+|---|---|---|---|---|---|
+| ✅0867 | 부산/부산진구 | 부산학생교육문화회관수영장 | 부산광역시 부산진구 성지곡로 15 (초읍동) | https://home.pen.go.kr/becs/cm/cntnts/cntntsView.do?mi=10316&cntntsId=2670 | 051-808-3360 |
+| ✅0868 | 부산/사하구 | 다대실내수영장 | 부산광역시 사하구 다대로 734 (다대동) | https://www.saha.go.kr/portal/contents.do?mId=0407030000 | 051-970-1253 |
+| ✅0869 | 대구/동구 | 동부여성문화회관실내수영장 | 대구광역시 동구 신암북로11길 54-2 | https://www.daegu.go.kr/woman/index.do?menu_id=00050159 |  |
+| ✅0870 | 인천/서구 | 드림파크스포츠센터 | 인천광역시 서구 자원순환로 12 | https://dreamparksc.ksponco.or.kr/ | 032-569-7980 |
+| ✅0871 | 인천/남동구 | 올림픽기념국민생활관 | 인천광역시 남동구 구월로 251 | https://www.insiseol.or.kr/olympics/ |  |
+| ✅0872 | 인천/강화군 | 강화국민체육센터 | 인천광역시 강화군 강화읍 강화대로 591 | https://www.ganghwa.go.kr/open_content/main/part/culture/facility.jsp | 032-933-9696 |
+| ✅0873 | 대전/유성구 | 구즉국민체육센터 | 대전광역시 유성구 송강로42번길 34 | https://m.cafe.daum.net/yuseonggu9345570/bAfz/2 | 042-933-5570 |
+| ✅0874 | 대전/대덕구 | 대덕국민체육센터 | 대전광역시 대덕구 대덕대로1486번길 101 | https://cafe.naver.com/ddnsc | 042-716-3000 |
+| ✅0875 | 울산/북구 | 오토밸리복지센터수영장 | 울산광역시 북구 산업로 1020 | https://crs.ubimc.or.kr/yeyak/etc/introduce_detail?mem_id=B0001001 | 052-255-5550 |
+| ✅0876 | 경기/고양시 | 일산올림픽스포츠센터수영장 | 경기 고양시 일산동구 중앙로 1182 | https://www.ksponco.or.kr/sports/ilsansports | 031-900-1780 |
+| ✅0877 | 경기/안성시 | 안성시국민체육센터실내수영장 | 경기 안성시 보개면 양복리 210 | https://www.anseongsports.or.kr/content.html?md=0132 | 031-651-0741 |
+| ✅0878 | 경기/평택시 | 이충문화체육센터수영장 | 경기 평택시 장안웃길 149 | https://www.pyeongtaek.go.kr/pyeongtaek/contents.do?mId=1404000000 | 031-8024-7440 |
+| ✅0879 | 경기/여주시 | 여주시노인복지관수영장 | 경기 여주시 여흥로160번길 27 | http://www.yjsilver.or.kr/page/view.php/biz7 | 031-881-0052 |
+| ⛔ | 경기/부천시 | 경기도부천학생수영장 | 경기 부천시 오정구 성오로 203 | (자유수영 미운영 — 제외) | 032-620-0112 |
+| ⬜ | 강원/삼척시 | 도계수영장 | 강원특별자치도 삼척시 도계읍 도계느티로 25-18 | https://www.samcheok.go.kr/sports/facility.php |  |
+| ⬜ | 충북/음성군 | 대소국민체육센터 | 충청북도 음성군 대소읍 대화3길 13-14 | https://www.eumseong.go.kr/www/contents.do?key=696 | 043-871-5915 |
+| ⬜ | 충북/진천군 | 광혜원개방형다목적체육관 | 충청북도 진천군 광혜원면 선수촌로 104-28 | https://www.jincheon.go.kr/sportspromotion/home/index.do | 043-539-3802 |
+| ⬜ | 충남/공주시 | 공주학생수영장 | 충청남도 공주시 동현길 17 | https://www.cngje.go.kr/ | 041-857-2185 |
+| ⬜ | 충남/당진시 | 당진학생수영장 | 충청남도 당진시 운학길 41 | https://www.cnbye.go.kr/dangjin/main.do |  |
+| ⬜ | 충남/서천군 | 서천학생수영장 | 충청남도 서천군 장항읍 성주길 6-21 | https://www.cnsce.go.kr/sub/editor.do?mId=165&edNo=12 | 041-834-1010 |
+| ⬜ | 충남/천안시 동남구 | 천안학생스포츠센터 | 충청남도 천안시 동남구 중앙로 169 | https://swim.cnbye.go.kr/main/main.action | 041-834-1010 |
+| ⬜ | 전북/군산시 | 서군산체육센터 | 전북특별자치도 군산시 임사길 14 | https://www.gunsan.go.kr/main/m2363 | 063-454-3293 |
+| ⬜ | 전북/익산시 | 함열올림픽스포츠센터 | 전북특별자치도 익산시 함열읍 함낭로 511 | https://www.iksan.go.kr/hamyeol/index.do?menuUid=ff80808197387a4f019752eb780702ea | 063-859-4623 |
+| ⬜ | 전북/임실군 | 임실국민체육센터 | 전북특별자치도 임실군 임실읍 호국로 1628 | http://www.imsil.go.kr/town/board/view.imsil?menuCd=DOM_000000711004001000&boardId=BBS_0000003&dataSid=51742 | 063-640-4456 |
+| ⬜ | 전남/광양시 | 광양스포츠센터수영장 | 전라남도 광양시 봉강면 명암길 7 | https://www.gysports.co.kr/sports/user/fee.do |  |
+| ⬜ | 전남/광양시 | 성황스포츠센터수영장 | 전라남도 광양시 성황도이로 66-16 | https://gwangyang.go.kr/menu.es?mid=a11203050308 | 061-797-3937 |
+| ⬜ | 전남/나주시 | 나주빛가람복합문화체육센터수영장 | 전라남도 나주시 상야2길 17 | https://www.naju.go.kr/www/administration/new/notify?mode=view&idx=605288 |  |
+| ⬜ | 경북/포항시 남구 | 포항송도국민체육센터 | 경상북도 포항시 남구 송도해안길 67 | https://www.phsisul.org/sisul_34/sub/info_2.do |  |
+| ⬜ | 제주/서귀포시 | 안덕면문화체육복합센터 | 제주특별자치도 서귀포시 안덕면 화순서서로 89 | https://www.seogwipo.go.kr/field/living/sportsfacilities/facilities/physical.htm | 064-760-4315 |
 
 ## 제외 — 자유수영 미운영 (8곳)
 
