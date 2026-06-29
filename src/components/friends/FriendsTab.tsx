@@ -12,7 +12,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
-import { XCircle, Plus } from 'lucide-react-native';
+import { XCircle, Plus, Check } from 'lucide-react-native';
 import IconChevronDown from '@assets/icons/chevron-down.svg';
 import IconUserDouble from '@assets/icons/user-double.svg';
 import { type MockAccount } from '@/lib/mockData';
@@ -56,6 +56,8 @@ interface FriendSlot {
     avatar: string;
     avatarThumb?: string;
   }[];
+  /** 내가 이미 참여한 슬롯인지 — true면 "참여 중" 표시(나도 참여 버튼 대신). */
+  joined: boolean;
 }
 
 export function FriendsTab() {
@@ -113,7 +115,7 @@ export function FriendsTab() {
     null,
   );
 
-  // 내가 이미 참여한 슬롯 키 — 친구 일정에서 제외
+  // 내가 이미 참여한 슬롯 키 — "참여 중" 표시용(예전엔 제외했으나 노출로 변경)
   const mySlots = React.useMemo(
     () =>
       new Set(
@@ -122,7 +124,7 @@ export function FriendsTab() {
     [mySchedules],
   );
 
-  // 친구의 '비공개 아님' 일정 슬롯(중복 참여자 묶음) — 내가 미참여인 것만
+  // 친구의 '비공개 아님' 일정 슬롯(중복 참여자 묶음) — 내가 참여한 슬롯도 포함('참여 중' 표시).
   const allFriendSlots = React.useMemo<FriendSlot[]>(() => {
     const blocked = new Set(blockedIds);
     // 예정 일정만 — 오늘 포함 30일(오늘 ~ 오늘+29). 지난 일정·범위 밖 제외.
@@ -138,7 +140,6 @@ export function FriendsTab() {
       if (blocked.has(o.userId)) continue; // 차단 = 일정에서도 제외
       if (o.date < minD || o.date > maxD) continue; // 오늘~+29일만
       const key = `${o.poolId}|${o.date}|${o.start}|${o.end}`;
-      if (mySlots.has(key)) continue;
       let g = m.get(key);
       if (!g) {
         g = {
@@ -149,6 +150,7 @@ export function FriendsTab() {
           start: o.start,
           end: o.end,
           participants: [],
+          joined: mySlots.has(key),
         };
         m.set(key, g);
       }
@@ -384,15 +386,29 @@ export function FriendsTab() {
                           {formatWhen(s.date, s.start)}
                         </Text>
                       </View>
-                      <Pressable
-                        style={styles.joinChip}
-                        onPress={() => handleJoinSlot(s.poolId, s.date, s.start, s.end)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${s.poolName} ${formatWhen(s.date, s.start)} 나도 참여`}
-                      >
-                        <Text style={styles.joinChipLabel}>나도 참여</Text>
-                        <Plus size={12} color={tokens.color.pdBlue} strokeWidth={2.4} />
-                      </Pressable>
+                      {s.joined ? (
+                        <View
+                          style={styles.joinedChip}
+                          accessibilityLabel={`${s.poolName} ${formatWhen(s.date, s.start)} 참여 중`}
+                        >
+                          <Text style={styles.joinedChipLabel}>참여 중</Text>
+                          <Check
+                            size={12}
+                            color={tokens.color.white}
+                            strokeWidth={2.4}
+                          />
+                        </View>
+                      ) : (
+                        <Pressable
+                          style={styles.joinChip}
+                          onPress={() => handleJoinSlot(s.poolId, s.date, s.start, s.end)}
+                          accessibilityRole="button"
+                          accessibilityLabel={`${s.poolName} ${formatWhen(s.date, s.start)} 나도 참여`}
+                        >
+                          <Text style={styles.joinChipLabel}>나도 참여</Text>
+                          <Plus size={12} color={tokens.color.pdBlue} strokeWidth={2.4} />
+                        </Pressable>
+                      )}
                     </View>
                     {photo ? (
                       <Image source={photo} style={styles.schedThumb} />
@@ -783,6 +799,25 @@ const styles = StyleSheet.create({
     letterSpacing: -0.06,
     fontFamily: tokens.font.sansMedium,
     color: tokens.color.pdBlue,
+  },
+  // 참여 중 — 내가 이미 참여한 슬롯(비대화형). pd-mint 채움 + 흰 텍스트/체크.
+  joinedChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: tokens.color.pdMint,
+    borderWidth: 1,
+    borderColor: tokens.color.pdMint,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  joinedChipLabel: {
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: -0.06,
+    fontFamily: tokens.font.sansMedium,
+    color: tokens.color.white,
   },
   schedThumb: {
     width: 74,
