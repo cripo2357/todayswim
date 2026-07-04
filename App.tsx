@@ -17,7 +17,6 @@ import { OfflineGate } from '@/components/network/OfflineGate';
 import { RuntimeStatusGate } from '@/components/status/RuntimeStatusGate';
 import { initSentry, SentryErrorBoundary } from '@/lib/sentry';
 import { initAnalytics, logScreen } from '@/lib/analytics';
-import { maybeSendMonthlySummary } from '@/lib/monthlySummary';
 import { setupPushNotificationRouting } from '@/lib/pushNotifications';
 import { useNotificationsRealtime } from '@/hooks/useNotifications';
 import { useSingleDeviceGuard } from '@/hooks/useSingleDeviceGuard';
@@ -111,8 +110,7 @@ export default function App() {
         // 즐겨찾기·공개공유 설정 서버 복구(0269) — 재설치/기기변경/다기기.
         void useFavorites.getState().serverSync();
         void usePrefs.getState().serverSync();
-        // 일정 동기 후 — 새 달이면 지난달 결산 1회 발송(멱등).
-        void maybeSendMonthlySummary();
+        // 월간 결산은 서버 cron(0583)이 매월 1일 08:30 KST 발송 — 클라 트리거 제거(중복 방지).
       })();
     }
   }, [profileId]);
