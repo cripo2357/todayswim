@@ -90,16 +90,16 @@ async function main() {
   // 현재 max id
   const { data: ids } = await sb.from('pools').select('id').order('id', { ascending: false }).limit(1);
   let next = Number(ids[0].id.replace('POOL_', ''));
-  // 기존 이름+지역(중복 pre-check) — 동명 다른지역 시설(올림픽기념국민생활관 등) 허용
-  const { data: existing } = await sb.from('pools').select('name,region').limit(5000);
-  const seen = new Set(existing.map((p) => (p.name || '').replace(/\s/g, '') + '|' + (p.region || '')));
+  // 이름 전역 유니크 체크 — 지역 무관 동명 금지(크리스 규칙 2026-07-05).
+  // 타도시 동명이면 도시접두로 구분해서 넣어라(예: 서울/대전올림픽기념국민생활관).
+  const { data: existing } = await sb.from('pools').select('id,name,region').limit(5000);
+  const seen = new Map(existing.map((p) => [(p.name || '').replace(/\s/g, ''), p.id]));
 
   const plan = [];
   for (const p of pools) {
     const cleanName = (p.name || '').replace(/\s/g, '');
     if (!cleanName) { console.warn('SKIP(이름없음):', JSON.stringify(p)); continue; }
-    const dupKey = cleanName + '|' + (p.region || '');
-    if (seen.has(dupKey)) { console.warn('SKIP(중복):', cleanName, p.region); continue; }
+    if (seen.has(cleanName)) { console.warn(`SKIP(동명 존재): "${cleanName}" == ${seen.get(cleanName)} — 도시접두로 구분해서 등록하세요`); continue; }
     if (!p.schedule_source_url) { console.warn('SKIP(시간표출처 없음):', cleanName); continue; }
     if (!p.by_day_en || !p.by_day_en.length) { console.warn('SKIP(by_day 없음):', cleanName); continue; }
 
@@ -132,7 +132,7 @@ async function main() {
       updated_at: nowIso, approved_at: nowIso, last_verified_at: nowIso,
     };
     plan.push({ poolRow, schedRow, via });
-    seen.add(dupKey);
+    seen.set(cleanName, id); // 같은 배치 내 동명도 차단
   }
 
   console.log(`\n=== 등록 계획 ${plan.length}건 (${apply ? 'APPLY' : 'DRY-RUN'}) ===`);
