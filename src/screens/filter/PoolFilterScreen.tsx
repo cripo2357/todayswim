@@ -26,7 +26,6 @@ import {
   ALL_LANES,
   ALL_FEES,
   ALL_FACILITIES,
-  DEFAULT_DAYS,
   type LaneOption,
   type FeeOption,
   type FacilityOption,
@@ -48,12 +47,11 @@ export function PoolFilterScreen() {
 
   const stored = usePoolFilter();
   const applyToStore = usePoolFilter((s) => s.apply);
-  const resetStore = usePoolFilter((s) => s.reset);
+  const clearAllStore = usePoolFilter((s) => s.clearAll);
 
   const [days, setDays] = React.useState<Set<DayOfWeek>>(
-    // 필터 적용 안 된 상태(앱 시동 직후)면 기본값 토/일을 pre-select.
-    // 이미 선택된 값 있으면 그대로 유지.
-    () => new Set(stored.days.length > 0 ? stored.days : DEFAULT_DAYS),
+    // 기본값 정책 = 미적용. 저장된 값 그대로(없으면 빈 선택 = 요일 무관).
+    () => new Set(stored.days),
   );
   const [lane, setLane] = React.useState<LaneOption>(stored.lane);
   const [fee, setFee] = React.useState<FeeOption>(stored.fee);
@@ -75,13 +73,12 @@ export function PoolFilterScreen() {
       fee,
       facilities: Array.from(facilities),
       apply: () => {},
-      reset: () => {},
       clearAll: () => {},
     }).length;
   }, [pools, schedules, days, lane, fee, facilities]);
 
   function toggleDay(d: DayOfWeek) {
-    if (days.has(d) && days.size === 1) return;
+    // 요일 0개 허용(=요일 무관/미적용). 최소 1개 강제 제거.
     setDays((prev) => {
       const next = new Set(prev);
       if (next.has(d)) next.delete(d);
@@ -102,7 +99,8 @@ export function PoolFilterScreen() {
   const canApply = resultCount > 0;
 
   const onReset = () => {
-    resetStore();
+    // 초기화 = 필터 미적용(전체 해제). isFilterActive=false → "필터 적용중" 사라짐.
+    clearAllStore();
     navigation.goBack();
   };
 
@@ -137,7 +135,7 @@ export function PoolFilterScreen() {
         <Text style={styles.title}>자유수영 검색</Text>
 
         {/* 자유수영 운영 요일 */}
-        <Section label="자유수영 운영 요일" hint="최소 1개 선택">
+        <Section label="자유수영 운영 요일" hint="미선택 시 전체">
           <View style={styles.dayCard}>
             {ALL_DAYS.map((d) => {
               const selected = days.has(d);

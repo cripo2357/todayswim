@@ -34,25 +34,19 @@ interface FilterState {
     fee: FeeOption;
     facilities: FacilityOption[];
   }) => void;
-  /** 기본값(DEFAULT_DAYS, 전체)으로 복귀 — 필터 화면의 "초기화" 버튼용. */
-  reset: () => void;
-  /** 모든 필터 해제 → isFilterActive=false. 지도 pill X 버튼용. */
+  /** 모든 필터 해제 → isFilterActive=false. 지도 pill X + 필터 화면 "초기화" 버튼용. */
   clearAll: () => void;
 }
 
-// 기본값: 주말(토/일) 자유수영 위주 사용 패턴에 맞춰 토·일만 선택. 레인/요금/시설은 전체.
-export const DEFAULT_DAYS: DayOfWeek[] = ['토', '일'];
-
+// 기본값 정책: 미적용(전체 풀). 요일 자동선택 없음 — 요일 0개 = 요일 무관.
+// 초기화·앱 시작 모두 clearAll(미적용). (크리스 2026-07-05 결정)
 export const usePoolFilter = create<FilterState>((set) => ({
-  // 초기 store는 빈 상태(필터 미적용) — App.tsx mount 시 clearAll()로 한 번 더 보장.
-  // 사용자 편의 기본(토/일)은 PoolFilterScreen 진입 시 fallback으로 적용.
   days: [],
   lane: '전체',
   fee: '전체',
   facilities: [],
 
   apply: ({ days, lane, fee, facilities }) => set({ days, lane, fee, facilities }),
-  reset: () => set({ days: DEFAULT_DAYS, lane: '전체', fee: '전체', facilities: [] }),
   clearAll: () => set({ days: [], lane: '전체', fee: '전체', facilities: [] }),
 }));
 
