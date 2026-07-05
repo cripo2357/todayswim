@@ -486,12 +486,14 @@ export const RULES: Record<MessageKind, Rule> = {
       }
     },
   },
+  // 슬롯 종료 1시간 후 발송(서버 cron). 일기 미작성 슬롯만.
+  //  일기 작성=작성 화면 딥링크 / 나중에=닫기(유지) / 못 감=일정 삭제.
   schedule_completion_prompt: {
     recipients: 'self',
     build: (p) => ({
       title: '오늘 수영 어땠어요?',
       body: [poolName(p)],
-      actions: ['못 갔어요', '완료'],
+      actions: ['못 감', '나중에', '일기 작성'],
     }),
   },
 };

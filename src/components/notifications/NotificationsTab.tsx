@@ -16,7 +16,7 @@ import { View, Text, StyleSheet, Pressable, ScrollView, Alert, Image } from 'rea
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { SvgProps } from 'react-native-svg';
-import { X, Check, ChevronRight } from 'lucide-react-native';
+import { X, Check, ChevronRight, BookOpen, Clock } from 'lucide-react-native';
 import { tokens } from '@/styles/tokens';
 import { type MessageKind } from '@/lib/messages/rules';
 import { resolveAvatarUri } from '@/lib/avatars';
@@ -296,7 +296,10 @@ function handleCardTap(navigation: Nav, kind: MessageKind, meta: DeadLinkMeta = 
 
 const ACTION_ICON = (label: string): React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }> => {
   if (label === '수락' || label === '완료') return Check;
-  if (label === '거절' || label === '못 갔어요' || label === '초대 취소') return X;
+  if (label === '거절' || label === '못 갔어요' || label === '초대 취소' || label === '못 감')
+    return X;
+  if (label === '일기 작성') return BookOpen;
+  if (label === '나중에') return Clock;
   return ChevronRight; // 일정 보기 / 보기 / 참여 / 약관 보기 / 근처 수영장 보기 등 이동형
 };
 
@@ -563,6 +566,29 @@ function NotifCard({ notif }: { notif: Notif }) {
       setHandledMsg('일정에 참여했어요');
       return;
     }
+    // 수영 완료 프롬프트 — 일기 작성/나중에/못 감(일정 삭제).
+    if (notif.kind === 'schedule_completion_prompt') {
+      void logEvent('notification_tap', { kind: notif.kind, label });
+      if (label === '일기 작성') {
+        if (notif.scheduleId) {
+          navigation.navigate('SwimDiary', { scheduleId: notif.scheduleId });
+        } else {
+          navigation.navigate('MyInfo', { initialTab: '달력' });
+        }
+        return;
+      }
+      if (label === '못 감') {
+        if (notif.scheduleId) {
+          void useSwimSchedules.getState().remove(notif.scheduleId);
+        }
+        setHandledMsg('일정을 삭제했어요');
+        return;
+      }
+      if (label === '나중에') {
+        setHandledMsg('나중에 캘린더에서 작성할 수 있어요');
+        return;
+      }
+    }
     handleAction(navigation, notif.kind, label, {
       focusDate: notif.inviteSlot?.date ?? notif.dateLabel,
     });
@@ -798,7 +824,7 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sans,
     color: '#4B5563',
   },
-  actions: { flexDirection: 'row', gap: 12 },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, rowGap: 8 },
   // Badge Text — border #CBD5E1, r10, px12 py6, gap8
   badge: {
     flexDirection: 'row',
