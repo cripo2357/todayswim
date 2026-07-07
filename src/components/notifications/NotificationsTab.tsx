@@ -439,12 +439,19 @@ function NotifCard({ notif }: { notif: Notif }) {
   const [cancelVisible, setCancelVisible] = React.useState(false);
   // 친구 신청 수락/거절 처리 후 — 액션 버튼 숨기고 상태 문구 노출(중복 탭 방지).
   const [handledMsg, setHandledMsg] = React.useState<string | null>(null);
-  // 받은 초대 72h 무응답 → 자동 만료(수락/거절 버튼 숨기고 안내). 서버 cron 없이
-  // 표시 시점 계산 — 만료된 초대는 어차피 의미 없으므로 버튼만 비활성.
+  // 받은 초대 만료(수락/거절 버튼 숨기고 안내) — 서버 cron 없이 표시 시점 계산.
+  //  ① 72h 무응답  또는  ② 슬롯 종료시각 지남(이미 끝난 수영은 초대도 만료).
+  const inviteSlotEndMs = (() => {
+    const s = notif.inviteSlot;
+    if (!s) return null;
+    const [y, m, d] = s.date.split('-').map(Number);
+    const [hh, mm] = s.end.split(':').map(Number);
+    return new Date(y, m - 1, d, hh, mm).getTime();
+  })();
   const inviteExpired =
     notif.kind === 'invite_received' &&
-    !!notif.createdAtMs &&
-    Date.now() - notif.createdAtMs > INVITE_TTL_MS;
+    ((!!notif.createdAtMs && Date.now() - notif.createdAtMs > INVITE_TTL_MS) ||
+      (inviteSlotEndMs != null && Date.now() > inviteSlotEndMs));
 
   const onActionPress = async (label: string) => {
     if (notif.kind === 'invite_received' && label === '거절') {
