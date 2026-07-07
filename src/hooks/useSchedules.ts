@@ -35,5 +35,9 @@ export function useSchedules() {
       if (error) throw error;
       return (data as ScheduleRow[]).map(rowToSchedule);
     },
+    // 시간표도 정적(운영자 관리) — pools와 동일하게 세션 중 재fetch 억제(재처리 방지).
+    staleTime: 60 * 60_000, // 1h
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }

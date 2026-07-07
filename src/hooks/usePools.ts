@@ -91,5 +91,10 @@ export function usePools() {
       if (error) throw error;
       return (data as PoolRow[]).map(rowToPool);
     },
+    // 풀은 운영자 관리 정적 데이터 — 세션 중 refetch 시 새 참조가 555개 클러스터
+    // 재빌드를 유발(성능). 앱 포그라운드/재연결마다 재처리 안 하도록 길게 캐시.
+    staleTime: 60 * 60_000, // 1h
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }

@@ -81,9 +81,15 @@ export function filterPools(
 
   if (!dayActive && !laneActive && !feeActive && !facActive) return pools;
 
+  // 요일 필터 시 시간표를 poolId→Schedule Map으로 1회 인덱싱 —
+  // pools.filter 안에서 schedules.find 하던 O(pools×schedules)를 O(pools)로.
+  const schedByPool = dayActive
+    ? new Map(schedules.map((sc) => [sc.poolId, sc]))
+    : null;
+
   return pools.filter((p) => {
     if (dayActive) {
-      const sched = schedules.find((sc) => sc.poolId === p.id);
+      const sched = schedByPool!.get(p.id);
       if (!sched) return false;
       const hit = s.days.some((d) => (sched.byDay[d]?.length ?? 0) > 0);
       if (!hit) return false;
