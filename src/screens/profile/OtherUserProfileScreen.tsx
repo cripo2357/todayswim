@@ -12,6 +12,7 @@ import {
   ScrollView,
   Image,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -76,6 +77,9 @@ export function OtherUserProfileScreen() {
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { userId } =
     useRoute<RouteProp<RootStackParamList, 'OtherUserProfile'>>().params;
+  // 카드 최대 높이 = 화면의 85%. 넘치면 카드 내부 스크롤 → 카드 밖(닫기) 터치 영역 항상 확보.
+  const { height: winH } = useWindowDimensions();
+  const cardMaxHeight = Math.round(winH * 0.85);
 
   React.useEffect(() => {
     void logEvent('other_profile_view');
@@ -196,16 +200,13 @@ export function OtherUserProfileScreen() {
 
   return (
     <View style={styles.rootScroll}>
-      {/* 내용(예정 일정 포함)이 길면 모달 전체가 스크롤. backdrop(빈 영역) 탭=닫힘,
-          카드 탭=흡수(닫히지 않음), 드래그는 ScrollView가 가로채 스크롤. */}
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        alwaysBounceVertical={false}
-      >
-        <Pressable style={styles.backdrop} onPress={close}>
-          <Pressable style={styles.card} onPress={() => {}}>
+      {/* backdrop(빈 영역) 탭=닫힘. 카드는 maxHeight로 캡 + 내부 스크롤(내용 길면) →
+          카드 밖 닫기 영역이 항상 남음. 카드 탭=흡수(닫히지 않음). */}
+      <Pressable style={styles.backdrop} onPress={close}>
+        <Pressable
+          style={[styles.card, { maxHeight: cardMaxHeight }]}
+          onPress={() => {}}
+        >
             {/* 상단-좌 배지: 친구=삭제(휴지통) / 그 외=차단(금지). Figma 172:11658 pd-gray */}
             <Pressable
               onPress={() => setModal(isFriend ? 'delete' : 'block')}
@@ -222,6 +223,11 @@ export function OtherUserProfileScreen() {
             </Pressable>
 
             {/* Figma 172:10637 — gap 32 (프로필 블록 / 예정 일정) */}
+            <ScrollView
+              style={styles.cardScroll}
+              contentContainerStyle={styles.cardScrollContent}
+              showsVerticalScrollIndicator={false}
+            >
             <View style={styles.outer}>
               {/* Figma 172:10715 — gap 13 (아바타 / 그룹) */}
               <View style={styles.profileBlock}>
@@ -397,9 +403,9 @@ export function OtherUserProfileScreen() {
                 )}
               </View>
             </View>
+            </ScrollView>
           </Pressable>
         </Pressable>
-      </ScrollView>
 
       <ConfirmFriendActionModal
         visible={modal === 'block'}
@@ -472,8 +478,9 @@ const styles = StyleSheet.create({
   },
   // 본 프로필 — 내용이 길면 모달 전체가 스크롤, 짧으면 중앙. backdrop 탭=닫힘.
   rootScroll: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.5)' },
-  scroll: { flex: 1 },
-  scrollContent: { flexGrow: 1 },
+  // 카드 내부 스크롤 — flexShrink:1 이라야 카드 maxHeight 안에서 바운드되어 스크롤.
+  cardScroll: { width: '100%', flexShrink: 1 },
+  cardScrollContent: { alignItems: 'center' },
   backdrop: {
     flexGrow: 1,
     justifyContent: 'center',
