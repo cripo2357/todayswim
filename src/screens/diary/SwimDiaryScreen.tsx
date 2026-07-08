@@ -342,7 +342,8 @@ const styles = StyleSheet.create({
     fontFamily: tokens.font.sans,
     color: '#4B5563',
   },
-  thumb: { width: 74, height: 74, borderRadius: 6, backgroundColor: '#E2E8F0' },
+  // Figma 385:10113 — 썸네일 40×40(카드 높이 72 = 패딩16+40+16). 이전 74는 과대.
+  thumb: { width: 40, height: 40, borderRadius: 6, backgroundColor: '#E2E8F0' },
   fieldLabel: {
     fontSize: 14,
     lineHeight: 20,
