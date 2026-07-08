@@ -801,7 +801,7 @@ export function MapScreen() {
         onTapMap={() => {
           if (useSelection.getState().selectedPoolId) select(null);
         }}
-        minZoom={7} // 한국 전체 + α — 답답함 줄이고 줌아웃 자유롭게
+        minZoom={5} // 더 넓게 줌아웃 — 한국 전체 여유롭게 조망
         maxZoom={15} // 거리 단위 — 풀 위치 주변 도로/블록 식별 가능
         isShowCompass={false}
         isShowZoomControls={false}
