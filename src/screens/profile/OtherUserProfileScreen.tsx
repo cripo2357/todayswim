@@ -15,9 +15,10 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Plus, Users, CalendarCheck, Ban, Trash2 } from 'lucide-react-native';
+import { Plus, Users, CalendarCheck, Ban } from 'lucide-react-native';
 import SwimmerGray from '@assets/icons/swimmer-gray.svg';
 import IconUserTriple from '@assets/icons/user-triple.svg';
+import TrashWhite from '@assets/icons/trash-white.svg';
 import type { RootStackParamList } from '@/navigation/types';
 import { useFriends, friendRelation, type FriendRelation } from '@/store/friends';
 import {
@@ -194,208 +195,211 @@ export function OtherUserProfileScreen() {
   };
 
   return (
-    <View style={styles.root}>
-      <Pressable style={StyleSheet.absoluteFill} onPress={close} />
-      <View style={styles.card}>
-        {/* 상단-좌 배지: 친구=삭제(휴지통) / 그 외=차단(금지). Figma 172:11658 pd-gray */}
-        <Pressable
-          onPress={() => setModal(isFriend ? 'delete' : 'block')}
-          style={styles.topBadge}
-          hitSlop={8}
-          accessibilityRole="button"
-          accessibilityLabel={isFriend ? '친구 삭제' : '차단'}
-        >
-          {isFriend ? (
-            <Trash2 size={20} color={tokens.color.white} strokeWidth={2} />
-          ) : (
-            <Ban size={20} color={tokens.color.white} strokeWidth={2} />
-          )}
-        </Pressable>
-
-        {/* Figma 172:10637 — gap 32 (프로필 블록 / 예정 일정) */}
-        <View style={styles.outer}>
-          {/* Figma 172:10715 — gap 13 (아바타 / 그룹) */}
-          <View style={styles.profileBlock}>
-            {/* 아바타 80, border-2 — 외곽선=관계(친구 mint / 비친구 gray) */}
-            <View
-              style={[
-                styles.avatar,
-                {
-                  borderColor: isFriend
-                    ? tokens.color.pdMint
-                    : tokens.color.pdGray,
-                },
-              ]}
+    <View style={styles.rootScroll}>
+      {/* 내용(예정 일정 포함)이 길면 모달 전체가 스크롤. backdrop(빈 영역) 탭=닫힘,
+          카드 탭=흡수(닫히지 않음), 드래그는 ScrollView가 가로채 스크롤. */}
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        alwaysBounceVertical={false}
+      >
+        <Pressable style={styles.backdrop} onPress={close}>
+          <Pressable style={styles.card} onPress={() => {}}>
+            {/* 상단-좌 배지: 친구=삭제(휴지통) / 그 외=차단(금지). Figma 172:11658 pd-gray */}
+            <Pressable
+              onPress={() => setModal(isFriend ? 'delete' : 'block')}
+              style={styles.topBadge}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={isFriend ? '친구 삭제' : '차단'}
             >
-              <Image
-                source={{ uri: resolveAvatarUri(profile.avatar, { size: 76 }) }}
-                style={styles.avatarImg}
-              />
-            </View>
+              {isFriend ? (
+                <TrashWhite width={20} height={20} />
+              ) : (
+                <Ban size={20} color={tokens.color.white} strokeWidth={2} />
+              )}
+            </Pressable>
 
-            {/* Figma 172:10640 — gap 20 (이름/소개·칩·스탯·CTA) */}
-            <View style={styles.group20}>
-              {/* Figma 172:10641 — gap 4 (이름 + 한 줄 소개).
-                  자기소개 미작성 시 빈 줄/여백 없이 이름만(gap 미적용). */}
-              <View style={styles.nameGroup}>
-                <Text style={styles.name} numberOfLines={1}>
-                  {profile.nickname}
-                </Text>
-                {profile.bio?.trim() ? (
-                  <Text style={styles.bio} numberOfLines={2}>
-                    {profile.bio}
-                  </Text>
-                ) : null}
-              </View>
-
-              {labels.length > 0 ? (
-                <View style={styles.chips}>
-                  {labels.map((l) => (
-                    <View key={l} style={styles.chip}>
-                      <Text style={styles.chipText}>{l}</Text>
-                    </View>
-                  ))}
-                </View>
-              ) : null}
-
-              {/* Figma 172:10644 — 3열, 사이 #CBD5E1 구분선. 평균 수영시간은
-                  미노출 기간(가입 32일 미만 등 weeklyAvgHours=null)엔 칸 전체
-                  (아이콘/값/라벨/구분선) 미표시 — 사용자 확정. 아이콘 색은
-                  Figma Gray/40(#94A3B8), 수영친구는 user-triple. */}
-              <View style={styles.stats}>
-                {profile.weeklyAvgHours != null ? (
-                  <View style={[styles.stat, styles.statDivider]}>
-                    <SwimmerGray width={24} height={24} />
-                    <Text style={styles.statValue}>
-                      {formatWeeklyAvg(profile)}
-                    </Text>
-                    <Text style={styles.statLabel}>평균 수영시간</Text>
-                  </View>
-                ) : null}
-                <View style={[styles.stat, styles.statDivider]}>
-                  <CalendarCheck size={24} color="#94A3B8" strokeWidth={2} />
-                  <Text style={styles.statValue}>
-                    {profile.showServiceYears
-                      ? profile.serviceYears < 1
-                        ? '1년 미만'
-                        : `${profile.serviceYears}년`
-                      : '비공개'}
-                  </Text>
-                  <Text style={styles.statLabel}>수영 기간</Text>
-                </View>
-                <View style={styles.stat}>
-                  <IconUserTriple width={24} height={24} />
-                  <Text style={styles.statValue}>
-                    {profile.friendCount > 999
-                      ? '+999명'
-                      : `${profile.friendCount.toLocaleString()}명`}
-                  </Text>
-                  <Text style={styles.statLabel}>수영 친구</Text>
-                </View>
-              </View>
-
-              {cta ? (
-                <Pressable
-                  onPress={onCta}
-                  disabled={cta.action === 'none'}
-                  style={({ pressed }) => [
-                    styles.cta,
-                    cta.yellow ? styles.ctaYellow : styles.ctaBlue,
-                    pressed && cta.action !== 'none' && { opacity: 0.85 },
+            {/* Figma 172:10637 — gap 32 (프로필 블록 / 예정 일정) */}
+            <View style={styles.outer}>
+              {/* Figma 172:10715 — gap 13 (아바타 / 그룹) */}
+              <View style={styles.profileBlock}>
+                {/* 아바타 80, border-2 — 외곽선=관계(친구 mint / 비친구 gray) */}
+                <View
+                  style={[
+                    styles.avatar,
+                    {
+                      borderColor: isFriend
+                        ? tokens.color.pdMint
+                        : tokens.color.pdGray,
+                    },
                   ]}
-                  accessibilityRole="button"
-                  accessibilityLabel={cta.label}
                 >
-                  <Text
-                    style={[
-                      styles.ctaLabel,
-                      cta.yellow ? styles.ctaLabelDark : styles.ctaLabelLight,
-                    ]}
-                  >
-                    {cta.label}
-                  </Text>
-                  {cta.icon === 'plus' ? (
-                    <Plus
-                      size={20}
-                      color={cta.yellow ? tokens.color.black : tokens.color.white}
-                      strokeWidth={2.4}
-                    />
-                  ) : (
-                    <Users
-                      size={20}
-                      color={cta.yellow ? tokens.color.black : tokens.color.white}
-                      strokeWidth={2}
-                    />
-                  )}
-                </Pressable>
-              ) : null}
-            </View>
-          </View>
+                  <Image
+                    source={{ uri: resolveAvatarUri(profile.avatar, { size: 76 }) }}
+                    style={styles.avatarImg}
+                  />
+                </View>
 
-          {/* 예정된 수영 일정 — Figma 172:10662 gap 16 */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>예정된 수영 일정</Text>
-            {schedules.length === 0 ? (
-              <Text style={styles.empty}>예정된 수영 일정이 없습니다.</Text>
-            ) : (
-              // 일정 많아도 모달이 무한정 길어지지 않게 ~2.3개만 보이고 스크롤
-              // (바깥 ScrollView 제거 → 단일 스크롤러라 중첩 충돌 없음)
-              <ScrollView
-                style={styles.schedScroll}
-                contentContainerStyle={styles.schedScrollContent}
-                showsVerticalScrollIndicator={false}
-                // iOS 바운스 끌림 방지 — 일정 적으면 고정(풀카드와 동일).
-                alwaysBounceVertical={false}
-              >
-                {schedules.map((s) => {
-                  const mine = mySlots.has(
-                    `${s.poolId}|${s.date}|${s.start}|${s.end}`,
-                  );
-                  const photo = poolPhoto(s.poolId);
-                  return (
-                    <View key={s.id} style={styles.schedCard}>
-                      <View style={styles.schedInfo}>
-                        <View style={styles.schedTextBlock}>
-                          <Text style={styles.schedPool} numberOfLines={1}>
-                            {s.poolName}
-                          </Text>
-                          <Text style={styles.schedWhen} numberOfLines={1}>
-                            {formatWhen(s.date, s.start)}
-                          </Text>
+                {/* Figma 172:10640 — gap 20 (이름/소개·칩·스탯·CTA) */}
+                <View style={styles.group20}>
+                  {/* Figma 172:10641 — gap 4 (이름 + 한 줄 소개).
+                      자기소개 미작성 시 빈 줄/여백 없이 이름만(gap 미적용). */}
+                  <View style={styles.nameGroup}>
+                    <Text style={styles.name} numberOfLines={1}>
+                      {profile.nickname}
+                    </Text>
+                    {profile.bio?.trim() ? (
+                      <Text style={styles.bio} numberOfLines={2}>
+                        {profile.bio}
+                      </Text>
+                    ) : null}
+                  </View>
+
+                  {labels.length > 0 ? (
+                    <View style={styles.chips}>
+                      {labels.map((l) => (
+                        <View key={l} style={styles.chip}>
+                          <Text style={styles.chipText}>{l}</Text>
                         </View>
-                        {mine ? (
-                          <View style={[styles.joinChip, styles.joinChipFilled]}>
-                            <Text style={styles.joinChipFilledText}>
-                              나도 참여한 일정
-                            </Text>
-                          </View>
-                        ) : (
-                          <Pressable
-                            onPress={() =>
-                              onJoin(s.poolId, s.date, s.start, s.end)
-                            }
-                            style={styles.joinChip}
-                            accessibilityRole="button"
-                            accessibilityLabel={`${s.poolName} 나도 참여`}
-                          >
-                            <Text style={styles.joinChipText}>나도 참여</Text>
-                            <Plus size={12} color={tokens.color.pdBlue} strokeWidth={2.4} />
-                          </Pressable>
-                        )}
-                      </View>
-                      {photo ? (
-                        <Image source={photo} style={styles.schedThumb} />
-                      ) : (
-                        <View style={styles.schedThumb} />
-                      )}
+                      ))}
                     </View>
-                  );
-                })}
-              </ScrollView>
-            )}
-          </View>
-        </View>
-      </View>
+                  ) : null}
+
+                  {/* Figma 172:10644 — 3열, 사이 #CBD5E1 구분선. 평균 수영시간은
+                      미노출 기간(가입 32일 미만 등 weeklyAvgHours=null)엔 칸 전체
+                      (아이콘/값/라벨/구분선) 미표시 — 사용자 확정. 아이콘 색은
+                      Figma Gray/40(#94A3B8), 수영친구는 user-triple. */}
+                  <View style={styles.stats}>
+                    {profile.weeklyAvgHours != null ? (
+                      <View style={[styles.stat, styles.statDivider]}>
+                        <SwimmerGray width={24} height={24} />
+                        <Text style={styles.statValue}>
+                          {formatWeeklyAvg(profile)}
+                        </Text>
+                        <Text style={styles.statLabel}>평균 수영시간</Text>
+                      </View>
+                    ) : null}
+                    <View style={[styles.stat, styles.statDivider]}>
+                      <CalendarCheck size={24} color="#94A3B8" strokeWidth={2} />
+                      <Text style={styles.statValue}>
+                        {profile.showServiceYears
+                          ? profile.serviceYears < 1
+                            ? '1년 미만'
+                            : `${profile.serviceYears}년`
+                          : '비공개'}
+                      </Text>
+                      <Text style={styles.statLabel}>수영 기간</Text>
+                    </View>
+                    <View style={styles.stat}>
+                      <IconUserTriple width={24} height={24} />
+                      <Text style={styles.statValue}>
+                        {profile.friendCount > 999
+                          ? '+999명'
+                          : `${profile.friendCount.toLocaleString()}명`}
+                      </Text>
+                      <Text style={styles.statLabel}>수영 친구</Text>
+                    </View>
+                  </View>
+
+                  {cta ? (
+                    <Pressable
+                      onPress={onCta}
+                      disabled={cta.action === 'none'}
+                      style={({ pressed }) => [
+                        styles.cta,
+                        cta.yellow ? styles.ctaYellow : styles.ctaBlue,
+                        pressed && cta.action !== 'none' && { opacity: 0.85 },
+                      ]}
+                      accessibilityRole="button"
+                      accessibilityLabel={cta.label}
+                    >
+                      <Text
+                        style={[
+                          styles.ctaLabel,
+                          cta.yellow ? styles.ctaLabelDark : styles.ctaLabelLight,
+                        ]}
+                      >
+                        {cta.label}
+                      </Text>
+                      {cta.icon === 'plus' ? (
+                        <Plus
+                          size={20}
+                          color={cta.yellow ? tokens.color.black : tokens.color.white}
+                          strokeWidth={2.4}
+                        />
+                      ) : (
+                        <Users
+                          size={20}
+                          color={cta.yellow ? tokens.color.black : tokens.color.white}
+                          strokeWidth={2}
+                        />
+                      )}
+                    </Pressable>
+                  ) : null}
+                </View>
+              </View>
+
+              {/* 예정된 수영 일정 — Figma 172:10662 gap 16 */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>예정된 수영 일정</Text>
+                {schedules.length === 0 ? (
+                  <Text style={styles.empty}>예정된 수영 일정이 없습니다.</Text>
+                ) : (
+                  // 개수 제한 없이 나열 — 많으면 모달 전체(rootScroll)가 스크롤.
+                  <View style={styles.schedList}>
+                    {schedules.map((s) => {
+                      const mine = mySlots.has(
+                        `${s.poolId}|${s.date}|${s.start}|${s.end}`,
+                      );
+                      const photo = poolPhoto(s.poolId);
+                      return (
+                        <View key={s.id} style={styles.schedCard}>
+                          <View style={styles.schedInfo}>
+                            <View style={styles.schedTextBlock}>
+                              <Text style={styles.schedPool} numberOfLines={1}>
+                                {s.poolName}
+                              </Text>
+                              <Text style={styles.schedWhen} numberOfLines={1}>
+                                {formatWhen(s.date, s.start)}
+                              </Text>
+                            </View>
+                            {mine ? (
+                              <View style={[styles.joinChip, styles.joinChipFilled]}>
+                                <Text style={styles.joinChipFilledText}>
+                                  나도 참여한 일정
+                                </Text>
+                              </View>
+                            ) : (
+                              <Pressable
+                                onPress={() =>
+                                  onJoin(s.poolId, s.date, s.start, s.end)
+                                }
+                                style={styles.joinChip}
+                                accessibilityRole="button"
+                                accessibilityLabel={`${s.poolName} 나도 참여`}
+                              >
+                                <Text style={styles.joinChipText}>나도 참여</Text>
+                                <Plus size={12} color={tokens.color.pdBlue} strokeWidth={2.4} />
+                              </Pressable>
+                            )}
+                          </View>
+                          {photo ? (
+                            <Image source={photo} style={styles.schedThumb} />
+                          ) : (
+                            <View style={styles.schedThumb} />
+                          )}
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
+              </View>
+            </View>
+          </Pressable>
+        </Pressable>
+      </ScrollView>
 
       <ConfirmFriendActionModal
         visible={modal === 'block'}
@@ -457,8 +461,7 @@ export function OtherUserProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  // 딤 + 중앙 카드. 바깥 ScrollView 없음 → 딤(absoluteFill Pressable)이
-  // 카드 밖 어디든 탭 받아 닫힘. 일정 목록만 내부 스크롤(중첩 충돌 없음).
+  // 딤 + 중앙 카드 (로딩/에러 등 짧은 상태 전용).
   root: {
     flex: 1,
     backgroundColor: 'rgba(15, 23, 42, 0.5)',
@@ -467,13 +470,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 32,
   },
-  // Figma 172:9736 — 흰 카드 r32 p16 w343 (gap 없음 — 내부 계층별 명시 간격)
+  // 본 프로필 — 내용이 길면 모달 전체가 스크롤, 짧으면 중앙. backdrop 탭=닫힘.
+  rootScroll: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.5)' },
+  scroll: { flex: 1 },
+  scrollContent: { flexGrow: 1 },
+  backdrop: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 32,
+  },
+  // Figma 172:9736 — 흰 카드 r12 p16 w343 (gap 없음 — 내부 계층별 명시 간격)
   card: {
     position: 'relative',
     width: '100%',
     maxWidth: 343,
     backgroundColor: tokens.color.white,
-    borderRadius: 32,
+    borderRadius: 12,
     padding: 16,
     paddingBottom: 32,
     alignItems: 'center',
@@ -551,12 +565,8 @@ const styles = StyleSheet.create({
   stats: { flexDirection: 'row', alignSelf: 'stretch' },
   stat: { flex: 1, alignItems: 'center', gap: 4, paddingHorizontal: 8 },
   statDivider: { borderRightWidth: 1, borderRightColor: '#CBD5E1' },
-  // 일정 목록 — ~2.3개(카드 ≈112 + gap12)만 보이고 나머지는 스크롤.
-  // 모달 전체가 일정 수에 따라 무한정 길어지는 것 방지.
-  // 카드 boxShadow 가 내부 ScrollView 뷰포트에 잘려 어색했음(#8) — 콘텐츠에
-  // 좌우/상하 여백을 주고 스크롤 컨테이너를 음수 마진으로 당겨 카드 폭은 유지.
-  schedScroll: { alignSelf: 'stretch', maxHeight: 280, marginHorizontal: -12 },
-  schedScrollContent: { gap: 12, paddingHorizontal: 12, paddingVertical: 8 },
+  // 일정 목록 — 개수 제한 없이 나열. 많으면 모달 전체(rootScroll)가 스크롤.
+  schedList: { alignSelf: 'stretch', gap: 12 },
   // Figma 172:10647 — Bold 20/28 -0.2 #1F2937
   statValue: {
     fontFamily: tokens.font.sansBold,
