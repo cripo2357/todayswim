@@ -41,14 +41,17 @@ function PinIcon({ selected }: { selected: boolean }) {
 }
 
 /** 내 아바타 — 42 정사각 r6 (Figma 179:5033, 원형 아님). */
-function MyAvatar({ photoUri }: { photoUri?: string }) {
+function MyAvatar({ photoUri, photoThumbUri }: { photoUri?: string; photoThumbUri?: string }) {
+  // 42pt 표시(≈126px @3x)라 썸네일(64px)은 흐릿 — 원본을 우선으로. resolveAvatarUri
+  // 는 size>28 이면 value(원본)를 반환하고, thumbUri 는 소형 폴백으로만 쓴다.
+  const uri = resolveAvatarUri(photoUri ?? photoThumbUri, {
+    thumbUri: photoThumbUri,
+    size: AV,
+  });
   return (
     <View style={styles.thumb}>
-      {photoUri ? (
-        <Image
-          source={{ uri: resolveAvatarUri(photoUri, { size: AV }) }}
-          style={styles.thumbImg}
-        />
+      {uri ? (
+        <Image source={{ uri }} style={styles.thumbImg} />
       ) : (
         <User size={22} color={tokens.color.ink400} strokeWidth={2} />
       )}
@@ -96,7 +99,10 @@ export function MapStartLocationScreen() {
             accessibilityState={{ selected: meSelected }}
           >
             <View style={styles.cardLeft}>
-              <MyAvatar photoUri={profile?.photoThumbUri ?? profile?.photoUri} />
+              <MyAvatar
+                photoUri={profile?.photoUri}
+                photoThumbUri={profile?.photoThumbUri}
+              />
               <View style={styles.cardText}>
                 <Text style={styles.name} numberOfLines={1}>
                   {profile?.name?.trim() || '내 위치'}
