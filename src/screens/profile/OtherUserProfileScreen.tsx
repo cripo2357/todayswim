@@ -78,6 +78,9 @@ export function OtherUserProfileScreen() {
 
   React.useEffect(() => {
     void logEvent('other_profile_view');
+    // 관계 상태 최신화 — 상대가 내 신청을 수락한 뒤에도 로컬이 stale이면 '동의 대기'로
+    // 오표시되던 버그 수정. 프로필 진입 시 서버 friends/sent 재동기화.
+    void useFriends.getState().serverSync();
   }, [userId]);
 
   const fStore = useFriends();
