@@ -46,6 +46,8 @@ import IconProfile from '@assets/icons/announcement/profile.svg'; // [프로필]
 import IconReminder from '@assets/icons/announcement/reminder.svg'; // [리마인더]
 import IconSchedule from '@assets/icons/announcement/schedule.svg'; // [시간표]
 import IconWelcome from '@assets/icons/announcement/welcome.svg'; // [환영]
+import IconSwim from '@assets/icons/swim.svg'; // [수영] 완료 프롬프트
+import { supabase } from '@/lib/supabase';
 // 후원 감사 알림 — settings/piggy-bank 재사용(베이크 색은 #63CBE8 pdMint이라
 // announcement 회색톤과 약간 다르지만 후원 슬롯 단일 자원 통일).
 import IconPiggyBankSlot from '@assets/icons/settings/piggy-bank.svg';
@@ -101,6 +103,10 @@ interface Notif {
   createdAtMs?: number;
   /** 미읽음 여부 — true 면 시간 옆에 노란 dot 표시. */
   read?: boolean;
+  /** related.actedNote — 이미 처리한 액션의 결과 문구(영구 잠금). 있으면 버튼 숨기고 문구 표시. */
+  actedNote?: string;
+  /** 원본 related — actedNote 병합 업데이트용. */
+  rawRelated?: Record<string, unknown>;
 }
 
 // 슬롯 헬퍼
@@ -136,6 +142,11 @@ const SLOT_TERMS = svg(IconTerms); // [약관]
 const SLOT_PROFILE = svg(IconProfile); // [프로필]
 const SLOT_WELCOME = svg(IconWelcome); // [환영]
 const SLOT_EVENT = svg(IconEvent); // [이벤트] (marketing 3종 모두 — 스펙)
+// [수영] — swim.svg는 currentColor라 슬롯 색(#4B5563) 주입.
+const SLOT_SWIM: Slot = {
+  type: 'icon',
+  render: () => <IconSwim width={20} height={20} color="#4B5563" />,
+};
 const SLOT_APPROVED = svg(IconApproved); // [승인]
 const SLOT_REPORT = svg(IconReport); // [리포트]
 const SLOT_DONATION_THANKS = svg(IconPiggyBankSlot); // [후원 감사]
@@ -181,6 +192,7 @@ const KIND_TO_SLOT: Partial<Record<MessageKind, Slot>> = {
   // 회고·환영.
   welcome: SLOT_WELCOME,
   monthly_summary: SLOT_REPORT,
+  schedule_completion_prompt: SLOT_SWIM,
 };
 
 // 패턴 E (이력 표시 — 탭 동작 없음). 패턴 A(탭→이동), B(1버튼), C(2버튼)
@@ -294,10 +306,12 @@ function handleCardTap(navigation: Nav, kind: MessageKind, meta: DeadLinkMeta = 
 // P3-A5: 읽음 처리는 서버 notifications.read 컬럼 + 탭 진입 시 markAllRead
 // (MyInfoScreen) 가 처리. 본 컴포넌트는 표시·액션 디스패치 전용.
 
-const ACTION_ICON = (label: string): React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }> => {
+const ACTION_ICON = (
+  label: string,
+): React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }> | null => {
+  if (label === '못 감') return null; // 텍스트만(아이콘 없음)
   if (label === '수락' || label === '완료') return Check;
-  if (label === '거절' || label === '못 갔어요' || label === '초대 취소' || label === '못 감')
-    return X;
+  if (label === '거절' || label === '못 갔어요' || label === '초대 취소') return X;
   if (label === '일기 작성') return BookOpen;
   if (label === '나중에') return Clock;
   return ChevronRight; // 일정 보기 / 보기 / 참여 / 약관 보기 / 근처 수영장 보기 등 이동형
@@ -348,6 +362,11 @@ function rowToNotif(row: NotificationRow): Notif {
           : undefined,
     createdAtMs: row.created_at ? Date.parse(row.created_at) : undefined,
     read: row.read,
+    actedNote:
+      typeof row.related?.actedNote === 'string'
+        ? row.related.actedNote
+        : undefined,
+    rawRelated: (row.related ?? {}) as Record<string, unknown>,
   };
 }
 
@@ -437,8 +456,24 @@ function NotifCard({ notif }: { notif: Notif }) {
   // Alert.alert 대신 디자인된 모달(Figma 228:3787 / 230:4481)로 처리.
   const [rejectVisible, setRejectVisible] = React.useState(false);
   const [cancelVisible, setCancelVisible] = React.useState(false);
-  // 친구 신청 수락/거절 처리 후 — 액션 버튼 숨기고 상태 문구 노출(중복 탭 방지).
-  const [handledMsg, setHandledMsg] = React.useState<string | null>(null);
+  // 액션 처리 후 — 버튼 숨기고 상태 문구 노출(중복 탭 방지). 초기값=서버 저장된 결과(영구 잠금).
+  const [handledMsg, setHandledMsg] = React.useState<string | null>(
+    notif.actedNote ?? null,
+  );
+  // 처리 결과를 로컬 표시 + 서버(related.actedNote)에 저장 → 재시작/재조회해도 잠금 유지.
+  const markHandled = React.useCallback(
+    (note: string) => {
+      setHandledMsg(note);
+      if (notif.id) {
+        void supabase
+          .from('notifications')
+          .update({ related: { ...(notif.rawRelated ?? {}), actedNote: note } })
+          .eq('id', notif.id)
+          .then(undefined, () => {});
+      }
+    },
+    [notif.id, notif.rawRelated],
+  );
   // 받은 초대 만료(수락/거절 버튼 숨기고 안내) — 서버 cron 없이 표시 시점 계산.
   //  ① 72h 무응답  또는  ② 슬롯 종료시각 지남(이미 끝난 수영은 초대도 만료).
   const inviteSlotEndMs = (() => {
@@ -495,12 +530,12 @@ function NotifCard({ notif }: { notif: Notif }) {
             { senderUserId: my.id, senderAvatar: my.photoUri },
           );
         }
-        setHandledMsg('친구가 됐어요');
+        markHandled('친구가 됐어요');
       } else {
         // 거절 — 본인 이력만 기록(정책: 상대 무알림).
         useFriends.getState().reject(requesterId);
         void dispatchMessage('friend_request_rejected', { name: notif.name ?? '' });
-        setHandledMsg('신청을 거절했어요');
+        markHandled('신청을 거절했어요');
       }
       return;
     }
@@ -570,7 +605,7 @@ function NotifCard({ notif }: { notif: Notif }) {
           },
         );
       }
-      setHandledMsg('일정에 참여했어요');
+      markHandled('일정에 참여했어요');
       return;
     }
     // 수영 완료 프롬프트 — 일기 작성/나중에/못 감(일정 삭제).
@@ -588,11 +623,11 @@ function NotifCard({ notif }: { notif: Notif }) {
         if (notif.scheduleId) {
           void useSwimSchedules.getState().remove(notif.scheduleId);
         }
-        setHandledMsg('일정을 삭제했어요');
+        markHandled('일정을 삭제했어요');
         return;
       }
       if (label === '나중에') {
-        setHandledMsg('나중에 캘린더에서 작성할 수 있어요');
+        markHandled('나중에 캘린더에서 작성할 수 있어요');
         return;
       }
     }
@@ -633,7 +668,9 @@ function NotifCard({ notif }: { notif: Notif }) {
                   style={styles.badge}
                   onPress={() => onActionPress(a)}
                 >
-                  <AIcon size={16} color="#4B5563" strokeWidth={2} />
+                  {AIcon ? (
+                    <AIcon size={16} color="#4B5563" strokeWidth={2} />
+                  ) : null}
                   <Text style={styles.badgeLabel}>{a}</Text>
                 </Pressable>
               );
@@ -676,7 +713,7 @@ function NotifCard({ notif }: { notif: Notif }) {
             name: notif.name ?? '',
             date: notif.dateLabel,
           });
-          setHandledMsg('초대를 거절했어요');
+          markHandled('초대를 거절했어요');
         }}
         onLater={() => setRejectVisible(false)}
       />
@@ -707,7 +744,7 @@ function NotifCard({ notif }: { notif: Notif }) {
               });
             }
           }
-          setHandledMsg('초대를 취소했어요');
+          markHandled('초대를 취소했어요');
         }}
         onLater={() => setCancelVisible(false)}
       />
