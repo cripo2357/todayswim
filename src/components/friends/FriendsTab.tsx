@@ -642,11 +642,15 @@ const FriendRow = React.memo(function FriendRow({
         <Text style={styles.friendName} numberOfLines={1}>
           {friend.nickname}
         </Text>
-        <View style={styles.friendStatusRow}>
-          <Text style={styles.friendStatus} numberOfLines={1}>
-            {friend.status}
-          </Text>
-        </View>
+        {/* 한 줄 소개(bio) 없으면 2줄 자리를 비워두지 않고 생략 →
+            이름만 있을 때 세로 중앙정렬(friendInfo justifyContent:center)로 밸런스 유지. */}
+        {friend.status ? (
+          <View style={styles.friendStatusRow}>
+            <Text style={styles.friendStatus} numberOfLines={1}>
+              {friend.status}
+            </Text>
+          </View>
+        ) : null}
       </View>
     </View>
   );
