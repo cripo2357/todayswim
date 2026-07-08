@@ -47,6 +47,7 @@ import { logEvent } from '@/lib/analytics';
 // 마커 추가는 줌 변화 시 풀 마커 추가와 동일 경로라 안전. 추가로 스택은 아바타
 // prefetch 완료 후에만 굽는 게이트가 깔려 있어 빈/churn 캡처도 방지.
 import { useOtherSchedules } from '@/hooks/useOtherSchedules';
+import { useOtherLessons } from '@/hooks/useOtherLessons';
 import {
   buildPoolProfileStacks,
   type PoolStack,
@@ -69,10 +70,10 @@ import { Tooltip } from '@/components/ui/Tooltip';
 import { tokens } from '@/styles/tokens';
 
 // 지도 초기화 전 / 친구 레슨 폴백 — reference-stable 빈 배열.
-// 친구 일정은 useOtherSchedules(서버)로 옴(mapReady 게이트). 친구 레슨은 아직
-// 서버 hook 미존재 → 빈 배열 유지(남은 Phase 2 갭).
+// 친구 일정은 useOtherSchedules, 친구 레슨은 useOtherLessons(둘 다 서버,
+// mapReady 게이트). 지도 초기화 전 폴백용 reference-stable 빈 배열.
 const EMPTY_OTHER_SCHEDULES: OtherSchedule[] = [];
-const MAP_OTHER_LESSONS: OtherLesson[] = [];
+const EMPTY_OTHER_LESSONS: OtherLesson[] = [];
 
 // 뒤로가기 종료 안내 노출 시간(ms). 이 시간 내 한 번 더 누르면 앱 종료.
 // Figma 277:6852 — "한 번 더 뒤로가기를 하면 앱이 종료됩니다."
@@ -476,6 +477,9 @@ export function MapScreen() {
   const otherSchedules = mapReady
     ? serverOtherSchedules
     : EMPTY_OTHER_SCHEDULES;
+  // 친구 레슨도 동일 mapReady 게이트(마운트 레이스 회피).
+  const serverOtherLessons = useOtherLessons();
+  const otherLessons = mapReady ? serverOtherLessons : EMPTY_OTHER_LESSONS;
   const poolStacks = React.useMemo<Map<string, PoolStack>>(
     () =>
       showStack
@@ -493,7 +497,7 @@ export function MapScreen() {
             myLessonPoolId: profile?.lessonPoolId ?? null,
             mySwimClasses: profile?.swimClasses ?? [],
             showMyLessons: true,
-            otherLessons: MAP_OTHER_LESSONS,
+            otherLessons,
             friendHorizonMs: MAP_FRIEND_HORIZON_MS[mapFriendHorizon],
             publicHorizonMs: MAP_PUBLIC_HORIZON_MS[effectivePublicHorizon],
             shuffleSeed,
@@ -509,6 +513,7 @@ export function MapScreen() {
       mapFriendHorizon,
       effectivePublicHorizon,
       otherSchedules,
+      otherLessons,
       shuffleSeed,
     ],
   );

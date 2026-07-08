@@ -132,6 +132,47 @@ export async function tryFetchProfileById(
   }
 }
 
+// ─── 친구 수영 레슨 fetch (지도 stack otherLessons 소스) ───
+
+/** 친구 프로필에서 지도 레슨 stack에 필요한 최소 컬럼만 — swim_classes(주간
+ *  반복 슬롯) + 레슨 풀 + 아바타/닉네임. show_swim_classes 꺼진 친구는 애초에
+ *  서버에서 제외(비공개는 지도에 안 뜸). */
+export interface FriendLessonRow {
+  id: string;
+  nickname: string;
+  photo_uri: string | null;
+  photo_thumb_uri: string | null;
+  swim_classes: SwimClass[];
+  lesson_pool_id: string | null;
+  lesson_pool_name: string | null;
+}
+
+/**
+ * 친구들의 공개 수영 레슨 조회 — useOtherLessons(지도 stack) 전용.
+ * show_swim_classes=true 이고 lesson_pool_id 가 있는 친구만(레슨 미설정·비공개
+ * 제외). visibility 3단계가 없는 레슨 특성상 "켜짐=친구공개"로 취급 — 호출부가
+ * OtherLesson.visibility='friends' 로 매핑. best-effort, 실패 시 빈 배열.
+ */
+export async function tryFetchFriendLessons(
+  profileIds: string[],
+): Promise<FriendLessonRow[]> {
+  if (profileIds.length === 0) return [];
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select(
+        'id, nickname, photo_uri, photo_thumb_uri, swim_classes, lesson_pool_id, lesson_pool_name',
+      )
+      .in('id', profileIds)
+      .eq('show_swim_classes', true)
+      .not('lesson_pool_id', 'is', null);
+    if (error || !data) return [];
+    return data as FriendLessonRow[];
+  } catch {
+    return [];
+  }
+}
+
 /**
  * 서버 profiles에 upsert. 실패해도 silent — 로컬이 권위.
  * save·regenerateId 양쪽에서 동일하게 호출.
