@@ -198,6 +198,7 @@ const KIND_TO_SLOT: Partial<Record<MessageKind, Slot>> = {
 // 패턴 E (이력 표시 — 탭 동작 없음). 패턴 A(탭→이동), B(1버튼), C(2버튼)
 // 와 구분하기 위해 명시적 화이트리스트(스펙 액션 패턴 요약 기준).
 const E_TRIGGERS: Set<MessageKind> = new Set([
+  'friend_request_accepted', // 확인용 이력 카드 — 탭 무동작(프로필 X)
   'friend_request_rejected',
   'invite_rejected',
   'invite_canceled',
@@ -274,15 +275,6 @@ function handleAction(
  * dead-link 가드: navigate 전 entity 존재 확인 (스펙 §6 정책 가이드).
  */
 function handleCardTap(navigation: Nav, kind: MessageKind, meta: DeadLinkMeta = {}) {
-  // 친구 신청 수락 → 그 친구 프로필. senderUserId 없으면(구 알림) 내 정보 폴백.
-  if (kind === 'friend_request_accepted') {
-    if (meta.senderAlive === false) {
-      return Alert.alert('탈퇴한 회원입니다', '');
-    }
-    return meta.senderUserId
-      ? navigation.navigate('OtherUserProfile', { userId: meta.senderUserId })
-      : navigation.navigate('MyInfo');
-  }
   // 닉네임 변경(내 닉네임 = 본인 건) → 내 정보.
   if (kind === 'nickname_changed_by_admin') {
     return navigation.navigate('MyInfo');
