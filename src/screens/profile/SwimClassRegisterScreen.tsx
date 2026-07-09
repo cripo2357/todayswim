@@ -12,6 +12,7 @@
 // TouchableWithoutFeedback 포커스 깨짐 회피). android_nested_modal_float.
 
 import React from 'react';
+import { compareKo } from '@/lib/koSort';
 import {
   View,
   Text,
@@ -87,7 +88,7 @@ export function SwimClassRegisterScreen() {
   // 즐겨찾기 먼저(가나다), 그 다음 일반(가나다) — 모든 수영장 검색 공통 규칙
   const sortedPools = React.useMemo(() => {
     const favSet = new Set(favIds);
-    const byKo = (a: Pool, b: Pool) => a.name.localeCompare(b.name, 'ko');
+    const byKo = (a: Pool, b: Pool) => compareKo(a.name, b.name);
     return [
       ...pools.filter((p) => favSet.has(p.id)).sort(byKo),
       ...pools.filter((p) => !favSet.has(p.id)).sort(byKo),

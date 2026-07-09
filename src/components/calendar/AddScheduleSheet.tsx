@@ -5,6 +5,7 @@
 // 저장은 useSwimSchedules(로컬). 친구초대/공개범위 실동작은 Phase 2.
 
 import React from 'react';
+import { compareKo } from '@/lib/koSort';
 import {
   View, Text, TextInput, StyleSheet, Pressable, Modal, Animated,
   Dimensions, ScrollView,
@@ -288,7 +289,7 @@ export function AddScheduleSheet({
   const favIds = useFavorites((s) => s.ids);
   const sortedPools = React.useMemo(() => {
     const favSet = new Set(favIds);
-    const byKo = (a: Pool, b: Pool) => a.name.localeCompare(b.name, 'ko');
+    const byKo = (a: Pool, b: Pool) => compareKo(a.name, b.name);
     return [
       ...pools.filter((p) => favSet.has(p.id)).sort(byKo),
       ...pools.filter((p) => !favSet.has(p.id)).sort(byKo),

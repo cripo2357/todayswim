@@ -6,6 +6,7 @@
 // - 페이지네이션: 10개 단위로 스크롤 끝에서 추가 로드 (서비스 속도 보호)
 
 import React from 'react';
+import { compareKo } from '@/lib/koSort';
 import {
   View, Text, FlatList, StyleSheet, Pressable, Image, ActivityIndicator,
   TextInput, ScrollView,
@@ -141,7 +142,7 @@ export function PoolListScreen() {
   // 정렬 — 거리순 고정(위치 있을 때). 위치 없으면 이름순(가나다) 폴백. 정렬 탭 없음.
   const sortedPools = React.useMemo(() => {
     if (!distanceMap) {
-      return [...regionPools].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+      return [...regionPools].sort((a, b) => compareKo(a.name, b.name));
     }
     return [...regionPools].sort(
       (a, b) => (distanceMap.get(a.id) ?? 0) - (distanceMap.get(b.id) ?? 0),
@@ -163,7 +164,7 @@ export function PoolListScreen() {
       ? regionPools.filter((p) => p.name.toLowerCase().includes(q))
       : regionPools;
     const favSet = new Set(favIds);
-    const byKo = (a: Pool, b: Pool) => a.name.localeCompare(b.name, 'ko');
+    const byKo = (a: Pool, b: Pool) => compareKo(a.name, b.name);
     return [
       ...matched.filter((p) => favSet.has(p.id)).sort(byKo),
       ...matched.filter((p) => !favSet.has(p.id)).sort(byKo),
@@ -179,7 +180,7 @@ export function PoolListScreen() {
       p.name.toLowerCase().includes(q),
     );
     const favSet = new Set(favIds);
-    const byKo = (a: Pool, b: Pool) => a.name.localeCompare(b.name, 'ko');
+    const byKo = (a: Pool, b: Pool) => compareKo(a.name, b.name);
     return [
       ...matched.filter((p) => favSet.has(p.id)).sort(byKo),
       ...matched.filter((p) => !favSet.has(p.id)).sort(byKo),

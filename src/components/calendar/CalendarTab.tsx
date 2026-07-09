@@ -439,11 +439,15 @@ export function CalendarTab({
         </Pressable>
       </View>
 
-      <AddScheduleSheet
-        visible={sheetOpen}
-        onClose={() => setSheetOpen(false)}
-        initialDate={clampToToday(date)}
-      />
+      {/* 지연 마운트 — 항상 렌더하면 시트의 usePools+555개 정렬이 달력 탭 마운트마다
+          실행돼 Android에서 3~5초 지연. 열 때만 마운트해서 그 비용을 지운다. */}
+      {sheetOpen && (
+        <AddScheduleSheet
+          visible={sheetOpen}
+          onClose={() => setSheetOpen(false)}
+          initialDate={clampToToday(date)}
+        />
+      )}
 
       {/* 일정 관리(예정) — '일정 취소' 선택 시 confirm Alert → 삭제,
           그 외는 공개여부 변경. */}

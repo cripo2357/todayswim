@@ -5,6 +5,7 @@
 // 백엔드 미연동(Phase1): friends store 메모리. 친구 요청 보내기는 Phase2.
 
 import React from 'react';
+import { compareKo } from '@/lib/koSort';
 import {
   View, Text, StyleSheet, Pressable, ScrollView, TextInput, Dimensions, Image,
   type NativeSyntheticEvent, type NativeScrollEvent,
@@ -244,7 +245,7 @@ export function FriendsTab() {
     const base = draftQ
       ? friends.filter((f) => f.nickname.toLowerCase().includes(draftQ))
       : friends;
-    return [...base].sort((a, b) => a.nickname.localeCompare(b.nickname, 'ko'));
+    return [...base].sort((a, b) => compareKo(a.nickname, b.nickname));
   }, [draftQ, friends]);
   // 친구 목록 정렬·필터·페이징은 useFriendList(pagedFriends)가 담당.
 

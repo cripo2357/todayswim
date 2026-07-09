@@ -7,6 +7,7 @@
 //   ([[android_nested_modal_float]] — body 마지막 자식 absolute, 트리 최상위)
 
 import React from 'react';
+import { compareKo } from '@/lib/koSort';
 import {
   View, Text, FlatList, StyleSheet, Pressable, Image, TextInput, ScrollView,
 } from 'react-native';
@@ -26,7 +27,7 @@ export function FavoritePoolsScreen() {
   const favIds = useFavorites((s) => s.ids);
   const pools = React.useMemo(() => poolsData ?? [], [poolsData]);
 
-  const byKo = (a: Pool, b: Pool) => a.name.localeCompare(b.name, 'ko');
+  const byKo = (a: Pool, b: Pool) => compareKo(a.name, b.name);
 
   // 본문 — 즐겨찾기된 수영장만(가나다). 하트 해제 시 favIds 변동 → 자동 제외.
   const favoritePools = React.useMemo(() => {

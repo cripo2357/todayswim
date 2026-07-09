@@ -8,6 +8,7 @@
 //    바깥 backdrop·트리거 ⌄=닫힘.
 
 import React from 'react';
+import { compareKo } from '@/lib/koSort';
 import {
   View, Text, Image, TextInput, ScrollView, StyleSheet, Pressable,
   Dimensions,
@@ -93,7 +94,7 @@ export function InviteFriendsScreen() {
     () =>
       friends
         .filter((f) => !excludedIds.has(f.id))
-        .sort((a, b) => a.nickname.localeCompare(b.nickname, 'ko')),
+        .sort((a, b) => compareKo(a.nickname, b.nickname)),
     [friends, excludedIds],
   );
   const q = query.trim().toLowerCase();

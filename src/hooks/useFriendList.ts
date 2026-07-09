@@ -7,6 +7,7 @@
 //          그대로 → FriendsTab 무수정. 이게 Phase1↔2 단일 swap point.
 
 import React from 'react';
+import { compareKo } from '@/lib/koSort';
 import { useFriends } from '@/store/friends';
 import type { MockAccount } from '@/lib/mockData';
 
@@ -42,7 +43,7 @@ export function useFriendList(): FriendListResult {
     const base = q
       ? friends.filter((f) => f.nickname.toLowerCase().includes(q))
       : friends;
-    return [...base].sort((a, b) => a.nickname.localeCompare(b.nickname, 'ko'));
+    return [...base].sort((a, b) => compareKo(a.nickname, b.nickname));
   }, [friends, q]);
 
   const items = searching ? sorted : sorted.slice(0, visible);
