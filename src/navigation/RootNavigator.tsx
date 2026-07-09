@@ -54,6 +54,10 @@ const DIM_MODAL_OPTIONS = {
   contentStyle: { backgroundColor: 'transparent' },
 } as const;
 
+// 지도(무거운 네이버 GL뷰)에서 여는 불투명 화면 — 슬라이드 전환이 매 프레임 지도를
+// 합성하며 Android에서 3~5초 멈춤. 즉시 전환('none')으로 회피. (iOS는 원래 빨라 영향 미미)
+const NO_ANIM = { animation: 'none' } as const;
+
 /**
  * Pool's day 루트 네비게이터.
  *
@@ -106,12 +110,12 @@ export function RootNavigator() {
       <Stack.Screen name="Faq" component={FaqScreen} />
       <Stack.Screen name="Donation" component={DonationScreen} />
 
-      <Stack.Screen name="PoolFilter" component={PoolFilterScreen} />
+      <Stack.Screen name="PoolFilter" component={PoolFilterScreen} options={NO_ANIM} />
 
-      <Stack.Screen name="ClubMain" component={ClubMainScreen} />
+      <Stack.Screen name="ClubMain" component={ClubMainScreen} options={NO_ANIM} />
 
-      <Stack.Screen name="PoolList" component={PoolListScreen} />
-      <Stack.Screen name="FavoritePools" component={FavoritePoolsScreen} />
+      <Stack.Screen name="PoolList" component={PoolListScreen} options={NO_ANIM} />
+      <Stack.Screen name="FavoritePools" component={FavoritePoolsScreen} options={NO_ANIM} />
 
       {/* 인증 / 약관 */}
       <Stack.Screen name="Login" component={LoginScreen} options={{ animation: 'fade' }} />
@@ -119,7 +123,7 @@ export function RootNavigator() {
       <Stack.Screen name="TermsDetail" component={TermsDetailScreen} />
       <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
       <Stack.Screen name="ProfileImage" component={ProfileImageScreen} />
-      <Stack.Screen name="MyInfo" component={MyInfoScreen} />
+      <Stack.Screen name="MyInfo" component={MyInfoScreen} options={NO_ANIM} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen
         name="MapStartLocation"
