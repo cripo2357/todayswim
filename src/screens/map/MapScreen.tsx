@@ -5,7 +5,7 @@
 // 클러스터링은 supercluster JS로 처리 (Naver native clustering은 caption 미지원이라 직접 관리).
 
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Image, ScrollView, Dimensions, BackHandler } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image, ScrollView, Dimensions, BackHandler, Platform } from 'react-native';
 import {
   NaverMapView,
   NaverMapMarkerOverlay,
@@ -13,7 +13,12 @@ import {
   type Camera,
 } from '@mj-studio/react-native-naver-map';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import {
+  useNavigation,
+  useFocusEffect,
+  useIsFocused,
+  useNavigationState,
+} from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Supercluster from 'supercluster';
 
@@ -129,6 +134,16 @@ const STACK_LIFT = 9;
 // 최대 성능 비용. supercluster maxZoom=13이라 14↑은 거의 개별 풀.
 // (preview 측정: 스택이 release에서도 최대 부하 — 줌 게이팅이 핵심 레버)
 const STACK_MIN_ZOOM = 14;
+
+// 지도 위에 뜨는 투명(dim) 모달 — 뒤로 지도가 보여야 하므로 이 화면들이 top이면
+// 마커 오버레이를 유지한다. 불투명 화면(PoolList/MyInfo 등)이 덮을 때만 오버레이 오프.
+const TRANSPARENT_OVER_MAP = new Set<string>([
+  'ScheduleView',
+  'PoolDone',
+  'OtherUserProfile',
+  'InviteFriends',
+  'InviteDone',
+]);
 
 // supercluster 조회 기본 범위(월드 전체) — 첫 카메라 이벤트 전 폴백.
 const WORLD_BBOX: [number, number, number, number] = [-180, -85, 180, 85];
@@ -318,6 +333,17 @@ export function MapScreen() {
   const filter = usePoolFilter();
   const filterActive = isFilterActive(filter);
   const clearAllFilter = usePoolFilter((s) => s.clearAll);
+
+  // Android 전환 성능 — 불투명 화면(PoolList/MyInfo 등)이 지도를 덮을 때는 마커 오버레이를
+  // 렌더 중단해서, 슬라이드 애니메이션 동안 네이티브 뷰 수십~수백 개를 합성하지 않게 한다.
+  // (freezeOnBlur는 전환 "완료" 후에 걸려 슬라이드 구간을 못 막음 → 3~5초 멈춤.)
+  // dim 모달(시간표·타인프로필 등)이 top이면 지도가 뒤로 보여야 하므로 오버레이 유지.
+  const isFocused = useIsFocused();
+  const topRouteName = useNavigationState((s) => s.routes[s.index]?.name);
+  const overlaysActive =
+    Platform.OS !== 'android' ||
+    isFocused ||
+    TRANSPARENT_OVER_MAP.has(topRouteName ?? '');
   // Supabase에서 풀/시간표 fetch — react-query 캐시. 로딩 중에는 빈 배열로 fallback.
   const { data: poolsData } = usePools();
   const { data: schedulesData } = useSchedules();
@@ -846,7 +872,7 @@ export function MapScreen() {
           />
         ) : null}
 
-        {visibleClusters.map((c) => {
+        {overlaysActive && visibleClusters.map((c) => {
           const [lng, lat] = c.geometry.coordinates;
 
           // 클러스터 마커 — Figma 38:1866 (≤2자리) / 38:1870 (3자리+)
