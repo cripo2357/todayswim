@@ -602,6 +602,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingTop: 8,
+    // Figma 103:2640 — 검색 행 프레임 하단 패딩 8 (없으면 리스트가 검색칸에 붙음).
+    // 검색칸 하단 → 첫 카드 상단 = 8(여기) + 16(listContent.paddingTop) = 24.
+    paddingBottom: 8,
     gap: 10,
   },
   // 지역 필 (Figma 163:6226 — 86 너비). border #94A3B8 r14 minH48 px12
