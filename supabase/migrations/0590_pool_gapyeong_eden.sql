@@ -1,5 +1,5 @@
 -- Pool's day — 에덴스포츠타운수영장(POOL_0898) 신규. 경기 가평군 청평면, 사설(에덴스포츠타운). 자유수영 일일입장.
--- 공식 홈페이지(eden-town.com) 조사(1차, 2026-07-09). 실내 25m 6레인 수심1.3~2.0, 보조풀·온탕.
+-- 공식 홈페이지(eden-town.com) 조사(1차, 2026-07-09). 실내 성인풀 25m 6레인 수심1.3~2.0, 유아풀(13m 수심0.9)·온탕.
 -- 자유수영: 평일 06:00~11:30·15:00~20:00(11:30~15:00 단체예약), 토 06:00~11:30, 일·공휴일 휴무.
 -- 일일입장 평일 성인10000·주말12000. 신장110cm 미만 입장불가.
 insert into public.pools (
@@ -11,7 +11,7 @@ insert into public.pools (
   ('POOL_0898', '에덴스포츠타운수영장', '경기', '가평군', '경기도 가평군 청평면 경춘로 1436',
    37.7773024727085, 127.464468361187, 'indoor', 'private',
    '031-581-1300', 'http://www.eden-town.com', 6, 25, 1.3, 2.0,
-   '{}', false, false, false,
+   '{}', true, false, false,
    true, true, 10000, 12000, null, 'http://www.eden-town.com/sports/swim/swim_free.html')
 on conflict (id) do nothing;
 insert into public.schedules (pool_id, author_nickname, by_day, day_notes, updated_at) values
