@@ -1,7 +1,7 @@
 -- Pool's day — 수원스포츠아일랜드(POOL_0899) 신규. 경기 수원시 팔달구, 공공(경기도수원월드컵경기장관리재단). 자유수영 일일입장.
 -- 크리스 제공 운영자 공식 카드(1차, 2026-07-10). 50m 풀을 평상시 25m 20레인으로 분할 운영(고양어울림 방식) → pool_length=50, lane_count=10.
 -- 수심 1.15~1.35(25m 구성), 유아풀 2레인 수심0.7·해수풀, 다이빙풀 보유(크리스 잠수풀 리스트 5m).
--- 자유수영: 월~금 06:00~22:00(12:20~13:00 휴장) / 토 06:00~21:00 / 일·공휴일 06:00~20:00. 일일 성인8000.
+-- 자유수영: 월~금 06:00~22:00(12:20~13:00 휴장) / 토 06:00~21:00 / 일·공휴일 06:00~20:00. 일일 성인8500.
 insert into public.pools (
   id, name, region, district, address, lat, lng, type, ownership,
   phone, website, lane_count, pool_length, depth_min, depth_max,
@@ -12,7 +12,7 @@ insert into public.pools (
    37.2901068993408, 127.035026697855, 'indoor', 'public',
    '031-259-2137', 'https://suwonworldcup.gg.go.kr', 10, 50, 1.15, 1.35,
    '{}', true, true, false,
-   true, true, 8000, 8000, null, 'https://suwonworldcup.gg.go.kr/gg_worldcup_building/center/swim')
+   true, true, 8500, 8500, null, 'https://suwonworldcup.gg.go.kr/gg_worldcup_building/center/swim')
 on conflict (id) do nothing;
 insert into public.schedules (pool_id, author_nickname, by_day, day_notes, updated_at) values
   ('POOL_0899', '풀스데이', $${
