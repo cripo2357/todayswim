@@ -12,6 +12,7 @@ import IconKids from '@assets/icons/facility-kids.svg';
 import IconDiving from '@assets/icons/facility-diving.svg';
 import IconHotel from '@assets/icons/facility-hotel.svg';
 import { logEvent } from '@/lib/analytics';
+import { openDirections } from '@/lib/openDirections';
 import { formatPoolPrice } from '@/lib/poolPrice';
 import { useSwimSchedules } from '@/store/swimSchedule';
 import { useFriends } from '@/store/friends';
@@ -119,6 +120,13 @@ export function PoolBottomCard({
     ],
   );
   const [participantsOpen, setParticipantsOpen] = React.useState(false);
+
+  // 길찾기 — 휴대폰 지도앱으로 위임(Android=기본앱/선택창, iOS=네이버→카카오→애플).
+  const onPressDirections = React.useCallback(() => {
+    void logEvent('pool_directions', { pool_id: pool.id });
+    void openDirections({ lat: pool.lat, lng: pool.lng, name: pool.name });
+  }, [pool.id, pool.lat, pool.lng, pool.name]);
+
   const onJoinSlot = (slot: PoolScheduleSlot) => {
     setIntent({
       poolId: pool.id,
@@ -210,43 +218,57 @@ export function PoolBottomCard({
           ) : null}
         </View>
 
-        {/* CTA row (Figma 281:4517) — gap 16. "참여자 보기"(콘텐츠폭) +
-         *  "자유수영 시간표 보기"(flex 1). 둘 다 pdByellow.
-         *  슬롯 0개 → 참여자 보기 미노출, 시간표 보기 단독 full width.
-         *  status≠'available' → disabled CTA 단독(참여자 보기 미노출). */}
-        {status === 'available' ? (
-          <View style={styles.ctaRow}>
-            {slots.length > 0 ? (
-              // ui/Button 콘텐츠폭 모드에서 inner row의 flex:1 때문에 텍스트가
-              // 0px로 줄어드는 버그가 있어 직접 Pressable 로 작성.
-              // Figma 265:3852 — px20 py12, h48, radius14, SemiBold 16/22.
-              <Pressable
-                onPress={() => setParticipantsOpen(true)}
-                style={({ pressed }) => [
-                  styles.ctaParticipants,
-                  pressed && { opacity: 0.85 },
-                ]}
-                accessibilityRole="button"
-                accessibilityLabel="자유수영 참여자 보기"
-              >
-                <Text style={styles.ctaParticipantsLabel}>참여자 보기</Text>
-              </Pressable>
-            ) : null}
-            <Button
-              label="자유수영 시간표 보기"
-              onPress={onPressScheduleAction}
-              size="lg"
-              variant="pdYellow"
-              style={styles.ctaGrow}
-            />
-          </View>
-        ) : (
-          <View style={styles.disabledCta} accessibilityRole="text">
-            <Text style={styles.disabledLabel}>
-              {status === 'no_schedule' ? '자유수영 정보 없음' : '자유수영 불가능'}
-            </Text>
-          </View>
-        )}
+        {/* CTA row (Figma 281:4517) — gap 16, 최대 3버튼.
+         *  "길찾기"(72) + "참여자"(72) + "자유수영 시간표"(남는 폭). 전부 pdByellow.
+         *  3버튼이 되면서 라벨을 줄였다(참여자 보기→참여자, 자유수영 시간표 보기→
+         *  자유수영 시간표) — 좌우 패딩도 20→14라야 311폭에 맞음(Figma 465:6361).
+         *  슬롯 0개 → 참여자 미노출. status≠'available' → 길찾기만 남기고
+         *  disabled 시간표 CTA(자유수영은 못 해도 위치 안내는 유효). */}
+        <View style={styles.ctaRow}>
+          {/* Figma 465:6361 — 길찾기. 휴대폰 지도앱 연동(@/lib/openDirections). */}
+          <Pressable
+            onPress={onPressDirections}
+            style={({ pressed }) => [styles.ctaPill, pressed && { opacity: 0.85 }]}
+            accessibilityRole="button"
+            accessibilityLabel={`${pool.name} 길찾기`}
+          >
+            <Text style={styles.ctaPillLabel}>길찾기</Text>
+          </Pressable>
+
+          {status === 'available' ? (
+            <>
+              {slots.length > 0 ? (
+                // ui/Button 콘텐츠폭 모드에서 inner row의 flex:1 때문에 텍스트가
+                // 0px로 줄어드는 버그가 있어 직접 Pressable 로 작성.
+                // Figma 265:3852 — px14 py12, h48, radius14, SemiBold 16/22.
+                <Pressable
+                  onPress={() => setParticipantsOpen(true)}
+                  style={({ pressed }) => [
+                    styles.ctaPill,
+                    pressed && { opacity: 0.85 },
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="자유수영 참여자 보기"
+                >
+                  <Text style={styles.ctaPillLabel}>참여자</Text>
+                </Pressable>
+              ) : null}
+              <Button
+                label="자유수영 시간표"
+                onPress={onPressScheduleAction}
+                size="lg"
+                variant="pdYellow"
+                style={styles.ctaGrow}
+              />
+            </>
+          ) : (
+            <View style={[styles.disabledCta, styles.ctaGrow]} accessibilityRole="text">
+              <Text style={styles.disabledLabel} numberOfLines={1}>
+                {status === 'no_schedule' ? '자유수영 정보 없음' : '자유수영 불가능'}
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
 
       <PoolParticipantsSheet
@@ -370,10 +392,11 @@ const styles = StyleSheet.create({
     zIndex: 50,
   },
 
-  // 'impossible' / 'no_schedule' 공통 disabled CTA
+  // 'impossible' / 'no_schedule' 공통 disabled CTA — 길찾기 옆 남는 폭.
   disabledCta: {
     minHeight: 48,
-    paddingHorizontal: 20,
+    height: 48,
+    paddingHorizontal: 14,
     paddingVertical: 12,
     borderRadius: 14,
     backgroundColor: 'rgba(0, 122, 255, 0.1)',
@@ -388,20 +411,21 @@ const styles = StyleSheet.create({
     color: 'rgba(0, 122, 255, 0.3)',
   },
 
-  // Figma 281:4517 — CTA 두 버튼 row. gap 16, items-start.
-  // 참여자 보기(콘텐츠폭) + 자유수영 시간표 보기(flex 1).
+  // Figma 281:4517 — CTA row. gap 16, items-start. 최대 3버튼.
+  // 길찾기(72) + 참여자(72) + 자유수영 시간표(flex 1) = 72+16+72+16+135 = 311.
   ctaRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 16,
   },
-  // Figma 281:4513 — 두 번째 버튼만 flex-[1_0_0] (남는 폭 차지).
+  // Figma 281:4513 — 마지막 버튼만 flex-[1_0_0] (남는 폭 차지).
   ctaGrow: { flex: 1 },
-  // Figma 265:3852 — 참여자 보기 버튼 (콘텐츠폭). px20 py12 h48 r14 pdByellow.
-  ctaParticipants: {
+  // Figma 465:6361 / 265:3852 — 길찾기·참여자 콘텐츠폭 알약. h48 r14 pdByellow.
+  // px14: 3버튼이 되며 20→14로 좁힘(20이면 72가 아니라 84라 311을 넘김).
+  ctaPill: {
     height: 48,
     minHeight: 48,
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
     paddingVertical: 12,
     borderRadius: 14,
     backgroundColor: tokens.color.pdByellow,
@@ -409,7 +433,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   // Figma 265:3854 — SemiBold 16/22 -0.112 black.
-  ctaParticipantsLabel: {
+  ctaPillLabel: {
     fontSize: 16,
     lineHeight: 22,
     letterSpacing: -0.112,

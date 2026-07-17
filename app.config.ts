@@ -52,6 +52,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       // 표준/면제 암호화만 사용 — App Store 암호화 수출규정 자동 컴플라이언스
       // (이 값이 있으면 빌드 시 ITSAppUsesNonExemptEncryption 프롬프트 안 뜸).
       ITSAppUsesNonExemptEncryption: false,
+      // 길찾기 폴백 체인(네이버→카카오→애플)용. iOS는 사용자가 기본 지도앱을
+      // 지정할 수 없어서 "설치돼 있는 앱"을 기본값 대용으로 판별하는데,
+      // canOpenURL은 여기 등록된 scheme만 조회 가능(미등록이면 항상 false →
+      // 무조건 애플지도로 떨어짐). @/lib/openDirections 참고.
+      LSApplicationQueriesSchemes: ['nmap', 'kakaomap'],
     },
     // iOS 17+ Privacy Manifest (D2). 상세 근거: docs/store-meta/D2-privacy-manifest.md
     privacyManifests: {
