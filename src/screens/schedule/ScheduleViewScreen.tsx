@@ -47,26 +47,21 @@ export function ScheduleViewScreen() {
     );
   }, [schedule]);
 
-  // 기본 선택 요일: 슬롯 있는 요일 중 "오늘 기준 가장 가깝게 다가올" 요일
-  // (오늘 그 요일이면 거리 0 → 오늘). 슬롯 요일이 없으면 '월'.
+  // 기본 선택 요일 = 오늘 (자유수영 슬롯 유무와 무관).
+  // 대부분 "오늘" 자유수영을 보려는 사용자이므로 오늘 슬롯이 없어도 오늘 요일을
+  // 그대로 보여준다(슬롯 없으면 하단에 "○요일에는 자유수영이 없습니다" 안내).
   const todayJs = new Date().getDay();
-  const preferredDay = React.useMemo<DayOfWeek>(() => {
-    const avail = DAYS.filter((d) => daysWithSchedule.has(d));
-    if (avail.length === 0) return '월';
-    return avail.reduce((best, d) =>
-      (JS_DOW[d] - todayJs + 7) % 7 < (JS_DOW[best] - todayJs + 7) % 7
-        ? d
-        : best,
-    );
-  }, [daysWithSchedule, todayJs]);
+  const todayDay = React.useMemo<DayOfWeek>(
+    () => DAYS.find((d) => JS_DOW[d] === todayJs) ?? '월',
+    [todayJs],
+  );
 
-  const [selectedDay, setSelectedDay] = React.useState<DayOfWeek>(preferredDay);
-  // 데이터가 늦게 와도(콜드로드) 기본값 재적용. 단 사용자가 직접 요일을
-  // 누른 뒤엔 자동 변경 안 함(의도 존중).
+  const [selectedDay, setSelectedDay] = React.useState<DayOfWeek>(todayDay);
+  // 사용자가 직접 요일을 누른 뒤엔 자동 변경 안 함(의도 존중).
   const userPickedRef = React.useRef(false);
   React.useEffect(() => {
-    if (!userPickedRef.current) setSelectedDay(preferredDay);
-  }, [preferredDay]);
+    if (!userPickedRef.current) setSelectedDay(todayDay);
+  }, [todayDay]);
   const slots = schedule?.byDay[selectedDay] ?? [];
   const dayNote = schedule?.dayNotes?.[selectedDay];
   const groups = schedule?.slotGroups?.[selectedDay];
