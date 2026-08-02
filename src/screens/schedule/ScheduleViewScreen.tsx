@@ -16,6 +16,7 @@ import { useAddScheduleIntent } from '@/store/addScheduleIntent';
 import type { RootStackParamList } from '@/navigation/types';
 import { isAnonNickname, type DayOfWeek, type TimeSlot } from '@/types/schedule';
 import { visibleSeasonGroups } from '@/lib/seasonSchedule';
+import { slotRunsOnDate } from '@/lib/weekOfMonth';
 import { tokens } from '@/styles/tokens';
 import { logEvent } from '@/lib/analytics';
 
@@ -62,7 +63,15 @@ export function ScheduleViewScreen() {
   React.useEffect(() => {
     if (!userPickedRef.current) setSelectedDay(todayDay);
   }, [todayDay]);
-  const slots = schedule?.byDay[selectedDay] ?? [];
+  const isToday = selectedDay === todayDay;
+  const rawSlots = schedule?.byDay[selectedDay] ?? [];
+  // 오늘을 볼 땐 구체적 날짜를 알므로 격주(weeks) 슬롯을 이번 주차 기준으로 필터
+  // (등록 시트와 동일 규칙 slotRunsOnDate). 다른 요일은 어느 주차인지 모호해 그대로.
+  const slots = isToday
+    ? rawSlots.filter((s) => slotRunsOnDate(s, new Date()))
+    : rawSlots;
+  // 오늘 요일엔 슬롯이 있으나(byDay) 이번 주차엔 운영 안 함 = 이번 주 휴관.
+  const closedThisWeek = isToday && rawSlots.length > 0 && slots.length === 0;
   const dayNote = schedule?.dayNotes?.[selectedDay];
   const groups = schedule?.slotGroups?.[selectedDay];
   const hasGroups = !!groups && groups.length > 0;
@@ -200,7 +209,11 @@ export function ScheduleViewScreen() {
           showsVerticalScrollIndicator={false}
         >
           {slots.length === 0 && !hasGroups ? (
-            <Text style={styles.empty}>{selectedDay}요일에는 자유수영이 없습니다.</Text>
+            <Text style={styles.empty}>
+              {closedThisWeek
+                ? `이번 주 ${selectedDay}요일은 휴관입니다.`
+                : `${selectedDay}요일에는 자유수영이 없습니다.`}
+            </Text>
           ) : hasGroups ? (
             (visibleGroups ?? []).map((g, gi) => (
               <View key={gi} style={styles.slotGroup}>
