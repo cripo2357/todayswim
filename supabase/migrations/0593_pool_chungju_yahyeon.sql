@@ -29,8 +29,8 @@ insert into public.schedules (pool_id, author_nickname, by_day, day_notes, updat
     "수":"성인풀 7레인 중 5레인이 상시 자유수영으로 운영됩니다. 수영모 착용 필수.",
     "목":"성인풀 7레인 중 5레인이 상시 자유수영으로 운영됩니다. 수영모 착용 필수.",
     "금":"성인풀 7레인 중 5레인이 상시 자유수영으로 운영됩니다. 수영모 착용 필수.",
-    "토":"성인풀 7레인 중 5레인이 상시 자유수영으로 운영됩니다. 수영모 착용 필수.",
-    "일":"매월 2·4주 일요일만 운영합니다. 수영모 착용 필수."
+    "토":"성인풀 7레인 중 5레인이 상시 자유수영으로 운영됩니다. 매 타임 50분~정각은 점검시간입니다. 수영모 착용 필수.",
+    "일":"매월 2·4주 일요일만 운영합니다. 매 타임 50분~정각은 점검시간입니다. 수영모 착용 필수."
   }$$::jsonb, '2026-07-14'::timestamptz)
 on conflict (pool_id) do nothing;
 update public.pools set has_schedule = true where id = 'POOL_0900' and exists (select 1 from public.schedules where pool_id = 'POOL_0900');
