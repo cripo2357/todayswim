@@ -838,7 +838,7 @@ export function MapScreen() {
         // Naver Style Editor에서 만든 커스텀 스타일 — 도로/POI/색상 등 모든 시각 요소 제어.
         // mapType/lightness/layerGroups는 커스텀 스타일이 덮어쓰므로 생략.
         // 스타일 수정/재발행은 https://console.ncloud.com/maps/styles 에서.
-        customStyleId="c52a2948-bdea-4a26-8a59-92a5cf711f42"
+        customStyleId="7fee669c-68c4-402d-8527-699cd2495aec"
       >
         {/* 내 위치 마커 — 로그인이면 노란 원+프로필 사진(커스텀 children,
             Figma 130:3622, 50px), 로그아웃이면 marker-me-guest.png(노란 원+
