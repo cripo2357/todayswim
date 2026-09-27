@@ -9,7 +9,7 @@ description: "오늘 어디서 자유수영 할까? 동네 자유수영 수영�
 **수영 친구**와 함께 일정을 잡는 앱이에요. 광고 없이 무료로 운영돼요.
 
 <p class="cta-badges">
-  <a href="https://apps.apple.com/app/id6776639229">
+  <a href="https://apps.apple.com/kr/app/id6776639229">
     <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/ko-kr?size=250x83" alt="App Store에서 다운로드" height="56">
   </a>
   <a href="https://play.google.com/store/apps/details?id=com.cripo.poolsday">
@@ -43,7 +43,7 @@ description: "오늘 어디서 자유수영 할까? 동네 자유수영 수영�
 
 ## 다운로드
 
-- **iOS (App Store)** → [apps.apple.com/app/id6776639229](https://apps.apple.com/app/id6776639229)
+- **iOS (App Store)** → [apps.apple.com/kr/app/id6776639229](https://apps.apple.com/kr/app/id6776639229)
 - **Android (Google Play)** → [play.google.com/store/apps/details?id=com.cripo.poolsday](https://play.google.com/store/apps/details?id=com.cripo.poolsday)
 
 물에서 또 만나요. 🏊‍♀️
