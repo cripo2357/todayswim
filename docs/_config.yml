@@ -62,3 +62,8 @@ exclude:
   - Gemfile
   - Gemfile.lock
   - vendor/
+  # 내부 작업 문서(풀 발굴·작업 프롬프트·심사 답변) — 사이트맵에 실려 검색에 걸리던 것.
+  - appstore-review-reply-*.md
+  - audit-*.md
+  - pool_*.md
+  - pools_*.md
