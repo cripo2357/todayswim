@@ -13,6 +13,7 @@
 // references: project_phases (P2 진입), supabase, message_rules_architecture
 // (notifications 동기화 패턴 — best-effort try/catch).
 
+import { Platform } from 'react-native';
 import { supabase } from './supabase';
 import type {
   UserProfile,
@@ -188,6 +189,26 @@ export async function tryUpsertProfile(p: UserProfile): Promise<void> {
     const authUid = sess?.session?.user?.id ?? null;
     const row = profileToRow(p, authUid);
     await supabase.from('profiles').upsert(row, { onConflict: 'id' });
+    // 신규 가입자는 여기서 처음 row 가 생기므로 이 자리에서 찍어야 가입 기기가 남는다.
+    if (authUid) await tryStampSignupPlatform(authUid);
+  } catch {
+    /* best-effort */
+  }
+}
+
+/**
+ * 가입 기기 OS 기록(0594) — 어느 스토어로 들어왔는지(ios=App Store,
+ * android=Google Play). `is null` 조건이라 처음 한 번만 쓰이고, 다른 기기로
+ * 로그인해도 덮이지 않는다. row 가 없으면(프로필 전) 0행 — 프로필 생성 후
+ * tryUpsertProfile 이 다시 부른다.
+ */
+export async function tryStampSignupPlatform(authUid: string): Promise<void> {
+  try {
+    await supabase
+      .from('profiles')
+      .update({ signup_platform: Platform.OS })
+      .eq('auth_uid', authUid)
+      .is('signup_platform', null);
   } catch {
     /* best-effort */
   }

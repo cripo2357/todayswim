@@ -29,7 +29,7 @@ import { supabase } from '@/lib/supabase';
 import { useProfile } from '@/store/profile';
 import { resetUserScopedState } from '@/lib/resetUserState';
 import { claimDevice, clearLocalDeviceId } from '@/lib/singleDevice';
-import { tryFetchProfileByAuthUid } from '@/lib/profileSync';
+import { tryFetchProfileByAuthUid, tryStampSignupPlatform } from '@/lib/profileSync';
 import { setSentryUser } from '@/lib/sentry';
 import {
   registerForPush,
@@ -137,9 +137,17 @@ async function syncProfileFromAuth(session: Session | null): Promise<void> {
     // setState는 AsyncStorage save 안 거치고 메모리만 갱신 — 다음 useProfile.save
     // 호출 시 자동으로 영속화(서버는 이미 권위).
     useProfile.setState({ profile: fetched, hydrated: true });
+    // 0594 이전 가입자의 기기 OS 채우기. 이 함수는 TOKEN_REFRESHED 마다 불리므로
+    // 앱 실행당 한 번만 — 이미 찍힌 사람에겐 0행 UPDATE 라 해는 없지만 호출이 아깝다.
+    if (!platformStamped) {
+      platformStamped = true;
+      void tryStampSignupPlatform(uid);
+    }
   }
   // 없으면 그대로 두기 — 신규 가입자라 ProfileSetup 흐름 진입.
 }
+
+let platformStamped = false;
 
 export const useAuth = create<AuthState>((set) => ({
   user: null,
